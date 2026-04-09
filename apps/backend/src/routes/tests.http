@@ -1,0 +1,23 @@
+POST /content/create HTTP/1.1
+Host: http://localhost:3000
+Content-Type: application/json
+
+{
+  "title": "example.png",
+  "url": "https://example.com/example.png"
+}
+
+###
+POST /content/delete/84411e86-8475-4cf9-bf24-9b12f25cb5c0 HTTP/1.1
+Host: http://localhost:3000/
+Content-Type: application/json
+
+###
+POST /login
+Host: http://localhost:3000/
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}

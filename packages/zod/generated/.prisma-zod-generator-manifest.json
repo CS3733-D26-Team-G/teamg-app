@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "generatorVersion": "unknown",
+  "generatedAt": "2026-04-09T23:40:18.116Z",
+  "outputPath": "/Users/myer/WPI/CS3733 Software Engineering/teamg-app/packages/zod/generated",
+  "files": [
+    "schemas.ts"
+  ],
+  "directories": [],
+  "singleFileMode": true,
+  "singleFileName": "schemas.ts"
+}

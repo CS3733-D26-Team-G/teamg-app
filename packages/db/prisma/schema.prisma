@@ -1,0 +1,80 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
+  importFileExtension = "ts"
+}
+
+generator zod {
+  provider              = "prisma-zod-generator"
+  output                = "../../zod/generated"
+  useMultipleFiles      = false
+  mode                  = minimal
+  optionalFieldBehavior = optional
+  dateTimeStrategy      = coerce
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Employee {
+  uuid            String     @id @default(uuid()) @db.Uuid
+  account         Account?
+  first_name      String
+  last_name       String
+  date_of_birth   DateTime   @db.Date
+  position        Position
+  department      Department
+  start_date      DateTime   @db.Date
+  supervisor      String
+  phone_number    String
+  personal_email  String
+  corporate_email String
+}
+
+model Content {
+  uuid               String        @id @default(uuid()) @db.Uuid
+  title              String
+  url                String
+  content_owner      String
+  for_position       Position
+  last_modified_time DateTime      @db.Timestamp(6)
+  expiration_time    DateTime      @db.Timestamp(6)
+  content_type       ContentType
+  status             ContentStatus
+}
+
+model Account {
+  employee     Employee    @relation(fields: [employeeUuid], references: [uuid])
+  employeeUuid String      @unique @db.Uuid
+  username     String      @id @unique
+  password     String
+  type         AccountType
+}
+
+enum Department {
+  OPERATION_TECHNOLOGY
+  ACCOUNTING
+}
+
+enum Position {
+  UNDERWRITER
+  BUSINESS_ANALYST
+  ADMIN
+}
+
+enum ContentType {
+  REFERENCE
+  WORKFLOW
+}
+
+enum ContentStatus {
+  AVAILABLE
+  IN_USE
+  UNAVAILABLE
+}
+
+enum AccountType {
+  ADMIN
+  EMPLOYEE
+}
