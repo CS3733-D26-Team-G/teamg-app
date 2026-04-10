@@ -26,16 +26,16 @@ app.get("/", (req, res) => {
   res.sendStatus(200);
 });
 
-// const routesPath = join(process.cwd(), process.env.VERCEL == "1" ? "backend/apps/src/routes" : "src/routes");
-const routesPath = join(process.cwd(), "backend/apps/src/routes");
-for (const file of readdirSync(routesPath)) {
-  if (!file.endsWith(".js")) continue;
-  if (file.endsWith(".d.js")) continue;
-  if (file.startsWith("index.")) continue;
-
-  const { default: router } = await import(`./routes/${file}`);
-  app.use(`/${file.replace(/\.js$/, "")}`, router);
-}
+// // const routesPath = join(process.cwd(), process.env.VERCEL == "1" ? "backend/apps/src/routes" : "src/routes");
+// const routesPath = "/vercel/path0/apps/backend/src/routes";
+// for (const file of readdirSync(routesPath)) {
+//   if (!file.endsWith(".js")) continue;
+//   if (file.endsWith(".d.js")) continue;
+//   if (file.startsWith("index.")) continue;
+//
+//   const { default: router } = await import(`./routes/${file}`);
+//   app.use(`/${file.replace(/\.js$/, "")}`, router);
+// }
 
 // Start server
 app.listen(port, () => {
