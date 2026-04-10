@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 
 const adapter = new PrismaPg({
-  connectionString: process.env.SUPABASE_URL
+  connectionString: process.env.DATABASE_URL
 });
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
