@@ -1,0 +1,13 @@
+{
+  "bracketSameLine": false,
+  "bracketSpacing": true,
+  "endOfLine": "auto",
+  "experimentalOperatorPosition": "end",
+  "experimentalTernaries": true,
+  "quoteProps": "consistent",
+  "semi": true,
+  "singleAttributePerLine": true,
+  "singleQuote": false,
+  "tabWidth": 2,
+  "useTabs": false
+}

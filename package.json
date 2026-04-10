@@ -6,8 +6,21 @@
     "build": "turbo run build",
     "start": "turbo run start"
   },
+  "lint-staged": {
+    "apps/frontend/src/**/*.{js,jsx,ts,tsx}": [
+      "pnpm --filter frontend exec eslint --fix",
+      "pnpm --filter frontend exec prettier --write"
+    ],
+    "apps/backend/src/**/*.{js,jsx,ts,tsx}": [
+      "pnpm --filter backend exec eslint --fix",
+      "pnpm --filter backend exec prettier --write"
+    ],
+    "*.{json,md,css,scss,html,yml,yaml}": []
+  },
   "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
   "devDependencies": {
-    "turbo": "^2.9.5"
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "turbo": "^2.9.6"
   }
 }
