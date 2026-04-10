@@ -26,7 +26,7 @@ app.get("/", (req, res) => {
   res.sendStatus(200);
 });
 
-const routesPath = join(process.cwd(), "src/routes");
+const routesPath = join(process.cwd(), process.env.VERCEL == "1" ? "backend/apps/src/routes" : "src/routes");
 for (const file of readdirSync(routesPath)) {
   if (!file.endsWith(".js")) continue;
   if (file.endsWith(".d.js")) continue;
