@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(morgan("dev"));
 app.use(cookieParser());
 const allowedOrigins = isProd
-  ? ["https://teamg-app-frontend.vercel.app/"]
+  ? ["https://teamg-app-frontend.vercel.app"]
   : ["http://localhost:9999"];
 
 app.use(
@@ -26,11 +26,17 @@ app.use(
     credentials: true,
   }),
 );
+app.get("/", (req, res) => {
+  res.status(200).json({
+    debug: {
+      NODE_ENV: process.env.NODE_ENV
+    },
+  });
+});
+
 app.use(auth);
 // Send HTTP 200 at root
-app.get("/", (req, res) => {
-  res.sendStatus(200);
-});
+
 
 // const routesPath = join(process.cwd(), process.env.VERCEL == "1" ? "backend/apps/src/routes" : "src/routes");
 // const routesPath = "/vercel/path0/apps/backend/src/routes";
