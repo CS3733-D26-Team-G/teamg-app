@@ -9,16 +9,18 @@
   ],
   "tasks": {
     "db:generate": {
+      "inputs": ["prisma/schema.prisma"],
+      "outputs": ["generated/prisma/**", "../zod/generated/**"],
       "cache": false
     },
     "dev": {
-      "dependsOn": ["^db:generate", "^build"],
+      "dependsOn": ["db:generate", "^db:generate"],
       "cache": false,
       "persistent": true
     },
     "build": {
-      "dependsOn": ["^db:generate", "^build"],
-      "outputs": ["dist/**", ".vite/**"]
+      "dependsOn": ["db:generate", "^build"],
+      "outputs": ["dist/**"]
     },
     "start": {
       "dependsOn": ["build"],
