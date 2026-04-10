@@ -121,8 +121,8 @@ export default function ContentManagement({
     });
 
     const url = isExisting
-      ? `http://localhost:3000/content/edit/${uuid}`
-      : "http://localhost:3000/content/create";
+      ? API_ENDPOINTS.CONTENT_EDIT(uuid)
+      : API_ENDPOINTS.CONTENT_CREATE;
 
     try {
       const res = await fetch(url, {
@@ -140,7 +140,7 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
-        const refreshRes = await fetch("http://localhost:3000/content", {
+        const refreshRes = await fetch(API_ENDPOINTS.CONTENT, {
           credentials: "include",
         });
         const updatedData: unknown = await refreshRes.json();
