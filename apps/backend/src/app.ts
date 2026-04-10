@@ -5,7 +5,7 @@ import { readdirSync } from "node:fs";
 import { join } from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { auth } from "./middlewares/auth.ts";
+import { auth } from "./middlewares/auth.js";
 
 const app = express();
 const port = process.env.PORT;
