@@ -3,3 +3,4 @@
 .env
 node_modules
 packages/db/generated
+.DS_Store
