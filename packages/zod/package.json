@@ -18,6 +18,7 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@repo/db": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

@@ -158,6 +158,9 @@ importers:
 
   packages/zod:
     dependencies:
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../db
       zod:
         specifier: ^4.3.6
         version: 4.3.6
