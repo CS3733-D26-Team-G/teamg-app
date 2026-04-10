@@ -27,12 +27,14 @@ app.get("/", (req, res) => {
 });
 
 const routesPath = join(process.cwd(), "src/routes");
-readdirSync(routesPath).forEach(async (file) => {
-  if (file.endsWith(".ts")) {
-    const { default: router } = await import(`./routes/${file}`);
-    app.use(`/${file.split(".")[0]}`, router);
-  }
-});
+for (const file of readdirSync(routesPath)) {
+  if (!file.endsWith(".js")) continue;
+  if (file.endsWith(".d.js")) continue;
+  if (file.startsWith("index.")) continue;
+
+  const { default: router } = await import(`./routes/${file}`);
+  app.use(`/${file.replace(/\.js$/, "")}`, router);
+}
 
 // Start server
 app.listen(port, () => {

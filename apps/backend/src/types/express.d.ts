@@ -1,4 +1,4 @@
-import { Auth } from "../middlewares/auth.ts";
+import { Auth } from "../middlewares/auth.js";
 
 declare global {
   namespace Express {
