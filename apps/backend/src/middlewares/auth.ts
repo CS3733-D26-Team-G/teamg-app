@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import type { NextFunction, Request, Response } from "express";
 import { prisma } from "@repo/db";
-import type { Position}  from "@repo/db";
+import type { Position }  from "@repo/db";
 import { Prisma } from "@repo/db";
 
 export interface Auth {
