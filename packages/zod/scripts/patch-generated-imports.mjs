@@ -8,8 +8,8 @@ const generatedSchemasPath = resolve(scriptDir, "..", "generated", "schemas.ts")
 const original = readFileSync(generatedSchemasPath, "utf8");
 
 const patched = original.replace(
-    /from ['"]\.\.\/\.\.\/db\/generated\/prisma\/client['"];/g,
-    "from '../../db/generated/prisma/client.js';",
+    /from ['"]\.\.\/\.\.\/db\/generated\/prisma\/client(?:\.js)?['"];/g,
+    "from '@repo/db';",
 );
 
 if (patched !== original) {
