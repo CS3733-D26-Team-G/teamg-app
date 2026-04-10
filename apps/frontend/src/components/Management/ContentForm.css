@@ -1,0 +1,42 @@
+/*.header {*/
+/*  display: flex;*/
+/*  font-size: 35px;*/
+/*  margin-left: 5rem;*/
+/*}*/
+
+/*.main-content-form {*/
+/*  width: 50vw;*/
+/*  margin: 10vh 10vh 10vh 10vh;*/
+/*}*/
+
+h2 {
+  margin: 0;
+  margin-top: 3rem;
+  font-size: larger;
+  font-family: "Times New Roman", Times, serif;
+  font-weight: lighter;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 2rem;
+  width: 35vw;
+  margin-left: 5rem;
+  margin-right: 5rem;
+
+}
+
+.main-label {
+  font-family: "Playfair Display", serif;
+  font-size: smaller;
+  font-weight: lighter;
+}
+
+.css-xrjw2f {
+  justify-content: start !important;
+  position: relative !important;
+  -webkit-justify-content: start !important;
+}
+

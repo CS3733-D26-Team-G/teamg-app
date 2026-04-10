@@ -1,0 +1,61 @@
+.header {
+  /*display: flex;*/
+  /*margin-top: 1rem;*/
+}
+
+.main-content-form {
+  /*width: 100%;*/
+  background-color: #C6DAF0;
+  height: 100vh;
+  justify-content: center;
+  display: flex;
+  /*align-items: center;*/
+  overflow: auto;
+}
+
+div.MuiPaper-root {
+  width: contain;
+  height: fit-content;
+  margin: 5px;
+  border-radius: 20px;
+  background-color: white;
+  outline-color: lightgray;
+  padding: 20px;
+}
+h1{
+  text-align: center;
+  color: #1A1E4B;
+}
+
+/*h2 {*/
+/*  margin: 0;*/
+/*  margin-top: 3rem;*/
+/*  font-size: larger;*/
+/*  font-family: "Times New Roman", Times, serif;*/
+/*  font-weight: lighter;*/
+/*}*/
+
+label {
+  justify-self: start;
+  position: relative;
+  /*font-size: 100%;*/
+}
+
+.toggler {
+  padding-top: 2rem;
+}
+
+/*form {*/
+/*  display: flex;*/
+/*  flex-direction: column;*/
+/*  gap: 2rem;*/
+/*  margin-top: 2rem;*/
+/*  margin-left: 0;*/
+/*  width: 100%;*/
+/*}*/
+
+.css-xrjw2f {
+  justify-content: start !important;
+  position: relative !important;
+  -webkit-justify-content: start !important;
+}

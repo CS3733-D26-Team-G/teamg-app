@@ -1,0 +1,61 @@
+/*h2 {*/
+/*    font-size: 1.8rem !important;*/
+/*    margin: 0 !important;*/
+/*}*/
+
+/*h1 {*/
+/*    font-size: 4rem*/
+/*}*/
+
+.recent-activity-content {
+    padding: 0;
+}
+
+.recent-activity-tag {
+    margin-top: 16px;
+    background-color: rgb(214, 214, 214);
+    width: 30%;
+    display: flex;
+    justify-content: center;
+
+}
+
+div.MuiCardContent-root{
+    padding: 0;
+}
+
+div.MuiPaper-root {
+    border: 1px solid gray;
+    box-shadow: 0 10px 15px lightgrey;
+}
+
+.recent-activity-main {
+    padding: 16px 32px 16px 32px;
+}
+
+.recent-activity {
+    min-width: 500px;
+    min-height: 380px;
+    width: 35vw;
+    background-color: #FFFBEF !important;
+}
+
+div.search-container {
+    background-color: white;
+    width: auto;
+    max-width: 275px;
+    border-radius: 20px;;
+    outline: 1px solid lightgray;
+}
+
+.dashboard-main {
+    width: auto;
+    display: flex;
+    justify-self: end;
+    padding: 50px;
+}
+
+.dashboard-activity {
+    justify-self: end;
+    padding-left: 120px;
+}

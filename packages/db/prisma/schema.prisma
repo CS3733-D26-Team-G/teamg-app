@@ -8,7 +8,7 @@ generator zod {
   provider              = "prisma-zod-generator"
   output                = "../../zod/generated"
   useMultipleFiles      = false
-  mode                  = minimal
+  // mode                  = minimal
   optionalFieldBehavior = optional
   dateTimeStrategy      = coerce
 }
