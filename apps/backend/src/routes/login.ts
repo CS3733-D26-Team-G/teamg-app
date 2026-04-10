@@ -10,7 +10,6 @@ export const LoginSchema = z.object({
   password: z.string(),
 });
 
-
 router.post("/", async (req, res) => {
   try {
     const body = LoginSchema.parse(req.body);
@@ -46,10 +45,15 @@ router.post("/", async (req, res) => {
       account_type: account.type,
     });
   } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
       res.status(401).json({ message: "Invalid credentials" });
+    } else {
+      // res.status(500).json({ message: e });
+      console.error(e);
     }
-    console.error(e);
   }
 });
 
