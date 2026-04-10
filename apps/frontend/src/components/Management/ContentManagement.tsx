@@ -262,6 +262,9 @@ export default function ContentManagement({
             rows={filteredRows}
             getRowId={(row) => row.uuid}
             columns={getColumns(setViewState, handleDelete)}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 5 } },
+            }}
             pageSizeOptions={[5, 10]}
           />
         </Box>
