@@ -57,7 +57,7 @@ function LoginPage() {
         >
           <Box
             component="img"
-            src="./public/hanover_logo.png"
+            src=".../public/hanover_logo.png"
             alt="Hanover Logo"
             sx={{
               width: "55%",
