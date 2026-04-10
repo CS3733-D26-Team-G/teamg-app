@@ -9,7 +9,7 @@
   ],
   "tasks": {
     "db:generate": {
-      "cache": true
+      "cache": false
     },
     "dev": {
       "dependsOn": ["^db:generate", "^build"],
