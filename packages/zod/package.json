@@ -3,7 +3,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "node ./scripts/patch-generated-imports.mjs",
+    "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "zod": "^4.3.6"
