@@ -12,12 +12,12 @@
       "cache": true
     },
     "dev": {
-      "dependsOn": ["^db:generate"],
+      "dependsOn": ["^db:generate", "^build"],
       "cache": false,
       "persistent": true
     },
     "build": {
-      "dependsOn": ["^db:generate"],
+      "dependsOn": ["^db:generate", "^build"],
       "outputs": ["dist/**", ".vite/**"]
     },
     "start": {
