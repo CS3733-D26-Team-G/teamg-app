@@ -1,1 +1,1 @@
-export * as Schemas from "../generated/schemas.ts";
+export * as Schemas from "../generated/schemas.js";
