@@ -19,7 +19,7 @@ import HeaderSearchBar from "./HeaderSearchBar";
 import ManageEmployeeForm from "./ManageEmployeeForm";
 import { Schemas } from "@repo/zod";
 
-const API_BASE = "http://localhost:3000";
+import { API_ENDPOINTS } from "../../config";
 
 type EmployeeFormData = z.infer<typeof Schemas.EmployeeCreateInputObjectZodSchema>;
 type EmployeeRow = EmployeeFormData & { uuid: string };
@@ -47,7 +47,7 @@ export default function EmployeeManagement() {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/employee`, {
+      const res = await fetch(API_ENDPOINTS.EMPLOYEE, {
         credentials: "include",
       });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -94,10 +94,13 @@ export default function EmployeeManagement() {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/employee/delete/${row.uuid}`, {
-        method: "POST",
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${API_ENDPOINTS.EMPLOYEE_DELETE(row.uuid)}/employee/delete/${row.uuid}`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
+      );
 
       if (res.ok) {
         setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
@@ -124,8 +127,8 @@ export default function EmployeeManagement() {
     });
 
     const url = isExisting
-      ? `${API_BASE}/employee/update/${uuid as string}`
-      : `${API_BASE}/employee/create`;
+      ? API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
+      : API_ENDPOINTS.EMPLOYEE_CREATE;
 
     const body = isExisting
       ? (() => {

@@ -21,6 +21,7 @@ import { Schemas } from "@repo/zod";
 
 type ContentFormData = z.infer<typeof Schemas.ContentCreateInputObjectZodSchema>;
 type ContentRow = ContentFormData & { uuid: string };
+import { API_ENDPOINTS } from "../../config";
 
 const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   uuid: z.string(),
@@ -62,7 +63,7 @@ export default function ContentManagement({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:3000/content", {
+        const res = await fetch(API_ENDPOINTS.CONTENT, {
           credentials: "include",
         });
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -93,7 +94,7 @@ export default function ContentManagement({
     const { uuid } = row;
 
     try {
-      const res = await fetch(`http://localhost:3000/content/delete/${uuid}`, {
+      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(row.uuid), {
         method: "POST",
         credentials: "include",
       });
