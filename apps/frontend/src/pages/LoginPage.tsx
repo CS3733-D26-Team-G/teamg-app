@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { API_ENDPOINTS} from "../config.ts";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
@@ -135,7 +136,7 @@ function LoginPage() {
           <Button
             onClick={async () => {
               try {
-                const resp = await fetch("http://localhost:3000/login", {
+                const resp = await fetch(API_ENDPOINTS.LOGIN, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",

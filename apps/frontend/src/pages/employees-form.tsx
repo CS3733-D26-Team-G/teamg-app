@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Schemas } from "@repo/zod";
 import ManageEmployeeForm from "../components/Management/ManageEmployeeForm.tsx";
 
-const API_BASE = "http://localhost:3000";
+import { API_ENDPOINTS } from "../config.ts";
 
 type EmployeeFormData = z.infer<typeof Schemas.EmployeeCreateInputObjectZodSchema>;
 
@@ -21,7 +21,7 @@ export default function EmployeeFormPage() {
     try {
       setSaving(true);
 
-      const res = await fetch(`${API_BASE}/employee/create`, {
+      const res = await fetch(API_ENDPOINTS.EMPLOYEE_CREATE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

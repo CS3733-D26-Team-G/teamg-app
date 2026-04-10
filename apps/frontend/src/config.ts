@@ -4,6 +4,7 @@ export const API_BASE_URL =
   isLocal ? "http://localhost:3000" : "https://teamg-app-backend.vercel.app";
 
 export const API_ENDPOINTS = {
+  LOGIN: `${API_BASE_URL}/login`,
   EMPLOYEE: `${API_BASE_URL}/employee`,
   EMPLOYEE_CREATE: `${API_BASE_URL}/employee/create`,
   EMPLOYEE_UPDATE: (uuid: string) => `${API_BASE_URL}/employee/update/${uuid}`,
