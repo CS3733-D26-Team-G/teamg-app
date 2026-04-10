@@ -10,13 +10,19 @@ import { auth } from "./middlewares/auth.js";
 const app = express();
 const port = process.env.PORT;
 
+const isProd = process.env.NODE_ENV === "production";
+
 // Middleware
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(cookieParser());
+const allowedOrigins = isProd
+  ? ["https://your-frontend-project.vercel.app", "https://www.yourdomain.com"]
+  : ["http://localhost:9999"];
+
 app.use(
   cors({
-    origin: "http://localhost:9999",
+    origin: allowedOrigins,
     credentials: true,
   }),
 );

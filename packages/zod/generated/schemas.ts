@@ -4,7 +4,7 @@
  */
 
 import * as z from 'zod';
-import type { Prisma } from '@repo/db';
+import type { Prisma } from '../../db/generated/prisma/client';
 // File: TransactionIsolationLevel.schema.ts
 
 export const TransactionIsolationLevelSchema = z.enum(['ReadUncommitted', 'ReadCommitted', 'RepeatableRead', 'Serializable'])
