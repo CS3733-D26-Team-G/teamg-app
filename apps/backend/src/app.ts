@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(morgan("dev"));
 app.use(cookieParser());
 const allowedOrigins = isProd
-  ? ["https://your-frontend-project.vercel.app", "https://www.yourdomain.com"]
+  ? ["https://teamg-app-frontend.vercel.app/"]
   : ["http://localhost:9999"];
 
 app.use(
