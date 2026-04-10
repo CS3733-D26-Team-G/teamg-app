@@ -1,5 +1,6 @@
 import express from "express";
-import { Prisma, prisma } from "@repo/db";
+import { Prisma } from "@repo/db";
+import { prisma } from "@repo/db";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 
