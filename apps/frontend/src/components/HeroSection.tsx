@@ -18,18 +18,47 @@ export default function HeroSection() {
 
   return (
     <Box
-      className="relative flex flex-col min-h-screen overflow-hidden"
+      className="relative flex flex-col overflow-hidden"
       sx={{
+        width: "100%",
+        height: "100%",
         backgroundImage: `url(${HanoverVols})`,
         backgroundSize: "cover",
-        backgroundPosition: "center",
+        backgroundPosition: "top left",
+        backgroundRepeat: "no-repeat",
+        overflowX: "hidden",
       }}
     >
       {/* Dark overlay so text stays readable */}
       <Box
         className="absolute inset-0"
-        sx={{ background: "rgba(0,0,0,0.45)" }}
+        sx={{
+          background:
+            "linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.15) 100%)",
+          zIndex: 0,
+        }}
       />
+      <Collapse in={disclaimerOpen}>
+        <Alert
+          severity="info"
+          icon={<InfoIcon sx={{ color: "white" }} />}
+          onClose={() => setDisclaimerOpen(false)}
+          sx={{
+            "position": "relative",
+            "zIndex": 1,
+            "boxShadow": "none",
+            "backgroundColor": "#1A1E4B !important",
+            "fontFamily": theme.typography.fontFamily,
+            "& .MuiAlert-icon": { color: "white" },
+            "& .MuiAlert-message": { color: "white" },
+            "& .MuiIconButton-root": { color: "white" },
+          }}
+        >
+          This site is created for a course at Worcester Polytechnic Institute.
+          It is not affiliated with or operated by the Hanover Insurance Group.
+          This is a student project created solely for academic purposes.
+        </Alert>
+      </Collapse>
 
       {/* Top bar */}
       <Box className="relative flex items-center justify-between px-7 py-4">
@@ -45,7 +74,9 @@ export default function HeroSection() {
         <Button
           onClick={() => navigate("/login")}
           sx={{
-            "background": "#e6dfd2",
+            "position": "absolute",
+            "right": 80,
+            "background": "white",
             "color": "black",
             "fontFamily": theme.typography.fontFamily,
             "fontSize": 18,
@@ -62,26 +93,6 @@ export default function HeroSection() {
         </Button>
       </Box>
 
-      <Collapse in={disclaimerOpen}>
-        <Alert
-          severity="info"
-          icon={<InfoIcon sx={{ color: "white" }} />}
-          onClose={() => setDisclaimerOpen(false)}
-          sx={{
-            "backgroundColor": "#1A1E4B !important",
-            "textColor": "white !important",
-            "fontFamily": theme.typography.fontFamily,
-            "& .MuiAlert-icon": { color: "white" },
-            "& .MuiAlert-message": { color: "white" },
-            "& .MuiIconButton-root": { color: "white" },
-          }}
-        >
-          This site is created for a course at Worcester Polytechnic Institute.
-          It is not affiliated with or operated by the Hanover Insurance Group.
-          This is a student project created solely for academic purposes.
-        </Alert>
-      </Collapse>
-
       {/* CARE text */}
       <Box
         className="relative flex flex-col flex-1 justify-center"
@@ -89,9 +100,9 @@ export default function HeroSection() {
       >
         {[
           { letter: "C", word: "ollaboration", indent: "pl-20" },
-          { letter: "A", word: "ccountability", indent: "pl-24" },
-          { letter: "R", word: "espect", indent: "pl-28" },
-          { letter: "E", word: "mpowerment", indent: "pl-32" },
+          { letter: "A", word: "ccountability", indent: "pl-26" },
+          { letter: "R", word: "espect", indent: "pl-32" },
+          { letter: "E", word: "mpowerment", indent: "pl-38" },
         ].map(({ letter, word, indent }) => (
           <Box
             key={letter}
@@ -117,6 +128,7 @@ export default function HeroSection() {
           sx={{ fontSize: 26, color: "white", fontFamily: theme.typography.h2 }}
         >
           Welcome to iBank, Hanover Insurance's content management application.
+          <br />
           Please log in to get started!
         </Box>
       </Box>
