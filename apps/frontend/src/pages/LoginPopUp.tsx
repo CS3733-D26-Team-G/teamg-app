@@ -14,7 +14,8 @@ import {
 import { Visibility, VisibilityOff, Close } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "../config.ts";
-import HanoverLoginPic from "../assets/HanoverLoginPic.jpg";
+import HanoverLoginPic from "../assets/hannoverBuilding.jpg";
+import HanoverLogo from "../assets/HanoverLogo.png";
 
 function LoginPopUp({ open, onClose }) {
   const [username, setUsername] = useState("");
@@ -45,7 +46,7 @@ function LoginPopUp({ open, onClose }) {
           position: "relative",
           borderRadius: "16px",
           overflow: "hidden",
-          width: "1300px",
+          width: "1200px",
           height: "520px",
           display: "flex",
           flexDirection: "row",
@@ -57,7 +58,7 @@ function LoginPopUp({ open, onClose }) {
       >
         <Box
           sx={{
-            width: "65%",
+            width: "60%",
             height: "100%",
             flexShrink: 0,
             display: { xs: "none", sm: "block" },
@@ -104,9 +105,15 @@ function LoginPopUp({ open, onClose }) {
           >
             <Box
               component="img"
-              src="/hanover_logo.png"
+              src={HanoverLogo}
               alt="Hanover Logo"
-              sx={{ width: "70%", maxWidth: 240, height: "auto", mb: 1 }}
+              sx={{
+                transform: "translate(0px, -15px)",
+                width: "70%",
+                maxWidth: 240,
+                height: "auto",
+                mb: 1,
+              }}
             />
 
             <TextField
