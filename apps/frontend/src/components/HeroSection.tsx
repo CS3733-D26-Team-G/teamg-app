@@ -2,6 +2,7 @@ import "./HeroSection.css";
 import HanoverLogo from "../assets/HanoverLogo.png";
 import HanoverVols from "../assets/HanoverVols.png";
 import { useNavigate } from "react-router";
+import Footer from "./Footer";
 
 export default function HeroSection() {
   const navigate = useNavigate(); // 2. Initialize the navigate function
@@ -96,15 +97,8 @@ export default function HeroSection() {
             />
           </div>
         </div>
-        <div className="login-button">
-          <button
-            className="hero-login-button"
-            onClick={handleLoginClick}
-          >
-            Log In
-          </button>
-        </div>
       </div>
+      <Footer />
     </div>
   );
 }
