@@ -1,17 +1,18 @@
 import "./HeroSection.css";
 import HanoverLogo from "../assets/HanoverLogo.png";
 import HanoverVols from "../assets/HanoverVols.png";
-import { useNavigate } from "react-router";
+import { useState } from "react";
+import LoginPopUp from "../pages/LoginPopUp.tsx";
 
 export default function HeroSection() {
-  const navigate = useNavigate(); // 2. Initialize the navigate function
-
-  const handleLoginClick = () => {
-    navigate("/login"); // 3. Define where to go (matches your route path)
-  };
+  const [loginOpen, setLoginOpen] = useState(false);
 
   return (
     <div className="main-hero">
+      <LoginPopUp
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+      />
       {/* Dot pattern in corners */}
       {/* <div className="corner-dots corner-dots--left">
         <img
@@ -99,7 +100,7 @@ export default function HeroSection() {
         <div className="login-button">
           <button
             className="hero-login-button"
-            onClick={handleLoginClick}
+            onClick={() => setLoginOpen(true)}
           >
             Log In
           </button>

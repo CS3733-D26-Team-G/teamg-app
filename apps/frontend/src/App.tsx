@@ -11,7 +11,7 @@ import Library from "./pages/library.tsx";
 import Activity from "./pages/activity.tsx";
 import Settings from "./pages/settings.tsx";
 import Profile from "./pages/profile.tsx";
-import LoginPage from "./pages/LoginPage.tsx";
+import LoginPopUp from "./pages/LoginPopUp.tsx";
 
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
@@ -33,11 +33,6 @@ function App() {
             <Route
               path="/"
               element={<Hero />}
-            />
-
-            <Route
-              path="/login"
-              element={<LoginPage />}
             />
 
             <Route
