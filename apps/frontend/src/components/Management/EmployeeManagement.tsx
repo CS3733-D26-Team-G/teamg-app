@@ -9,6 +9,7 @@ import {
   Toolbar,
   Typography,
   styled,
+  Avatar,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -18,7 +19,7 @@ import { z } from "zod";
 import HeaderSearchBar from "./HeaderSearchBar";
 import ManageEmployeeForm from "./ManageEmployeeForm";
 import { Schemas } from "@repo/zod";
-
+import { User } from "lucide-react";
 import { API_ENDPOINTS } from "../../config";
 
 type EmployeeFormData = z.infer<
@@ -181,6 +182,42 @@ export default function EmployeeManagement() {
     };
 
     return [
+      {
+        field: "userIcon",
+        headerName: "",
+        width: 60,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => {
+          const { avatar } = params.row;
+          const firstInitial = params.row.first_name?.[0] ?? "";
+          const lastInitial = params.row.last_name?.[0] ?? "";
+          const initials = (firstInitial + lastInitial).toUpperCase() || "?";
+
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+              }}
+            >
+              <Avatar
+                src={avatar || undefined}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: avatar ? "transparent" : "primary.main",
+                  fontSize: "0.875rem", // Fixed the typo: was '.0875rem'
+                }}
+              >
+                {initials}
+              </Avatar>
+            </Box>
+          );
+        },
+      },
       { field: "first_name", headerName: "First Name", flex: 1, minWidth: 140 },
       { field: "last_name", headerName: "Last Name", flex: 1, minWidth: 140 },
       {
