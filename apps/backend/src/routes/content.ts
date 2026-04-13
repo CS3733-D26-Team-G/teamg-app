@@ -2,46 +2,31 @@ import express from "express";
 import { prisma } from "@repo/db";
 import { Prisma } from "@repo/db";
 
-import { ZodError } from "zod";
 import { Schemas } from "@repo/zod";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
-  const auth = req.auth!;
-  if (auth.position === "ADMIN") {
-    res.status(200).json(await prisma.content.findMany());
-  } else {
-    res.status(200).json(
-      await prisma.content.findMany({
-        where: { for_position: auth.position },
-      }),
-    );
-  }
+router.get("/", async (_req, res) => {
+  res.status(200).json(await prisma.content.findMany());
 });
 
 router.post("/create", async (req, res) => {
   const auth = req.auth!;
-  console.log(auth);
+  const body = Schemas.ContentCreateInputObjectSchema.safeParse(req.body);
+  if (!body.success) {
+    return res.status(400).json({ message: body.error.issues });
+  }
+  const data = body.data;
+
+  if (auth.position !== "ADMIN" && auth.position !== data.for_position) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
   try {
-    const body = Schemas.ContentCreateInputObjectSchema.parse(req.body);
-    console.log(body);
-    if (auth.position !== "ADMIN" && auth.position !== body.for_position) {
-      console.log("???");
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    console.log("about to create");
-    try {
-      const content = await prisma.content.create({ data: body });
-      console.log(content);
-      res.status(201).json(content);
-    } catch (e) {
-      if (e instanceof ZodError) {
-        return res.status(400).json({ message: e.issues });
-      }
-    }
+    const content = await prisma.content.create({ data });
+    res.status(201).json(content);
   } catch (e) {
-    console.log(e);
+    console.error(e);
     if (e instanceof Prisma.PrismaClientKnownRequestError)
       return res.status(500).json({
         message:
@@ -53,32 +38,36 @@ router.post("/create", async (req, res) => {
 router.put("/edit/:uuid", async (req, res) => {
   const auth = req.auth!;
   const uuid = req.params.uuid;
+
+  const body = Schemas.ContentUpdateInputObjectZodSchema.omit({ uuid: true })
+    .partial()
+    .safeParse(req.body);
+  if (!body.success) {
+    return res.status(400).json({ message: body.error.issues });
+  }
+  const data = body.data;
+  if (auth.position !== "ADMIN" && auth.position !== data.for_position) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
   try {
-    const body = Schemas.ContentUpdateInputObjectZodSchema.omit({ uuid: true })
-      .partial()
-      .parse(req.body);
-    if (auth.position !== "ADMIN" && auth.position !== body.for_position) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    try {
-      const content = await prisma.content.update({
-        where: { uuid: uuid },
-        data: body,
-      });
-      res.status(200).json(content);
-    } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === "P2025"
-      ) {
-        return res.status(400).json({ message: "Invalid content UUID" });
-      }
-    }
+    const content = await prisma.content.update({
+      where: { uuid: uuid },
+      data,
+    });
+    res.status(200).json(content);
   } catch (e) {
-    if (e instanceof ZodError) {
-      console.log(e);
-      res.status(400).json({ message: e.issues });
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
+      return res.status(400).json({ message: "Invalid content UUID" });
     }
+    console.error(e);
+    return res.status(500).json({
+      message:
+        "Internal server error. If you see this message, please report to a system administrator ",
+    });
   }
 });
 
