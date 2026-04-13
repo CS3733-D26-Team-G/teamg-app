@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { API_ENDPOINTS} from "../config.ts";
+import { API_ENDPOINTS } from "../config.ts";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
@@ -135,6 +135,7 @@ function LoginPage() {
 
           <Button
             onClick={async () => {
+              console.log("Clicked!");
               try {
                 const resp = await fetch(API_ENDPOINTS.LOGIN, {
                   method: "POST",

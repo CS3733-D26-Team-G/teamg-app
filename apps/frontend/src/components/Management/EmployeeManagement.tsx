@@ -21,7 +21,9 @@ import { Schemas } from "@repo/zod";
 
 import { API_ENDPOINTS } from "../../config";
 
-type EmployeeFormData = z.infer<typeof Schemas.EmployeeCreateInputObjectZodSchema>;
+type EmployeeFormData = z.infer<
+  typeof Schemas.EmployeeCreateInputObjectZodSchema
+>;
 type EmployeeRow = EmployeeFormData & { uuid: string };
 type Position = z.infer<typeof Schemas.PositionSchema>;
 type Department = z.infer<typeof Schemas.DepartmentSchema>;
@@ -89,7 +91,9 @@ export default function EmployeeManagement() {
   }, [rows, searchQuery]);
 
   const handleDelete = async (row: EmployeeRow) => {
-    if (!window.confirm(`Remove employee ${row.first_name} ${row.last_name}?`)) {
+    if (
+      !window.confirm(`Remove employee ${row.first_name} ${row.last_name}?`)
+    ) {
       return;
     }
 
@@ -126,12 +130,14 @@ export default function EmployeeManagement() {
       ...(uuid ? { uuid } : {}),
     });
 
-    const url = isExisting
-      ? API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
+    const url =
+      isExisting ?
+        API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
       : API_ENDPOINTS.EMPLOYEE_CREATE;
 
-    const body = isExisting
-      ? (() => {
+    const body =
+      isExisting ?
+        (() => {
           const { uuid: _omit, ...rest } = parsedFull;
           return rest;
         })()
@@ -197,7 +203,8 @@ export default function EmployeeManagement() {
         field: "department",
         headerName: "Department",
         width: 190,
-        valueGetter: (value) => deptLabels[value as Department] ?? String(value),
+        valueGetter: (value) =>
+          deptLabels[value as Department] ?? String(value),
       },
       {
         field: "corporate_email",
@@ -232,15 +239,14 @@ export default function EmployeeManagement() {
   };
 
   return (
-    <Box sx={{ height: 650, width: "100%", p: 2 }}>
-      {viewState ? (
+    <Box sx={{ height: 650, p: 2 }}>
+      {viewState ?
         <ManageEmployeeForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
           onCancel={() => setViewState(null)}
         />
-      ) : (
-        <Box>
+      : <Box>
           <AppBar
             position="static"
             sx={{
@@ -293,7 +299,7 @@ export default function EmployeeManagement() {
             sx={{ mt: 2 }}
           />
         </Box>
-      )}
+      }
     </Box>
   );
 }
