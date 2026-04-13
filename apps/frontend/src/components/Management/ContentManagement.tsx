@@ -15,6 +15,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { z } from "zod";
 
 import { API_ENDPOINTS } from "../../config";
@@ -54,7 +55,7 @@ export default function ContentManagement({
 }: ContentManagementProps) {
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const [selectedDoc, setSelectedDoc] = useState<ViewerDocument | null>(null);
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
@@ -178,6 +179,7 @@ export default function ContentManagement({
   const getColumns = (
     _onEdit: (row: ContentRow) => void,
     onDelete: (row: ContentRow) => void,
+    onPreview: (row: ContentRow) => void,
   ): GridColDef<ContentRow>[] => [
     { field: "title", headerName: "Title", flex: 1 },
     {
@@ -208,6 +210,9 @@ export default function ContentManagement({
       width: 120,
       renderCell: (params) => (
         <>
+          <IconButton onClick={() => onPreview(params.row)}>
+            <VisibilityIcon />
+          </IconButton>
           <IconButton onClick={() => setViewState(params.row)}>
             <EditIcon />
           </IconButton>
@@ -272,12 +277,25 @@ export default function ContentManagement({
           <DataGrid
             rows={filteredRows}
             getRowId={(row) => row.uuid}
-            columns={getColumns(setViewState, handleDelete)}
+            columns={getColumns(setViewState, handleDelete, (row) =>
+              setSelectedDoc({
+                uri: row.url,
+                fileName: row.title,
+              }),
+            )}
             initialState={{
               pagination: { paginationModel: { pageSize: 5 } },
             }}
             pageSizeOptions={[5, 10]}
           />
+          {selectedDoc && (
+            <Box sx={{ mt: 3, height: "80vh" }}>
+              <DocViewer
+                documents={[selectedDoc]}
+                pluginRenderers={DocViewerRenderers}
+              />
+            </Box>
+          )}
         </Box>
       }
     </Box>
