@@ -6,12 +6,22 @@ import "./dashboard.css";
 
 export default function DashboardRecentActivity() {
   return (
-    <Card className="recent-activity">
+    <Card
+      className="recent-activity"
+      sx={{
+        width: "auto",
+      }}
+    >
       <CardContent className="recent-activity-content">
         <div className="recent-activity-tag">
           <Typography>Recent Activity</Typography>
         </div>
-        <Typography className="recent-activity-main">
+        <Typography
+          className="recent-activity-main"
+          sx={{
+            textAlign: "start",
+          }}
+        >
           <h3>Today</h3>
           <ul>
             <li>Colin edited XXXX</li>

@@ -22,6 +22,7 @@
 
 div.MuiCardContent-root{
     padding: 0;
+    
 }
 
 div.MuiPaper-root {
@@ -51,11 +52,10 @@ div.search-container {
 .dashboard-main {
     width: auto;
     display: flex;
-    justify-self: end;
     padding: 50px;
 }
 
 .dashboard-activity {
     justify-self: end;
-    padding-left: 120px;
+    width: auto;
 }

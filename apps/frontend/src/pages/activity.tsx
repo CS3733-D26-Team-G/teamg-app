@@ -1,7 +1,9 @@
+import ActivityTimeline from "../components/Activity/ActivityTimeline";
+
 function Activity() {
   return (
     <>
-      <h1>Activity</h1>
+      <ActivityTimeline></ActivityTimeline>
     </>
   );
 }
