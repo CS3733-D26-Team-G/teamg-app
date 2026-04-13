@@ -50,6 +50,7 @@ const statusLabels: Record<ContentStatus, string> = {
   IN_USE: "IN USE",
   UNAVAILABLE: "UNAVAILABLE",
 };
+
 interface ContentManagementProps {
   viewState: ContentRow | "new" | null;
   setViewState: React.Dispatch<React.SetStateAction<ContentRow | "new" | null>>;
