@@ -25,11 +25,24 @@ type ContentFormData = z.infer<
 >;
 type ContentRow = ContentFormData & { uuid: string };
 type Position = z.infer<typeof Schemas.PositionSchema>;
+type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
 import { API_ENDPOINTS } from "../../config";
 
 const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   uuid: z.string(),
 });
+
+const positionLabels: Record<Position, string> = {
+  UNDERWRITER: "UNDERWRITER",
+  BUSINESS_ANALYST: "BUSINESS ANALYST",
+  ADMIN: "ADMIN",
+};
+
+const statusLabels: Record<ContentStatus, string> = {
+  AVAILABLE: "AVAILABLE",
+  IN_USE: "IN USE",
+  UNAVAILABLE: "UNAVAILABLE",
+};
 
 interface ContentManagementProps {
   viewState: ContentRow | "new" | null;
@@ -209,7 +222,7 @@ export default function ContentManagement({
         const role = params.value as Position;
         return (
           <Chip
-            label={role}
+            label={positionLabels[role]}
             color={colorMap[role] ?? "default"}
             size="small"
             variant="outlined"
@@ -218,7 +231,15 @@ export default function ContentManagement({
       },
     },
     { field: "content_type", headerName: "Type", width: 130 },
-    { field: "status", headerName: "Status", width: 120 },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) => {
+        const contStatus = params.value as ContentStatus;
+        return statusLabels[contStatus] ?? contStatus;
+      },
+    },
     {
       field: "actions",
       headerName: "Actions",
