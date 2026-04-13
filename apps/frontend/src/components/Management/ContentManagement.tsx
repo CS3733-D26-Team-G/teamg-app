@@ -19,7 +19,9 @@ import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
 import { Schemas } from "@repo/zod";
 
-type ContentFormData = z.infer<typeof Schemas.ContentCreateInputObjectZodSchema>;
+type ContentFormData = z.infer<
+  typeof Schemas.ContentCreateInputObjectZodSchema
+>;
 type ContentRow = ContentFormData & { uuid: string };
 import { API_ENDPOINTS } from "../../config";
 
@@ -120,8 +122,9 @@ export default function ContentManagement({
       uuid,
     });
 
-    const url = isExisting
-      ? API_ENDPOINTS.CONTENT_EDIT(uuid)
+    const url =
+      isExisting ?
+        API_ENDPOINTS.CONTENT_EDIT(uuid)
       : API_ENDPOINTS.CONTENT_CREATE;
 
     try {
@@ -130,12 +133,12 @@ export default function ContentManagement({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(
-          isExisting
-            ? (() => {
-                const { uuid: _uuid, ...rest } = parsed;
-                return rest;
-              })()
-            : parsed,
+          isExisting ?
+            (() => {
+              const { uuid: _uuid, ...rest } = parsed;
+              return rest;
+            })()
+          : parsed,
         ),
       });
 
@@ -147,7 +150,10 @@ export default function ContentManagement({
         const parsedRows = z.array(ContentRowSchema).safeParse(updatedData);
 
         if (!parsedRows.success) {
-          console.error("Failed to validate refreshed content:", parsedRows.error);
+          console.error(
+            "Failed to validate refreshed content:",
+            parsedRows.error,
+          );
           setRows([]);
         } else {
           setRows(parsedRows.data);
@@ -208,15 +214,14 @@ export default function ContentManagement({
   ];
 
   return (
-    <Box sx={{ height: 400, width: "100%" }}>
-      {viewState ? (
+    <Box sx={{ height: 400 }}>
+      {viewState ?
         <ContentForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
           onCancel={() => setViewState(null)}
         />
-      ) : (
-        <Box>
+      : <Box>
           <AppBar
             position="static"
             sx={{
@@ -268,7 +273,7 @@ export default function ContentManagement({
             pageSizeOptions={[5, 10]}
           />
         </Box>
-      )}
+      }
     </Box>
   );
 }

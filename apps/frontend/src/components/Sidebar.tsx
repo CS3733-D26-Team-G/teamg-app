@@ -21,9 +21,14 @@ import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import PeopleIcon from "@mui/icons-material/People";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
+  const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorElement);
   const [adminOpen, setAdminOpen] = useState(false);
   // const [formsOpen, setFormsOpen] = useState(false);
 
@@ -52,6 +57,14 @@ export default function Sidebar() {
   ) => {
     if (!isOpen) setIsOpen(true);
     setter(!current);
+  };
+
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElement(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorElement(null);
   };
 
   return (
@@ -152,7 +165,7 @@ export default function Sidebar() {
               <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
                 <LibraryBooksIcon />
               </ListItemIcon>
-              {isOpen && <ListItemText primary="Library" />}
+              {isOpen && <ListItemText primary="Content Manager" />}
             </ListItemButton>
           </>
         }
@@ -167,31 +180,55 @@ export default function Sidebar() {
           </ListItemIcon>
           {isOpen && <ListItemText primary="Activity" />}
         </ListItemButton>
-
-        <ListItemButton
-          component={Link}
-          to="/settings"
-          sx={{ px: 2 }}
-        >
-          <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
-            <SettingsIcon />
-          </ListItemIcon>
-          {isOpen && <ListItemText primary="Settings" />}
-        </ListItemButton>
       </List>
 
-      <Box sx={{ mt: "auto" }}>
+      <Box sx={{ mt: "auto", px: isOpen ? 2 : 0, pb: 2 }}>
         <ListItemButton
-          component={Link}
-          to="/profile"
-          sx={{ px: 2 }}
+          id={"resources-button"}
+          sx={{
+            px: 2,
+            border: isOpen ? "2px solid black" : null,
+            borderRadius: "50px",
+          }}
+          onClick={handleClick}
+          aria-controls={open ? "resources-menu" : undefined}
+          aria-haspopup="true"
+          aria-expanded={open ? "true" : undefined}
         >
           <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
             <Avatar sx={{ width: 32, height: 32 }} />
           </ListItemIcon>
-          {isOpen && <ListItemText primary="My Account" />}
+          {isOpen && <ListItemText primary="Name" />}
+          <KeyboardArrowUpIcon />
         </ListItemButton>
       </Box>
+      <Menu
+        id={"resources-menu"}
+        anchorEl={anchorElement}
+        open={open}
+        slotProps={{
+          list: { "aria-labelledby": "resources-menu" },
+        }}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        transformOrigin={{ vertical: "bottom", horizontal: "left" }}
+      >
+        <MenuItem
+          component={Link}
+          to="/profile"
+          onClick={handleClose}
+        >
+          My Account
+        </MenuItem>
+        <MenuItem
+          component={Link}
+          to="/settings"
+          onClick={handleClose}
+        >
+          Settings
+        </MenuItem>
+        <MenuItem onClick={handleClose}>Log Out</MenuItem>
+      </Menu>
     </div>
   );
 }
