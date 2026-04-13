@@ -18,7 +18,7 @@ app.use(cookieParser());
 const allowedOrigins =
   isProd ?
     ["https://teamg-app-frontend.vercel.app"]
-  : ["http://localhost:9999"];
+  : ["http://localhost:10000"];
 
 app.use(
   cors({

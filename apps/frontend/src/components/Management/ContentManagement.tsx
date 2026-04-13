@@ -189,10 +189,45 @@ export default function ContentManagement({
     }
   };
 
+  const toggleFavorite = async (formData: ContentFormData) => {
+    try {
+      const res = await fetch("http://localhost:3000/content/favorite", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (res.ok) {
+        const updatedRow = await res.json();
+        setRows((prevRows) =>
+          prevRows.map((r) => (r.uuid === updatedRow.uuid ? updatedRow : r)),
+        );
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  };
+
   const getColumns = (
     _onEdit: (row: ContentRow) => void,
     onDelete: (row: ContentRow) => void,
   ): GridColDef<ContentRow>[] => [
+    {
+      field: "favorite",
+      headerName: "Favorite",
+      width: 60,
+      renderCell: (params) => (
+        <>
+          <IconButton onClick={() => toggleFavorite(params.row)}>
+            <Heart
+              size={20}
+              fill={params.row.id_favorite ? "ff4d4f" : "none"}
+              color={params.row.is_favorite ? "ff4d4f" : "#e50000"}
+            ></Heart>
+          </IconButton>
+        </>
+      ),
+    },
     { field: "title", headerName: "Title", flex: 1 },
     {
       field: "url",
