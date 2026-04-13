@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
+import "@iamjariwala/react-doc-viewer/dist/index.css";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import {
   IconButton,
