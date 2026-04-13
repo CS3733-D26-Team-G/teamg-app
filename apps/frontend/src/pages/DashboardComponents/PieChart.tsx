@@ -8,9 +8,9 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import type { VisibilityIdentifierWithType } from "@mui/x-charts/plugins";
 
 const data = [
-  { value: 10, label: "Series A" },
-  { value: 15, label: "Series B" },
-  { value: 20, label: "Series C" },
+  { value: 10, label: "Underwriter", color: "#1A1E4B" },
+  { value: 15, label: "Business Analyst", color: "#395176" },
+  { value: 20, label: "Admins", color: "#74414e" },
 ];
 
 export default function ControlledVisibility() {
@@ -22,15 +22,7 @@ export default function ControlledVisibility() {
     setHiddenItems([]);
   };
 
-  const handleHideAll = () => {
-    setHiddenItems([
-      { type: "pie", seriesId: "custom", dataIndex: 0 },
-      { type: "pie", seriesId: "custom", dataIndex: 1 },
-      { type: "pie", seriesId: "custom", dataIndex: 2 },
-    ]);
-  };
-
-  const handleShowOnlyA = () => {
+  const handleShowOnlyMine = () => {
     setHiddenItems([
       { type: "pie", seriesId: "custom", dataIndex: 1 },
       { type: "pie", seriesId: "custom", dataIndex: 2 },
@@ -43,17 +35,15 @@ export default function ControlledVisibility() {
   ) => {
     if (newValue === "all") {
       handleShowAll();
-    } else if (newValue === "none") {
-      handleHideAll();
-    } else if (newValue === "onlyA") {
-      handleShowOnlyA();
+    } else if (newValue === "onlyUnder") {
+      handleShowOnlyMine();
     }
   };
 
   const getCurrentValue = () => {
     const allVisible = hiddenItems.length === 0;
     const allHidden = hiddenItems.length === data.length;
-    const onlyAVisible =
+    const onlyMineVisible =
       hiddenItems.length === 2 &&
       hiddenItems[0].dataIndex === 1 &&
       hiddenItems[1].dataIndex === 2;
@@ -64,8 +54,8 @@ export default function ControlledVisibility() {
     if (allHidden) {
       return "none";
     }
-    if (onlyAVisible) {
-      return "onlyA";
+    if (onlyMineVisible) {
+      return "onlyMine";
     }
     return null;
   };
@@ -73,38 +63,38 @@ export default function ControlledVisibility() {
   return (
     <Stack spacing={2}>
       <FormControl sx={{ mb: 2 }}>
-        <FormLabel>Controlled Highlighting</FormLabel>
-        <ToggleButtonGroup
-          value={getCurrentValue()}
-          exclusive
-          onChange={handleToggleChange}
-          aria-label="highlight control"
-          size="small"
-        >
-          <ToggleButton
-            value="all"
-            aria-label="show all nodes"
-          >
-            Show All
-          </ToggleButton>
-          <ToggleButton
-            value="none"
-            aria-label="show no nodes"
-          >
-            Hide All
-          </ToggleButton>
-          <ToggleButton
-            value="onlyA"
-            aria-label="show only node A"
-          >
-            Show Only A
-          </ToggleButton>
-        </ToggleButtonGroup>
+        <FormLabel>Forms</FormLabel>
+        {/*<ToggleButtonGroup*/}
+        {/*  value={getCurrentValue()}*/}
+        {/*  exclusive*/}
+        {/*  onChange={handleToggleChange}*/}
+        {/*  aria-label="highlight control"*/}
+        {/*  size="small"*/}
+        {/*>*/}
+        {/*  <ToggleButton*/}
+        {/*    value="all"*/}
+        {/*    aria-label="show all nodes"*/}
+        {/*  >*/}
+        {/*    Show All*/}
+        {/*  </ToggleButton>*/}
+        {/*  <ToggleButton*/}
+        {/*    value="none"*/}
+        {/*    aria-label="show no nodes"*/}
+        {/*  >*/}
+        {/*    Hide All*/}
+        {/*  </ToggleButton>*/}
+        {/*  <ToggleButton*/}
+        {/*    value="onlyMine"*/}
+        {/*    aria-label="show only Mine"*/}
+        {/*  >*/}
+        {/*    My Forms*/}
+        {/*  </ToggleButton>*/}
+        {/*</ToggleButtonGroup>*/}
       </FormControl>
       <PieChart
         series={[{ id: "custom", data }]}
-        height={300}
-        width={300}
+        height={200}
+        width={200}
         hiddenItems={hiddenItems}
         slotProps={{
           legend: {

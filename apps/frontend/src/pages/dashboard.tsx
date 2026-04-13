@@ -3,6 +3,7 @@ import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivi
 import SearchBar from "./DashboardComponents/SearchBar";
 import "./DashboardComponents/dashboard.css";
 import PieChart from "./DashboardComponents/PieChart";
+import BarChart from "./DashboardComponents/BarChart";
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -18,8 +19,11 @@ export default function Dashboard() {
       <div className="dashboard-activity">
         <DashboardRecentActivity />
       </div>
-      <div>
+      <div className="fixed left-[25%] bottom-[5%]">
         <PieChart />
+      </div>
+      <div className="fixed right-[10%] bottom-[.5%]">
+        <BarChart />
       </div>
     </div>
   );

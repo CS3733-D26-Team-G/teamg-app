@@ -35,9 +35,10 @@ div.MuiPaper-root {
 
 .recent-activity {
     min-width: 500px;
-    min-height: 380px;
+    max-height: 250px;
     width: 35vw;
     background-color: #FFFBEF !important;
+    overflow-y: auto !important;
 }
 
 div.search-container {
