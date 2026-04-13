@@ -2,6 +2,7 @@ import { useState } from "react";
 import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivity";
 import SearchBar from "./DashboardComponents/SearchBar";
 import "./DashboardComponents/dashboard.css";
+import PieChart from "./DashboardComponents/PieChart";
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -16,6 +17,9 @@ export default function Dashboard() {
       </div>
       <div className="dashboard-activity">
         <DashboardRecentActivity />
+      </div>
+      <div>
+        <PieChart />
       </div>
     </div>
   );

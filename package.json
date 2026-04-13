@@ -23,5 +23,10 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "turbo": "^2.9.6"
+  },
+  "dependencies": {
+    "@mui/x-charts": "^9.0.1",
+    "@tailwindcss/vite": "^4.2.2",
+    "tailwindcss": "^4.2.2"
   }
 }
