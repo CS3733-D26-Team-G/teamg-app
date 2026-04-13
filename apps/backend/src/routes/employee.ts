@@ -32,7 +32,7 @@ router.post("/create", async (req, res) => {
     if (e instanceof Prisma.PrismaClientKnownRequestError)
       return res.status(500).json({
         message:
-          "Internal server error. If you see this message, please report to a system administrator ",
+          "Internal server error. If you see this message, please report to a system administrator",
       });
   }
 });
