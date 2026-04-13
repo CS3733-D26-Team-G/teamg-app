@@ -4,7 +4,7 @@ import { useNavigate } from "react-router";
 import { useState } from "react";
 import { Box, Button } from "@mui/material";
 import theme from "../theme.tsx";
-import { Alert, Collapse, AlertTitle } from "@mui/material";
+import { Alert, Collapse } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 
 export default function HeroSection() {
@@ -18,10 +18,10 @@ export default function HeroSection() {
 
   return (
     <Box
-      className="relative flex flex-col overflow-hidden"
+      className="relative flex flex-col"
       sx={{
         width: "100%",
-        height: "100%",
+        minHeight: "100vh",
         backgroundImage: `url(${HanoverVols})`,
         backgroundSize: "cover",
         backgroundPosition: "top left",
@@ -34,7 +34,7 @@ export default function HeroSection() {
         className="absolute inset-0"
         sx={{
           background:
-            "linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.15) 100%)",
+            "linear-gradient(90deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,0.75) 25%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0) 100%)",
           zIndex: 0,
         }}
       />
@@ -46,7 +46,7 @@ export default function HeroSection() {
           sx={{
             "position": "relative",
             "zIndex": 1,
-            "boxShadow": "none",
+            "boxShadow": "none !important",
             "backgroundColor": "#1A1E4B !important",
             "fontFamily": theme.typography.fontFamily,
             "& .MuiAlert-icon": { color: "white" },
@@ -75,7 +75,7 @@ export default function HeroSection() {
           onClick={() => navigate("/login")}
           sx={{
             "position": "absolute",
-            "right": 80,
+            "right": 40,
             "background": "white",
             "color": "black",
             "fontFamily": theme.typography.fontFamily,
@@ -96,13 +96,17 @@ export default function HeroSection() {
       {/* CARE text */}
       <Box
         className="relative flex flex-col flex-1 justify-center"
-        sx={{ fontFamily: theme.typography.fontFamily, color: "white" }}
+        sx={{
+          fontFamily: theme.typography.fontFamily,
+          color: "white",
+          mb: 8,
+        }}
       >
         {[
-          { letter: "C", word: "ollaboration", indent: "pl-20" },
-          { letter: "A", word: "ccountability", indent: "pl-26" },
-          { letter: "R", word: "espect", indent: "pl-32" },
-          { letter: "E", word: "mpowerment", indent: "pl-38" },
+          { letter: "C", word: "ollaboration", indent: "pl-25" },
+          { letter: "A", word: "ccountability", indent: "pl-31" },
+          { letter: "R", word: "espect", indent: "pl-37" },
+          { letter: "E", word: "mpowerment", indent: "pl-43" },
         ].map(({ letter, word, indent }) => (
           <Box
             key={letter}
@@ -115,7 +119,7 @@ export default function HeroSection() {
           >
             <Box
               component="span"
-              sx={{ fontSize: "clamp(64px, 4vw, 80px)", fontWeight: 900 }}
+              sx={{ fontSize: "clamp(60px, 4vw, 76px)", fontWeight: 900 }}
             >
               {letter}
             </Box>
@@ -124,8 +128,12 @@ export default function HeroSection() {
         ))}
 
         <Box
-          className="mt-4 pl-20"
-          sx={{ fontSize: 26, color: "white", fontFamily: theme.typography.h2 }}
+          className="mt-4 pl-26"
+          sx={{
+            fontSize: 26,
+            color: "white",
+            fontFamily: theme.typography.h2,
+          }}
         >
           Welcome to iBank, Hanover Insurance's content management application.
           <br />
