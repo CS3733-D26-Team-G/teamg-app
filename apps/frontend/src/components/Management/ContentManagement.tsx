@@ -25,7 +25,10 @@ type ContentFormData = z.infer<
   typeof Schemas.ContentCreateInputObjectZodSchema
 >;
 type ContentRow = ContentFormData & { uuid: string };
-import { API_ENDPOINTS } from "../../config";
+type ViewerDocument = {
+  uri: string;
+  fileName?: string;
+};
 
 const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   uuid: z.string(),
