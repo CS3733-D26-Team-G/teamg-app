@@ -97,4 +97,32 @@ router.post("/delete/:uuid", async (req, res) => {
   }
 });
 
+router.patch("/favorite/:uuid", async (req, res) => {
+  const uuid = req.params.uuid;
+
+  try {
+    const currentContent = await prisma.content.findUniqueOrThrow({
+      where: { uuid: uuid },
+    });
+
+    const updatedContent = await prisma.content.update({
+      where: { uuid: uuid },
+      data: {
+        is_favorite: !currentContent.is_favorite,
+      },
+    });
+
+    res.status(200).json(updatedContent);
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
+      res.status(400).json({ message: "Invalid content UUID" });
+    } else {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+});
+
 export default router;

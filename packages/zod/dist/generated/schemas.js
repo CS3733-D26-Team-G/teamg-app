@@ -6,15 +6,17 @@ import * as z from 'zod';
 // File: TransactionIsolationLevel.schema.ts
 export const TransactionIsolationLevelSchema = z.enum(['ReadUncommitted', 'ReadCommitted', 'RepeatableRead', 'Serializable']);
 // File: EmployeeScalarFieldEnum.schema.ts
-export const EmployeeScalarFieldEnumSchema = z.enum(['uuid', 'first_name', 'last_name', 'date_of_birth', 'position', 'department', 'start_date', 'supervisor', 'phone_number', 'personal_email', 'corporate_email']);
+export const EmployeeScalarFieldEnumSchema = z.enum(['uuid', 'avatar', 'first_name', 'last_name', 'date_of_birth', 'position', 'department', 'start_date', 'supervisor', 'phone_number', 'personal_email', 'corporate_email']);
 // File: ContentScalarFieldEnum.schema.ts
-export const ContentScalarFieldEnumSchema = z.enum(['uuid', 'title', 'url', 'content_owner', 'for_position', 'last_modified_time', 'expiration_time', 'content_type', 'status']);
+export const ContentScalarFieldEnumSchema = z.enum(['uuid', 'title', 'url', 'content_owner', 'for_position', 'last_modified_time', 'expiration_time', 'content_type', 'status', 'is_favorite']);
 // File: AccountScalarFieldEnum.schema.ts
 export const AccountScalarFieldEnumSchema = z.enum(['employeeUuid', 'username', 'password', 'type']);
 // File: SortOrder.schema.ts
 export const SortOrderSchema = z.enum(['asc', 'desc']);
 // File: QueryMode.schema.ts
 export const QueryModeSchema = z.enum(['default', 'insensitive']);
+// File: NullsOrder.schema.ts
+export const NullsOrderSchema = z.enum(['first', 'last']);
 // File: Position.schema.ts
 export const PositionSchema = z.enum(['UNDERWRITER', 'BUSINESS_ANALYST', 'ADMIN']);
 // File: Department.schema.ts
@@ -31,6 +33,7 @@ const employeewhereinputSchema = z.object({
     OR: z.lazy(() => EmployeeWhereInputObjectSchema).array().optional(),
     NOT: z.union([z.lazy(() => EmployeeWhereInputObjectSchema), z.lazy(() => EmployeeWhereInputObjectSchema).array()]).optional(),
     uuid: z.union([z.lazy(() => UuidFilterObjectSchema), z.string()]).optional(),
+    avatar: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
     first_name: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
     last_name: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
     date_of_birth: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
@@ -48,6 +51,7 @@ export const EmployeeWhereInputObjectZodSchema = employeewhereinputSchema;
 // File: EmployeeOrderByWithRelationInput.schema.ts
 const __makeSchema_EmployeeOrderByWithRelationInput_schema = () => z.object({
     uuid: SortOrderSchema.optional(),
+    avatar: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
     first_name: SortOrderSchema.optional(),
     last_name: SortOrderSchema.optional(),
     date_of_birth: SortOrderSchema.optional(),
@@ -71,6 +75,7 @@ export const EmployeeWhereUniqueInputObjectZodSchema = __makeSchema_EmployeeWher
 // File: EmployeeOrderByWithAggregationInput.schema.ts
 const __makeSchema_EmployeeOrderByWithAggregationInput_schema = () => z.object({
     uuid: SortOrderSchema.optional(),
+    avatar: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
     first_name: SortOrderSchema.optional(),
     last_name: SortOrderSchema.optional(),
     date_of_birth: SortOrderSchema.optional(),
@@ -93,6 +98,7 @@ const employeescalarwherewithaggregatesinputSchema = z.object({
     OR: z.lazy(() => EmployeeScalarWhereWithAggregatesInputObjectSchema).array().optional(),
     NOT: z.union([z.lazy(() => EmployeeScalarWhereWithAggregatesInputObjectSchema), z.lazy(() => EmployeeScalarWhereWithAggregatesInputObjectSchema).array()]).optional(),
     uuid: z.union([z.lazy(() => UuidWithAggregatesFilterObjectSchema), z.string()]).optional(),
+    avatar: z.union([z.lazy(() => StringNullableWithAggregatesFilterObjectSchema), z.string()]).optional().nullable(),
     first_name: z.union([z.lazy(() => StringWithAggregatesFilterObjectSchema), z.string()]).optional(),
     last_name: z.union([z.lazy(() => StringWithAggregatesFilterObjectSchema), z.string()]).optional(),
     date_of_birth: z.union([z.lazy(() => DateTimeWithAggregatesFilterObjectSchema), z.coerce.date()]).optional(),
@@ -119,7 +125,8 @@ const contentwhereinputSchema = z.object({
     last_modified_time: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
     expiration_time: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
     content_type: z.union([z.lazy(() => EnumContentTypeFilterObjectSchema), ContentTypeSchema]).optional(),
-    status: z.union([z.lazy(() => EnumContentStatusFilterObjectSchema), ContentStatusSchema]).optional()
+    status: z.union([z.lazy(() => EnumContentStatusFilterObjectSchema), ContentStatusSchema]).optional(),
+    is_favorite: z.union([z.lazy(() => BoolFilterObjectSchema), z.boolean()]).optional()
 }).strict();
 export const ContentWhereInputObjectSchema = contentwhereinputSchema;
 export const ContentWhereInputObjectZodSchema = contentwhereinputSchema;
@@ -133,7 +140,8 @@ const __makeSchema_ContentOrderByWithRelationInput_schema = () => z.object({
     last_modified_time: SortOrderSchema.optional(),
     expiration_time: SortOrderSchema.optional(),
     content_type: SortOrderSchema.optional(),
-    status: SortOrderSchema.optional()
+    status: SortOrderSchema.optional(),
+    is_favorite: SortOrderSchema.optional()
 }).strict();
 export const ContentOrderByWithRelationInputObjectSchema = __makeSchema_ContentOrderByWithRelationInput_schema();
 export const ContentOrderByWithRelationInputObjectZodSchema = __makeSchema_ContentOrderByWithRelationInput_schema();
@@ -154,6 +162,7 @@ const __makeSchema_ContentOrderByWithAggregationInput_schema = () => z.object({
     expiration_time: SortOrderSchema.optional(),
     content_type: SortOrderSchema.optional(),
     status: SortOrderSchema.optional(),
+    is_favorite: SortOrderSchema.optional(),
     _count: z.lazy(() => ContentCountOrderByAggregateInputObjectSchema).optional(),
     _max: z.lazy(() => ContentMaxOrderByAggregateInputObjectSchema).optional(),
     _min: z.lazy(() => ContentMinOrderByAggregateInputObjectSchema).optional()
@@ -173,7 +182,8 @@ const contentscalarwherewithaggregatesinputSchema = z.object({
     last_modified_time: z.union([z.lazy(() => DateTimeWithAggregatesFilterObjectSchema), z.coerce.date()]).optional(),
     expiration_time: z.union([z.lazy(() => DateTimeWithAggregatesFilterObjectSchema), z.coerce.date()]).optional(),
     content_type: z.union([z.lazy(() => EnumContentTypeWithAggregatesFilterObjectSchema), ContentTypeSchema]).optional(),
-    status: z.union([z.lazy(() => EnumContentStatusWithAggregatesFilterObjectSchema), ContentStatusSchema]).optional()
+    status: z.union([z.lazy(() => EnumContentStatusWithAggregatesFilterObjectSchema), ContentStatusSchema]).optional(),
+    is_favorite: z.union([z.lazy(() => BoolWithAggregatesFilterObjectSchema), z.boolean()]).optional()
 }).strict();
 export const ContentScalarWhereWithAggregatesInputObjectSchema = contentscalarwherewithaggregatesinputSchema;
 export const ContentScalarWhereWithAggregatesInputObjectZodSchema = contentscalarwherewithaggregatesinputSchema;
@@ -234,6 +244,7 @@ export const AccountScalarWhereWithAggregatesInputObjectZodSchema = accountscala
 // File: EmployeeCreateInput.schema.ts
 const __makeSchema_EmployeeCreateInput_schema = () => z.object({
     uuid: z.string().optional(),
+    avatar: z.string().optional().nullable(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.coerce.date(),
@@ -251,6 +262,7 @@ export const EmployeeCreateInputObjectZodSchema = __makeSchema_EmployeeCreateInp
 // File: EmployeeUncheckedCreateInput.schema.ts
 const __makeSchema_EmployeeUncheckedCreateInput_schema = () => z.object({
     uuid: z.string().optional(),
+    avatar: z.string().optional().nullable(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.coerce.date(),
@@ -268,6 +280,7 @@ export const EmployeeUncheckedCreateInputObjectZodSchema = __makeSchema_Employee
 // File: EmployeeUpdateInput.schema.ts
 const __makeSchema_EmployeeUpdateInput_schema = () => z.object({
     uuid: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
+    avatar: z.union([z.string(), z.lazy(() => NullableStringFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
     first_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     last_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     date_of_birth: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
@@ -285,6 +298,7 @@ export const EmployeeUpdateInputObjectZodSchema = __makeSchema_EmployeeUpdateInp
 // File: EmployeeUncheckedUpdateInput.schema.ts
 const __makeSchema_EmployeeUncheckedUpdateInput_schema = () => z.object({
     uuid: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
+    avatar: z.union([z.string(), z.lazy(() => NullableStringFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
     first_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     last_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     date_of_birth: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
@@ -302,6 +316,7 @@ export const EmployeeUncheckedUpdateInputObjectZodSchema = __makeSchema_Employee
 // File: EmployeeCreateManyInput.schema.ts
 const __makeSchema_EmployeeCreateManyInput_schema = () => z.object({
     uuid: z.string().optional(),
+    avatar: z.string().optional().nullable(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.coerce.date(),
@@ -318,6 +333,7 @@ export const EmployeeCreateManyInputObjectZodSchema = __makeSchema_EmployeeCreat
 // File: EmployeeUpdateManyMutationInput.schema.ts
 const __makeSchema_EmployeeUpdateManyMutationInput_schema = () => z.object({
     uuid: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
+    avatar: z.union([z.string(), z.lazy(() => NullableStringFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
     first_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     last_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     date_of_birth: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
@@ -334,6 +350,7 @@ export const EmployeeUpdateManyMutationInputObjectZodSchema = __makeSchema_Emplo
 // File: EmployeeUncheckedUpdateManyInput.schema.ts
 const __makeSchema_EmployeeUncheckedUpdateManyInput_schema = () => z.object({
     uuid: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
+    avatar: z.union([z.string(), z.lazy(() => NullableStringFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
     first_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     last_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     date_of_birth: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
@@ -357,7 +374,8 @@ const __makeSchema_ContentCreateInput_schema = () => z.object({
     last_modified_time: z.coerce.date(),
     expiration_time: z.coerce.date(),
     content_type: ContentTypeSchema,
-    status: ContentStatusSchema
+    status: ContentStatusSchema,
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentCreateInputObjectSchema = __makeSchema_ContentCreateInput_schema();
 export const ContentCreateInputObjectZodSchema = __makeSchema_ContentCreateInput_schema();
@@ -371,7 +389,8 @@ const __makeSchema_ContentUncheckedCreateInput_schema = () => z.object({
     last_modified_time: z.coerce.date(),
     expiration_time: z.coerce.date(),
     content_type: ContentTypeSchema,
-    status: ContentStatusSchema
+    status: ContentStatusSchema,
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentUncheckedCreateInputObjectSchema = __makeSchema_ContentUncheckedCreateInput_schema();
 export const ContentUncheckedCreateInputObjectZodSchema = __makeSchema_ContentUncheckedCreateInput_schema();
@@ -385,7 +404,8 @@ const __makeSchema_ContentUpdateInput_schema = () => z.object({
     last_modified_time: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
     expiration_time: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
     content_type: z.union([ContentTypeSchema, z.lazy(() => EnumContentTypeFieldUpdateOperationsInputObjectSchema)]).optional(),
-    status: z.union([ContentStatusSchema, z.lazy(() => EnumContentStatusFieldUpdateOperationsInputObjectSchema)]).optional()
+    status: z.union([ContentStatusSchema, z.lazy(() => EnumContentStatusFieldUpdateOperationsInputObjectSchema)]).optional(),
+    is_favorite: z.union([z.boolean(), z.lazy(() => BoolFieldUpdateOperationsInputObjectSchema)]).optional()
 }).strict();
 export const ContentUpdateInputObjectSchema = __makeSchema_ContentUpdateInput_schema();
 export const ContentUpdateInputObjectZodSchema = __makeSchema_ContentUpdateInput_schema();
@@ -399,7 +419,8 @@ const __makeSchema_ContentUncheckedUpdateInput_schema = () => z.object({
     last_modified_time: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
     expiration_time: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
     content_type: z.union([ContentTypeSchema, z.lazy(() => EnumContentTypeFieldUpdateOperationsInputObjectSchema)]).optional(),
-    status: z.union([ContentStatusSchema, z.lazy(() => EnumContentStatusFieldUpdateOperationsInputObjectSchema)]).optional()
+    status: z.union([ContentStatusSchema, z.lazy(() => EnumContentStatusFieldUpdateOperationsInputObjectSchema)]).optional(),
+    is_favorite: z.union([z.boolean(), z.lazy(() => BoolFieldUpdateOperationsInputObjectSchema)]).optional()
 }).strict();
 export const ContentUncheckedUpdateInputObjectSchema = __makeSchema_ContentUncheckedUpdateInput_schema();
 export const ContentUncheckedUpdateInputObjectZodSchema = __makeSchema_ContentUncheckedUpdateInput_schema();
@@ -413,7 +434,8 @@ const __makeSchema_ContentCreateManyInput_schema = () => z.object({
     last_modified_time: z.coerce.date(),
     expiration_time: z.coerce.date(),
     content_type: ContentTypeSchema,
-    status: ContentStatusSchema
+    status: ContentStatusSchema,
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentCreateManyInputObjectSchema = __makeSchema_ContentCreateManyInput_schema();
 export const ContentCreateManyInputObjectZodSchema = __makeSchema_ContentCreateManyInput_schema();
@@ -427,7 +449,8 @@ const __makeSchema_ContentUpdateManyMutationInput_schema = () => z.object({
     last_modified_time: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
     expiration_time: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
     content_type: z.union([ContentTypeSchema, z.lazy(() => EnumContentTypeFieldUpdateOperationsInputObjectSchema)]).optional(),
-    status: z.union([ContentStatusSchema, z.lazy(() => EnumContentStatusFieldUpdateOperationsInputObjectSchema)]).optional()
+    status: z.union([ContentStatusSchema, z.lazy(() => EnumContentStatusFieldUpdateOperationsInputObjectSchema)]).optional(),
+    is_favorite: z.union([z.boolean(), z.lazy(() => BoolFieldUpdateOperationsInputObjectSchema)]).optional()
 }).strict();
 export const ContentUpdateManyMutationInputObjectSchema = __makeSchema_ContentUpdateManyMutationInput_schema();
 export const ContentUpdateManyMutationInputObjectZodSchema = __makeSchema_ContentUpdateManyMutationInput_schema();
@@ -441,7 +464,8 @@ const __makeSchema_ContentUncheckedUpdateManyInput_schema = () => z.object({
     last_modified_time: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
     expiration_time: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
     content_type: z.union([ContentTypeSchema, z.lazy(() => EnumContentTypeFieldUpdateOperationsInputObjectSchema)]).optional(),
-    status: z.union([ContentStatusSchema, z.lazy(() => EnumContentStatusFieldUpdateOperationsInputObjectSchema)]).optional()
+    status: z.union([ContentStatusSchema, z.lazy(() => EnumContentStatusFieldUpdateOperationsInputObjectSchema)]).optional(),
+    is_favorite: z.union([z.boolean(), z.lazy(() => BoolFieldUpdateOperationsInputObjectSchema)]).optional()
 }).strict();
 export const ContentUncheckedUpdateManyInputObjectSchema = __makeSchema_ContentUncheckedUpdateManyInput_schema();
 export const ContentUncheckedUpdateManyInputObjectZodSchema = __makeSchema_ContentUncheckedUpdateManyInput_schema();
@@ -521,6 +545,23 @@ const __makeSchema_UuidFilter_schema = () => z.object({
 }).strict();
 export const UuidFilterObjectSchema = __makeSchema_UuidFilter_schema();
 export const UuidFilterObjectZodSchema = __makeSchema_UuidFilter_schema();
+// File: StringNullableFilter.schema.ts
+const __makeSchema_StringNullableFilter_schema = () => z.object({
+    equals: z.string().optional().nullable(),
+    in: z.string().array().optional().nullable(),
+    notIn: z.string().array().optional().nullable(),
+    lt: z.string().optional(),
+    lte: z.string().optional(),
+    gt: z.string().optional(),
+    gte: z.string().optional(),
+    contains: z.string().optional(),
+    startsWith: z.string().optional(),
+    endsWith: z.string().optional(),
+    mode: QueryModeSchema.optional(),
+    not: z.union([z.string(), z.lazy(() => NestedStringNullableFilterObjectSchema)]).optional().nullable()
+}).strict();
+export const StringNullableFilterObjectSchema = __makeSchema_StringNullableFilter_schema();
+export const StringNullableFilterObjectZodSchema = __makeSchema_StringNullableFilter_schema();
 // File: StringFilter.schema.ts
 const __makeSchema_StringFilter_schema = () => z.object({
     equals: z.string().optional(),
@@ -576,9 +617,17 @@ const __makeSchema_AccountNullableScalarRelationFilter_schema = () => z.object({
 }).strict();
 export const AccountNullableScalarRelationFilterObjectSchema = __makeSchema_AccountNullableScalarRelationFilter_schema();
 export const AccountNullableScalarRelationFilterObjectZodSchema = __makeSchema_AccountNullableScalarRelationFilter_schema();
+// File: SortOrderInput.schema.ts
+const __makeSchema_SortOrderInput_schema = () => z.object({
+    sort: SortOrderSchema,
+    nulls: NullsOrderSchema.optional()
+}).strict();
+export const SortOrderInputObjectSchema = __makeSchema_SortOrderInput_schema();
+export const SortOrderInputObjectZodSchema = __makeSchema_SortOrderInput_schema();
 // File: EmployeeCountOrderByAggregateInput.schema.ts
 const __makeSchema_EmployeeCountOrderByAggregateInput_schema = () => z.object({
     uuid: SortOrderSchema.optional(),
+    avatar: SortOrderSchema.optional(),
     first_name: SortOrderSchema.optional(),
     last_name: SortOrderSchema.optional(),
     date_of_birth: SortOrderSchema.optional(),
@@ -595,6 +644,7 @@ export const EmployeeCountOrderByAggregateInputObjectZodSchema = __makeSchema_Em
 // File: EmployeeMaxOrderByAggregateInput.schema.ts
 const __makeSchema_EmployeeMaxOrderByAggregateInput_schema = () => z.object({
     uuid: SortOrderSchema.optional(),
+    avatar: SortOrderSchema.optional(),
     first_name: SortOrderSchema.optional(),
     last_name: SortOrderSchema.optional(),
     date_of_birth: SortOrderSchema.optional(),
@@ -611,6 +661,7 @@ export const EmployeeMaxOrderByAggregateInputObjectZodSchema = __makeSchema_Empl
 // File: EmployeeMinOrderByAggregateInput.schema.ts
 const __makeSchema_EmployeeMinOrderByAggregateInput_schema = () => z.object({
     uuid: SortOrderSchema.optional(),
+    avatar: SortOrderSchema.optional(),
     first_name: SortOrderSchema.optional(),
     last_name: SortOrderSchema.optional(),
     date_of_birth: SortOrderSchema.optional(),
@@ -641,6 +692,26 @@ const __makeSchema_UuidWithAggregatesFilter_schema = () => z.object({
 }).strict();
 export const UuidWithAggregatesFilterObjectSchema = __makeSchema_UuidWithAggregatesFilter_schema();
 export const UuidWithAggregatesFilterObjectZodSchema = __makeSchema_UuidWithAggregatesFilter_schema();
+// File: StringNullableWithAggregatesFilter.schema.ts
+const __makeSchema_StringNullableWithAggregatesFilter_schema = () => z.object({
+    equals: z.string().optional().nullable(),
+    in: z.string().array().optional().nullable(),
+    notIn: z.string().array().optional().nullable(),
+    lt: z.string().optional(),
+    lte: z.string().optional(),
+    gt: z.string().optional(),
+    gte: z.string().optional(),
+    contains: z.string().optional(),
+    startsWith: z.string().optional(),
+    endsWith: z.string().optional(),
+    mode: QueryModeSchema.optional(),
+    not: z.union([z.string(), z.lazy(() => NestedStringNullableWithAggregatesFilterObjectSchema)]).optional().nullable(),
+    _count: z.lazy(() => NestedIntNullableFilterObjectSchema).optional(),
+    _min: z.lazy(() => NestedStringNullableFilterObjectSchema).optional(),
+    _max: z.lazy(() => NestedStringNullableFilterObjectSchema).optional()
+}).strict();
+export const StringNullableWithAggregatesFilterObjectSchema = __makeSchema_StringNullableWithAggregatesFilter_schema();
+export const StringNullableWithAggregatesFilterObjectZodSchema = __makeSchema_StringNullableWithAggregatesFilter_schema();
 // File: StringWithAggregatesFilter.schema.ts
 const __makeSchema_StringWithAggregatesFilter_schema = () => z.object({
     equals: z.string().optional(),
@@ -719,6 +790,13 @@ const __makeSchema_EnumContentStatusFilter_schema = () => z.object({
 }).strict();
 export const EnumContentStatusFilterObjectSchema = __makeSchema_EnumContentStatusFilter_schema();
 export const EnumContentStatusFilterObjectZodSchema = __makeSchema_EnumContentStatusFilter_schema();
+// File: BoolFilter.schema.ts
+const __makeSchema_BoolFilter_schema = () => z.object({
+    equals: z.boolean().optional(),
+    not: z.union([z.boolean(), z.lazy(() => NestedBoolFilterObjectSchema)]).optional()
+}).strict();
+export const BoolFilterObjectSchema = __makeSchema_BoolFilter_schema();
+export const BoolFilterObjectZodSchema = __makeSchema_BoolFilter_schema();
 // File: ContentCountOrderByAggregateInput.schema.ts
 const __makeSchema_ContentCountOrderByAggregateInput_schema = () => z.object({
     uuid: SortOrderSchema.optional(),
@@ -729,7 +807,8 @@ const __makeSchema_ContentCountOrderByAggregateInput_schema = () => z.object({
     last_modified_time: SortOrderSchema.optional(),
     expiration_time: SortOrderSchema.optional(),
     content_type: SortOrderSchema.optional(),
-    status: SortOrderSchema.optional()
+    status: SortOrderSchema.optional(),
+    is_favorite: SortOrderSchema.optional()
 }).strict();
 export const ContentCountOrderByAggregateInputObjectSchema = __makeSchema_ContentCountOrderByAggregateInput_schema();
 export const ContentCountOrderByAggregateInputObjectZodSchema = __makeSchema_ContentCountOrderByAggregateInput_schema();
@@ -743,7 +822,8 @@ const __makeSchema_ContentMaxOrderByAggregateInput_schema = () => z.object({
     last_modified_time: SortOrderSchema.optional(),
     expiration_time: SortOrderSchema.optional(),
     content_type: SortOrderSchema.optional(),
-    status: SortOrderSchema.optional()
+    status: SortOrderSchema.optional(),
+    is_favorite: SortOrderSchema.optional()
 }).strict();
 export const ContentMaxOrderByAggregateInputObjectSchema = __makeSchema_ContentMaxOrderByAggregateInput_schema();
 export const ContentMaxOrderByAggregateInputObjectZodSchema = __makeSchema_ContentMaxOrderByAggregateInput_schema();
@@ -757,7 +837,8 @@ const __makeSchema_ContentMinOrderByAggregateInput_schema = () => z.object({
     last_modified_time: SortOrderSchema.optional(),
     expiration_time: SortOrderSchema.optional(),
     content_type: SortOrderSchema.optional(),
-    status: SortOrderSchema.optional()
+    status: SortOrderSchema.optional(),
+    is_favorite: SortOrderSchema.optional()
 }).strict();
 export const ContentMinOrderByAggregateInputObjectSchema = __makeSchema_ContentMinOrderByAggregateInput_schema();
 export const ContentMinOrderByAggregateInputObjectZodSchema = __makeSchema_ContentMinOrderByAggregateInput_schema();
@@ -785,6 +866,16 @@ const __makeSchema_EnumContentStatusWithAggregatesFilter_schema = () => z.object
 }).strict();
 export const EnumContentStatusWithAggregatesFilterObjectSchema = __makeSchema_EnumContentStatusWithAggregatesFilter_schema();
 export const EnumContentStatusWithAggregatesFilterObjectZodSchema = __makeSchema_EnumContentStatusWithAggregatesFilter_schema();
+// File: BoolWithAggregatesFilter.schema.ts
+const __makeSchema_BoolWithAggregatesFilter_schema = () => z.object({
+    equals: z.boolean().optional(),
+    not: z.union([z.boolean(), z.lazy(() => NestedBoolWithAggregatesFilterObjectSchema)]).optional(),
+    _count: z.lazy(() => NestedIntFilterObjectSchema).optional(),
+    _min: z.lazy(() => NestedBoolFilterObjectSchema).optional(),
+    _max: z.lazy(() => NestedBoolFilterObjectSchema).optional()
+}).strict();
+export const BoolWithAggregatesFilterObjectSchema = __makeSchema_BoolWithAggregatesFilter_schema();
+export const BoolWithAggregatesFilterObjectZodSchema = __makeSchema_BoolWithAggregatesFilter_schema();
 // File: EnumAccountTypeFilter.schema.ts
 const __makeSchema_EnumAccountTypeFilter_schema = () => z.object({
     equals: AccountTypeSchema.optional(),
@@ -862,6 +953,12 @@ const __makeSchema_StringFieldUpdateOperationsInput_schema = () => z.object({
 }).strict();
 export const StringFieldUpdateOperationsInputObjectSchema = __makeSchema_StringFieldUpdateOperationsInput_schema();
 export const StringFieldUpdateOperationsInputObjectZodSchema = __makeSchema_StringFieldUpdateOperationsInput_schema();
+// File: NullableStringFieldUpdateOperationsInput.schema.ts
+const __makeSchema_NullableStringFieldUpdateOperationsInput_schema = () => z.object({
+    set: z.string().optional()
+}).strict();
+export const NullableStringFieldUpdateOperationsInputObjectSchema = __makeSchema_NullableStringFieldUpdateOperationsInput_schema();
+export const NullableStringFieldUpdateOperationsInputObjectZodSchema = __makeSchema_NullableStringFieldUpdateOperationsInput_schema();
 // File: DateTimeFieldUpdateOperationsInput.schema.ts
 const __makeSchema_DateTimeFieldUpdateOperationsInput_schema = () => z.object({
     set: z.coerce.date().optional()
@@ -916,6 +1013,12 @@ const __makeSchema_EnumContentStatusFieldUpdateOperationsInput_schema = () => z.
 }).strict();
 export const EnumContentStatusFieldUpdateOperationsInputObjectSchema = __makeSchema_EnumContentStatusFieldUpdateOperationsInput_schema();
 export const EnumContentStatusFieldUpdateOperationsInputObjectZodSchema = __makeSchema_EnumContentStatusFieldUpdateOperationsInput_schema();
+// File: BoolFieldUpdateOperationsInput.schema.ts
+const __makeSchema_BoolFieldUpdateOperationsInput_schema = () => z.object({
+    set: z.boolean().optional()
+}).strict();
+export const BoolFieldUpdateOperationsInputObjectSchema = __makeSchema_BoolFieldUpdateOperationsInput_schema();
+export const BoolFieldUpdateOperationsInputObjectZodSchema = __makeSchema_BoolFieldUpdateOperationsInput_schema();
 // File: EmployeeCreateNestedOneWithoutAccountInput.schema.ts
 const __makeSchema_EmployeeCreateNestedOneWithoutAccountInput_schema = () => z.object({
     create: z.union([z.lazy(() => EmployeeCreateWithoutAccountInputObjectSchema), z.lazy(() => EmployeeUncheckedCreateWithoutAccountInputObjectSchema)]).optional(),
@@ -953,6 +1056,22 @@ const nesteduuidfilterSchema = z.object({
 }).strict();
 export const NestedUuidFilterObjectSchema = nesteduuidfilterSchema;
 export const NestedUuidFilterObjectZodSchema = nesteduuidfilterSchema;
+// File: NestedStringNullableFilter.schema.ts
+const nestedstringnullablefilterSchema = z.object({
+    equals: z.string().optional().nullable(),
+    in: z.string().array().optional().nullable(),
+    notIn: z.string().array().optional().nullable(),
+    lt: z.string().optional(),
+    lte: z.string().optional(),
+    gt: z.string().optional(),
+    gte: z.string().optional(),
+    contains: z.string().optional(),
+    startsWith: z.string().optional(),
+    endsWith: z.string().optional(),
+    not: z.union([z.string(), z.lazy(() => NestedStringNullableFilterObjectSchema)]).optional().nullable()
+}).strict();
+export const NestedStringNullableFilterObjectSchema = nestedstringnullablefilterSchema;
+export const NestedStringNullableFilterObjectZodSchema = nestedstringnullablefilterSchema;
 // File: NestedStringFilter.schema.ts
 const nestedstringfilterSchema = z.object({
     equals: z.string().optional(),
@@ -1029,6 +1148,38 @@ const nestedintfilterSchema = z.object({
 }).strict();
 export const NestedIntFilterObjectSchema = nestedintfilterSchema;
 export const NestedIntFilterObjectZodSchema = nestedintfilterSchema;
+// File: NestedStringNullableWithAggregatesFilter.schema.ts
+const nestedstringnullablewithaggregatesfilterSchema = z.object({
+    equals: z.string().optional().nullable(),
+    in: z.string().array().optional().nullable(),
+    notIn: z.string().array().optional().nullable(),
+    lt: z.string().optional(),
+    lte: z.string().optional(),
+    gt: z.string().optional(),
+    gte: z.string().optional(),
+    contains: z.string().optional(),
+    startsWith: z.string().optional(),
+    endsWith: z.string().optional(),
+    not: z.union([z.string(), z.lazy(() => NestedStringNullableWithAggregatesFilterObjectSchema)]).optional().nullable(),
+    _count: z.lazy(() => NestedIntNullableFilterObjectSchema).optional(),
+    _min: z.lazy(() => NestedStringNullableFilterObjectSchema).optional(),
+    _max: z.lazy(() => NestedStringNullableFilterObjectSchema).optional()
+}).strict();
+export const NestedStringNullableWithAggregatesFilterObjectSchema = nestedstringnullablewithaggregatesfilterSchema;
+export const NestedStringNullableWithAggregatesFilterObjectZodSchema = nestedstringnullablewithaggregatesfilterSchema;
+// File: NestedIntNullableFilter.schema.ts
+const nestedintnullablefilterSchema = z.object({
+    equals: z.number().int().optional().nullable(),
+    in: z.number().int().array().optional().nullable(),
+    notIn: z.number().int().array().optional().nullable(),
+    lt: z.number().int().optional(),
+    lte: z.number().int().optional(),
+    gt: z.number().int().optional(),
+    gte: z.number().int().optional(),
+    not: z.union([z.number().int(), z.lazy(() => NestedIntNullableFilterObjectSchema)]).optional().nullable()
+}).strict();
+export const NestedIntNullableFilterObjectSchema = nestedintnullablefilterSchema;
+export const NestedIntNullableFilterObjectZodSchema = nestedintnullablefilterSchema;
 // File: NestedStringWithAggregatesFilter.schema.ts
 const nestedstringwithaggregatesfilterSchema = z.object({
     equals: z.string().optional(),
@@ -1106,6 +1257,13 @@ const nestedenumcontentstatusfilterSchema = z.object({
 }).strict();
 export const NestedEnumContentStatusFilterObjectSchema = nestedenumcontentstatusfilterSchema;
 export const NestedEnumContentStatusFilterObjectZodSchema = nestedenumcontentstatusfilterSchema;
+// File: NestedBoolFilter.schema.ts
+const nestedboolfilterSchema = z.object({
+    equals: z.boolean().optional(),
+    not: z.union([z.boolean(), z.lazy(() => NestedBoolFilterObjectSchema)]).optional()
+}).strict();
+export const NestedBoolFilterObjectSchema = nestedboolfilterSchema;
+export const NestedBoolFilterObjectZodSchema = nestedboolfilterSchema;
 // File: NestedEnumContentTypeWithAggregatesFilter.schema.ts
 const nestedenumcontenttypewithaggregatesfilterSchema = z.object({
     equals: ContentTypeSchema.optional(),
@@ -1130,6 +1288,16 @@ const nestedenumcontentstatuswithaggregatesfilterSchema = z.object({
 }).strict();
 export const NestedEnumContentStatusWithAggregatesFilterObjectSchema = nestedenumcontentstatuswithaggregatesfilterSchema;
 export const NestedEnumContentStatusWithAggregatesFilterObjectZodSchema = nestedenumcontentstatuswithaggregatesfilterSchema;
+// File: NestedBoolWithAggregatesFilter.schema.ts
+const nestedboolwithaggregatesfilterSchema = z.object({
+    equals: z.boolean().optional(),
+    not: z.union([z.boolean(), z.lazy(() => NestedBoolWithAggregatesFilterObjectSchema)]).optional(),
+    _count: z.lazy(() => NestedIntFilterObjectSchema).optional(),
+    _min: z.lazy(() => NestedBoolFilterObjectSchema).optional(),
+    _max: z.lazy(() => NestedBoolFilterObjectSchema).optional()
+}).strict();
+export const NestedBoolWithAggregatesFilterObjectSchema = nestedboolwithaggregatesfilterSchema;
+export const NestedBoolWithAggregatesFilterObjectZodSchema = nestedboolwithaggregatesfilterSchema;
 // File: NestedEnumAccountTypeFilter.schema.ts
 const nestedenumaccounttypefilterSchema = z.object({
     equals: AccountTypeSchema.optional(),
@@ -1208,6 +1376,7 @@ export const AccountUncheckedUpdateWithoutEmployeeInputObjectZodSchema = __makeS
 // File: EmployeeCreateWithoutAccountInput.schema.ts
 const __makeSchema_EmployeeCreateWithoutAccountInput_schema = () => z.object({
     uuid: z.string().optional(),
+    avatar: z.string().optional().nullable(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.coerce.date(),
@@ -1224,6 +1393,7 @@ export const EmployeeCreateWithoutAccountInputObjectZodSchema = __makeSchema_Emp
 // File: EmployeeUncheckedCreateWithoutAccountInput.schema.ts
 const __makeSchema_EmployeeUncheckedCreateWithoutAccountInput_schema = () => z.object({
     uuid: z.string().optional(),
+    avatar: z.string().optional().nullable(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.coerce.date(),
@@ -1262,6 +1432,7 @@ export const EmployeeUpdateToOneWithWhereWithoutAccountInputObjectZodSchema = __
 // File: EmployeeUpdateWithoutAccountInput.schema.ts
 const __makeSchema_EmployeeUpdateWithoutAccountInput_schema = () => z.object({
     uuid: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
+    avatar: z.union([z.string(), z.lazy(() => NullableStringFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
     first_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     last_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     date_of_birth: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
@@ -1278,6 +1449,7 @@ export const EmployeeUpdateWithoutAccountInputObjectZodSchema = __makeSchema_Emp
 // File: EmployeeUncheckedUpdateWithoutAccountInput.schema.ts
 const __makeSchema_EmployeeUncheckedUpdateWithoutAccountInput_schema = () => z.object({
     uuid: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
+    avatar: z.union([z.string(), z.lazy(() => NullableStringFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
     first_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     last_name: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
     date_of_birth: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
@@ -1294,6 +1466,7 @@ export const EmployeeUncheckedUpdateWithoutAccountInputObjectZodSchema = __makeS
 // File: EmployeeCountAggregateInput.schema.ts
 const __makeSchema_EmployeeCountAggregateInput_schema = () => z.object({
     uuid: z.literal(true).optional(),
+    avatar: z.literal(true).optional(),
     first_name: z.literal(true).optional(),
     last_name: z.literal(true).optional(),
     date_of_birth: z.literal(true).optional(),
@@ -1311,6 +1484,7 @@ export const EmployeeCountAggregateInputObjectZodSchema = __makeSchema_EmployeeC
 // File: EmployeeMinAggregateInput.schema.ts
 const __makeSchema_EmployeeMinAggregateInput_schema = () => z.object({
     uuid: z.literal(true).optional(),
+    avatar: z.literal(true).optional(),
     first_name: z.literal(true).optional(),
     last_name: z.literal(true).optional(),
     date_of_birth: z.literal(true).optional(),
@@ -1327,6 +1501,7 @@ export const EmployeeMinAggregateInputObjectZodSchema = __makeSchema_EmployeeMin
 // File: EmployeeMaxAggregateInput.schema.ts
 const __makeSchema_EmployeeMaxAggregateInput_schema = () => z.object({
     uuid: z.literal(true).optional(),
+    avatar: z.literal(true).optional(),
     first_name: z.literal(true).optional(),
     last_name: z.literal(true).optional(),
     date_of_birth: z.literal(true).optional(),
@@ -1351,6 +1526,7 @@ const __makeSchema_ContentCountAggregateInput_schema = () => z.object({
     expiration_time: z.literal(true).optional(),
     content_type: z.literal(true).optional(),
     status: z.literal(true).optional(),
+    is_favorite: z.literal(true).optional(),
     _all: z.literal(true).optional()
 }).strict();
 export const ContentCountAggregateInputObjectSchema = __makeSchema_ContentCountAggregateInput_schema();
@@ -1365,7 +1541,8 @@ const __makeSchema_ContentMinAggregateInput_schema = () => z.object({
     last_modified_time: z.literal(true).optional(),
     expiration_time: z.literal(true).optional(),
     content_type: z.literal(true).optional(),
-    status: z.literal(true).optional()
+    status: z.literal(true).optional(),
+    is_favorite: z.literal(true).optional()
 }).strict();
 export const ContentMinAggregateInputObjectSchema = __makeSchema_ContentMinAggregateInput_schema();
 export const ContentMinAggregateInputObjectZodSchema = __makeSchema_ContentMinAggregateInput_schema();
@@ -1379,7 +1556,8 @@ const __makeSchema_ContentMaxAggregateInput_schema = () => z.object({
     last_modified_time: z.literal(true).optional(),
     expiration_time: z.literal(true).optional(),
     content_type: z.literal(true).optional(),
-    status: z.literal(true).optional()
+    status: z.literal(true).optional(),
+    is_favorite: z.literal(true).optional()
 }).strict();
 export const ContentMaxAggregateInputObjectSchema = __makeSchema_ContentMaxAggregateInput_schema();
 export const ContentMaxAggregateInputObjectZodSchema = __makeSchema_ContentMaxAggregateInput_schema();
@@ -1415,6 +1593,7 @@ export const AccountMaxAggregateInputObjectZodSchema = __makeSchema_AccountMaxAg
 const __makeSchema_EmployeeSelect_schema = () => z.object({
     uuid: z.boolean().optional(),
     account: z.union([z.boolean(), z.lazy(() => AccountArgsObjectSchema)]).optional(),
+    avatar: z.boolean().optional(),
     first_name: z.boolean().optional(),
     last_name: z.boolean().optional(),
     date_of_birth: z.boolean().optional(),
@@ -1438,7 +1617,8 @@ const __makeSchema_ContentSelect_schema = () => z.object({
     last_modified_time: z.boolean().optional(),
     expiration_time: z.boolean().optional(),
     content_type: z.boolean().optional(),
-    status: z.boolean().optional()
+    status: z.boolean().optional(),
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentSelectObjectSchema = __makeSchema_ContentSelect_schema();
 export const ContentSelectObjectZodSchema = __makeSchema_ContentSelect_schema();
@@ -1496,6 +1676,7 @@ export const EmployeeFindUniqueOrThrowZodSchema = z.object({ select: EmployeeSel
 export const EmployeeFindFirstSelectSchema__findFirstEmployee_schema = z.object({
     uuid: z.boolean().optional(),
     account: z.boolean().optional(),
+    avatar: z.boolean().optional(),
     first_name: z.boolean().optional(),
     last_name: z.boolean().optional(),
     date_of_birth: z.boolean().optional(),
@@ -1510,6 +1691,7 @@ export const EmployeeFindFirstSelectSchema__findFirstEmployee_schema = z.object(
 export const EmployeeFindFirstSelectZodSchema__findFirstEmployee_schema = z.object({
     uuid: z.boolean().optional(),
     account: z.boolean().optional(),
+    avatar: z.boolean().optional(),
     first_name: z.boolean().optional(),
     last_name: z.boolean().optional(),
     date_of_birth: z.boolean().optional(),
@@ -1529,6 +1711,7 @@ export const EmployeeFindFirstZodSchema = z.object({ select: EmployeeFindFirstSe
 export const EmployeeFindFirstOrThrowSelectSchema__findFirstOrThrowEmployee_schema = z.object({
     uuid: z.boolean().optional(),
     account: z.boolean().optional(),
+    avatar: z.boolean().optional(),
     first_name: z.boolean().optional(),
     last_name: z.boolean().optional(),
     date_of_birth: z.boolean().optional(),
@@ -1543,6 +1726,7 @@ export const EmployeeFindFirstOrThrowSelectSchema__findFirstOrThrowEmployee_sche
 export const EmployeeFindFirstOrThrowSelectZodSchema__findFirstOrThrowEmployee_schema = z.object({
     uuid: z.boolean().optional(),
     account: z.boolean().optional(),
+    avatar: z.boolean().optional(),
     first_name: z.boolean().optional(),
     last_name: z.boolean().optional(),
     date_of_birth: z.boolean().optional(),
@@ -1562,6 +1746,7 @@ export const EmployeeFindFirstOrThrowZodSchema = z.object({ select: EmployeeFind
 export const EmployeeFindManySelectSchema__findManyEmployee_schema = z.object({
     uuid: z.boolean().optional(),
     account: z.boolean().optional(),
+    avatar: z.boolean().optional(),
     first_name: z.boolean().optional(),
     last_name: z.boolean().optional(),
     date_of_birth: z.boolean().optional(),
@@ -1576,6 +1761,7 @@ export const EmployeeFindManySelectSchema__findManyEmployee_schema = z.object({
 export const EmployeeFindManySelectZodSchema__findManyEmployee_schema = z.object({
     uuid: z.boolean().optional(),
     account: z.boolean().optional(),
+    avatar: z.boolean().optional(),
     first_name: z.boolean().optional(),
     last_name: z.boolean().optional(),
     date_of_birth: z.boolean().optional(),
@@ -1643,7 +1829,8 @@ export const ContentFindFirstSelectSchema__findFirstContent_schema = z.object({
     last_modified_time: z.boolean().optional(),
     expiration_time: z.boolean().optional(),
     content_type: z.boolean().optional(),
-    status: z.boolean().optional()
+    status: z.boolean().optional(),
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentFindFirstSelectZodSchema__findFirstContent_schema = z.object({
     uuid: z.boolean().optional(),
@@ -1654,7 +1841,8 @@ export const ContentFindFirstSelectZodSchema__findFirstContent_schema = z.object
     last_modified_time: z.boolean().optional(),
     expiration_time: z.boolean().optional(),
     content_type: z.boolean().optional(),
-    status: z.boolean().optional()
+    status: z.boolean().optional(),
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentFindFirstSchema = z.object({ select: ContentFindFirstSelectSchema__findFirstContent_schema.optional(), orderBy: z.union([ContentOrderByWithRelationInputObjectSchema, ContentOrderByWithRelationInputObjectSchema.array()]).optional(), where: ContentWhereInputObjectSchema.optional(), cursor: ContentWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([ContentScalarFieldEnumSchema, ContentScalarFieldEnumSchema.array()]).optional() }).strict();
 export const ContentFindFirstZodSchema = z.object({ select: ContentFindFirstSelectSchema__findFirstContent_schema.optional(), orderBy: z.union([ContentOrderByWithRelationInputObjectSchema, ContentOrderByWithRelationInputObjectSchema.array()]).optional(), where: ContentWhereInputObjectSchema.optional(), cursor: ContentWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([ContentScalarFieldEnumSchema, ContentScalarFieldEnumSchema.array()]).optional() }).strict();
@@ -1670,7 +1858,8 @@ export const ContentFindFirstOrThrowSelectSchema__findFirstOrThrowContent_schema
     last_modified_time: z.boolean().optional(),
     expiration_time: z.boolean().optional(),
     content_type: z.boolean().optional(),
-    status: z.boolean().optional()
+    status: z.boolean().optional(),
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentFindFirstOrThrowSelectZodSchema__findFirstOrThrowContent_schema = z.object({
     uuid: z.boolean().optional(),
@@ -1681,7 +1870,8 @@ export const ContentFindFirstOrThrowSelectZodSchema__findFirstOrThrowContent_sch
     last_modified_time: z.boolean().optional(),
     expiration_time: z.boolean().optional(),
     content_type: z.boolean().optional(),
-    status: z.boolean().optional()
+    status: z.boolean().optional(),
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentFindFirstOrThrowSchema = z.object({ select: ContentFindFirstOrThrowSelectSchema__findFirstOrThrowContent_schema.optional(), orderBy: z.union([ContentOrderByWithRelationInputObjectSchema, ContentOrderByWithRelationInputObjectSchema.array()]).optional(), where: ContentWhereInputObjectSchema.optional(), cursor: ContentWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([ContentScalarFieldEnumSchema, ContentScalarFieldEnumSchema.array()]).optional() }).strict();
 export const ContentFindFirstOrThrowZodSchema = z.object({ select: ContentFindFirstOrThrowSelectSchema__findFirstOrThrowContent_schema.optional(), orderBy: z.union([ContentOrderByWithRelationInputObjectSchema, ContentOrderByWithRelationInputObjectSchema.array()]).optional(), where: ContentWhereInputObjectSchema.optional(), cursor: ContentWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([ContentScalarFieldEnumSchema, ContentScalarFieldEnumSchema.array()]).optional() }).strict();
@@ -1697,7 +1887,8 @@ export const ContentFindManySelectSchema__findManyContent_schema = z.object({
     last_modified_time: z.boolean().optional(),
     expiration_time: z.boolean().optional(),
     content_type: z.boolean().optional(),
-    status: z.boolean().optional()
+    status: z.boolean().optional(),
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentFindManySelectZodSchema__findManyContent_schema = z.object({
     uuid: z.boolean().optional(),
@@ -1708,7 +1899,8 @@ export const ContentFindManySelectZodSchema__findManyContent_schema = z.object({
     last_modified_time: z.boolean().optional(),
     expiration_time: z.boolean().optional(),
     content_type: z.boolean().optional(),
-    status: z.boolean().optional()
+    status: z.boolean().optional(),
+    is_favorite: z.boolean().optional()
 }).strict();
 export const ContentFindManySchema = z.object({ select: ContentFindManySelectSchema__findManyContent_schema.optional(), orderBy: z.union([ContentOrderByWithRelationInputObjectSchema, ContentOrderByWithRelationInputObjectSchema.array()]).optional(), where: ContentWhereInputObjectSchema.optional(), cursor: ContentWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([ContentScalarFieldEnumSchema, ContentScalarFieldEnumSchema.array()]).optional() }).strict();
 export const ContentFindManyZodSchema = z.object({ select: ContentFindManySelectSchema__findManyContent_schema.optional(), orderBy: z.union([ContentOrderByWithRelationInputObjectSchema, ContentOrderByWithRelationInputObjectSchema.array()]).optional(), where: ContentWhereInputObjectSchema.optional(), cursor: ContentWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([ContentScalarFieldEnumSchema, ContentScalarFieldEnumSchema.array()]).optional() }).strict();
@@ -1851,6 +2043,7 @@ export const AccountGroupByZodSchema = z.object({ where: AccountWhereInputObject
 export const EmployeeFindUniqueResultSchema = z.nullable(z.object({
     uuid: z.string(),
     account: z.unknown().optional(),
+    avatar: z.string().optional(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.date(),
@@ -1866,6 +2059,7 @@ export const EmployeeFindUniqueResultSchema = z.nullable(z.object({
 export const EmployeeFindFirstResultSchema = z.nullable(z.object({
     uuid: z.string(),
     account: z.unknown().optional(),
+    avatar: z.string().optional(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.date(),
@@ -1882,6 +2076,7 @@ export const EmployeeFindManyResultSchema = z.object({
     data: z.array(z.object({
         uuid: z.string(),
         account: z.unknown().optional(),
+        avatar: z.string().optional(),
         first_name: z.string(),
         last_name: z.string(),
         date_of_birth: z.date(),
@@ -1906,6 +2101,7 @@ export const EmployeeFindManyResultSchema = z.object({
 export const EmployeeCreateResultSchema = z.object({
     uuid: z.string(),
     account: z.unknown().optional(),
+    avatar: z.string().optional(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.date(),
@@ -1925,6 +2121,7 @@ export const EmployeeCreateManyResultSchema = z.object({
 export const EmployeeUpdateResultSchema = z.nullable(z.object({
     uuid: z.string(),
     account: z.unknown().optional(),
+    avatar: z.string().optional(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.date(),
@@ -1944,6 +2141,7 @@ export const EmployeeUpdateManyResultSchema = z.object({
 export const EmployeeUpsertResultSchema = z.object({
     uuid: z.string(),
     account: z.unknown().optional(),
+    avatar: z.string().optional(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.date(),
@@ -1959,6 +2157,7 @@ export const EmployeeUpsertResultSchema = z.object({
 export const EmployeeDeleteResultSchema = z.nullable(z.object({
     uuid: z.string(),
     account: z.unknown().optional(),
+    avatar: z.string().optional(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.date(),
@@ -1978,6 +2177,7 @@ export const EmployeeDeleteManyResultSchema = z.object({
 export const EmployeeAggregateResultSchema = z.object({ _count: z.object({
         uuid: z.number(),
         account: z.number(),
+        avatar: z.number(),
         first_name: z.number(),
         last_name: z.number(),
         date_of_birth: z.number(),
@@ -1991,6 +2191,7 @@ export const EmployeeAggregateResultSchema = z.object({ _count: z.object({
     }).optional(),
     _min: z.object({
         uuid: z.string().nullable(),
+        avatar: z.string().nullable(),
         first_name: z.string().nullable(),
         last_name: z.string().nullable(),
         date_of_birth: z.date().nullable(),
@@ -2002,6 +2203,7 @@ export const EmployeeAggregateResultSchema = z.object({ _count: z.object({
     }).nullable().optional(),
     _max: z.object({
         uuid: z.string().nullable(),
+        avatar: z.string().nullable(),
         first_name: z.string().nullable(),
         last_name: z.string().nullable(),
         date_of_birth: z.date().nullable(),
@@ -2014,6 +2216,7 @@ export const EmployeeAggregateResultSchema = z.object({ _count: z.object({
 // File: EmployeeGroupByResult.schema.ts
 export const EmployeeGroupByResultSchema = z.array(z.object({
     uuid: z.string(),
+    avatar: z.string(),
     first_name: z.string(),
     last_name: z.string(),
     date_of_birth: z.date(),
@@ -2025,6 +2228,7 @@ export const EmployeeGroupByResultSchema = z.array(z.object({
     _count: z.object({
         uuid: z.number(),
         account: z.number(),
+        avatar: z.number(),
         first_name: z.number(),
         last_name: z.number(),
         date_of_birth: z.number(),
@@ -2038,6 +2242,7 @@ export const EmployeeGroupByResultSchema = z.array(z.object({
     }).optional(),
     _min: z.object({
         uuid: z.string().nullable(),
+        avatar: z.string().nullable(),
         first_name: z.string().nullable(),
         last_name: z.string().nullable(),
         date_of_birth: z.date().nullable(),
@@ -2049,6 +2254,7 @@ export const EmployeeGroupByResultSchema = z.array(z.object({
     }).nullable().optional(),
     _max: z.object({
         uuid: z.string().nullable(),
+        avatar: z.string().nullable(),
         first_name: z.string().nullable(),
         last_name: z.string().nullable(),
         date_of_birth: z.date().nullable(),
@@ -2071,7 +2277,8 @@ export const ContentFindUniqueResultSchema = z.nullable(z.object({
     last_modified_time: z.date(),
     expiration_time: z.date(),
     content_type: z.unknown(),
-    status: z.unknown()
+    status: z.unknown(),
+    is_favorite: z.boolean()
 }));
 // File: ContentFindFirstResult.schema.ts
 export const ContentFindFirstResultSchema = z.nullable(z.object({
@@ -2083,7 +2290,8 @@ export const ContentFindFirstResultSchema = z.nullable(z.object({
     last_modified_time: z.date(),
     expiration_time: z.date(),
     content_type: z.unknown(),
-    status: z.unknown()
+    status: z.unknown(),
+    is_favorite: z.boolean()
 }));
 // File: ContentFindManyResult.schema.ts
 export const ContentFindManyResultSchema = z.object({
@@ -2096,7 +2304,8 @@ export const ContentFindManyResultSchema = z.object({
         last_modified_time: z.date(),
         expiration_time: z.date(),
         content_type: z.unknown(),
-        status: z.unknown()
+        status: z.unknown(),
+        is_favorite: z.boolean()
     })),
     pagination: z.object({
         page: z.number().int().min(1),
@@ -2117,7 +2326,8 @@ export const ContentCreateResultSchema = z.object({
     last_modified_time: z.date(),
     expiration_time: z.date(),
     content_type: z.unknown(),
-    status: z.unknown()
+    status: z.unknown(),
+    is_favorite: z.boolean()
 });
 // File: ContentCreateManyResult.schema.ts
 export const ContentCreateManyResultSchema = z.object({
@@ -2133,7 +2343,8 @@ export const ContentUpdateResultSchema = z.nullable(z.object({
     last_modified_time: z.date(),
     expiration_time: z.date(),
     content_type: z.unknown(),
-    status: z.unknown()
+    status: z.unknown(),
+    is_favorite: z.boolean()
 }));
 // File: ContentUpdateManyResult.schema.ts
 export const ContentUpdateManyResultSchema = z.object({
@@ -2149,7 +2360,8 @@ export const ContentUpsertResultSchema = z.object({
     last_modified_time: z.date(),
     expiration_time: z.date(),
     content_type: z.unknown(),
-    status: z.unknown()
+    status: z.unknown(),
+    is_favorite: z.boolean()
 });
 // File: ContentDeleteResult.schema.ts
 export const ContentDeleteResultSchema = z.nullable(z.object({
@@ -2161,7 +2373,8 @@ export const ContentDeleteResultSchema = z.nullable(z.object({
     last_modified_time: z.date(),
     expiration_time: z.date(),
     content_type: z.unknown(),
-    status: z.unknown()
+    status: z.unknown(),
+    is_favorite: z.boolean()
 }));
 // File: ContentDeleteManyResult.schema.ts
 export const ContentDeleteManyResultSchema = z.object({
@@ -2177,7 +2390,8 @@ export const ContentAggregateResultSchema = z.object({ _count: z.object({
         last_modified_time: z.number(),
         expiration_time: z.number(),
         content_type: z.number(),
-        status: z.number()
+        status: z.number(),
+        is_favorite: z.number()
     }).optional(),
     _min: z.object({
         uuid: z.string().nullable(),
@@ -2203,6 +2417,7 @@ export const ContentGroupByResultSchema = z.array(z.object({
     content_owner: z.string(),
     last_modified_time: z.date(),
     expiration_time: z.date(),
+    is_favorite: z.boolean(),
     _count: z.object({
         uuid: z.number(),
         title: z.number(),
@@ -2212,7 +2427,8 @@ export const ContentGroupByResultSchema = z.array(z.object({
         last_modified_time: z.number(),
         expiration_time: z.number(),
         content_type: z.number(),
-        status: z.number()
+        status: z.number(),
+        is_favorite: z.number()
     }).optional(),
     _min: z.object({
         uuid: z.string().nullable(),

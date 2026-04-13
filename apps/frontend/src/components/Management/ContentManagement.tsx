@@ -15,7 +15,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import { z } from "zod";
-
+import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
 import { Schemas } from "@repo/zod";
@@ -189,9 +189,9 @@ export default function ContentManagement({
     }
   };
 
-  const toggleFavorite = async (formData: ContentFormData) => {
+  const toggleFavorite = async (row: ContentRow) => {
     try {
-      const res = await fetch("http://localhost:3000/content/favorite", {
+      const res = await fetch(API_ENDPOINTS.CONTENT_FAVORITE(row.uuid), {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -221,7 +221,7 @@ export default function ContentManagement({
           <IconButton onClick={() => toggleFavorite(params.row)}>
             <Heart
               size={20}
-              fill={params.row.id_favorite ? "ff4d4f" : "none"}
+              fill={params.row.is_favorite ? "ff4d4f" : "none"}
               color={params.row.is_favorite ? "ff4d4f" : "#e50000"}
             ></Heart>
           </IconButton>

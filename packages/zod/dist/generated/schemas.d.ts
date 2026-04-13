@@ -13,6 +13,7 @@ export declare const TransactionIsolationLevelSchema: z.ZodEnum<{
 export type TransactionIsolationLevel = z.infer<typeof TransactionIsolationLevelSchema>;
 export declare const EmployeeScalarFieldEnumSchema: z.ZodEnum<{
     uuid: "uuid";
+    avatar: "avatar";
     first_name: "first_name";
     last_name: "last_name";
     date_of_birth: "date_of_birth";
@@ -35,6 +36,7 @@ export declare const ContentScalarFieldEnumSchema: z.ZodEnum<{
     expiration_time: "expiration_time";
     content_type: "content_type";
     status: "status";
+    is_favorite: "is_favorite";
 }>;
 export type ContentScalarFieldEnum = z.infer<typeof ContentScalarFieldEnumSchema>;
 export declare const AccountScalarFieldEnumSchema: z.ZodEnum<{
@@ -54,6 +56,11 @@ export declare const QueryModeSchema: z.ZodEnum<{
     insensitive: "insensitive";
 }>;
 export type QueryMode = z.infer<typeof QueryModeSchema>;
+export declare const NullsOrderSchema: z.ZodEnum<{
+    first: "first";
+    last: "last";
+}>;
+export type NullsOrder = z.infer<typeof NullsOrderSchema>;
 export declare const PositionSchema: z.ZodEnum<{
     UNDERWRITER: "UNDERWRITER";
     BUSINESS_ANALYST: "BUSINESS_ANALYST";
@@ -87,6 +94,7 @@ export declare const EmployeeWhereInputObjectZodSchema: z.ZodObject<{
     OR: z.ZodOptional<z.ZodArray<z.ZodLazy<z.ZodType<Prisma.EmployeeWhereInput, unknown, z.core.$ZodTypeInternals<Prisma.EmployeeWhereInput, unknown>>>>>;
     NOT: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.EmployeeWhereInput, unknown, z.core.$ZodTypeInternals<Prisma.EmployeeWhereInput, unknown>>>, z.ZodArray<z.ZodLazy<z.ZodType<Prisma.EmployeeWhereInput, unknown, z.core.$ZodTypeInternals<Prisma.EmployeeWhereInput, unknown>>>>]>>;
     uuid: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.UuidFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.UuidFilter<never>, unknown>>>, z.ZodString]>>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.StringNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.StringNullableFilter<never>, unknown>>>, z.ZodString]>>>;
     first_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.StringFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.StringFilter<never>, unknown>>>, z.ZodString]>>;
     last_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.StringFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.StringFilter<never>, unknown>>>, z.ZodString]>>;
     date_of_birth: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.DateTimeFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.DateTimeFilter<never>, unknown>>>, z.ZodCoercedDate<unknown>]>>;
@@ -112,6 +120,10 @@ export declare const EmployeeOrderByWithRelationInputObjectZodSchema: z.ZodObjec
         asc: "asc";
         desc: "desc";
     }>>;
+    avatar: z.ZodOptional<z.ZodUnion<readonly [z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>, z.ZodLazy<z.ZodType<Prisma.SortOrderInput, unknown, z.core.$ZodTypeInternals<Prisma.SortOrderInput, unknown>>>]>>;
     first_name: z.ZodOptional<z.ZodEnum<{
         asc: "asc";
         desc: "desc";
@@ -164,6 +176,10 @@ export declare const EmployeeOrderByWithAggregationInputObjectZodSchema: z.ZodOb
         asc: "asc";
         desc: "desc";
     }>>;
+    avatar: z.ZodOptional<z.ZodUnion<readonly [z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>, z.ZodLazy<z.ZodType<Prisma.SortOrderInput, unknown, z.core.$ZodTypeInternals<Prisma.SortOrderInput, unknown>>>]>>;
     first_name: z.ZodOptional<z.ZodEnum<{
         asc: "asc";
         desc: "desc";
@@ -214,6 +230,7 @@ export declare const EmployeeScalarWhereWithAggregatesInputObjectZodSchema: z.Zo
     OR: z.ZodOptional<z.ZodArray<z.ZodLazy<z.ZodType<Prisma.EmployeeScalarWhereWithAggregatesInput, unknown, z.core.$ZodTypeInternals<Prisma.EmployeeScalarWhereWithAggregatesInput, unknown>>>>>;
     NOT: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.EmployeeScalarWhereWithAggregatesInput, unknown, z.core.$ZodTypeInternals<Prisma.EmployeeScalarWhereWithAggregatesInput, unknown>>>, z.ZodArray<z.ZodLazy<z.ZodType<Prisma.EmployeeScalarWhereWithAggregatesInput, unknown, z.core.$ZodTypeInternals<Prisma.EmployeeScalarWhereWithAggregatesInput, unknown>>>>]>>;
     uuid: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.UuidWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.UuidWithAggregatesFilter<never>, unknown>>>, z.ZodString]>>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.StringNullableWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.StringNullableWithAggregatesFilter<never>, unknown>>>, z.ZodString]>>>;
     first_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.StringWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.StringWithAggregatesFilter<never>, unknown>>>, z.ZodString]>>;
     last_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.StringWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.StringWithAggregatesFilter<never>, unknown>>>, z.ZodString]>>;
     date_of_birth: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.DateTimeWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.DateTimeWithAggregatesFilter<never>, unknown>>>, z.ZodCoercedDate<unknown>]>>;
@@ -257,6 +274,7 @@ export declare const ContentWhereInputObjectZodSchema: z.ZodObject<{
         IN_USE: "IN_USE";
         UNAVAILABLE: "UNAVAILABLE";
     }>]>>;
+    is_favorite: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.BoolFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.BoolFilter<never>, unknown>>>, z.ZodBoolean]>>;
 }, z.core.$strict>;
 export declare const ContentOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.ContentOrderByWithRelationInput>;
 export declare const ContentOrderByWithRelationInputObjectZodSchema: z.ZodObject<{
@@ -293,6 +311,10 @@ export declare const ContentOrderByWithRelationInputObjectZodSchema: z.ZodObject
         desc: "desc";
     }>>;
     status: z.ZodOptional<z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>>;
+    is_favorite: z.ZodOptional<z.ZodEnum<{
         asc: "asc";
         desc: "desc";
     }>>;
@@ -339,6 +361,10 @@ export declare const ContentOrderByWithAggregationInputObjectZodSchema: z.ZodObj
         asc: "asc";
         desc: "desc";
     }>>;
+    is_favorite: z.ZodOptional<z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>>;
     _count: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.ContentCountOrderByAggregateInput, unknown, z.core.$ZodTypeInternals<Prisma.ContentCountOrderByAggregateInput, unknown>>>>;
     _max: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.ContentMaxOrderByAggregateInput, unknown, z.core.$ZodTypeInternals<Prisma.ContentMaxOrderByAggregateInput, unknown>>>>;
     _min: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.ContentMinOrderByAggregateInput, unknown, z.core.$ZodTypeInternals<Prisma.ContentMinOrderByAggregateInput, unknown>>>>;
@@ -368,6 +394,7 @@ export declare const ContentScalarWhereWithAggregatesInputObjectZodSchema: z.Zod
         IN_USE: "IN_USE";
         UNAVAILABLE: "UNAVAILABLE";
     }>]>>;
+    is_favorite: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.BoolWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.BoolWithAggregatesFilter<never>, unknown>>>, z.ZodBoolean]>>;
 }, z.core.$strict>;
 export declare const AccountWhereInputObjectSchema: z.ZodType<Prisma.AccountWhereInput>;
 export declare const AccountWhereInputObjectZodSchema: z.ZodObject<{
@@ -446,6 +473,7 @@ export declare const AccountScalarWhereWithAggregatesInputObjectZodSchema: z.Zod
 export declare const EmployeeCreateInputObjectSchema: z.ZodType<Prisma.EmployeeCreateInput>;
 export declare const EmployeeCreateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodString>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodCoercedDate<unknown>;
@@ -468,6 +496,7 @@ export declare const EmployeeCreateInputObjectZodSchema: z.ZodObject<{
 export declare const EmployeeUncheckedCreateInputObjectSchema: z.ZodType<Prisma.EmployeeUncheckedCreateInput>;
 export declare const EmployeeUncheckedCreateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodString>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodCoercedDate<unknown>;
@@ -490,6 +519,7 @@ export declare const EmployeeUncheckedCreateInputObjectZodSchema: z.ZodObject<{
 export declare const EmployeeUpdateInputObjectSchema: z.ZodType<Prisma.EmployeeUpdateInput>;
 export declare const EmployeeUpdateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NullableStringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.NullableStringFieldUpdateOperationsInput, unknown>>>]>>>;
     first_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     last_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     date_of_birth: z.ZodOptional<z.ZodUnion<readonly [z.ZodCoercedDate<unknown>, z.ZodLazy<z.ZodType<Prisma.DateTimeFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.DateTimeFieldUpdateOperationsInput, unknown>>>]>>;
@@ -512,6 +542,7 @@ export declare const EmployeeUpdateInputObjectZodSchema: z.ZodObject<{
 export declare const EmployeeUncheckedUpdateInputObjectSchema: z.ZodType<Prisma.EmployeeUncheckedUpdateInput>;
 export declare const EmployeeUncheckedUpdateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NullableStringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.NullableStringFieldUpdateOperationsInput, unknown>>>]>>>;
     first_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     last_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     date_of_birth: z.ZodOptional<z.ZodUnion<readonly [z.ZodCoercedDate<unknown>, z.ZodLazy<z.ZodType<Prisma.DateTimeFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.DateTimeFieldUpdateOperationsInput, unknown>>>]>>;
@@ -534,6 +565,7 @@ export declare const EmployeeUncheckedUpdateInputObjectZodSchema: z.ZodObject<{
 export declare const EmployeeCreateManyInputObjectSchema: z.ZodType<Prisma.EmployeeCreateManyInput>;
 export declare const EmployeeCreateManyInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodString>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodCoercedDate<unknown>;
@@ -555,6 +587,7 @@ export declare const EmployeeCreateManyInputObjectZodSchema: z.ZodObject<{
 export declare const EmployeeUpdateManyMutationInputObjectSchema: z.ZodType<Prisma.EmployeeUpdateManyMutationInput>;
 export declare const EmployeeUpdateManyMutationInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NullableStringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.NullableStringFieldUpdateOperationsInput, unknown>>>]>>>;
     first_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     last_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     date_of_birth: z.ZodOptional<z.ZodUnion<readonly [z.ZodCoercedDate<unknown>, z.ZodLazy<z.ZodType<Prisma.DateTimeFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.DateTimeFieldUpdateOperationsInput, unknown>>>]>>;
@@ -576,6 +609,7 @@ export declare const EmployeeUpdateManyMutationInputObjectZodSchema: z.ZodObject
 export declare const EmployeeUncheckedUpdateManyInputObjectSchema: z.ZodType<Prisma.EmployeeUncheckedUpdateManyInput>;
 export declare const EmployeeUncheckedUpdateManyInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NullableStringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.NullableStringFieldUpdateOperationsInput, unknown>>>]>>>;
     first_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     last_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     date_of_birth: z.ZodOptional<z.ZodUnion<readonly [z.ZodCoercedDate<unknown>, z.ZodLazy<z.ZodType<Prisma.DateTimeFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.DateTimeFieldUpdateOperationsInput, unknown>>>]>>;
@@ -616,6 +650,7 @@ export declare const ContentCreateInputObjectZodSchema: z.ZodObject<{
         IN_USE: "IN_USE";
         UNAVAILABLE: "UNAVAILABLE";
     }>;
+    is_favorite: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
 export declare const ContentUncheckedCreateInputObjectSchema: z.ZodType<Prisma.ContentUncheckedCreateInput>;
 export declare const ContentUncheckedCreateInputObjectZodSchema: z.ZodObject<{
@@ -639,6 +674,7 @@ export declare const ContentUncheckedCreateInputObjectZodSchema: z.ZodObject<{
         IN_USE: "IN_USE";
         UNAVAILABLE: "UNAVAILABLE";
     }>;
+    is_favorite: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
 export declare const ContentUpdateInputObjectSchema: z.ZodType<Prisma.ContentUpdateInput>;
 export declare const ContentUpdateInputObjectZodSchema: z.ZodObject<{
@@ -662,6 +698,7 @@ export declare const ContentUpdateInputObjectZodSchema: z.ZodObject<{
         IN_USE: "IN_USE";
         UNAVAILABLE: "UNAVAILABLE";
     }>, z.ZodLazy<z.ZodType<Prisma.EnumContentStatusFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.EnumContentStatusFieldUpdateOperationsInput, unknown>>>]>>;
+    is_favorite: z.ZodOptional<z.ZodUnion<readonly [z.ZodBoolean, z.ZodLazy<z.ZodType<Prisma.BoolFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.BoolFieldUpdateOperationsInput, unknown>>>]>>;
 }, z.core.$strict>;
 export declare const ContentUncheckedUpdateInputObjectSchema: z.ZodType<Prisma.ContentUncheckedUpdateInput>;
 export declare const ContentUncheckedUpdateInputObjectZodSchema: z.ZodObject<{
@@ -685,6 +722,7 @@ export declare const ContentUncheckedUpdateInputObjectZodSchema: z.ZodObject<{
         IN_USE: "IN_USE";
         UNAVAILABLE: "UNAVAILABLE";
     }>, z.ZodLazy<z.ZodType<Prisma.EnumContentStatusFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.EnumContentStatusFieldUpdateOperationsInput, unknown>>>]>>;
+    is_favorite: z.ZodOptional<z.ZodUnion<readonly [z.ZodBoolean, z.ZodLazy<z.ZodType<Prisma.BoolFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.BoolFieldUpdateOperationsInput, unknown>>>]>>;
 }, z.core.$strict>;
 export declare const ContentCreateManyInputObjectSchema: z.ZodType<Prisma.ContentCreateManyInput>;
 export declare const ContentCreateManyInputObjectZodSchema: z.ZodObject<{
@@ -708,6 +746,7 @@ export declare const ContentCreateManyInputObjectZodSchema: z.ZodObject<{
         IN_USE: "IN_USE";
         UNAVAILABLE: "UNAVAILABLE";
     }>;
+    is_favorite: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
 export declare const ContentUpdateManyMutationInputObjectSchema: z.ZodType<Prisma.ContentUpdateManyMutationInput>;
 export declare const ContentUpdateManyMutationInputObjectZodSchema: z.ZodObject<{
@@ -731,6 +770,7 @@ export declare const ContentUpdateManyMutationInputObjectZodSchema: z.ZodObject<
         IN_USE: "IN_USE";
         UNAVAILABLE: "UNAVAILABLE";
     }>, z.ZodLazy<z.ZodType<Prisma.EnumContentStatusFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.EnumContentStatusFieldUpdateOperationsInput, unknown>>>]>>;
+    is_favorite: z.ZodOptional<z.ZodUnion<readonly [z.ZodBoolean, z.ZodLazy<z.ZodType<Prisma.BoolFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.BoolFieldUpdateOperationsInput, unknown>>>]>>;
 }, z.core.$strict>;
 export declare const ContentUncheckedUpdateManyInputObjectSchema: z.ZodType<Prisma.ContentUncheckedUpdateManyInput>;
 export declare const ContentUncheckedUpdateManyInputObjectZodSchema: z.ZodObject<{
@@ -754,6 +794,7 @@ export declare const ContentUncheckedUpdateManyInputObjectZodSchema: z.ZodObject
         IN_USE: "IN_USE";
         UNAVAILABLE: "UNAVAILABLE";
     }>, z.ZodLazy<z.ZodType<Prisma.EnumContentStatusFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.EnumContentStatusFieldUpdateOperationsInput, unknown>>>]>>;
+    is_favorite: z.ZodOptional<z.ZodUnion<readonly [z.ZodBoolean, z.ZodLazy<z.ZodType<Prisma.BoolFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.BoolFieldUpdateOperationsInput, unknown>>>]>>;
 }, z.core.$strict>;
 export declare const AccountCreateInputObjectSchema: z.ZodType<Prisma.AccountCreateInput>;
 export declare const AccountCreateInputObjectZodSchema: z.ZodObject<{
@@ -839,6 +880,24 @@ export declare const UuidFilterObjectZodSchema: z.ZodObject<{
     }>>;
     not: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NestedUuidFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedUuidFilter<never>, unknown>>>]>>;
 }, z.core.$strict>;
+export declare const StringNullableFilterObjectSchema: z.ZodType<Prisma.StringNullableFilter>;
+export declare const StringNullableFilterObjectZodSchema: z.ZodObject<{
+    equals: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    in: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodString>>>;
+    notIn: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodString>>>;
+    lt: z.ZodOptional<z.ZodString>;
+    lte: z.ZodOptional<z.ZodString>;
+    gt: z.ZodOptional<z.ZodString>;
+    gte: z.ZodOptional<z.ZodString>;
+    contains: z.ZodOptional<z.ZodString>;
+    startsWith: z.ZodOptional<z.ZodString>;
+    endsWith: z.ZodOptional<z.ZodString>;
+    mode: z.ZodOptional<z.ZodEnum<{
+        default: "default";
+        insensitive: "insensitive";
+    }>>;
+    not: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NestedStringNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringNullableFilter<never>, unknown>>>]>>>;
+}, z.core.$strict>;
 export declare const StringFilterObjectSchema: z.ZodType<Prisma.StringFilter>;
 export declare const StringFilterObjectZodSchema: z.ZodObject<{
     equals: z.ZodOptional<z.ZodString>;
@@ -915,9 +974,24 @@ export declare const AccountNullableScalarRelationFilterObjectZodSchema: z.ZodOb
     is: z.ZodNullable<z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.AccountWhereInput, unknown, z.core.$ZodTypeInternals<Prisma.AccountWhereInput, unknown>>>>>;
     isNot: z.ZodNullable<z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.AccountWhereInput, unknown, z.core.$ZodTypeInternals<Prisma.AccountWhereInput, unknown>>>>>;
 }, z.core.$strict>;
+export declare const SortOrderInputObjectSchema: z.ZodType<Prisma.SortOrderInput>;
+export declare const SortOrderInputObjectZodSchema: z.ZodObject<{
+    sort: z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>;
+    nulls: z.ZodOptional<z.ZodEnum<{
+        first: "first";
+        last: "last";
+    }>>;
+}, z.core.$strict>;
 export declare const EmployeeCountOrderByAggregateInputObjectSchema: z.ZodType<Prisma.EmployeeCountOrderByAggregateInput>;
 export declare const EmployeeCountOrderByAggregateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>>;
+    avatar: z.ZodOptional<z.ZodEnum<{
         asc: "asc";
         desc: "desc";
     }>>;
@@ -968,6 +1042,10 @@ export declare const EmployeeMaxOrderByAggregateInputObjectZodSchema: z.ZodObjec
         asc: "asc";
         desc: "desc";
     }>>;
+    avatar: z.ZodOptional<z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>>;
     first_name: z.ZodOptional<z.ZodEnum<{
         asc: "asc";
         desc: "desc";
@@ -1012,6 +1090,10 @@ export declare const EmployeeMaxOrderByAggregateInputObjectZodSchema: z.ZodObjec
 export declare const EmployeeMinOrderByAggregateInputObjectSchema: z.ZodType<Prisma.EmployeeMinOrderByAggregateInput>;
 export declare const EmployeeMinOrderByAggregateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>>;
+    avatar: z.ZodOptional<z.ZodEnum<{
         asc: "asc";
         desc: "desc";
     }>>;
@@ -1073,6 +1155,27 @@ export declare const UuidWithAggregatesFilterObjectZodSchema: z.ZodObject<{
     _count: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedIntFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedIntFilter<never>, unknown>>>>;
     _min: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedStringFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringFilter<never>, unknown>>>>;
     _max: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedStringFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringFilter<never>, unknown>>>>;
+}, z.core.$strict>;
+export declare const StringNullableWithAggregatesFilterObjectSchema: z.ZodType<Prisma.StringNullableWithAggregatesFilter>;
+export declare const StringNullableWithAggregatesFilterObjectZodSchema: z.ZodObject<{
+    equals: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    in: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodString>>>;
+    notIn: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodString>>>;
+    lt: z.ZodOptional<z.ZodString>;
+    lte: z.ZodOptional<z.ZodString>;
+    gt: z.ZodOptional<z.ZodString>;
+    gte: z.ZodOptional<z.ZodString>;
+    contains: z.ZodOptional<z.ZodString>;
+    startsWith: z.ZodOptional<z.ZodString>;
+    endsWith: z.ZodOptional<z.ZodString>;
+    mode: z.ZodOptional<z.ZodEnum<{
+        default: "default";
+        insensitive: "insensitive";
+    }>>;
+    not: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NestedStringNullableWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringNullableWithAggregatesFilter<never>, unknown>>>]>>>;
+    _count: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedIntNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedIntNullableFilter<never>, unknown>>>>;
+    _min: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedStringNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringNullableFilter<never>, unknown>>>>;
+    _max: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedStringNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringNullableFilter<never>, unknown>>>>;
 }, z.core.$strict>;
 export declare const StringWithAggregatesFilterObjectSchema: z.ZodType<Prisma.StringWithAggregatesFilter>;
 export declare const StringWithAggregatesFilterObjectZodSchema: z.ZodObject<{
@@ -1199,6 +1302,11 @@ export declare const EnumContentStatusFilterObjectZodSchema: z.ZodObject<{
         UNAVAILABLE: "UNAVAILABLE";
     }>, z.ZodLazy<z.ZodType<Prisma.NestedEnumContentStatusFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedEnumContentStatusFilter<never>, unknown>>>]>>;
 }, z.core.$strict>;
+export declare const BoolFilterObjectSchema: z.ZodType<Prisma.BoolFilter>;
+export declare const BoolFilterObjectZodSchema: z.ZodObject<{
+    equals: z.ZodOptional<z.ZodBoolean>;
+    not: z.ZodOptional<z.ZodUnion<readonly [z.ZodBoolean, z.ZodLazy<z.ZodType<Prisma.NestedBoolFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedBoolFilter<never>, unknown>>>]>>;
+}, z.core.$strict>;
 export declare const ContentCountOrderByAggregateInputObjectSchema: z.ZodType<Prisma.ContentCountOrderByAggregateInput>;
 export declare const ContentCountOrderByAggregateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodEnum<{
@@ -1234,6 +1342,10 @@ export declare const ContentCountOrderByAggregateInputObjectZodSchema: z.ZodObje
         desc: "desc";
     }>>;
     status: z.ZodOptional<z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>>;
+    is_favorite: z.ZodOptional<z.ZodEnum<{
         asc: "asc";
         desc: "desc";
     }>>;
@@ -1276,6 +1388,10 @@ export declare const ContentMaxOrderByAggregateInputObjectZodSchema: z.ZodObject
         asc: "asc";
         desc: "desc";
     }>>;
+    is_favorite: z.ZodOptional<z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>>;
 }, z.core.$strict>;
 export declare const ContentMinOrderByAggregateInputObjectSchema: z.ZodType<Prisma.ContentMinOrderByAggregateInput>;
 export declare const ContentMinOrderByAggregateInputObjectZodSchema: z.ZodObject<{
@@ -1312,6 +1428,10 @@ export declare const ContentMinOrderByAggregateInputObjectZodSchema: z.ZodObject
         desc: "desc";
     }>>;
     status: z.ZodOptional<z.ZodEnum<{
+        asc: "asc";
+        desc: "desc";
+    }>>;
+    is_favorite: z.ZodOptional<z.ZodEnum<{
         asc: "asc";
         desc: "desc";
     }>>;
@@ -1363,6 +1483,14 @@ export declare const EnumContentStatusWithAggregatesFilterObjectZodSchema: z.Zod
     _count: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedIntFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedIntFilter<never>, unknown>>>>;
     _min: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedEnumContentStatusFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedEnumContentStatusFilter<never>, unknown>>>>;
     _max: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedEnumContentStatusFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedEnumContentStatusFilter<never>, unknown>>>>;
+}, z.core.$strict>;
+export declare const BoolWithAggregatesFilterObjectSchema: z.ZodType<Prisma.BoolWithAggregatesFilter>;
+export declare const BoolWithAggregatesFilterObjectZodSchema: z.ZodObject<{
+    equals: z.ZodOptional<z.ZodBoolean>;
+    not: z.ZodOptional<z.ZodUnion<readonly [z.ZodBoolean, z.ZodLazy<z.ZodType<Prisma.NestedBoolWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedBoolWithAggregatesFilter<never>, unknown>>>]>>;
+    _count: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedIntFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedIntFilter<never>, unknown>>>>;
+    _min: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedBoolFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedBoolFilter<never>, unknown>>>>;
+    _max: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedBoolFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedBoolFilter<never>, unknown>>>>;
 }, z.core.$strict>;
 export declare const EnumAccountTypeFilterObjectSchema: z.ZodType<Prisma.EnumAccountTypeFilter>;
 export declare const EnumAccountTypeFilterObjectZodSchema: z.ZodObject<{
@@ -1483,6 +1611,10 @@ export declare const StringFieldUpdateOperationsInputObjectSchema: z.ZodType<Pri
 export declare const StringFieldUpdateOperationsInputObjectZodSchema: z.ZodObject<{
     set: z.ZodOptional<z.ZodString>;
 }, z.core.$strict>;
+export declare const NullableStringFieldUpdateOperationsInputObjectSchema: z.ZodType<Prisma.NullableStringFieldUpdateOperationsInput>;
+export declare const NullableStringFieldUpdateOperationsInputObjectZodSchema: z.ZodObject<{
+    set: z.ZodOptional<z.ZodString>;
+}, z.core.$strict>;
 export declare const DateTimeFieldUpdateOperationsInputObjectSchema: z.ZodType<Prisma.DateTimeFieldUpdateOperationsInput>;
 export declare const DateTimeFieldUpdateOperationsInputObjectZodSchema: z.ZodObject<{
     set: z.ZodOptional<z.ZodCoercedDate<unknown>>;
@@ -1537,6 +1669,10 @@ export declare const EnumContentStatusFieldUpdateOperationsInputObjectZodSchema:
         UNAVAILABLE: "UNAVAILABLE";
     }>>;
 }, z.core.$strict>;
+export declare const BoolFieldUpdateOperationsInputObjectSchema: z.ZodType<Prisma.BoolFieldUpdateOperationsInput>;
+export declare const BoolFieldUpdateOperationsInputObjectZodSchema: z.ZodObject<{
+    set: z.ZodOptional<z.ZodBoolean>;
+}, z.core.$strict>;
 export declare const EmployeeCreateNestedOneWithoutAccountInputObjectSchema: z.ZodType<Prisma.EmployeeCreateNestedOneWithoutAccountInput>;
 export declare const EmployeeCreateNestedOneWithoutAccountInputObjectZodSchema: z.ZodObject<{
     create: z.ZodOptional<z.ZodUnion<readonly [z.ZodLazy<z.ZodType<Prisma.EmployeeCreateWithoutAccountInput, unknown, z.core.$ZodTypeInternals<Prisma.EmployeeCreateWithoutAccountInput, unknown>>>, z.ZodLazy<z.ZodType<Prisma.EmployeeUncheckedCreateWithoutAccountInput, unknown, z.core.$ZodTypeInternals<Prisma.EmployeeUncheckedCreateWithoutAccountInput, unknown>>>]>>;
@@ -1568,6 +1704,20 @@ export declare const NestedUuidFilterObjectZodSchema: z.ZodObject<{
     gt: z.ZodOptional<z.ZodString>;
     gte: z.ZodOptional<z.ZodString>;
     not: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NestedUuidFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedUuidFilter<never>, unknown>>>]>>;
+}, z.core.$strict>;
+export declare const NestedStringNullableFilterObjectSchema: z.ZodType<Prisma.NestedStringNullableFilter>;
+export declare const NestedStringNullableFilterObjectZodSchema: z.ZodObject<{
+    equals: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    in: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodString>>>;
+    notIn: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodString>>>;
+    lt: z.ZodOptional<z.ZodString>;
+    lte: z.ZodOptional<z.ZodString>;
+    gt: z.ZodOptional<z.ZodString>;
+    gte: z.ZodOptional<z.ZodString>;
+    contains: z.ZodOptional<z.ZodString>;
+    startsWith: z.ZodOptional<z.ZodString>;
+    endsWith: z.ZodOptional<z.ZodString>;
+    not: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NestedStringNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringNullableFilter<never>, unknown>>>]>>>;
 }, z.core.$strict>;
 export declare const NestedStringFilterObjectSchema: z.ZodType<Prisma.NestedStringFilter>;
 export declare const NestedStringFilterObjectZodSchema: z.ZodObject<{
@@ -1660,6 +1810,34 @@ export declare const NestedIntFilterObjectZodSchema: z.ZodObject<{
     gt: z.ZodOptional<z.ZodNumber>;
     gte: z.ZodOptional<z.ZodNumber>;
     not: z.ZodOptional<z.ZodUnion<readonly [z.ZodNumber, z.ZodLazy<z.ZodType<Prisma.NestedIntFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedIntFilter<never>, unknown>>>]>>;
+}, z.core.$strict>;
+export declare const NestedStringNullableWithAggregatesFilterObjectSchema: z.ZodType<Prisma.NestedStringNullableWithAggregatesFilter>;
+export declare const NestedStringNullableWithAggregatesFilterObjectZodSchema: z.ZodObject<{
+    equals: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    in: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodString>>>;
+    notIn: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodString>>>;
+    lt: z.ZodOptional<z.ZodString>;
+    lte: z.ZodOptional<z.ZodString>;
+    gt: z.ZodOptional<z.ZodString>;
+    gte: z.ZodOptional<z.ZodString>;
+    contains: z.ZodOptional<z.ZodString>;
+    startsWith: z.ZodOptional<z.ZodString>;
+    endsWith: z.ZodOptional<z.ZodString>;
+    not: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NestedStringNullableWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringNullableWithAggregatesFilter<never>, unknown>>>]>>>;
+    _count: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedIntNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedIntNullableFilter<never>, unknown>>>>;
+    _min: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedStringNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringNullableFilter<never>, unknown>>>>;
+    _max: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedStringNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedStringNullableFilter<never>, unknown>>>>;
+}, z.core.$strict>;
+export declare const NestedIntNullableFilterObjectSchema: z.ZodType<Prisma.NestedIntNullableFilter>;
+export declare const NestedIntNullableFilterObjectZodSchema: z.ZodObject<{
+    equals: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    in: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodNumber>>>;
+    notIn: z.ZodNullable<z.ZodOptional<z.ZodArray<z.ZodNumber>>>;
+    lt: z.ZodOptional<z.ZodNumber>;
+    lte: z.ZodOptional<z.ZodNumber>;
+    gt: z.ZodOptional<z.ZodNumber>;
+    gte: z.ZodOptional<z.ZodNumber>;
+    not: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodNumber, z.ZodLazy<z.ZodType<Prisma.NestedIntNullableFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedIntNullableFilter<never>, unknown>>>]>>>;
 }, z.core.$strict>;
 export declare const NestedStringWithAggregatesFilterObjectSchema: z.ZodType<Prisma.NestedStringWithAggregatesFilter>;
 export declare const NestedStringWithAggregatesFilterObjectZodSchema: z.ZodObject<{
@@ -1782,6 +1960,11 @@ export declare const NestedEnumContentStatusFilterObjectZodSchema: z.ZodObject<{
         UNAVAILABLE: "UNAVAILABLE";
     }>, z.ZodLazy<z.ZodType<Prisma.NestedEnumContentStatusFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedEnumContentStatusFilter<never>, unknown>>>]>>;
 }, z.core.$strict>;
+export declare const NestedBoolFilterObjectSchema: z.ZodType<Prisma.NestedBoolFilter>;
+export declare const NestedBoolFilterObjectZodSchema: z.ZodObject<{
+    equals: z.ZodOptional<z.ZodBoolean>;
+    not: z.ZodOptional<z.ZodUnion<readonly [z.ZodBoolean, z.ZodLazy<z.ZodType<Prisma.NestedBoolFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedBoolFilter<never>, unknown>>>]>>;
+}, z.core.$strict>;
 export declare const NestedEnumContentTypeWithAggregatesFilterObjectSchema: z.ZodType<Prisma.NestedEnumContentTypeWithAggregatesFilter>;
 export declare const NestedEnumContentTypeWithAggregatesFilterObjectZodSchema: z.ZodObject<{
     equals: z.ZodOptional<z.ZodEnum<{
@@ -1829,6 +2012,14 @@ export declare const NestedEnumContentStatusWithAggregatesFilterObjectZodSchema:
     _count: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedIntFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedIntFilter<never>, unknown>>>>;
     _min: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedEnumContentStatusFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedEnumContentStatusFilter<never>, unknown>>>>;
     _max: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedEnumContentStatusFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedEnumContentStatusFilter<never>, unknown>>>>;
+}, z.core.$strict>;
+export declare const NestedBoolWithAggregatesFilterObjectSchema: z.ZodType<Prisma.NestedBoolWithAggregatesFilter>;
+export declare const NestedBoolWithAggregatesFilterObjectZodSchema: z.ZodObject<{
+    equals: z.ZodOptional<z.ZodBoolean>;
+    not: z.ZodOptional<z.ZodUnion<readonly [z.ZodBoolean, z.ZodLazy<z.ZodType<Prisma.NestedBoolWithAggregatesFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedBoolWithAggregatesFilter<never>, unknown>>>]>>;
+    _count: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedIntFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedIntFilter<never>, unknown>>>>;
+    _min: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedBoolFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedBoolFilter<never>, unknown>>>>;
+    _max: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.NestedBoolFilter<never>, unknown, z.core.$ZodTypeInternals<Prisma.NestedBoolFilter<never>, unknown>>>>;
 }, z.core.$strict>;
 export declare const NestedEnumAccountTypeFilterObjectSchema: z.ZodType<Prisma.NestedEnumAccountTypeFilter>;
 export declare const NestedEnumAccountTypeFilterObjectZodSchema: z.ZodObject<{
@@ -1926,6 +2117,7 @@ export declare const AccountUncheckedUpdateWithoutEmployeeInputObjectZodSchema: 
 export declare const EmployeeCreateWithoutAccountInputObjectSchema: z.ZodType<Prisma.EmployeeCreateWithoutAccountInput>;
 export declare const EmployeeCreateWithoutAccountInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodString>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodCoercedDate<unknown>;
@@ -1947,6 +2139,7 @@ export declare const EmployeeCreateWithoutAccountInputObjectZodSchema: z.ZodObje
 export declare const EmployeeUncheckedCreateWithoutAccountInputObjectSchema: z.ZodType<Prisma.EmployeeUncheckedCreateWithoutAccountInput>;
 export declare const EmployeeUncheckedCreateWithoutAccountInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodString>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodCoercedDate<unknown>;
@@ -1984,6 +2177,7 @@ export declare const EmployeeUpdateToOneWithWhereWithoutAccountInputObjectZodSch
 export declare const EmployeeUpdateWithoutAccountInputObjectSchema: z.ZodType<Prisma.EmployeeUpdateWithoutAccountInput>;
 export declare const EmployeeUpdateWithoutAccountInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NullableStringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.NullableStringFieldUpdateOperationsInput, unknown>>>]>>>;
     first_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     last_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     date_of_birth: z.ZodOptional<z.ZodUnion<readonly [z.ZodCoercedDate<unknown>, z.ZodLazy<z.ZodType<Prisma.DateTimeFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.DateTimeFieldUpdateOperationsInput, unknown>>>]>>;
@@ -2005,6 +2199,7 @@ export declare const EmployeeUpdateWithoutAccountInputObjectZodSchema: z.ZodObje
 export declare const EmployeeUncheckedUpdateWithoutAccountInputObjectSchema: z.ZodType<Prisma.EmployeeUncheckedUpdateWithoutAccountInput>;
 export declare const EmployeeUncheckedUpdateWithoutAccountInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
+    avatar: z.ZodNullable<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.NullableStringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.NullableStringFieldUpdateOperationsInput, unknown>>>]>>>;
     first_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     last_name: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLazy<z.ZodType<Prisma.StringFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.StringFieldUpdateOperationsInput, unknown>>>]>>;
     date_of_birth: z.ZodOptional<z.ZodUnion<readonly [z.ZodCoercedDate<unknown>, z.ZodLazy<z.ZodType<Prisma.DateTimeFieldUpdateOperationsInput, unknown, z.core.$ZodTypeInternals<Prisma.DateTimeFieldUpdateOperationsInput, unknown>>>]>>;
@@ -2026,6 +2221,7 @@ export declare const EmployeeUncheckedUpdateWithoutAccountInputObjectZodSchema: 
 export declare const EmployeeCountAggregateInputObjectSchema: z.ZodType<Prisma.EmployeeCountAggregateInputType>;
 export declare const EmployeeCountAggregateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodLiteral<true>>;
+    avatar: z.ZodOptional<z.ZodLiteral<true>>;
     first_name: z.ZodOptional<z.ZodLiteral<true>>;
     last_name: z.ZodOptional<z.ZodLiteral<true>>;
     date_of_birth: z.ZodOptional<z.ZodLiteral<true>>;
@@ -2041,6 +2237,7 @@ export declare const EmployeeCountAggregateInputObjectZodSchema: z.ZodObject<{
 export declare const EmployeeMinAggregateInputObjectSchema: z.ZodType<Prisma.EmployeeMinAggregateInputType>;
 export declare const EmployeeMinAggregateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodLiteral<true>>;
+    avatar: z.ZodOptional<z.ZodLiteral<true>>;
     first_name: z.ZodOptional<z.ZodLiteral<true>>;
     last_name: z.ZodOptional<z.ZodLiteral<true>>;
     date_of_birth: z.ZodOptional<z.ZodLiteral<true>>;
@@ -2055,6 +2252,7 @@ export declare const EmployeeMinAggregateInputObjectZodSchema: z.ZodObject<{
 export declare const EmployeeMaxAggregateInputObjectSchema: z.ZodType<Prisma.EmployeeMaxAggregateInputType>;
 export declare const EmployeeMaxAggregateInputObjectZodSchema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodLiteral<true>>;
+    avatar: z.ZodOptional<z.ZodLiteral<true>>;
     first_name: z.ZodOptional<z.ZodLiteral<true>>;
     last_name: z.ZodOptional<z.ZodLiteral<true>>;
     date_of_birth: z.ZodOptional<z.ZodLiteral<true>>;
@@ -2077,6 +2275,7 @@ export declare const ContentCountAggregateInputObjectZodSchema: z.ZodObject<{
     expiration_time: z.ZodOptional<z.ZodLiteral<true>>;
     content_type: z.ZodOptional<z.ZodLiteral<true>>;
     status: z.ZodOptional<z.ZodLiteral<true>>;
+    is_favorite: z.ZodOptional<z.ZodLiteral<true>>;
     _all: z.ZodOptional<z.ZodLiteral<true>>;
 }, z.core.$strict>;
 export declare const ContentMinAggregateInputObjectSchema: z.ZodType<Prisma.ContentMinAggregateInputType>;
@@ -2090,6 +2289,7 @@ export declare const ContentMinAggregateInputObjectZodSchema: z.ZodObject<{
     expiration_time: z.ZodOptional<z.ZodLiteral<true>>;
     content_type: z.ZodOptional<z.ZodLiteral<true>>;
     status: z.ZodOptional<z.ZodLiteral<true>>;
+    is_favorite: z.ZodOptional<z.ZodLiteral<true>>;
 }, z.core.$strict>;
 export declare const ContentMaxAggregateInputObjectSchema: z.ZodType<Prisma.ContentMaxAggregateInputType>;
 export declare const ContentMaxAggregateInputObjectZodSchema: z.ZodObject<{
@@ -2102,6 +2302,7 @@ export declare const ContentMaxAggregateInputObjectZodSchema: z.ZodObject<{
     expiration_time: z.ZodOptional<z.ZodLiteral<true>>;
     content_type: z.ZodOptional<z.ZodLiteral<true>>;
     status: z.ZodOptional<z.ZodLiteral<true>>;
+    is_favorite: z.ZodOptional<z.ZodLiteral<true>>;
 }, z.core.$strict>;
 export declare const AccountCountAggregateInputObjectSchema: z.ZodType<Prisma.AccountCountAggregateInputType>;
 export declare const AccountCountAggregateInputObjectZodSchema: z.ZodObject<{
@@ -2132,6 +2333,7 @@ export declare const EmployeeSelectObjectZodSchema: z.ZodObject<{
         select: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.AccountSelect<import("@prisma/client/runtime/client").DefaultArgs>, unknown, z.core.$ZodTypeInternals<Prisma.AccountSelect<import("@prisma/client/runtime/client").DefaultArgs>, unknown>>>>;
         include: z.ZodOptional<z.ZodLazy<z.ZodType<Prisma.AccountInclude<import("@prisma/client/runtime/client").DefaultArgs>, unknown, z.core.$ZodTypeInternals<Prisma.AccountInclude<import("@prisma/client/runtime/client").DefaultArgs>, unknown>>>>;
     }, z.core.$strict>>]>>;
+    avatar: z.ZodOptional<z.ZodBoolean>;
     first_name: z.ZodOptional<z.ZodBoolean>;
     last_name: z.ZodOptional<z.ZodBoolean>;
     date_of_birth: z.ZodOptional<z.ZodBoolean>;
@@ -2154,6 +2356,7 @@ export declare const ContentSelectObjectZodSchema: z.ZodObject<{
     expiration_time: z.ZodOptional<z.ZodBoolean>;
     content_type: z.ZodOptional<z.ZodBoolean>;
     status: z.ZodOptional<z.ZodBoolean>;
+    is_favorite: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
 export declare const AccountSelectObjectSchema: z.ZodType<Prisma.AccountSelect>;
 export declare const AccountSelectObjectZodSchema: z.ZodObject<{
@@ -2218,6 +2421,7 @@ export declare const EmployeeFindFirstSelectSchema__findFirstEmployee_schema: z.
 export declare const EmployeeFindFirstSelectZodSchema__findFirstEmployee_schema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodBoolean>;
     account: z.ZodOptional<z.ZodBoolean>;
+    avatar: z.ZodOptional<z.ZodBoolean>;
     first_name: z.ZodOptional<z.ZodBoolean>;
     last_name: z.ZodOptional<z.ZodBoolean>;
     date_of_birth: z.ZodOptional<z.ZodBoolean>;
@@ -2240,6 +2444,7 @@ export declare const EmployeeFindFirstZodSchema: z.ZodObject<{
     skip: z.ZodOptional<z.ZodNumber>;
     distinct: z.ZodOptional<z.ZodUnion<readonly [z.ZodEnum<{
         uuid: "uuid";
+        avatar: "avatar";
         first_name: "first_name";
         last_name: "last_name";
         date_of_birth: "date_of_birth";
@@ -2252,6 +2457,7 @@ export declare const EmployeeFindFirstZodSchema: z.ZodObject<{
         corporate_email: "corporate_email";
     }>, z.ZodArray<z.ZodEnum<{
         uuid: "uuid";
+        avatar: "avatar";
         first_name: "first_name";
         last_name: "last_name";
         date_of_birth: "date_of_birth";
@@ -2268,6 +2474,7 @@ export declare const EmployeeFindFirstOrThrowSelectSchema__findFirstOrThrowEmplo
 export declare const EmployeeFindFirstOrThrowSelectZodSchema__findFirstOrThrowEmployee_schema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodBoolean>;
     account: z.ZodOptional<z.ZodBoolean>;
+    avatar: z.ZodOptional<z.ZodBoolean>;
     first_name: z.ZodOptional<z.ZodBoolean>;
     last_name: z.ZodOptional<z.ZodBoolean>;
     date_of_birth: z.ZodOptional<z.ZodBoolean>;
@@ -2290,6 +2497,7 @@ export declare const EmployeeFindFirstOrThrowZodSchema: z.ZodObject<{
     skip: z.ZodOptional<z.ZodNumber>;
     distinct: z.ZodOptional<z.ZodUnion<readonly [z.ZodEnum<{
         uuid: "uuid";
+        avatar: "avatar";
         first_name: "first_name";
         last_name: "last_name";
         date_of_birth: "date_of_birth";
@@ -2302,6 +2510,7 @@ export declare const EmployeeFindFirstOrThrowZodSchema: z.ZodObject<{
         corporate_email: "corporate_email";
     }>, z.ZodArray<z.ZodEnum<{
         uuid: "uuid";
+        avatar: "avatar";
         first_name: "first_name";
         last_name: "last_name";
         date_of_birth: "date_of_birth";
@@ -2318,6 +2527,7 @@ export declare const EmployeeFindManySelectSchema__findManyEmployee_schema: z.Zo
 export declare const EmployeeFindManySelectZodSchema__findManyEmployee_schema: z.ZodObject<{
     uuid: z.ZodOptional<z.ZodBoolean>;
     account: z.ZodOptional<z.ZodBoolean>;
+    avatar: z.ZodOptional<z.ZodBoolean>;
     first_name: z.ZodOptional<z.ZodBoolean>;
     last_name: z.ZodOptional<z.ZodBoolean>;
     date_of_birth: z.ZodOptional<z.ZodBoolean>;
@@ -2340,6 +2550,7 @@ export declare const EmployeeFindManyZodSchema: z.ZodObject<{
     skip: z.ZodOptional<z.ZodNumber>;
     distinct: z.ZodOptional<z.ZodUnion<readonly [z.ZodEnum<{
         uuid: "uuid";
+        avatar: "avatar";
         first_name: "first_name";
         last_name: "last_name";
         date_of_birth: "date_of_birth";
@@ -2352,6 +2563,7 @@ export declare const EmployeeFindManyZodSchema: z.ZodObject<{
         corporate_email: "corporate_email";
     }>, z.ZodArray<z.ZodEnum<{
         uuid: "uuid";
+        avatar: "avatar";
         first_name: "first_name";
         last_name: "last_name";
         date_of_birth: "date_of_birth";
@@ -2446,6 +2658,7 @@ export declare const EmployeeGroupByZodSchema: z.ZodObject<{
     skip: z.ZodOptional<z.ZodNumber>;
     by: z.ZodArray<z.ZodEnum<{
         uuid: "uuid";
+        avatar: "avatar";
         first_name: "first_name";
         last_name: "last_name";
         date_of_birth: "date_of_birth";
@@ -2482,6 +2695,7 @@ export declare const ContentFindFirstSelectZodSchema__findFirstContent_schema: z
     expiration_time: z.ZodOptional<z.ZodBoolean>;
     content_type: z.ZodOptional<z.ZodBoolean>;
     status: z.ZodOptional<z.ZodBoolean>;
+    is_favorite: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
 export declare const ContentFindFirstSchema: z.ZodType<Prisma.ContentFindFirstArgs>;
 export declare const ContentFindFirstZodSchema: z.ZodObject<{
@@ -2501,6 +2715,7 @@ export declare const ContentFindFirstZodSchema: z.ZodObject<{
         expiration_time: "expiration_time";
         content_type: "content_type";
         status: "status";
+        is_favorite: "is_favorite";
     }>, z.ZodArray<z.ZodEnum<{
         uuid: "uuid";
         url: "url";
@@ -2511,6 +2726,7 @@ export declare const ContentFindFirstZodSchema: z.ZodObject<{
         expiration_time: "expiration_time";
         content_type: "content_type";
         status: "status";
+        is_favorite: "is_favorite";
     }>>]>>;
 }, z.core.$strict>;
 export declare const ContentFindFirstOrThrowSelectSchema__findFirstOrThrowContent_schema: z.ZodType<Prisma.ContentSelect>;
@@ -2524,6 +2740,7 @@ export declare const ContentFindFirstOrThrowSelectZodSchema__findFirstOrThrowCon
     expiration_time: z.ZodOptional<z.ZodBoolean>;
     content_type: z.ZodOptional<z.ZodBoolean>;
     status: z.ZodOptional<z.ZodBoolean>;
+    is_favorite: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
 export declare const ContentFindFirstOrThrowSchema: z.ZodType<Prisma.ContentFindFirstOrThrowArgs>;
 export declare const ContentFindFirstOrThrowZodSchema: z.ZodObject<{
@@ -2543,6 +2760,7 @@ export declare const ContentFindFirstOrThrowZodSchema: z.ZodObject<{
         expiration_time: "expiration_time";
         content_type: "content_type";
         status: "status";
+        is_favorite: "is_favorite";
     }>, z.ZodArray<z.ZodEnum<{
         uuid: "uuid";
         url: "url";
@@ -2553,6 +2771,7 @@ export declare const ContentFindFirstOrThrowZodSchema: z.ZodObject<{
         expiration_time: "expiration_time";
         content_type: "content_type";
         status: "status";
+        is_favorite: "is_favorite";
     }>>]>>;
 }, z.core.$strict>;
 export declare const ContentFindManySelectSchema__findManyContent_schema: z.ZodType<Prisma.ContentSelect>;
@@ -2566,6 +2785,7 @@ export declare const ContentFindManySelectZodSchema__findManyContent_schema: z.Z
     expiration_time: z.ZodOptional<z.ZodBoolean>;
     content_type: z.ZodOptional<z.ZodBoolean>;
     status: z.ZodOptional<z.ZodBoolean>;
+    is_favorite: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
 export declare const ContentFindManySchema: z.ZodType<Prisma.ContentFindManyArgs>;
 export declare const ContentFindManyZodSchema: z.ZodObject<{
@@ -2585,6 +2805,7 @@ export declare const ContentFindManyZodSchema: z.ZodObject<{
         expiration_time: "expiration_time";
         content_type: "content_type";
         status: "status";
+        is_favorite: "is_favorite";
     }>, z.ZodArray<z.ZodEnum<{
         uuid: "uuid";
         url: "url";
@@ -2595,6 +2816,7 @@ export declare const ContentFindManyZodSchema: z.ZodObject<{
         expiration_time: "expiration_time";
         content_type: "content_type";
         status: "status";
+        is_favorite: "is_favorite";
     }>>]>>;
 }, z.core.$strict>;
 export declare const ContentCountSchema: z.ZodType<Prisma.ContentCountArgs>;
@@ -2683,6 +2905,7 @@ export declare const ContentGroupByZodSchema: z.ZodObject<{
         expiration_time: "expiration_time";
         content_type: "content_type";
         status: "status";
+        is_favorite: "is_favorite";
     }>>;
     _count: z.ZodOptional<z.ZodUnion<readonly [z.ZodLiteral<true>, z.ZodType<Prisma.ContentCountAggregateInputType, unknown, z.core.$ZodTypeInternals<Prisma.ContentCountAggregateInputType, unknown>>]>>;
     _min: z.ZodOptional<z.ZodType<Prisma.ContentMinAggregateInputType, unknown, z.core.$ZodTypeInternals<Prisma.ContentMinAggregateInputType, unknown>>>;
@@ -2880,6 +3103,7 @@ export declare const AccountGroupByZodSchema: z.ZodObject<{
 export declare const EmployeeFindUniqueResultSchema: z.ZodNullable<z.ZodObject<{
     uuid: z.ZodString;
     account: z.ZodOptional<z.ZodUnknown>;
+    avatar: z.ZodOptional<z.ZodString>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodDate;
@@ -2894,6 +3118,7 @@ export declare const EmployeeFindUniqueResultSchema: z.ZodNullable<z.ZodObject<{
 export declare const EmployeeFindFirstResultSchema: z.ZodNullable<z.ZodObject<{
     uuid: z.ZodString;
     account: z.ZodOptional<z.ZodUnknown>;
+    avatar: z.ZodOptional<z.ZodString>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodDate;
@@ -2909,6 +3134,7 @@ export declare const EmployeeFindManyResultSchema: z.ZodObject<{
     data: z.ZodArray<z.ZodObject<{
         uuid: z.ZodString;
         account: z.ZodOptional<z.ZodUnknown>;
+        avatar: z.ZodOptional<z.ZodString>;
         first_name: z.ZodString;
         last_name: z.ZodString;
         date_of_birth: z.ZodDate;
@@ -2932,6 +3158,7 @@ export declare const EmployeeFindManyResultSchema: z.ZodObject<{
 export declare const EmployeeCreateResultSchema: z.ZodObject<{
     uuid: z.ZodString;
     account: z.ZodOptional<z.ZodUnknown>;
+    avatar: z.ZodOptional<z.ZodString>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodDate;
@@ -2949,6 +3176,7 @@ export declare const EmployeeCreateManyResultSchema: z.ZodObject<{
 export declare const EmployeeUpdateResultSchema: z.ZodNullable<z.ZodObject<{
     uuid: z.ZodString;
     account: z.ZodOptional<z.ZodUnknown>;
+    avatar: z.ZodOptional<z.ZodString>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodDate;
@@ -2966,6 +3194,7 @@ export declare const EmployeeUpdateManyResultSchema: z.ZodObject<{
 export declare const EmployeeUpsertResultSchema: z.ZodObject<{
     uuid: z.ZodString;
     account: z.ZodOptional<z.ZodUnknown>;
+    avatar: z.ZodOptional<z.ZodString>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodDate;
@@ -2980,6 +3209,7 @@ export declare const EmployeeUpsertResultSchema: z.ZodObject<{
 export declare const EmployeeDeleteResultSchema: z.ZodNullable<z.ZodObject<{
     uuid: z.ZodString;
     account: z.ZodOptional<z.ZodUnknown>;
+    avatar: z.ZodOptional<z.ZodString>;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodDate;
@@ -2998,6 +3228,7 @@ export declare const EmployeeAggregateResultSchema: z.ZodObject<{
     _count: z.ZodOptional<z.ZodObject<{
         uuid: z.ZodNumber;
         account: z.ZodNumber;
+        avatar: z.ZodNumber;
         first_name: z.ZodNumber;
         last_name: z.ZodNumber;
         date_of_birth: z.ZodNumber;
@@ -3011,6 +3242,7 @@ export declare const EmployeeAggregateResultSchema: z.ZodObject<{
     }, z.core.$strip>>;
     _min: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         uuid: z.ZodNullable<z.ZodString>;
+        avatar: z.ZodNullable<z.ZodString>;
         first_name: z.ZodNullable<z.ZodString>;
         last_name: z.ZodNullable<z.ZodString>;
         date_of_birth: z.ZodNullable<z.ZodDate>;
@@ -3022,6 +3254,7 @@ export declare const EmployeeAggregateResultSchema: z.ZodObject<{
     }, z.core.$strip>>>;
     _max: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         uuid: z.ZodNullable<z.ZodString>;
+        avatar: z.ZodNullable<z.ZodString>;
         first_name: z.ZodNullable<z.ZodString>;
         last_name: z.ZodNullable<z.ZodString>;
         date_of_birth: z.ZodNullable<z.ZodDate>;
@@ -3034,6 +3267,7 @@ export declare const EmployeeAggregateResultSchema: z.ZodObject<{
 }, z.core.$strip>;
 export declare const EmployeeGroupByResultSchema: z.ZodArray<z.ZodObject<{
     uuid: z.ZodString;
+    avatar: z.ZodString;
     first_name: z.ZodString;
     last_name: z.ZodString;
     date_of_birth: z.ZodDate;
@@ -3045,6 +3279,7 @@ export declare const EmployeeGroupByResultSchema: z.ZodArray<z.ZodObject<{
     _count: z.ZodOptional<z.ZodObject<{
         uuid: z.ZodNumber;
         account: z.ZodNumber;
+        avatar: z.ZodNumber;
         first_name: z.ZodNumber;
         last_name: z.ZodNumber;
         date_of_birth: z.ZodNumber;
@@ -3058,6 +3293,7 @@ export declare const EmployeeGroupByResultSchema: z.ZodArray<z.ZodObject<{
     }, z.core.$strip>>;
     _min: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         uuid: z.ZodNullable<z.ZodString>;
+        avatar: z.ZodNullable<z.ZodString>;
         first_name: z.ZodNullable<z.ZodString>;
         last_name: z.ZodNullable<z.ZodString>;
         date_of_birth: z.ZodNullable<z.ZodDate>;
@@ -3069,6 +3305,7 @@ export declare const EmployeeGroupByResultSchema: z.ZodArray<z.ZodObject<{
     }, z.core.$strip>>>;
     _max: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         uuid: z.ZodNullable<z.ZodString>;
+        avatar: z.ZodNullable<z.ZodString>;
         first_name: z.ZodNullable<z.ZodString>;
         last_name: z.ZodNullable<z.ZodString>;
         date_of_birth: z.ZodNullable<z.ZodDate>;
@@ -3090,6 +3327,7 @@ export declare const ContentFindUniqueResultSchema: z.ZodNullable<z.ZodObject<{
     expiration_time: z.ZodDate;
     content_type: z.ZodUnknown;
     status: z.ZodUnknown;
+    is_favorite: z.ZodBoolean;
 }, z.core.$strip>>;
 export declare const ContentFindFirstResultSchema: z.ZodNullable<z.ZodObject<{
     uuid: z.ZodString;
@@ -3101,6 +3339,7 @@ export declare const ContentFindFirstResultSchema: z.ZodNullable<z.ZodObject<{
     expiration_time: z.ZodDate;
     content_type: z.ZodUnknown;
     status: z.ZodUnknown;
+    is_favorite: z.ZodBoolean;
 }, z.core.$strip>>;
 export declare const ContentFindManyResultSchema: z.ZodObject<{
     data: z.ZodArray<z.ZodObject<{
@@ -3113,6 +3352,7 @@ export declare const ContentFindManyResultSchema: z.ZodObject<{
         expiration_time: z.ZodDate;
         content_type: z.ZodUnknown;
         status: z.ZodUnknown;
+        is_favorite: z.ZodBoolean;
     }, z.core.$strip>>;
     pagination: z.ZodObject<{
         page: z.ZodNumber;
@@ -3133,6 +3373,7 @@ export declare const ContentCreateResultSchema: z.ZodObject<{
     expiration_time: z.ZodDate;
     content_type: z.ZodUnknown;
     status: z.ZodUnknown;
+    is_favorite: z.ZodBoolean;
 }, z.core.$strip>;
 export declare const ContentCreateManyResultSchema: z.ZodObject<{
     count: z.ZodNumber;
@@ -3147,6 +3388,7 @@ export declare const ContentUpdateResultSchema: z.ZodNullable<z.ZodObject<{
     expiration_time: z.ZodDate;
     content_type: z.ZodUnknown;
     status: z.ZodUnknown;
+    is_favorite: z.ZodBoolean;
 }, z.core.$strip>>;
 export declare const ContentUpdateManyResultSchema: z.ZodObject<{
     count: z.ZodNumber;
@@ -3161,6 +3403,7 @@ export declare const ContentUpsertResultSchema: z.ZodObject<{
     expiration_time: z.ZodDate;
     content_type: z.ZodUnknown;
     status: z.ZodUnknown;
+    is_favorite: z.ZodBoolean;
 }, z.core.$strip>;
 export declare const ContentDeleteResultSchema: z.ZodNullable<z.ZodObject<{
     uuid: z.ZodString;
@@ -3172,6 +3415,7 @@ export declare const ContentDeleteResultSchema: z.ZodNullable<z.ZodObject<{
     expiration_time: z.ZodDate;
     content_type: z.ZodUnknown;
     status: z.ZodUnknown;
+    is_favorite: z.ZodBoolean;
 }, z.core.$strip>>;
 export declare const ContentDeleteManyResultSchema: z.ZodObject<{
     count: z.ZodNumber;
@@ -3187,6 +3431,7 @@ export declare const ContentAggregateResultSchema: z.ZodObject<{
         expiration_time: z.ZodNumber;
         content_type: z.ZodNumber;
         status: z.ZodNumber;
+        is_favorite: z.ZodNumber;
     }, z.core.$strip>>;
     _min: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         uuid: z.ZodNullable<z.ZodString>;
@@ -3212,6 +3457,7 @@ export declare const ContentGroupByResultSchema: z.ZodArray<z.ZodObject<{
     content_owner: z.ZodString;
     last_modified_time: z.ZodDate;
     expiration_time: z.ZodDate;
+    is_favorite: z.ZodBoolean;
     _count: z.ZodOptional<z.ZodObject<{
         uuid: z.ZodNumber;
         title: z.ZodNumber;
@@ -3222,6 +3468,7 @@ export declare const ContentGroupByResultSchema: z.ZodArray<z.ZodObject<{
         expiration_time: z.ZodNumber;
         content_type: z.ZodNumber;
         status: z.ZodNumber;
+        is_favorite: z.ZodNumber;
     }, z.core.$strip>>;
     _min: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         uuid: z.ZodNullable<z.ZodString>;
