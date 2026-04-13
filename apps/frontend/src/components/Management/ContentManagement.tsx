@@ -23,6 +23,7 @@ type ContentFormData = z.infer<
   typeof Schemas.ContentCreateInputObjectZodSchema
 >;
 type ContentRow = ContentFormData & { uuid: string };
+type Position = z.infer<typeof Schemas.PositionSchema>;
 import { API_ENDPOINTS } from "../../config";
 
 const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
