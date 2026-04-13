@@ -19,45 +19,55 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/create", async (req, res) => {
+  const body = Schemas.EmployeeCreateInputObjectSchema.safeParse(req.body);
+  if (!body.success) {
+    return res.status(400).json({ message: body.error.issues });
+  }
+  const data = body.data;
   try {
-    const body = Schemas.EmployeeCreateInputObjectSchema.parse(req.body);
-    console.log(body);
-    const employee = await prisma.employee.create({ data: body });
-    console.log("created empoyee");
-    res.status(200).send(employee);
+    const employee = await prisma.employee.create({ data });
+    res.status(201).json(employee);
   } catch (e) {
     console.error(e);
-    res.sendStatus(400);
+    if (e instanceof Prisma.PrismaClientKnownRequestError)
+      return res.status(500).json({
+        message:
+          "Internal server error. If you see this message, please report to a system administrator",
+      });
   }
 });
 
 router.put("/update/:uuid", async (req, res) => {
   const uuid = req.params.uuid;
-  try {
-    const body = Schemas.EmployeeUncheckedCreateWithoutAccountInputObjectZodSchema.omit(
-      { uuid: true },
-    )
-      .partial()
-      .parse(req.body);
 
-    try {
-      const employee = await prisma.employee.update({
-        where: { uuid: uuid },
-        data: body,
-      });
-      res.status(200).json({ message: employee });
-    } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === "P2025"
-      ) {
-        return res.status(400).json({ message: "Invalid content UUID" });
-      }
-    }
+  const body =
+    Schemas.EmployeeUncheckedCreateWithoutAccountInputObjectZodSchema.omit({
+      uuid: true,
+    })
+      .partial()
+      .safeParse(req.body);
+  if (!body.success) {
+    return res.status(400).json({ message: body.error.issues });
+  }
+  const data = body.data;
+  try {
+    const employee = await prisma.employee.update({
+      where: { uuid: uuid },
+      data,
+    });
+    res.status(200).json({ message: employee });
   } catch (e) {
-    if (e instanceof ZodError) {
-      res.status(400).json({ message: e.issues });
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
+      return res.status(400).json({ message: "Invalid content UUID" });
     }
+    console.error(e);
+    return res.status(500).json({
+      message:
+        "Internal server error. If you see this message, please report to a system administrator",
+    });
   }
 });
 
@@ -76,6 +86,11 @@ router.post("/delete/:uuid", async (req, res) => {
         message: "Invalid content UUID",
       });
     }
+    console.error(e);
+    return res.status(500).json({
+      message:
+        "Internal server error. If you see this message, please report to a system administrator",
+    });
   }
 });
 
