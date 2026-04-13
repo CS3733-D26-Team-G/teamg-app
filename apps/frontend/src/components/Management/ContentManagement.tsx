@@ -9,6 +9,7 @@ import {
   styled,
   Typography,
   Link,
+  Chip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -55,7 +56,12 @@ export default function ContentManagement({
       rows.filter((row) => {
         if (!searchQuery.trim()) return true;
 
-        const targetFields = [row.title, row.url, row.content_owner];
+        const targetFields = [
+          row.title,
+          row.url,
+          row.content_owner,
+          row.for_position,
+        ];
         return targetFields.some((field) =>
           field?.toLowerCase().includes(searchQuery.toLowerCase()),
         );
@@ -195,6 +201,22 @@ export default function ContentManagement({
       ),
     },
     { field: "content_owner", headerName: "Content Owner", flex: 1 },
+    {
+      field: "for_position",
+      headerName: "Position",
+      width: 160,
+      renderCell: (params) => {
+        const role = params.value as Position;
+        return (
+          <Chip
+            label={role}
+            color={colorMap[role] ?? "default"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
+    },
     { field: "content_type", headerName: "Type", width: 130 },
     { field: "status", headerName: "Status", width: 120 },
     {
@@ -213,6 +235,11 @@ export default function ContentManagement({
       ),
     },
   ];
+  const colorMap: Record<Position, "error" | "info" | "success"> = {
+    ADMIN: "error",
+    UNDERWRITER: "info",
+    BUSINESS_ANALYST: "success",
+  };
 
   return (
     <Box sx={{ height: 400 }}>
