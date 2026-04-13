@@ -199,7 +199,7 @@ export default function Sidebar() {
             <Avatar sx={{ width: 32, height: 32 }} />
           </ListItemIcon>
           {isOpen && <ListItemText primary="Name" />}
-          <KeyboardArrowUpIcon />
+          {isOpen && <KeyboardArrowUpIcon />}
         </ListItemButton>
       </Box>
       <Menu
