@@ -9,6 +9,7 @@ import {
   styled,
   Typography,
   Link,
+  Chip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -23,11 +24,25 @@ type ContentFormData = z.infer<
   typeof Schemas.ContentCreateInputObjectZodSchema
 >;
 type ContentRow = ContentFormData & { uuid: string };
+type Position = z.infer<typeof Schemas.PositionSchema>;
+type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
 import { API_ENDPOINTS } from "../../config";
 
 const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   uuid: z.string(),
 });
+
+const positionLabels: Record<Position, string> = {
+  UNDERWRITER: "UNDERWRITER",
+  BUSINESS_ANALYST: "BUSINESS ANALYST",
+  ADMIN: "ADMIN",
+};
+
+const statusLabels: Record<ContentStatus, string> = {
+  AVAILABLE: "AVAILABLE",
+  IN_USE: "IN USE",
+  UNAVAILABLE: "UNAVAILABLE",
+};
 
 interface ContentManagementProps {
   viewState: ContentRow | "new" | null;
@@ -54,7 +69,12 @@ export default function ContentManagement({
       rows.filter((row) => {
         if (!searchQuery.trim()) return true;
 
-        const targetFields = [row.title, row.url, row.content_owner];
+        const targetFields = [
+          row.title,
+          row.url,
+          row.content_owner,
+          row.for_position,
+        ];
         return targetFields.some((field) =>
           field?.toLowerCase().includes(searchQuery.toLowerCase()),
         );
@@ -194,8 +214,32 @@ export default function ContentManagement({
       ),
     },
     { field: "content_owner", headerName: "Content Owner", flex: 1 },
+    {
+      field: "for_position",
+      headerName: "Position",
+      width: 160,
+      renderCell: (params) => {
+        const role = params.value as Position;
+        return (
+          <Chip
+            label={positionLabels[role]}
+            color={colorMap[role] ?? "default"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
+    },
     { field: "content_type", headerName: "Type", width: 130 },
-    { field: "status", headerName: "Status", width: 120 },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) => {
+        const contStatus = params.value as ContentStatus;
+        return statusLabels[contStatus] ?? contStatus;
+      },
+    },
     {
       field: "actions",
       headerName: "Actions",
@@ -212,6 +256,11 @@ export default function ContentManagement({
       ),
     },
   ];
+  const colorMap: Record<Position, "error" | "info" | "success"> = {
+    ADMIN: "error",
+    UNDERWRITER: "info",
+    BUSINESS_ANALYST: "success",
+  };
 
   return (
     <Box sx={{ height: 400 }}>
