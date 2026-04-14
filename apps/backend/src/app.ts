@@ -22,26 +22,22 @@ const allowedOrigins =
 const corsOptions: cors.CorsOptions = {
   origin(origin, callback) {
     // Allow non-browser / same-origin requests with no Origin header
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
+    if (!origin) {
+      console.log("Received request with no Origin header");
       return callback(null, true);
     }
 
-    console.error("CORS blocked origin:", origin);
+    if (allowedOrigins.includes(origin)) {
+      console.log("Received request from matching origin: ", origin);
+      return callback(null, true);
+    }
+
+    console.log("Received request from disallowed origin: ", origin);
     return callback(new Error(`Origin not allowed by CORS: ${origin}`));
   },
   credentials: true,
 };
-
 app.use(cors(corsOptions));
-
-// app.use(
-//   cors({
-//     origin: allowedOrigins,
-//     credentials: true,
-//   }),
-// );
 
 app.get("/", (_req, res) => {
   res.status(200).json({
