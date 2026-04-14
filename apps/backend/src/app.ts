@@ -35,9 +35,19 @@ app.get("/", (_req, res) => {
 
 app.use(auth);
 
+// import contentRouter from "./routes/content.ts";
+// import employeeRouter from "./routes/employee.ts";
+// import loginRouter from "./routes/login.ts";
+// import logoutRouter from "./routes/logout.ts";
+// app.use("/content", contentRouter);
+// app.use("/employee", employeeRouter);
+// app.use("/login", loginRouter);
+// app.use("/login", logoutRouter);
+
 const routes = ["content", "employee", "login", "logout"];
 for (const route of routes) {
   const { default: router } = await import(`./routes/${route}.ts`);
+  console.log(`Loaded /${route} route`);
   app.use(`/${route}`, router);
 }
 
