@@ -1,19 +1,16 @@
-import HanoverLogoWhite from "../assets/HanoverLogoWhite.png";
-import HanoverVols from "../assets/HanoverVols.png";
-import { useNavigate } from "react-router";
 import { useState } from "react";
-import { Box, Button } from "@mui/material";
-import theme from "../theme.tsx";
-import { Alert, Collapse } from "@mui/material";
+import { useNavigate } from "react-router";
+import { Box, Button, Alert, Collapse } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 
+import HanoverLogoWhite from "../assets/HanoverLogoWhite.png";
+import HanoverVols from "../assets/HanoverVols.png";
+import LoginPopUp from "../pages/LoginPopUp.tsx";
+import theme from "../theme.tsx";
+
 export default function HeroSection() {
-  const navigate = useNavigate(); // 2. Initialize the navigate function
-
-  const handleLoginClick = () => {
-    navigate("/login"); // 3. Define where to go (matches your route path)
-  };
-
+  const navigate = useNavigate();
+  const [loginOpen, setLoginOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(true);
 
   return (
@@ -29,6 +26,12 @@ export default function HeroSection() {
         overflowX: "hidden",
       }}
     >
+      {/* Login Modal */}
+      <LoginPopUp
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+      />
+
       {/* Dark overlay so text stays readable */}
       <Box
         className="absolute inset-0"
@@ -38,6 +41,8 @@ export default function HeroSection() {
           zIndex: 0,
         }}
       />
+
+      {/* WPI Disclaimer */}
       <Collapse in={disclaimerOpen}>
         <Alert
           severity="info"
@@ -61,7 +66,10 @@ export default function HeroSection() {
       </Collapse>
 
       {/* Top bar */}
-      <Box className="relative flex items-center justify-between px-7 py-4">
+      <Box
+        className="relative flex items-center justify-between px-7 py-4"
+        sx={{ zIndex: 1 }}
+      >
         <Box>
           <img
             src={HanoverLogoWhite}
@@ -70,9 +78,8 @@ export default function HeroSection() {
           />
         </Box>
 
-        {/* Login button */}
         <Button
-          onClick={() => navigate("/login")}
+          onClick={() => setLoginOpen(true)}
           sx={{
             "position": "absolute",
             "right": 40,
@@ -100,6 +107,7 @@ export default function HeroSection() {
           fontFamily: theme.typography.fontFamily,
           color: "white",
           mb: 8,
+          zIndex: 1,
         }}
       >
         {[
