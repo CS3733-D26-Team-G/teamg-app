@@ -40,9 +40,15 @@ router.post("/", async (req, res) => {
       path: "/",
     });
 
-    const employee = (await prisma.employee.findUnique({
+    const employee = await prisma.employee.findUnique({
       where: { uuid: account.employeeUuid },
-    }))!;
+    });
+    if (employee == null) {
+      return res.status(500).json({
+        message:
+          "Internal server error. If you see this message, please report to a system administrator",
+      });
+    }
 
     res.status(200).json({
       username: account.username,
