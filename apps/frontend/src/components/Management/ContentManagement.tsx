@@ -72,6 +72,7 @@ export default function ContentManagement({
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDoc, setSelectedDoc] = useState<ViewerDocument | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
