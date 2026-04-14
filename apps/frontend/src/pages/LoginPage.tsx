@@ -154,7 +154,7 @@ function LoginPage() {
                 const body = await resp.json();
                 localStorage.setItem("account_type", body.account_type);
                 localStorage.setItem(
-                  "employee_posiition",
+                  "employee_position",
                   body.employee_position,
                 );
                 navigate("/dashboard");
