@@ -4,7 +4,6 @@ import { Typography } from "@mui/material";
 import Divider from "@mui/material/Divider";
 import CardHeader from "@mui/material/CardHeader";
 
-import "./dashboard.css";
 import { Co2 } from "@mui/icons-material";
 
 export default function DashboardRecentActivity() {

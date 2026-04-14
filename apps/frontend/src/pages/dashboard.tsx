@@ -1,7 +1,6 @@
 import { useState } from "react";
 import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivity";
 import SearchBar from "./DashboardComponents/SearchBar";
-import "./DashboardComponents/dashboard.css";
 import PieChart from "./DashboardComponents/PieChart";
 import BarChart from "./DashboardComponents/BarChart";
 
