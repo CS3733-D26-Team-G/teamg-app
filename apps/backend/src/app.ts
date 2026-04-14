@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import { auth } from "./middlewares/auth.js";
 
 const app = express();
-const port = process.env.PORT;
+const port = process.env.PORT!;
 
 const isProd = process.env.NODE_ENV === "production";
 console.log("Running as: ", isProd ? "production" : "testing");
@@ -19,7 +19,6 @@ const allowedOrigins =
   isProd ?
     ["https://teamg-app-frontend.vercel.app"]
   : ["http://localhost:9999"];
-
 app.use(
   cors({
     origin: allowedOrigins,
@@ -32,8 +31,8 @@ app.get("/", (_req, res) => {
     isProd,
   });
 });
-
 app.use(auth);
+
 import contentRouter from "./routes/content.js";
 import employeeRouter from "./routes/employee.js";
 import loginRouter from "./routes/login.js";
