@@ -328,11 +328,16 @@ export default function ContentManagement({
           <DataGrid
             rows={filteredRows}
             getRowId={(row) => row.uuid}
-            columns={getColumns(setViewState, handleDelete, (row) =>
-              setSelectedDoc({
-                uri: row.url,
-                fileName: row.title,
-              }),
+            columns={getColumns(
+              setViewState,
+              handleDelete,
+              (row: ContentRow) => {
+                setSelectedDoc({
+                  uri: row.url,
+                  fileName: row.title,
+                });
+                setPreviewOpen(true);
+              },
             )}
             initialState={{
               pagination: { paginationModel: { pageSize: 5 } },
