@@ -209,7 +209,7 @@ export default function EmployeeManagement() {
                   width: 32,
                   height: 32,
                   bgcolor: avatar ? "transparent" : "primary.main",
-                  fontSize: "0.875rem", // Fixed the typo: was '.0875rem'
+                  fontSize: "0.875rem",
                 }}
               >
                 {initials}

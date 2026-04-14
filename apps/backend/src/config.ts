@@ -7,7 +7,7 @@ export const allowedOriginsMap = {
   staging: [
     "https://teamg-app-frontend-env-staging-cs-3733-d26-team-g.vercel.app",
   ],
-  development: ["http://localhost:9999"],
+  development: ["http://localhost:10000"],
 };
 
 import contentRouter from "./routes/content.ts";

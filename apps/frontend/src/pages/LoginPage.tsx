@@ -153,6 +153,10 @@ function LoginPage() {
                 }
                 const body = await resp.json();
                 localStorage.setItem("account_type", body.account_type);
+                localStorage.setItem(
+                  "employee_posiition",
+                  body.employee_position,
+                );
                 navigate("/dashboard");
                 console.log(body);
               } catch (e) {
