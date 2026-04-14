@@ -64,6 +64,12 @@ export default function ContentManagement({
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [userAccountType] = useState(localStorage.getItem("employee_type"));
+
+  console.log(userAccountType);
+
+  const isSystemAdmin = userAccountType === "ADMIN";
+
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
@@ -216,12 +222,13 @@ export default function ContentManagement({
       field: "favorite",
       headerName: "Favorite",
       width: 60,
+      valueGetter: (value, row) => row.is_favorite,
       renderCell: (params) => (
         <>
           <IconButton onClick={() => toggleFavorite(params.row)}>
             <Heart
               size={20}
-              fill={params.row.is_favorite ? "ff4d4f" : "none"}
+              fill={params.row.is_favorite ? "#e50000" : "none"}
               color={params.row.is_favorite ? "ff4d4f" : "#e50000"}
             ></Heart>
           </IconButton>
@@ -279,16 +286,33 @@ export default function ContentManagement({
       field: "actions",
       headerName: "Actions",
       width: 120,
-      renderCell: (params) => (
-        <>
-          <IconButton onClick={() => setViewState(params.row)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton onClick={() => onDelete(params.row)}>
-            <DeleteIcon color="error" />
-          </IconButton>
-        </>
-      ),
+      renderCell: (params) => {
+        const hasPermission =
+          isSystemAdmin || userAccountType === params.row.for_position;
+
+        return (
+          <>
+            <IconButton
+              onClick={() => setViewState(params.row)}
+              disabled={!hasPermission}
+              sx={{
+                color: !hasPermission ? "text.disabled" : "inherit",
+              }}
+            >
+              <EditIcon />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(params.row)}
+              disabled={!hasPermission}
+              sx={{
+                color: !hasPermission ? "text.disabled" : "inherit",
+              }}
+            >
+              <DeleteIcon color="error" />
+            </IconButton>
+          </>
+        );
+      },
     },
   ];
   const colorMap: Record<Position, "error" | "info" | "success"> = {
@@ -351,8 +375,31 @@ export default function ContentManagement({
             rows={filteredRows}
             getRowId={(row) => row.uuid}
             columns={getColumns(setViewState, handleDelete)}
+            getRowClassName={(params) => {
+              const hasPermission =
+                isSystemAdmin || userAccountType === params.row.for_position;
+              return hasPermission ? "" : "row-locked";
+            }}
+            sx={{
+              "& .row-locked": {
+                "backgroundColor": "rgba(245, 245, 245, 1)",
+                "color": "text.disabled",
+                "cursor": "not-allowed",
+                "&:hover": {
+                  backgroundColor: "rgba(240, 240, 240, 1)",
+                },
+              },
+              "& .row-locked a": {
+                color: "inherit",
+                pointerEvents: "none",
+                textDecoration: "none",
+              },
+            }}
             initialState={{
               pagination: { paginationModel: { pageSize: 5 } },
+              sorting: {
+                sortModel: [{ field: "favorite", sort: "desc" }],
+              },
             }}
             pageSizeOptions={[5, 10]}
           />
