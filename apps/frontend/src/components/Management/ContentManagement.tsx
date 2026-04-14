@@ -275,6 +275,17 @@ export default function ContentManagement({
     BUSINESS_ANALYST: "success",
   };
 
+  if (viewState) {
+    return (
+      <Box sx={{ height: 400 }}>
+        <ContentForm
+          initialData={viewState === "new" ? null : viewState}
+          onSave={handleSave}
+          onCancel={() => setViewState(null)}
+        />
+      </Box>
+    );
+  }
   return (
     <Box sx={{ height: 400 }}>
       {viewState ?
