@@ -209,7 +209,7 @@ export default function EmployeeManagement() {
                   width: 32,
                   height: 32,
                   bgcolor: avatar ? "transparent" : "primary.main",
-                  fontSize: "0.875rem", // Fixed the typo: was '.0875rem'
+                  fontSize: "0.875rem",
                 }}
               >
                 {initials}
@@ -276,14 +276,14 @@ export default function EmployeeManagement() {
   };
 
   return (
-    <Box sx={{ height: 650, p: 2 }}>
+    <Box sx={{ height: 650 }}>
       {viewState ?
         <ManageEmployeeForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
           onCancel={() => setViewState(null)}
         />
-      : <Box>
+      : <Box sx={{}}>
           <AppBar
             position="static"
             sx={{
@@ -333,7 +333,7 @@ export default function EmployeeManagement() {
             initialState={{
               pagination: { paginationModel: { pageSize: 5 } },
             }}
-            sx={{ mt: 2 }}
+            sx={{}}
           />
         </Box>
       }

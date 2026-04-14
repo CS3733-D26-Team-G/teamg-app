@@ -64,7 +64,7 @@ export default function ContentManagement({
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [userAccountType] = useState(localStorage.getItem("employee_type"));
+  const [userAccountType] = useState(localStorage.getItem("employee_position"));
 
   console.log(userAccountType);
   console.log(localStorage);

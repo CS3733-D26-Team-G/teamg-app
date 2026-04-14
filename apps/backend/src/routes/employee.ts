@@ -2,7 +2,6 @@ import express from "express";
 import { prisma } from "@repo/db";
 import { Schemas } from "@repo/zod";
 import { Prisma } from "@repo/db";
-import { ZodError } from "zod";
 
 const router = express.Router();
 

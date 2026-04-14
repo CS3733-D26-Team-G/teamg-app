@@ -1,10 +1,9 @@
 import express from "express";
+import { isProd } from "../config.ts";
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
-  const isProd = process.env.NODE_ENV === "production";
-
   res.clearCookie("token", {
     httpOnly: true,
     secure: isProd,

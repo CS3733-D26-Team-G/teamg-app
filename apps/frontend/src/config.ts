@@ -1,7 +1,15 @@
-const isLocal = window.location.hostname === "localhost";
+const environment = import.meta.env.VITE_APP_ENV;
+console.log("Environment: ", environment);
+
+const apiBaseUrlMap = {
+  production: "https://teamg-app-backend.vercel.app",
+  staging:
+    "https://teamg-app-backend-env-staging-cs-3733-d26-team-g.vercel.app",
+  development: "http://localhost:3000",
+};
 
 export const API_BASE_URL =
-  isLocal ? "http://localhost:3000" : "https://teamg-app-backend.vercel.app";
+  apiBaseUrlMap[environment as keyof typeof apiBaseUrlMap];
 
 export const API_ENDPOINTS = {
   LOGIN: `${API_BASE_URL}/login`,
