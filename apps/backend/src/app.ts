@@ -17,16 +17,39 @@ app.use(morgan("dev"));
 app.use(cookieParser());
 
 const allowedOrigins =
-  isProd ?
-    ["https://teamg-app-frontend.vercel.app"]
-  : ["http://localhost:10000"];
+  allowedOriginsMap[environment as keyof typeof allowedOriginsMap];
+app.use((req, _res, next) => {
+  console.log("method:", req.method);
+  console.log("path:", req.path);
+  console.log("origin header:", req.headers.origin);
+  console.log("environment:", environment);
+  console.log("allowedOrigins:", allowedOrigins);
+  next();
+});
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  }),
-);
+const corsOptions: cors.CorsOptions = {
+  origin(origin, callback) {
+    // Allow non-browser / same-origin requests with no Origin header
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.error("CORS blocked origin:", origin);
+    return callback(new Error(`Origin not allowed by CORS: ${origin}`));
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+// app.options("*", cors(corsOptions));
+// app.use(
+//   cors({
+//     origin: allowedOrigins,
+//     credentials: true,
+//   }),
+// );
 
 app.get("/", (_req, res) => {
   res.status(200).json({
