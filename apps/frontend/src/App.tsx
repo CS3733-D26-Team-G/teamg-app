@@ -29,7 +29,7 @@ function App() {
       <div style={{ display: "flex", minHeight: "100vh" }}>
         {!isHeroPage && !isLoginPage && <Sidebar />}
 
-        <div style={{ flexGrow: 1, overflow: "hidden", minWidth: 0 }}>
+        <div style={{ flexGrow: 1, minWidth: 0 }}>
           <Routes>
             <Route
               path="/"

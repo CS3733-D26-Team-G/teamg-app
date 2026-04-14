@@ -37,6 +37,7 @@ export default function HeroSection() {
       <Box
         className="absolute inset-0"
         sx={{
+          position: "fixed",
           background:
             "linear-gradient(90deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,0.75) 25%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0) 100%)",
           zIndex: 0,

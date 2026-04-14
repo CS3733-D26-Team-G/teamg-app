@@ -17,7 +17,13 @@ import { API_ENDPOINTS } from "../config.ts";
 import HanoverLoginPic from "../assets/hannoverBuilding.jpg";
 import HanoverLogo from "../assets/HanoverLogo.png";
 
-function LoginPopUp({ open, onClose }) {
+interface LoginPopUpProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+// 2. Apply it to the function parameters
+function LoginPopUp({ open, onClose }: LoginPopUpProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
