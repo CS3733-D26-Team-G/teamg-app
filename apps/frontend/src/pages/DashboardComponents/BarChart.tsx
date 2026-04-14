@@ -10,7 +10,7 @@ function BarChart() {
   return (
     <ChartsContainer
       width={500}
-      height={300}
+      height={200}
       series={[{ data: uData, label: "uv", type: "bar" }]}
       xAxis={[
         {

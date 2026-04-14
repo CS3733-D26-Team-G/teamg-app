@@ -23,6 +23,6 @@ body {
 }
 
 div#root {
-  background: linear-gradient(135deg, #9abce0 0%, #ffffff 48%);
-
+  /*background: linear-gradient(135deg, #9abce0 0%, #ffffff 48%);*/
+  background: #EBF5FF
 }

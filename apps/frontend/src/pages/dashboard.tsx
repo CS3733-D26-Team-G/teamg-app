@@ -4,38 +4,71 @@ import SearchBar from "./DashboardComponents/SearchBar";
 import PieChart from "./DashboardComponents/PieChart";
 import BarChart from "./DashboardComponents/BarChart";
 import { Typography } from "@mui/material";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardHeader from "@mui/material/CardHeader";
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div>
-      <div className="relative min-h-screen">
-        <div className="fixed top-[10%] left-[25%] z-10">
-          <Typography variant="h3">Welcome to iBank!</Typography>
-          <Typography
-            variant="h2"
-            component="div"
-            className="pt-4"
-          >
-            Manage and Publish
-            <br />
-            content with ease
-          </Typography>
-          <div className="mt-6">
-            <SearchBar setSearchQuery={setSearchQuery} />
-          </div>
-        </div>
-        <div className="fixed right-[5%] top-[1%] bg-{#FFFFFF}">
-          <DashboardRecentActivity />
-        </div>
-        <div className="fixed left-[25%] bottom-[8%] z-50">
-          <PieChart />
-        </div>
-        <div className="fixed right-[5%] bottom-[1%] z-50">
-          <BarChart />
+    <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
+      <div className="flex justify-between items-center -mt-2 px-6 pb-4">
+        <Typography
+          variant="h2"
+          component="h2"
+        >
+          Welcome Back!
+        </Typography>
+        <div className="w-70">
+          {" "}
+          {/* Adjust width as needed */}
+          <SearchBar setSearchQuery={setSearchQuery} />
         </div>
       </div>
-    </div>
+      <CardContent className="flex-1 -mr-8 -ml-8 -mt-7">
+        <div className="flex justify-between gap-2 h-full items-start">
+          <Card className="flex-1 h-1/3 outline-1 drop-shadow-lg">
+            <CardContent className="h-full p-4">
+              <PieChart />
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1 h-1/3 outline-1 drop-shadow-lg">
+            <CardContent className="h-full place-items-center mr-5">
+              <BarChart />
+            </CardContent>
+          </Card>
+        </div>
+        <div className="bg-white h-1/3">
+          <DashboardRecentActivity />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
+// <Card className="h-[70%] min-h-[200px]">
+//   <CardContent className="relative flex flex-col h-90%">
+//     <div className="flex justify-between items-start gap-4">
+//       <div className="flex-1">
+//         <SearchBar setSearchQuery={setSearchQuery} />
+//       </div>
+//       <div className="bg-white">
+//         <DashboardRecentActivity />
+//       </div>
+//     </div>
+//
+//     <div className="flex justify-center p-0">
+//       <Card className="h-30vh">
+//         <div>
+//           <PieChart />
+//         </div>
+//       </Card>
+//       <Card className="h-30vh">
+//         <div>
+//           <BarChart />
+//         </div>
+//       </Card>
+//     </div>
+//   </CardContent>
+// </Card>

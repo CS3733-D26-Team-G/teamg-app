@@ -21,7 +21,9 @@ import { Schemas } from "@repo/zod";
 
 import { API_ENDPOINTS } from "../../config";
 
-type EmployeeFormData = z.infer<typeof Schemas.EmployeeCreateInputObjectZodSchema>;
+type EmployeeFormData = z.infer<
+  typeof Schemas.EmployeeCreateInputObjectZodSchema
+>;
 type EmployeeRow = EmployeeFormData & { uuid: string };
 type Position = z.infer<typeof Schemas.PositionSchema>;
 type Department = z.infer<typeof Schemas.DepartmentSchema>;
@@ -89,7 +91,9 @@ export default function EmployeeManagement() {
   }, [rows, searchQuery]);
 
   const handleDelete = async (row: EmployeeRow) => {
-    if (!window.confirm(`Remove employee ${row.first_name} ${row.last_name}?`)) {
+    if (
+      !window.confirm(`Remove employee ${row.first_name} ${row.last_name}?`)
+    ) {
       return;
     }
 
@@ -126,12 +130,14 @@ export default function EmployeeManagement() {
       ...(uuid ? { uuid } : {}),
     });
 
-    const url = isExisting
-      ? API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
+    const url =
+      isExisting ?
+        API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
       : API_ENDPOINTS.EMPLOYEE_CREATE;
 
-    const body = isExisting
-      ? (() => {
+    const body =
+      isExisting ?
+        (() => {
           const { uuid: _omit, ...rest } = parsedFull;
           return rest;
         })()
@@ -197,7 +203,8 @@ export default function EmployeeManagement() {
         field: "department",
         headerName: "Department",
         width: 190,
-        valueGetter: (value) => deptLabels[value as Department] ?? String(value),
+        valueGetter: (value) =>
+          deptLabels[value as Department] ?? String(value),
       },
       {
         field: "corporate_email",
@@ -233,14 +240,13 @@ export default function EmployeeManagement() {
 
   return (
     <Box sx={{ height: 650, width: "100%", p: 2 }}>
-      {viewState ? (
+      {viewState ?
         <ManageEmployeeForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
           onCancel={() => setViewState(null)}
         />
-      ) : (
-        <Box>
+      : <Box>
           <AppBar
             position="static"
             sx={{
@@ -248,11 +254,12 @@ export default function EmployeeManagement() {
               boxShadow: "none",
               width: "100%",
               boxSizing: "border-box",
+              borderRadius: 5,
             }}
           >
             <StyledToolbar sx={{ width: "100%", px: 0 }}>
               <Typography
-                variant="h4"
+                variant="h3"
                 sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
               >
                 Employee Management
@@ -290,10 +297,10 @@ export default function EmployeeManagement() {
             initialState={{
               pagination: { paginationModel: { pageSize: 5 } },
             }}
-            sx={{ mt: 2 }}
+            sx={{ mt: 2, borderRadius: 5 }}
           />
         </Box>
-      )}
+      }
     </Box>
   );
 }

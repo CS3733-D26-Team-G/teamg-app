@@ -10,9 +10,9 @@ export default function DashboardRecentActivity() {
   return (
     <Card
       className="max-h-200px min-w-500px right-[20%]
-     outline-gray-200 outline-2 drop-shadow-lg"
+     outline-gray-200 outline-1 drop-shadow-lg"
     >
-      <CardContent className="p=0">
+      <CardContent className="p=0 -mt-8 text-left max-h-270px">
         <CardHeader
           title={<Typography variant="h3">Recent Activity</Typography>}
         />
