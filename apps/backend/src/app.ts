@@ -26,18 +26,17 @@ app.use(
     credentials: true,
   }),
 );
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.status(200).json({
     status: "200 OK",
-    debug: {
-      NODE_ENV: process.env.NODE_ENV,
-    },
+    test: "test",
+    isProd,
   });
 });
 
 app.use(auth);
 
-const routes = ["content, employee, login, logout"];
+const routes = ["content", "employee", "login", "logout"];
 for (const route of routes) {
   const { default: router } = await import(`./routes/${route}`);
   app.use(`/${route}`, router);
