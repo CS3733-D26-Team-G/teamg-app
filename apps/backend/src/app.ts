@@ -4,47 +4,36 @@ import morgan from "morgan";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { auth } from "./middlewares/auth.js";
+import { isProd, environment, allowedOriginsMap, routeMap } from "./config.ts";
 
 const app = express();
 const port = process.env.PORT!;
 
-const isProd = process.env.NODE_ENV === "production";
-console.log("Running as: ", isProd ? "production" : "testing");
+console.log("Running as: ", isProd ? "production" : "development");
 
 // Middleware
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(cookieParser());
-const allowedOrigins =
-  isProd ?
-    ["https://teamg-app-frontend.vercel.app"]
-  : ["http://localhost:10000"];
 
+const allowedOrigins =
+  allowedOriginsMap[environment as keyof typeof allowedOriginsMap];
 app.use(
   cors({
     origin: allowedOrigins,
     credentials: true,
   }),
 );
+
 app.get("/", (_req, res) => {
   res.status(200).json({
     status: "200 OK",
     isProd,
+    environment,
+    allowedOrigins,
   });
 });
 app.use(auth);
-
-import contentRouter from "./routes/content.js";
-import employeeRouter from "./routes/employee.js";
-import loginRouter from "./routes/login.js";
-import logoutRouter from "./routes/logout.js";
-
-const routeMap = {
-  content: contentRouter,
-  employee: employeeRouter,
-  login: loginRouter,
-  logout: logoutRouter,
-};
 
 for (const [path, router] of Object.entries(routeMap)) {
   console.log(`Loaded /${path} route`);

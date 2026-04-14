@@ -3,6 +3,7 @@ import { Prisma } from "@repo/db";
 import { prisma } from "@repo/db";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
+import { isProd } from "../config.ts";
 
 const router = express.Router();
 export const LoginSchema = z.object({
@@ -29,8 +30,6 @@ router.post("/", async (req, res) => {
         expiresIn: "1h",
       },
     );
-
-    const isProd = process.env.NODE_ENV === "production";
 
     res.cookie("token", token, {
       httpOnly: true,
