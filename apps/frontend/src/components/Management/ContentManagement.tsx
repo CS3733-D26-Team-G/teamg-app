@@ -9,23 +9,40 @@ import {
   styled,
   Typography,
   Link,
+  Chip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import { z } from "zod";
-
+import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
 import { Schemas } from "@repo/zod";
 
-type ContentFormData = z.infer<typeof Schemas.ContentCreateInputObjectZodSchema>;
+type ContentFormData = z.infer<
+  typeof Schemas.ContentCreateInputObjectZodSchema
+>;
 type ContentRow = ContentFormData & { uuid: string };
+type Position = z.infer<typeof Schemas.PositionSchema>;
+type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
 import { API_ENDPOINTS } from "../../config";
 
 const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   uuid: z.string(),
 });
+
+const positionLabels: Record<Position, string> = {
+  UNDERWRITER: "UNDERWRITER",
+  BUSINESS_ANALYST: "BUSINESS ANALYST",
+  ADMIN: "ADMIN",
+};
+
+const statusLabels: Record<ContentStatus, string> = {
+  AVAILABLE: "AVAILABLE",
+  IN_USE: "IN USE",
+  UNAVAILABLE: "UNAVAILABLE",
+};
 
 interface ContentManagementProps {
   viewState: ContentRow | "new" | null;
@@ -47,12 +64,24 @@ export default function ContentManagement({
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [userAccountType] = useState(localStorage.getItem("employee_position"));
+
+  console.log(userAccountType);
+  console.log(localStorage);
+
+  const isSystemAdmin = userAccountType === "ADMIN";
+
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
         if (!searchQuery.trim()) return true;
 
-        const targetFields = [row.title, row.url, row.content_owner];
+        const targetFields = [
+          row.title,
+          row.url,
+          row.content_owner,
+          row.for_position,
+        ];
         return targetFields.some((field) =>
           field?.toLowerCase().includes(searchQuery.toLowerCase()),
         );
@@ -120,8 +149,9 @@ export default function ContentManagement({
       uuid,
     });
 
-    const url = isExisting
-      ? API_ENDPOINTS.CONTENT_EDIT(uuid)
+    const url =
+      isExisting ?
+        API_ENDPOINTS.CONTENT_EDIT(uuid)
       : API_ENDPOINTS.CONTENT_CREATE;
 
     try {
@@ -130,12 +160,12 @@ export default function ContentManagement({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(
-          isExisting
-            ? (() => {
-                const { uuid: _uuid, ...rest } = parsed;
-                return rest;
-              })()
-            : parsed,
+          isExisting ?
+            (() => {
+              const { uuid: _uuid, ...rest } = parsed;
+              return rest;
+            })()
+          : parsed,
         ),
       });
 
@@ -147,7 +177,10 @@ export default function ContentManagement({
         const parsedRows = z.array(ContentRowSchema).safeParse(updatedData);
 
         if (!parsedRows.success) {
-          console.error("Failed to validate refreshed content:", parsedRows.error);
+          console.error(
+            "Failed to validate refreshed content:",
+            parsedRows.error,
+          );
           setRows([]);
         } else {
           setRows(parsedRows.data);
@@ -163,10 +196,46 @@ export default function ContentManagement({
     }
   };
 
+  const toggleFavorite = async (row: ContentRow) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT_FAVORITE(row.uuid), {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (res.ok) {
+        const updatedRow = await res.json();
+        setRows((prevRows) =>
+          prevRows.map((r) => (r.uuid === updatedRow.uuid ? updatedRow : r)),
+        );
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  };
+
   const getColumns = (
     _onEdit: (row: ContentRow) => void,
     onDelete: (row: ContentRow) => void,
   ): GridColDef<ContentRow>[] => [
+    {
+      field: "favorite",
+      headerName: "Favorite",
+      width: 60,
+      valueGetter: (value, row) => row.is_favorite,
+      renderCell: (params) => (
+        <>
+          <IconButton onClick={() => toggleFavorite(params.row)}>
+            <Heart
+              size={20}
+              fill={params.row.is_favorite ? "#e50000" : "none"}
+              color={params.row.is_favorite ? "ff4d4f" : "#e50000"}
+            ></Heart>
+          </IconButton>
+        </>
+      ),
+    },
     { field: "title", headerName: "Title", flex: 1 },
     {
       field: "url",
@@ -188,35 +257,80 @@ export default function ContentManagement({
       ),
     },
     { field: "content_owner", headerName: "Content Owner", flex: 1 },
+    {
+      field: "for_position",
+      headerName: "Position",
+      width: 160,
+      renderCell: (params) => {
+        const role = params.value as Position;
+        return (
+          <Chip
+            label={positionLabels[role]}
+            color={colorMap[role] ?? "default"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
+    },
     { field: "content_type", headerName: "Type", width: 130 },
-    { field: "status", headerName: "Status", width: 120 },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) => {
+        const contStatus = params.value as ContentStatus;
+        return statusLabels[contStatus] ?? contStatus;
+      },
+    },
     {
       field: "actions",
       headerName: "Actions",
       width: 120,
-      renderCell: (params) => (
-        <>
-          <IconButton onClick={() => setViewState(params.row)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton onClick={() => onDelete(params.row)}>
-            <DeleteIcon color="error" />
-          </IconButton>
-        </>
-      ),
+      renderCell: (params) => {
+        const hasPermission =
+          isSystemAdmin || userAccountType === params.row.for_position;
+
+        return (
+          <>
+            <IconButton
+              onClick={() => setViewState(params.row)}
+              disabled={!hasPermission}
+              sx={{
+                color: !hasPermission ? "text.disabled" : "inherit",
+              }}
+            >
+              <EditIcon />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(params.row)}
+              disabled={!hasPermission}
+              sx={{
+                color: !hasPermission ? "text.disabled" : "inherit",
+              }}
+            >
+              <DeleteIcon color="error" />
+            </IconButton>
+          </>
+        );
+      },
     },
   ];
+  const colorMap: Record<Position, "error" | "info" | "success"> = {
+    ADMIN: "error",
+    UNDERWRITER: "info",
+    BUSINESS_ANALYST: "success",
+  };
 
   return (
-    <Box sx={{ height: 400, width: "100%" }}>
-      {viewState ? (
+    <Box sx={{ height: 400 }}>
+      {viewState ?
         <ContentForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
           onCancel={() => setViewState(null)}
         />
-      ) : (
-        <Box>
+      : <Box>
           <AppBar
             position="static"
             sx={{
@@ -262,13 +376,36 @@ export default function ContentManagement({
             rows={filteredRows}
             getRowId={(row) => row.uuid}
             columns={getColumns(setViewState, handleDelete)}
+            getRowClassName={(params) => {
+              const hasPermission =
+                isSystemAdmin || userAccountType === params.row.for_position;
+              return hasPermission ? "" : "row-locked";
+            }}
+            sx={{
+              "& .row-locked": {
+                "backgroundColor": "rgba(245, 245, 245, 1)",
+                "color": "text.disabled",
+                "cursor": "not-allowed",
+                "&:hover": {
+                  backgroundColor: "rgba(240, 240, 240, 1)",
+                },
+              },
+              "& .row-locked a": {
+                color: "inherit",
+                pointerEvents: "none",
+                textDecoration: "none",
+              },
+            }}
             initialState={{
               pagination: { paginationModel: { pageSize: 5 } },
+              sorting: {
+                sortModel: [{ field: "favorite", sort: "desc" }],
+              },
             }}
             pageSizeOptions={[5, 10]}
           />
         </Box>
-      )}
+      }
     </Box>
   );
 }

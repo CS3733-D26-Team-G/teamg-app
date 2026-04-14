@@ -3,6 +3,7 @@ import { Prisma } from "@repo/db";
 import { prisma } from "@repo/db";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
+import { isProd } from "../config.ts";
 
 const router = express.Router();
 export const LoginSchema = z.object({
@@ -30,8 +31,6 @@ router.post("/", async (req, res) => {
       },
     );
 
-    const isProd = process.env.NODE_ENV === "production";
-
     res.cookie("token", token, {
       httpOnly: true,
       secure: isProd,
@@ -40,9 +39,20 @@ router.post("/", async (req, res) => {
       path: "/",
     });
 
+    const employee = await prisma.employee.findUnique({
+      where: { uuid: account.employeeUuid },
+    });
+    if (employee == null) {
+      return res.status(500).json({
+        message:
+          "Internal server error. If you see this message, please report to a system administrator",
+      });
+    }
+
     res.status(200).json({
       username: account.username,
       account_type: account.type,
+      employee_position: employee.position,
     });
   } catch (e) {
     if (
@@ -51,7 +61,7 @@ router.post("/", async (req, res) => {
     ) {
       res.status(401).json({ message: "Invalid credentials" });
     } else {
-      // res.status(500).json({ message: e });
+      res.status(500).json({ message: e });
       console.error(e);
     }
   }

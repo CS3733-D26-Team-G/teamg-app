@@ -11,7 +11,7 @@ import Library from "./pages/library.tsx";
 import Activity from "./pages/activity.tsx";
 import Settings from "./pages/settings.tsx";
 import Profile from "./pages/profile.tsx";
-import LoginPage from "./pages/LoginPage.tsx";
+import LoginPopUp from "./pages/LoginPopUp.tsx";
 
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
@@ -21,23 +21,19 @@ import { useLocation } from "react-router";
 function App() {
   const location = useLocation();
   const isHeroPage = location.pathname === "/";
+  const isLoginPage = location.pathname === "/login";
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <div style={{ display: "flex", minHeight: "100vh" }}>
-        {!isHeroPage && <Sidebar />}
+        {!isHeroPage && !isLoginPage && <Sidebar />}
 
-        <div style={{ flexGrow: 1 }}>
+        <div style={{ flexGrow: 1, overflow: "hidden", minWidth: 0 }}>
           <Routes>
             <Route
               path="/"
               element={<Hero />}
-            />
-
-            <Route
-              path="/login"
-              element={<LoginPage />}
             />
 
             <Route
