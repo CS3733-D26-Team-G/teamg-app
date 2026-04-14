@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import Footer from "./Footer";
 import { Box, Button, Alert, Collapse } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 
@@ -8,6 +7,7 @@ import HanoverLogoWhite from "../assets/HanoverLogoWhite.png";
 import HanoverVols from "../assets/HanoverVols.png";
 import LoginPopUp from "../pages/LoginPopUp.tsx";
 import theme from "../theme.tsx";
+import Footer from "./Footer.tsx";
 
 export default function HeroSection() {
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ export default function HeroSection() {
       <Box
         className="absolute inset-0"
         sx={{
-          position: "fixed",
+          position: "absolute",
           background:
             "linear-gradient(90deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,0.75) 25%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0) 100%)",
           zIndex: 0,

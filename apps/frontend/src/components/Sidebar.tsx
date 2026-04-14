@@ -73,6 +73,8 @@ export default function Sidebar() {
       style={{
         width: isOpen ? "240px" : "64px",
         transition: "width 0.3s",
+        position: "sticky",
+        top: 0,
       }}
     >
       <Box
