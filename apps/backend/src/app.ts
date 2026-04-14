@@ -29,7 +29,6 @@ app.use(
 app.get("/", (_req, res) => {
   res.status(200).json({
     status: "200 OK",
-    test: "test",
     isProd,
   });
 });
