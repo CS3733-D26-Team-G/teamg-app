@@ -131,6 +131,14 @@ export default function EmployeeManagement() {
       ...(uuid ? { uuid } : {}),
     });
 
+    if (
+      !window.confirm(
+        `Are you sure you want to update "${formData.first_name + " " + formData.last_name}"?`,
+      )
+    ) {
+      return;
+    }
+
     const url =
       isExisting ?
         API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)

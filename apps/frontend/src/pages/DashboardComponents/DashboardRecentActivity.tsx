@@ -6,7 +6,14 @@ import "./dashboard.css";
 
 export default function DashboardRecentActivity() {
   return (
-    <Card className="recent-activity">
+    <Card
+      className="recent-activity"
+      sx={{
+        minWidth: "400px",
+        maxWidth: "800px",
+        minHeight: "40vh",
+      }}
+    >
       <CardContent className="recent-activity-content">
         <div className="recent-activity-tag">
           <Typography>Recent Activity</Typography>
