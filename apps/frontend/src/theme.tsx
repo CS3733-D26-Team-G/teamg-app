@@ -18,41 +18,39 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: "Archivo Black, Fira Sans",
+    fontFamily: "Rubik, Karla , sans-serif",
     h1: {
-      fontFamily: "Fira Sans",
-      fontSize: "xx-large",
-      fontWeight: "bold",
+      fontSize: "2.5rem",
+      fontWeight: 600,
     },
     h2: {
-      fontFamily: "Fira Sans",
-      fontSize: "x-large",
-      fontWeight: "bold",
+      fontSize: "2rem",
+      fontWeight: 600,
     },
     h3: {
-      fontFamily: "Fira Sans",
-      fontSize: "large",
-      fontWeight: "bold",
+      fontSize: "1rem",
+      fontWeight: 600,
     },
     h4: {
-      fontFamily: "Fira Sans",
-      fontSize: "medium",
-      fontWeight: "bold",
-    },
-    h5: {
-      fontFamily: "Fira Sans",
-      fontSize: "small",
-      fontWeight: "bold",
+      fontSize: ".5rem",
+      fontWeight: 600,
     },
     body1: {
-      fontFamily: "Fira Sans",
-      fontSize: "medium",
-      fontWeight: "regular",
+      fontSize: "1rem",
+      lineHeight: 1.5,
     },
     body2: {
-      fontFamily: "Fira Sans",
-      fontSize: "small",
-      fontWeight: "regular",
+      fontSize: "0.875rem",
+      lineHeight: 1.43,
+    },
+    caption: {
+      fontSize: "0.75rem",
+      color: "#6b6b6b",
+    },
+    overline: {
+      fontSize: "0.75rem",
+      fontWeight: 600,
+      textTransform: "uppercase",
     },
   },
   components: {
@@ -74,7 +72,7 @@ const theme = createTheme({
     MuiFormLabel: {
       styleOverrides: {
         root: {
-          fontFamily: "Playfair Display",
+          fontFamily: "Rubik",
           fontSize: "smaller",
           fontWeight: "lighter",
         },
