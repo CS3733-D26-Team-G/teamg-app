@@ -18,14 +18,6 @@ app.use(cookieParser());
 
 const allowedOrigins =
   allowedOriginsMap[environment as keyof typeof allowedOriginsMap];
-app.use((req, _res, next) => {
-  console.log("method:", req.method);
-  console.log("path:", req.path);
-  console.log("origin header:", req.headers.origin);
-  console.log("environment:", environment);
-  console.log("allowedOrigins:", allowedOrigins);
-  next();
-});
 
 const corsOptions: cors.CorsOptions = {
   origin(origin, callback) {
@@ -44,7 +36,6 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 
-// app.options("*", cors(corsOptions));
 // app.use(
 //   cors({
 //     origin: allowedOrigins,
