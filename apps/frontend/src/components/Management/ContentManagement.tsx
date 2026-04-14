@@ -140,18 +140,17 @@ export default function ContentManagement({
     }
   };
 
-  const handleSave = async (formData: ContentFormData) => {
+  const handleSave = async (payload: FormData) => {
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
 
-    if (!window.confirm(`Are you sure you want to save "${formData.title}"?`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to save "${payload.get("title")}"?`,
+      )
+    ) {
       return;
     }
-
-    const parsed = Schemas.ContentCreateInputObjectSchema.parse({
-      ...formData,
-      uuid,
-    });
 
     const url =
       isExisting ?
@@ -163,14 +162,7 @@ export default function ContentManagement({
         method: isExisting ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(
-          isExisting ?
-            (() => {
-              const { uuid: _uuid, ...rest } = parsed;
-              return rest;
-            })()
-          : parsed,
-        ),
+        body: payload,
       });
 
       if (res.ok) {
