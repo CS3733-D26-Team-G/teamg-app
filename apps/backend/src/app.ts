@@ -34,11 +34,21 @@ app.get("/", (_req, res) => {
 });
 
 app.use(auth);
+import contentRouter from "./routes/content.js";
+import employeeRouter from "./routes/employee.js";
+import loginRouter from "./routes/login.js";
+import logoutRouter from "./routes/logout.js";
 
-const routes = ["content", "employee", "login", "logout"];
-for (const route of routes) {
-  const { default: router } = await import(`./routes/${route}`);
-  app.use(`/${route}`, router);
+const routeMap = {
+  content: contentRouter,
+  employee: employeeRouter,
+  login: loginRouter,
+  logout: logoutRouter,
+};
+
+for (const [path, router] of Object.entries(routeMap)) {
+  console.log(`Loaded /${path} route`);
+  app.use(`/${path}`, router);
 }
 
 // Start server
