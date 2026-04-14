@@ -6,22 +6,21 @@ export default function Footer() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center",
         alignItems: "center",
         padding: "2rem",
         backgroundColor: "primary.main",
         color: "white",
         width: "100%",
-        position: "relative",
       }}
     >
       <Stack
         direction="row"
         sx={{
           width: "100%",
-          paddingX: "5rem",
+          paddingX: "17rem",
           justifyContent: "space-between",
           alignItems: "flex-start",
+          fontSize: "1.2rem",
         }}
       >
         <Stack
@@ -30,13 +29,17 @@ export default function Footer() {
           spacing={1}
           alignItems="center"
         >
-          <Typography variant="body2">
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: "1.5rem",
+            }}
+          >
             <b>Browser</b>
           </Typography>
           <Typography variant="body2">
             <MuiLink
               href="http://localhost:9999"
-              target="_self"
               color="inherit"
             >
               Home
@@ -45,164 +48,265 @@ export default function Footer() {
           <Typography variant="body2">
             <MuiLink
               href="http://localhost:9999/AboutUs"
-              target="_self"
               color="inherit"
             >
               About Us
             </MuiLink>
           </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/GuideTour"
+              color="inherit"
+            >
+              Guide Tour
+            </MuiLink>
+          </Typography>
         </Stack>
-
-        <Box
+        <Stack
+          className="employee-access-stack"
+          direction="column"
+          spacing={1}
+          alignItems="center"
+        >
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: "1.5rem",
+            }}
+          >
+            <b>Employee Access</b>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/EmployeePortal"
+              color="inherit"
+            >
+              Employee Portal
+            </MuiLink>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/EmployeePortal/HR-Self-Service"
+              color="inherit"
+            >
+              HR-Self Service
+            </MuiLink>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/EmployeePortal/News-&-Updates"
+              color="inherit"
+            >
+              News & Updates
+            </MuiLink>
+          </Typography>
+        </Stack>
+        <Stack
+          className="support-stack"
+          direction="column"
+          spacing={1}
+          alignItems="center"
+        >
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: "1.5rem",
+            }}
+          >
+            <b>Support</b>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/FAQ"
+              color="inherit"
+            >
+              FAQ
+            </MuiLink>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/ITSupport"
+              color="inherit"
+            >
+              IT Support
+            </MuiLink>
+          </Typography>
+        </Stack>
+        <Stack
+          className="legal-&-security-stack"
+          direction="column"
+          spacing={1}
+          alignItems="center"
+        >
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: "1.5rem",
+            }}
+          >
+            <b>Legal & Security</b>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/PrivacyPolicy"
+              color="inherit"
+            >
+              Privacy Policy
+            </MuiLink>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/TermsOfUse"
+              color="inherit"
+            >
+              Terms of Use
+            </MuiLink>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/CookiePolicy"
+              color="inherit"
+            >
+              Cookie Policy
+            </MuiLink>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="http://localhost:9999/Accessibility"
+              color="inherit"
+            >
+              Accessibility
+            </MuiLink>
+          </Typography>
+        </Stack>
+        <Stack
+          className="contact-us-stack"
+          direction="column"
+          alignItems="flex-start"
+          spacing={1}
           sx={{
-            display: "flex",
-            alignItems: "center",
-            height: "100%",
+            marginTop: "1rem",
           }}
         >
           <Typography
-            variant="h4"
-            align="center"
+            sx={{
+              fontSize: "2rem",
+            }}
           >
-            I'm thinking of adding awards here or their motto or both. Let me
-            know what you think?
+            <b>Contact Us</b>
           </Typography>
-        </Box>
-
-        <Stack
-          direction="row"
-          spacing={15}
-        >
           <Stack
-            className="contact-stack"
-            direction="column"
+            className="email-stack"
+            direction="row"
             spacing={1}
             alignItems="center"
+            sx={{
+              fontSize: "1.8rem",
+            }}
           >
-            <Typography variant="body2">
-              <b>Contact</b>
-            </Typography>
+            <img
+              src="/email-icon.png"
+              alt="Email Icon"
+              style={{
+                width: "40px",
+                height: "40px",
+                mixBlendMode: "multiply",
+              }}
+            />
             <Typography variant="body2">
               <MuiLink
-                href="https://maps.google.com/?q=440+Lincoln+Street+Worcester,+MA+01653"
+                href="mailto:teamG@welit.com"
                 target="_blank"
                 color="inherit"
               >
-                Location
-              </MuiLink>
-            </Typography>
-            <Typography variant="body2">
-              <MuiLink
-                href="mailto:Welit@teamg.com"
-                target="_blank"
-                color="inherit"
-              >
-                Email
-              </MuiLink>
-            </Typography>
-            <Typography variant="body2">
-              <MuiLink
-                href="tel:+1-800-TEAM-G"
-                target="_blank"
-                color="inherit"
-              >
-                Phone Number
+                teamG@welit.com
               </MuiLink>
             </Typography>
           </Stack>
           <Stack
-            className="Support-stack"
-            direction="column"
-            spacing={1}
+            className="phone-stack"
+            direction="row"
+            spacing={2}
             alignItems="center"
+            sx={{
+              fontSize: "1.8rem",
+            }}
           >
-            <Typography variant="body2">
-              <b>Support</b>
-            </Typography>
-            <Typography variant="body2">
-              <MuiLink
-                href="http://localhost:9999/FAQ"
-                target="_self"
-                color="inherit"
-              >
-                FAQ
-              </MuiLink>
-            </Typography>
+            <img
+              src="/phone-icon.png"
+              alt="Phone Icon"
+              style={{
+                width: "33px",
+                height: "33px",
+                mixBlendMode: "multiply",
+              }}
+            />
             <Typography variant="body2">
               <MuiLink
-                href="http://localhost:9999/ITSupport"
-                target="_self"
+                href="+1-800-TEAM-G"
+                target="_blank"
                 color="inherit"
               >
-                IT Support
+                1-800-TEAM-G
               </MuiLink>
             </Typography>
           </Stack>
         </Stack>
       </Stack>
-
       <Stack
-        className="legal-stack"
-        direction="row"
-        spacing={3}
+        className="copy-rights-&-awwards-stack"
+        direction="column"
+        spacing={1}
         alignItems="center"
-        justifyContent="center"
         sx={{
-          width: "100%",
-          marginTop: "2rem",
-          borderTop: "1px solid white",
-          paddingTop: "1rem",
+          marginTop: "3rem",
         }}
       >
-        <Typography variant="body2">
-          <MuiLink
-            href="http://localhost:9999/PrivacyPolicy"
-            target="_self"
-            color="inherit"
-          >
-            Privacy Policy
-          </MuiLink>
-        </Typography>
-        <Typography variant="body2">
-          <MuiLink
-            href="http://localhost:9999/TermsOfUse"
-            target="_self"
-            color="inherit"
-          >
-            Terms of Use
-          </MuiLink>
-        </Typography>
-        <Typography variant="body2">
-          <MuiLink
-            href="http://localhost:9999/CookiePolicy"
-            target="_self"
-            color="inherit"
-          >
-            Cookie Policy
-          </MuiLink>
-        </Typography>
-        <Typography variant="body2">
-          <MuiLink
-            href="http://localhost:9999/Accessibility"
-            target="_self"
-            color="inherit"
-          >
-            Accessibility
-          </MuiLink>
+        <Stack
+          className="awards-stack"
+          direction="row"
+          spacing={5}
+          alignItems="center"
+        >
+          <img
+            src="/best-company-award.png"
+            alt="Best Company Award"
+            style={{
+              width: "80px",
+              height: "80px",
+            }}
+          />
+          <img
+            src="/disability-award.png"
+            alt="Disability Award"
+            style={{
+              width: "120px",
+              height: "50px",
+            }}
+          />
+          <img
+            src="/equality-award.png"
+            alt="Equalink Award"
+            style={{
+              width: "95px",
+              height: "65px",
+            }}
+          />
+        </Stack>
+
+        <Typography
+          variant="body2"
+          sx={{
+            fontSize: "1rem",
+            marginTop: "2rem",
+            opacity: 0.7,
+          }}
+          align="center"
+        >
+          © 2026 The Hangover Insurance Group, Team G Prototype Inc. All rights
+          reserved.
         </Typography>
       </Stack>
-
-      <Typography
-        variant="body2"
-        sx={{
-          width: "100%",
-          marginTop: "0.5rem",
-        }}
-        align="center"
-      >
-        © 2026 The Hangover Insurance Group, Team G Prototype Inc. All rights
-        reserved.
-      </Typography>
     </Box>
   );
 }
