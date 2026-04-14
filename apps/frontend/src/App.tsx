@@ -21,12 +21,13 @@ import { useLocation } from "react-router";
 function App() {
   const location = useLocation();
   const isHeroPage = location.pathname === "/";
+  const isLoginPage = location.pathname === "/login";
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <div style={{ display: "flex", minHeight: "100vh" }}>
-        {!isHeroPage && <Sidebar />}
+        {!isHeroPage && !isLoginPage && <Sidebar />}
 
         <div style={{ flexGrow: 1, overflow: "hidden", minWidth: 0 }}>
           <Routes>
