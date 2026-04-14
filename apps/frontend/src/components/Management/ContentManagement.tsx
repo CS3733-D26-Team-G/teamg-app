@@ -288,83 +288,77 @@ export default function ContentManagement({
   }
   return (
     <Box sx={{ height: 400 }}>
-      {viewState ?
-        <ContentForm
-          initialData={viewState === "new" ? null : viewState}
-          onSave={handleSave}
-          onCancel={() => setViewState(null)}
-        />
-      : <Box>
-          <AppBar
-            position="static"
-            sx={{
-              backgroundColor: "white",
-              boxShadow: "none",
-              width: "100%",
-              boxSizing: "border-box",
-            }}
-          >
-            <StyledToolbar
-              sx={{ width: "100%", boxSizing: "border-box", px: 0 }}
+      <Box>
+        <AppBar
+          position="static"
+          sx={{
+            backgroundColor: "white",
+            boxShadow: "none",
+            width: "100%",
+            boxSizing: "border-box",
+          }}
+        >
+          <StyledToolbar sx={{ width: "100%", boxSizing: "border-box", px: 0 }}>
+            <Typography
+              variant="h4"
+              sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
             >
-              <Typography
-                variant="h4"
-                sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
-              >
-                Content Management
-              </Typography>
+              Content Management
+            </Typography>
 
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  width: "100%",
-                }}
-              >
-                <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-                  <HeaderSearchBar setSearchQuery={setSearchQuery} />
-                </Box>
-                <Button
-                  onClick={() => setViewState("new")}
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  sx={{ whiteSpace: "nowrap" }}
-                >
-                  New Content
-                </Button>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                width: "100%",
+              }}
+            >
+              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+                <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
-            </StyledToolbar>
-          </AppBar>
-          <DataGrid
-            rows={filteredRows}
-            getRowId={(row) => row.uuid}
-            columns={getColumns(
-              setViewState,
-              handleDelete,
-              (row: ContentRow) => {
-                setSelectedDoc({
-                  uri: row.url,
-                  fileName: row.title,
-                });
-                setPreviewOpen(true);
-              },
-            )}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 5 } },
-            }}
-            pageSizeOptions={[5, 10]}
-          />
-          {selectedDoc && (
-            <Box sx={{ mt: 3, height: "80vh" }}>
+              <Button
+                onClick={() => setViewState("new")}
+                variant="contained"
+                startIcon={<AddIcon />}
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                New Content
+              </Button>
+            </Box>
+          </StyledToolbar>
+        </AppBar>
+        <DataGrid
+          rows={filteredRows}
+          getRowId={(row) => row.uuid}
+          columns={getColumns(setViewState, handleDelete, (row: ContentRow) => {
+            setSelectedDoc({
+              uri: row.url,
+              fileName: row.title,
+            });
+            setPreviewOpen(true);
+          })}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 5 } },
+          }}
+          pageSizeOptions={[5, 10]}
+        />
+        <Dialog
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          maxWidth="lg"
+          fullWidth
+        >
+          <Box sx={{ p: 2, height: "80vh" }}>
+            {selectedDoc && (
               <DocViewer
                 documents={[selectedDoc]}
                 pluginRenderers={DocViewerRenderers}
               />
-            </Box>
-          )}
-        </Box>
-      }
+            )}
+          </Box>
+        </Dialog>
+      </Box>
     </Box>
   );
 }
