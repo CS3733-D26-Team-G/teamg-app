@@ -40,9 +40,14 @@ router.post("/", async (req, res) => {
       path: "/",
     });
 
+    const employee = (await prisma.employee.findUnique({
+      where: { uuid: account.employeeUuid },
+    }))!;
+
     res.status(200).json({
       username: account.username,
       account_type: account.type,
+      employee_position: employee.position,
     });
   } catch (e) {
     if (
@@ -51,7 +56,7 @@ router.post("/", async (req, res) => {
     ) {
       res.status(401).json({ message: "Invalid credentials" });
     } else {
-      // res.status(500).json({ message: e });
+      res.status(500).json({ message: e });
       console.error(e);
     }
   }
