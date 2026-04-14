@@ -9,6 +9,7 @@ import {
   styled,
   Typography,
   Link,
+  Chip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -19,13 +20,29 @@ import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
 import { Schemas } from "@repo/zod";
 
-type ContentFormData = z.infer<typeof Schemas.ContentCreateInputObjectZodSchema>;
+type ContentFormData = z.infer<
+  typeof Schemas.ContentCreateInputObjectZodSchema
+>;
 type ContentRow = ContentFormData & { uuid: string };
+type Position = z.infer<typeof Schemas.PositionSchema>;
+type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
 import { API_ENDPOINTS } from "../../config";
 
 const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   uuid: z.string(),
 });
+
+const positionLabels: Record<Position, string> = {
+  UNDERWRITER: "UNDERWRITER",
+  BUSINESS_ANALYST: "BUSINESS ANALYST",
+  ADMIN: "ADMIN",
+};
+
+const statusLabels: Record<ContentStatus, string> = {
+  AVAILABLE: "AVAILABLE",
+  IN_USE: "IN USE",
+  UNAVAILABLE: "UNAVAILABLE",
+};
 
 interface ContentManagementProps {
   viewState: ContentRow | "new" | null;
@@ -52,7 +69,12 @@ export default function ContentManagement({
       rows.filter((row) => {
         if (!searchQuery.trim()) return true;
 
-        const targetFields = [row.title, row.url, row.content_owner];
+        const targetFields = [
+          row.title,
+          row.url,
+          row.content_owner,
+          row.for_position,
+        ];
         return targetFields.some((field) =>
           field?.toLowerCase().includes(searchQuery.toLowerCase()),
         );
@@ -120,8 +142,9 @@ export default function ContentManagement({
       uuid,
     });
 
-    const url = isExisting
-      ? API_ENDPOINTS.CONTENT_EDIT(uuid)
+    const url =
+      isExisting ?
+        API_ENDPOINTS.CONTENT_EDIT(uuid)
       : API_ENDPOINTS.CONTENT_CREATE;
 
     try {
@@ -130,12 +153,12 @@ export default function ContentManagement({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(
-          isExisting
-            ? (() => {
-                const { uuid: _uuid, ...rest } = parsed;
-                return rest;
-              })()
-            : parsed,
+          isExisting ?
+            (() => {
+              const { uuid: _uuid, ...rest } = parsed;
+              return rest;
+            })()
+          : parsed,
         ),
       });
 
@@ -147,7 +170,10 @@ export default function ContentManagement({
         const parsedRows = z.array(ContentRowSchema).safeParse(updatedData);
 
         if (!parsedRows.success) {
-          console.error("Failed to validate refreshed content:", parsedRows.error);
+          console.error(
+            "Failed to validate refreshed content:",
+            parsedRows.error,
+          );
           setRows([]);
         } else {
           setRows(parsedRows.data);
@@ -188,8 +214,32 @@ export default function ContentManagement({
       ),
     },
     { field: "content_owner", headerName: "Content Owner", flex: 1 },
+    {
+      field: "for_position",
+      headerName: "Position",
+      width: 160,
+      renderCell: (params) => {
+        const role = params.value as Position;
+        return (
+          <Chip
+            label={positionLabels[role]}
+            color={colorMap[role] ?? "default"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
+    },
     { field: "content_type", headerName: "Type", width: 130 },
-    { field: "status", headerName: "Status", width: 120 },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) => {
+        const contStatus = params.value as ContentStatus;
+        return statusLabels[contStatus] ?? contStatus;
+      },
+    },
     {
       field: "actions",
       headerName: "Actions",
@@ -206,17 +256,21 @@ export default function ContentManagement({
       ),
     },
   ];
+  const colorMap: Record<Position, "error" | "info" | "success"> = {
+    ADMIN: "error",
+    UNDERWRITER: "info",
+    BUSINESS_ANALYST: "success",
+  };
 
   return (
-    <Box sx={{ height: 400, width: "100%" }}>
-      {viewState ? (
+    <Box sx={{ height: 400 }}>
+      {viewState ?
         <ContentForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
           onCancel={() => setViewState(null)}
         />
-      ) : (
-        <Box>
+      : <Box>
           <AppBar
             position="static"
             sx={{
@@ -268,7 +322,7 @@ export default function ContentManagement({
             pageSizeOptions={[5, 10]}
           />
         </Box>
-      )}
+      }
     </Box>
   );
 }
