@@ -17,7 +17,10 @@ app.use(morgan("dev"));
 app.use(cookieParser());
 
 const allowedOrigins =
-  allowedOriginsMap[environment as keyof typeof allowedOriginsMap];
+  isProd ?
+    ["https://teamg-app-frontend.vercel.app"]
+  : ["http://localhost:10000"];
+
 app.use(
   cors({
     origin: allowedOrigins,
