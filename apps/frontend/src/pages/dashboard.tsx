@@ -22,7 +22,6 @@ export default function Dashboard() {
         </Typography>
         <div className="w-70">
           {" "}
-          {/* Adjust width as needed */}
           <SearchBar setSearchQuery={setSearchQuery} />
         </div>
       </div>
