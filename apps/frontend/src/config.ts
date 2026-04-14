@@ -4,7 +4,7 @@ console.log("Environment: ", environment);
 const apiBaseUrlMap = {
   production: "https://teamg-app-backend.vercel.app",
   staging:
-    "https://teamg-app-backend-env-staging-cs-3733-d26-team-g.vercel.app/",
+    "https://teamg-app-backend-env-staging-cs-3733-d26-team-g.vercel.app",
   development: "http://localhost:3000",
 };
 
