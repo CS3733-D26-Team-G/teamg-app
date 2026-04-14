@@ -1,6 +1,7 @@
 import { ChartsContainer } from "@mui/x-charts/ChartsContainer";
 import { BarPlot } from "@mui/x-charts/BarChart";
-import { ChartsXAxis } from "@mui/x-charts";
+import { ChartsXAxis } from "@mui/x-charts/ChartsXAxis";
+import { ChartsYAxis } from "@mui/x-charts/ChartsYAxis";
 
 const uData = [4000, 3000, 2000];
 const xLabels = ["Available", "In Use", "Unavailable"];
@@ -13,6 +14,7 @@ function BarChart() {
       series={[{ data: uData, label: "uv", type: "bar" }]}
       xAxis={[
         {
+          id: "my-x-axis",
           scaleType: "band",
           data: xLabels,
           colorMap: {
@@ -23,7 +25,7 @@ function BarChart() {
         },
       ]}
     >
-      <ChartsXAxis position="bottom" />
+      <ChartsXAxis />
       <BarPlot />
     </ChartsContainer>
   );

@@ -116,3 +116,9 @@ body {
   overflow: hidden;
   margin: 0;
 }
+
+.archivo-black-regular {
+  font-family: "Archivo Black", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
