@@ -22,9 +22,54 @@ function LoginPopUp({ open, onClose }) {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState<string | null>(null); // Added for UI feedback
   const navigate = useNavigate();
 
   if (!open) return null;
+
+  const handleLogin = async () => {
+    setError(null);
+    console.log("Attempting login...");
+
+    try {
+      const resp = await fetch(API_ENDPOINTS.LOGIN, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Essential for cookies/sessions
+        body: JSON.stringify({
+          username: username,
+          password: password,
+        }),
+      });
+
+      if (resp.status === 401) {
+        setError("Invalid credentials");
+        return console.error("Invalid credentials");
+      }
+
+      if (!resp.ok) {
+        setError("Server error. Please try again.");
+        return;
+      }
+
+      const body = await resp.json();
+
+      // RESTORED: All localStorage items from the old version
+      localStorage.setItem("account_type", body.account_type);
+      localStorage.setItem("employee_position", body.employee_position);
+
+      console.log("Login successful:", body);
+
+      // Close modal before navigating
+      onClose();
+      navigate("/dashboard");
+    } catch (e) {
+      setError("Network error. Check your connection.");
+      console.error(e);
+    }
+  };
 
   return (
     <Box
@@ -51,16 +96,14 @@ function LoginPopUp({ open, onClose }) {
           display: "flex",
           flexDirection: "row",
           alignItems: "stretch",
-          boxShadow: "none",
-          border: "none",
-          outline: "none",
+          backgroundColor: "white",
         }}
       >
+        {/* Left Side: Image */}
         <Box
           sx={{
             width: "60%",
             height: "100%",
-            flexShrink: 0,
             display: { xs: "none", sm: "block" },
           }}
         >
@@ -71,17 +114,16 @@ function LoginPopUp({ open, onClose }) {
             sx={{
               width: "100%",
               height: "100%",
-              objectFit: "fill",
-              display: "block",
+              objectFit: "cover", // Changed from fill to cover for better aspect ratio
             }}
           />
         </Box>
 
+        {/* Right Side: Form */}
         <Box
           sx={{
-            width: "40%",
+            width: { xs: "100%", sm: "40%" },
             height: "100%",
-            backgroundColor: "white",
             px: 6,
             py: 5,
             display: "flex",
@@ -94,13 +136,12 @@ function LoginPopUp({ open, onClose }) {
             onClick={onClose}
             size="small"
             sx={{ position: "absolute", top: 14, right: 14, color: "#555" }}
-            aria-label="close login modal"
           >
             <Close />
           </IconButton>
 
           <Stack
-            spacing={3.5}
+            spacing={3}
             alignItems="center"
           >
             <Box
@@ -108,20 +149,27 @@ function LoginPopUp({ open, onClose }) {
               src={HanoverLogo}
               alt="Hanover Logo"
               sx={{
-                transform: "translate(0px, -15px)",
                 width: "70%",
                 maxWidth: 240,
-                height: "auto",
                 mb: 1,
               }}
             />
+
+            {error && (
+              <Typography
+                color="error"
+                variant="body2"
+                fontWeight="bold"
+              >
+                {error}
+              </Typography>
+            )}
 
             <TextField
               id="username"
               label="Username"
               sx={inputLook("0px", "-28px")}
-              placeholder="Usernname"
-              type="text"
+              placeholder="...@Hanover.org"
               fullWidth
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -147,7 +195,6 @@ function LoginPopUp({ open, onClose }) {
                       <IconButton
                         onClick={() => setShowPass(!showPass)}
                         edge="end"
-                        aria-label="toggle password visibility"
                       >
                         {showPass ?
                           <VisibilityOff />
@@ -168,46 +215,15 @@ function LoginPopUp({ open, onClose }) {
                     sx={{
                       "color": "#555",
                       "&.Mui-checked": { color: "#4a7aab" },
-                      "ml": 1,
                     }}
                   />
                 }
-                label={
-                  <Typography
-                    fontWeight="bold"
-                    color="text.primary"
-                  >
-                    Remember Me
-                  </Typography>
-                }
+                label={<Typography fontWeight="bold">Remember Me</Typography>}
               />
             </Box>
 
             <Button
-              onClick={async () => {
-                try {
-                  const resp = await fetch(API_ENDPOINTS.LOGIN, {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                      username: username,
-                      password: password,
-                    }),
-                  });
-                  if (resp.status === 401) {
-                    return console.error("Invalid credentials");
-                  }
-                  const body = await resp.json();
-                  localStorage.setItem("account_type", body.account_type);
-                  navigate("/dashboard");
-                  console.log(body);
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
+              onClick={handleLogin}
               variant="contained"
               fullWidth
               size="large"
@@ -215,9 +231,7 @@ function LoginPopUp({ open, onClose }) {
                 "backgroundColor": "#4a7aab",
                 "borderRadius": 4,
                 "fontWeight": "bold",
-                "fontSize": "1.1rem",
                 "py": 1.5,
-                "boxShadow": "4px 4px 8px rgba(0,0,0,0.2)",
                 "&:hover": { backgroundColor: "#3a6a9b" },
               }}
             >
@@ -230,20 +244,20 @@ function LoginPopUp({ open, onClose }) {
               width="100%"
             >
               <Link
-                href="dummyLink.com"
+                href="#"
                 underline="hover"
                 color="text.secondary"
                 variant="body2"
               >
-                Forgot Your Username?
+                Forgot Username?
               </Link>
               <Link
-                href="dummyLink.com"
+                href="#"
                 underline="hover"
                 color="text.secondary"
                 variant="body2"
               >
-                Forgot Your Password?
+                Forgot Password?
               </Link>
             </Stack>
           </Stack>
@@ -258,17 +272,17 @@ const inputLook = (translateY = "0px", translateOtherY = "0px") => ({
     transform: `translate(0px, ${translateOtherY})`,
   },
   "& .MuiInputLabel-root": {
-    fontSize: "1.5rem",
+    fontSize: "1.2rem",
     fontWeight: "bold",
   },
   "& .MuiOutlinedInput-root": {
-    "backgroundColor": "lightgray",
+    "backgroundColor": "#f0f0f0",
     "borderRadius": 2,
     "transform": `translate(0px, ${translateY})`,
     "& fieldset": { border: "none" },
   },
   "& .MuiInputBase-input": {
-    color: "dimgray",
+    color: "#333",
   },
 });
 
