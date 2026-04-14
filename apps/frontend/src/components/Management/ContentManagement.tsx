@@ -67,6 +67,7 @@ export default function ContentManagement({
   const [userAccountType] = useState(localStorage.getItem("employee_type"));
 
   console.log(userAccountType);
+  console.log(localStorage);
 
   const isSystemAdmin = userAccountType === "ADMIN";
 
