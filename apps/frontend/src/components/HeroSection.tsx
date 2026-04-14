@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import Footer from "./Footer";
 import { Box, Button, Alert, Collapse } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 
