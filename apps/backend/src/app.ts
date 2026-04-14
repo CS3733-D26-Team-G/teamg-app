@@ -37,7 +37,7 @@ app.use(auth);
 
 const routes = ["content", "employee", "login", "logout"];
 for (const route of routes) {
-  const { default: router } = await import(`./routes/${route}`);
+  const { default: router } = await import(`./routes/${route}.ts`);
   app.use(`/${route}`, router);
 }
 
