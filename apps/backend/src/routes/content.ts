@@ -6,6 +6,8 @@ import { Schemas } from "@repo/zod";
 import { randomUUID } from "crypto";
 import mime from "mime-types";
 import { z } from "zod";
+import { logger } from "../logger.ts";
+import { STORAGE_BUCKET, INTERNAL_ERROR_MESSAGE } from "../config.ts";
 
 const router = express.Router();
 
@@ -20,10 +22,6 @@ const upload = multer({
 const ParamsSchema = z.object({
   uuid: z.uuid(),
 });
-
-const STORAGE_BUCKET = "teamg-app";
-const INTERNAL_ERROR_MESSAGE =
-  "Internal server error. If you see this message, please report to a system administrator";
 
 const CreateContentSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   url: z.string().optional(),
@@ -69,7 +67,6 @@ async function resolveContentUrl({
         message: INTERNAL_ERROR_MESSAGE,
       };
     }
-
     return { ok: true, url };
   }
 
@@ -90,7 +87,9 @@ async function resolveContentUrl({
     });
 
   if (!uploadResult.data) {
-    console.error(uploadResult.error);
+    logger.error(
+      `Failed to upload file to Supabase Storage for content ${uuid}: ${uploadResult.error?.message}`,
+    );
     return {
       ok: false,
       status: 500,
@@ -103,7 +102,9 @@ async function resolveContentUrl({
     .createSignedUrl(uploadResult.data.path, expiresIn);
 
   if (!signedUrlResult.data) {
-    console.error(signedUrlResult.error);
+    logger.error(
+      `Failed to create signed URL for content ${uuid} at path ${uploadResult.data.path}: ${signedUrlResult.error?.message}`,
+    );
     return {
       ok: false,
       status: 500,
@@ -119,7 +120,17 @@ async function resolveContentUrl({
 }
 
 router.get("/", async (_req, res) => {
-  res.status(200).json(await prisma.content.findMany());
+  logger.verbose("Querying Content table for all records");
+  try {
+    const content = await prisma.content.findMany();
+    logger.verbose(
+      `Queried Content table for all records: found ${content.length} record(s)`,
+    );
+    return res.status(200).json(content);
+  } catch (e) {
+    logger.error(`Failed to query Content table for all records:\n${e}`);
+    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  }
 });
 
 router.post("/create", upload.single("file"), async (req, res) => {
@@ -127,18 +138,27 @@ router.post("/create", upload.single("file"), async (req, res) => {
   const parsed = CreateContentSchema.safeParse(req.body);
 
   if (!parsed.success) {
+    logger.verbose(
+      `Failed to parse Content create request body:\n${parsed.error.issues}`,
+    );
     return res.status(400).json({ message: parsed.error.issues });
   }
 
   const input = parsed.data;
 
   if ((!input.url && !req.file) || (input.url && req.file)) {
+    logger.warn(
+      `Received invalid Content create request: exactly one of url or file must be provided`,
+    );
     return res.status(400).json({
       message: "Either one of URL or file must be specified!",
     });
   }
 
   if (auth.position !== "ADMIN" && auth.position !== input.for_position) {
+    logger.warn(
+      `Rejected Content create request for position ${input.for_position} from user with position ${auth.position}`,
+    );
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -163,12 +183,13 @@ router.post("/create", upload.single("file"), async (req, res) => {
     supabasePath: urlResult.supabasePath,
   };
 
-  console.log(data);
+  logger.verbose(`Inserting Content table record ${uuid}`);
   try {
     const content = await prisma.content.create({ data });
+    logger.verbose(`Inserted Content table record ${uuid}`);
     return res.status(201).json(content);
   } catch (e) {
-    console.error(e);
+    logger.error(`Failed to insert Content table record ${uuid}:\n${e}`);
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
       return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
     }
@@ -179,20 +200,30 @@ router.post("/create", upload.single("file"), async (req, res) => {
 router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   const params = ParamsSchema.safeParse(req.params);
   if (!params.success) {
+    logger.warn(
+      `Received Content edit request with invalid UUID: ${req.params.uuid}`,
+    );
     return res.status(400).json({ message: "Invalid content UUID" });
   }
 
   const uuid = params.data.uuid;
   const auth = req.auth!;
 
+  logger.verbose(`Querying Content table for record ${uuid}`);
   const existingContent = await prisma.content.findUnique({ where: { uuid } });
   if (!existingContent) {
+    logger.warn(
+      `Received edit request for Content table record ${uuid} that does not exist`,
+    );
     return res.status(400).json({ message: "Invalid content UUID" });
   }
+  logger.verbose(`Queried Content table for record ${uuid}: record found`);
 
   const parsed = UpdateContentSchema.safeParse(req.body);
   if (!parsed.success) {
-    console.log(parsed.error.issues);
+    logger.verbose(
+      `Failed to parse Content edit request body for record ${uuid}:\n${parsed.error.issues}`,
+    );
     return res.status(400).json({ message: parsed.error.issues });
   }
 
@@ -200,6 +231,9 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
 
   const targetPosition = input.for_position ?? existingContent.for_position;
   if (auth.position !== "ADMIN" && auth.position !== targetPosition) {
+    logger.warn(
+      `Rejected Content edit request for record ${uuid}: target position ${targetPosition}, user position ${auth.position}`,
+    );
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -212,9 +246,15 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     const deleteResult = await supabase.storage
       .from(STORAGE_BUCKET)
       .remove([existingContent.supabasePath]);
-    console.log(deleteResult.data);
+
     if (!deleteResult.data) {
-      console.error(deleteResult.error.message);
+      logger.verbose(
+        `Failed to delete existing Supabase object for Content table record ${uuid} at path ${existingContent.supabasePath}: ${deleteResult.error?.message}`,
+      );
+    } else {
+      logger.verbose(
+        `Deleted existing Supabase object for Content table record ${uuid} at path ${existingContent.supabasePath}`,
+      );
     }
   }
 
@@ -236,17 +276,16 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     url: urlResult.url,
   };
 
+  logger.verbose(`Updating Content table record ${uuid}`);
   try {
     const updatedContent = await prisma.content.update({
       where: { uuid },
       data,
     });
+    logger.verbose(`Updated Content table record ${uuid}`);
     return res.status(200).json(updatedContent);
   } catch (e) {
-    console.error(e);
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
-    }
+    logger.error(`Failed to update Content table record ${uuid}:\n${e}`);
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
@@ -254,61 +293,102 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
 router.post("/delete/:uuid", async (req, res) => {
   const params = ParamsSchema.safeParse(req.params);
   if (!params.success) {
+    logger.warn(
+      `Received Content delete request with invalid UUID: ${req.params.uuid}`,
+    );
     return res.status(400).json({
       message: "Invalid content UUID",
     });
   }
+
   const uuid = params.data.uuid;
   const auth = req.auth!;
 
   try {
-    const content = await prisma.content.findUniqueOrThrow({
+    logger.verbose(`Querying Content table for record ${uuid} before delete`);
+    const content = await prisma.content.findUnique({
       where: { uuid },
     });
+
+    if (!content) {
+      logger.warn(
+        `Received delete request for Content table record ${uuid} that does not exist`,
+      );
+      return res.status(400).json({ message: "Invalid content UUID" });
+    }
+    logger.verbose(
+      `Queried Content table for record ${uuid} before delete: record found`,
+    );
+
     if (auth.position !== "ADMIN" && auth.position !== content.for_position) {
+      logger.warn(
+        `Rejected Content delete request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
+      );
       return res.status(401).json({ message: "Unauthorized" });
     }
-    await prisma.content.delete({ where: content });
+
+    logger.verbose(`Deleting Content table record ${uuid}`);
+    await prisma.content.delete({ where: { uuid } });
+    logger.verbose(`Deleted Content table record ${uuid}`);
 
     return res.status(200).json(content);
   } catch (e) {
-    if (
-      e instanceof Prisma.PrismaClientKnownRequestError &&
-      e.code === "P2025"
-    ) {
-      return res.status(400).json({
-        message: "Invalid content UUID",
-      });
-    }
+    logger.error(`Failed to delete Content table record ${uuid}:\n${e}`);
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
 
 router.patch("/favorite/:uuid", async (req, res) => {
-  const uuid = req.params.uuid;
+  const params = ParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    logger.warn(
+      `Received Content favorite request with invalid UUID: ${req.params.uuid}`,
+    );
+    return res.status(400).json({ message: "Invalid content UUID" });
+  }
+
+  const uuid = params.data.uuid;
 
   try {
-    const currentContent = await prisma.content.findUniqueOrThrow({
-      where: { uuid: uuid },
+    logger.verbose(
+      `Querying Content table for record ${uuid} before favorite toggle`,
+    );
+    const currentContent = await prisma.content.findUnique({
+      where: { uuid },
     });
 
+    if (!currentContent) {
+      logger.warn(
+        `Received favorite request for Content table record ${uuid} that does not exist`,
+      );
+      return res.status(400).json({ message: "Invalid content UUID" });
+    }
+    logger.verbose(
+      `Queried Content table for record ${uuid} before favorite toggle: record found`,
+    );
+
+    const nextFavoriteValue = !currentContent.is_favorite;
+    logger.verbose(
+      `Updating Content table record ${uuid}: setting is_favorite to ${nextFavoriteValue}`,
+    );
+
     const updatedContent = await prisma.content.update({
-      where: { uuid: uuid },
+      where: { uuid },
       data: {
-        is_favorite: !currentContent.is_favorite,
+        is_favorite: nextFavoriteValue,
       },
     });
 
+    logger.verbose(
+      `Updated Content table record ${uuid}: is_favorite is now ${updatedContent.is_favorite}`,
+    );
+
     return res.status(200).json(updatedContent);
   } catch (e) {
-    if (
-      e instanceof Prisma.PrismaClientKnownRequestError &&
-      e.code === "P2025"
-    ) {
-      return res.status(400).json({ message: "Invalid content UUID" });
-    } else {
-      return res.status(500).json({ message: "Internal server error" });
-    }
+    logger.error(
+      `Failed to update Content table record ${uuid} favorite status:\n${e}`,
+    );
+    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
 

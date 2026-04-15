@@ -14,16 +14,7 @@ export const allowedOriginsMap = {
   ],
 };
 
-import contentRouter from "./routes/content.ts";
-import employeeRouter from "./routes/employee.ts";
-import loginRouter from "./routes/login.ts";
-import logoutRouter from "./routes/logout.ts";
-
-export const routeMap = {
-  content: contentRouter,
-  employee: employeeRouter,
-  login: loginRouter,
-  logout: logoutRouter,
-};
-
 export const authExclude = ["/login", "/logout"];
+export const STORAGE_BUCKET = "teamg-app";
+export const INTERNAL_ERROR_MESSAGE =
+  "Internal server error. If you see this message, please report to a system administrator";

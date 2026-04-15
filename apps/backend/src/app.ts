@@ -4,17 +4,22 @@ import morgan from "morgan";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { auth } from "./middlewares/auth.js";
-import { isProd, environment, allowedOriginsMap, routeMap } from "./config.ts";
+import { isProd, environment, allowedOriginsMap } from "./config.ts";
+import { logger } from "./logger.ts";
 
 const app = express();
 const port = process.env.PORT!;
 
-console.log("Running as: ", isProd ? "production" : "development");
+logger.info(`isProd: ${isProd}`);
 
 // Middleware
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-app.use(morgan("dev"));
+
+const morganStream = {
+  write: (message: string) => logger.http(message.trim()),
+};
+app.use(morgan("dev", { stream: morganStream }));
 app.use(cookieParser());
 
 const allowedOrigins =
@@ -24,16 +29,16 @@ const corsOptions: cors.CorsOptions = {
   origin(origin, callback) {
     // Allow non-browser / same-origin requests with no Origin header
     if (!origin) {
-      console.log("Received request with no Origin header");
+      logger.verbose("Received request with no Origin header");
       return callback(null, true);
     }
 
     if (allowedOrigins.includes(origin)) {
-      console.log("Received request from matching origin: ", origin);
+      logger.debug(`Received request from allowed origin: ${origin}`);
       return callback(null, true);
     }
 
-    console.log("Received request from disallowed origin: ", origin);
+    logger.debug(`Received request from disallowed origin: ${origin}`);
     return callback(new Error(`Origin not allowed by CORS: ${origin}`));
   },
   credentials: true,
@@ -50,14 +55,25 @@ app.get("/", (_req, res) => {
 });
 app.use(auth);
 
+import contentRouter from "./routes/content.ts";
+import employeeRouter from "./routes/employee.ts";
+import loginRouter from "./routes/login.ts";
+import logoutRouter from "./routes/logout.ts";
+
+const routeMap = {
+  content: contentRouter,
+  employee: employeeRouter,
+  login: loginRouter,
+  logout: logoutRouter,
+};
 for (const [path, router] of Object.entries(routeMap)) {
-  console.log(`Loaded /${path} route`);
+  logger.info(`Loaded /${path} route`);
   app.use(`/${path}`, router);
 }
 
 // Start server
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  logger.info(`Server running on http://localhost:${port}`);
 });
 
 export default app;
