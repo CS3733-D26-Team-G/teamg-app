@@ -281,7 +281,7 @@ export default function EmployeeManagement() {
   };
 
   return (
-    <Box sx={{ height: 650 }}>
+    <Box sx={{ maxHeight: "100vh", overflowY: "auto" }}>
       {viewState ?
         <ManageEmployeeForm
           initialData={viewState === "new" ? null : viewState}
@@ -296,12 +296,11 @@ export default function EmployeeManagement() {
               boxShadow: "none",
               width: "100%",
               boxSizing: "border-box",
-              borderRadius: 5,
             }}
           >
             <StyledToolbar sx={{ width: "100%", px: 0 }}>
               <Typography
-                variant="h3"
+                variant="h2"
                 sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
               >
                 Employee Management
