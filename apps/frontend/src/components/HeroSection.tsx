@@ -1,110 +1,155 @@
-import "./HeroSection.css";
-import HanoverLogo from "../assets/HanoverLogo.png";
-import HanoverVols from "../assets/HanoverVols.png";
+import { useState } from "react";
 import { useNavigate } from "react-router";
+import { Box, Button, Alert, Collapse } from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info";
+
+import HanoverLogoWhite from "../assets/HanoverLogoWhite.png";
+import HanoverVols from "../assets/HanoverVols.png";
+import LoginPopUp from "../pages/LoginPopUp.tsx";
+import theme from "../theme.tsx";
+import Footer from "./Footer.tsx";
 
 export default function HeroSection() {
-  const navigate = useNavigate(); // 2. Initialize the navigate function
-
-  const handleLoginClick = () => {
-    navigate("/login"); // 3. Define where to go (matches your route path)
-  };
+  const navigate = useNavigate();
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [disclaimerOpen, setDisclaimerOpen] = useState(true);
 
   return (
-    <div className="main-hero">
-      {/* Dot pattern in corners */}
-      {/* <div className="corner-dots corner-dots--left">
-        <img
-          src={HeroPageBackground}
-          alt="BackgroundLeft"
-        />
-      </div>
-      <div className="corner-dots corner-dots--right">
-        <img
-          src={HeroPageBackground}
-          alt="BackgroundRight"
-        />
-      </div> */}
+    <Box
+      className="relative flex flex-col"
+      sx={{
+        width: "100%",
+        minHeight: "100vh",
+        backgroundImage: `url(${HanoverVols})`,
+        backgroundSize: "cover",
+        backgroundPosition: "top left",
+        backgroundRepeat: "no-repeat",
+        overflowX: "hidden",
+      }}
+    >
+      {/* Login Modal */}
+      <LoginPopUp
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+      />
 
-      {/* Top bar: logo and search bar*/}
-      <div className="hero-topbar">
-        <div className="hero-logo">
+      {/* Dark overlay so text stays readable */}
+      <Box
+        className="absolute inset-0"
+        sx={{
+          position: "absolute",
+          background:
+            "linear-gradient(90deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,0.75) 25%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0) 100%)",
+          zIndex: 0,
+        }}
+      />
+
+      {/* WPI Disclaimer */}
+      <Collapse in={disclaimerOpen}>
+        <Alert
+          severity="info"
+          icon={<InfoIcon sx={{ color: "white" }} />}
+          onClose={() => setDisclaimerOpen(false)}
+          sx={{
+            "position": "relative",
+            "zIndex": 1,
+            "boxShadow": "none !important",
+            "backgroundColor": "#1A1E4B !important",
+            "fontFamily": theme.typography.fontFamily,
+            "& .MuiAlert-icon": { color: "white" },
+            "& .MuiAlert-message": { color: "white" },
+            "& .MuiIconButton-root": { color: "white" },
+          }}
+        >
+          This site is created for a course at Worcester Polytechnic Institute.
+          It is not affiliated with or operated by the Hanover Insurance Group.
+          This is a student project created solely for academic purposes.
+        </Alert>
+      </Collapse>
+
+      {/* Top bar */}
+      <Box
+        className="relative flex items-center justify-between px-7 py-4"
+        sx={{ zIndex: 1 }}
+      >
+        <Box>
           <img
-            src={HanoverLogo}
-            alt="Hanover Logo"
-            className="hero-logo__img"
+            src={HanoverLogoWhite}
+            alt="White Hanover Logo"
+            className="w-[80px] h-auto"
           />
-        </div>
+        </Box>
 
-        <div className="hero-search">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#999"
-            strokeWidth="2.5"
+        <Button
+          onClick={() => setLoginOpen(true)}
+          sx={{
+            "position": "absolute",
+            "right": 40,
+            "background": "white",
+            "color": "black",
+            "fontFamily": theme.typography.fontFamily,
+            "fontSize": 18,
+            "fontWeight": "bold",
+            "px": 5,
+            "py": 1.5,
+            "borderRadius": "70px",
+            "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
+            "textTransform": "none",
+            "&:hover": { background: "#d9d2c5" },
+          }}
+        >
+          Log In
+        </Button>
+      </Box>
+
+      {/* CARE text */}
+      <Box
+        className="relative flex flex-col flex-1 justify-center"
+        sx={{
+          fontFamily: theme.typography.fontFamily,
+          color: "white",
+          mb: 8,
+          zIndex: 1,
+        }}
+      >
+        {[
+          { letter: "C", word: "ollaboration", indent: "pl-25" },
+          { letter: "A", word: "ccountability", indent: "pl-31" },
+          { letter: "R", word: "espect", indent: "pl-37" },
+          { letter: "E", word: "mpowerment", indent: "pl-43" },
+        ].map(({ letter, word, indent }) => (
+          <Box
+            key={letter}
+            className={`${indent} my-1`}
+            sx={{
+              fontSize: "clamp(48px, 3vw, 64px)",
+              fontWeight: 500,
+              lineHeight: 1.25,
+            }}
           >
-            <circle
-              cx="11"
-              cy="11"
-              r="8"
-            />
-            <line
-              x1="21"
-              y1="21"
-              x2="16.65"
-              y2="16.65"
-            />
-          </svg>
-          <input
-            type="text"
-            className="hero-search__input"
-            aria-label="Search"
-          />
-        </div>
-      </div>
+            <Box
+              component="span"
+              sx={{ fontSize: "clamp(60px, 4vw, 76px)", fontWeight: 900 }}
+            >
+              {letter}
+            </Box>
+            {word}
+          </Box>
+        ))}
 
-      {/* Main content */}
-      <div className="hero-content">
-        {/* Left side (CARE + subtitle + login button */}
-        <div className="mission-statement">
-          <h1 className="care-C">
-            <span className="care-initial">C</span>ollaboration
-          </h1>
-          <h1 className="care-A">
-            <span className="care-initial">A</span>ccountability
-          </h1>
-          <h1 className="care-R">
-            <span className="care-initial">R</span>espect
-          </h1>
-          <h1 className="care-E">
-            <span className="care-initial">E</span>mpowerment
-          </h1>
-          <p className="hero-subtitle">
-            Welcome to Hanover Insurance's content management application.
-            Please log in to get started!
-          </p>
-        </div>
-
-        {/* Right side (Stacked photos */}
-        <div className="hero-image">
-          <div className="top-photo">
-            <img
-              src={HanoverVols}
-              alt="Hanover Volunteers Bottom"
-            />
-          </div>
-        </div>
-        <div className="login-button">
-          <button
-            className="hero-login-button"
-            onClick={handleLoginClick}
-          >
-            Log In
-          </button>
-        </div>
-      </div>
-    </div>
+        <Box
+          className="mt-4 pl-26"
+          sx={{
+            fontSize: 26,
+            color: "white",
+            fontFamily: theme.typography.h2,
+          }}
+        >
+          Welcome to iBank, Hanover Insurance's content management application.
+          <br />
+          Please log in to get started!
+        </Box>
+      </Box>
+    </Box>
   );
 }

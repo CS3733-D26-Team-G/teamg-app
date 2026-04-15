@@ -20,6 +20,7 @@ datasource db {
 model Employee {
   uuid            String     @id @default(uuid()) @db.Uuid
   account         Account?
+  avatar          String?
   first_name      String
   last_name       String
   date_of_birth   DateTime   @db.Date
@@ -42,6 +43,7 @@ model Content {
   expiration_time    DateTime      @db.Timestamp(6)
   content_type       ContentType
   status             ContentStatus
+  is_favorite        Boolean       @default(false)
 }
 
 model Account {
