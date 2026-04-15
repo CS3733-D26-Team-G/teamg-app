@@ -13,14 +13,17 @@ export default function Dashboard() {
 
   return (
     <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
-      <div className="flex justify-between items-center -mt-2 px-6 pb-4">
+      <div
+        className="flex justify-between items-center -mt-2 px-6 pb-4 -ml-8
+      drop-shadow-lg"
+      >
         <Typography
           variant="h2"
           component="h2"
         >
           Welcome Back!
         </Typography>
-        <div className="w-70">
+        <div className="w-70 -mr-8">
           {" "}
           <SearchBar setSearchQuery={setSearchQuery} />
         </div>
