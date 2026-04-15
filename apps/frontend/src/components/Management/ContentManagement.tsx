@@ -133,6 +133,13 @@ export default function ContentManagement({
         API_ENDPOINTS.CONTENT_EDIT(uuid)
       : API_ENDPOINTS.CONTENT_CREATE;
 
+    if (
+      !window.confirm(
+        `Are you sure you want to save "${payload.get("title")}"?`,
+      )
+    )
+      return;
+
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
