@@ -36,6 +36,7 @@ router.post("/", async (req, res) => {
       secure: isProd,
       sameSite: isProd ? "none" : "lax",
       maxAge: 1000 * 60 * 60,
+      partitioned: isProd,
       path: "/",
     });
 

@@ -144,6 +144,10 @@ export default function ContentManagement({
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
 
+    if (!window.confirm(`Are you sure you want to save "${formData.title}"?`)) {
+      return;
+    }
+
     const parsed = Schemas.ContentCreateInputObjectSchema.parse({
       ...formData,
       uuid,
