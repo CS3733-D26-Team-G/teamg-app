@@ -272,7 +272,7 @@ export default function ContentManagement({
       >
         <StyledToolbar>
           <Typography
-            variant="h4"
+            variant="h2"
             sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
           >
             Content Management
