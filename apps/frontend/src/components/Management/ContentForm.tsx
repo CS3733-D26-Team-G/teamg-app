@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   TextField,
   FormControl,
@@ -67,8 +67,16 @@ export default function ContentForm({
   const [formData, setFormData] = useState<ContentFormData>(() =>
     buildDefaultFormData(initialData ?? undefined),
   );
-  const [sourceType, setSourceType] = useState<"url" | "file">("url");
+  const [sourceType, setSourceType] = useState<"url" | "file">(
+    initialData?.url ? "url" : "file",
+  );
   const [file, setFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    setFormData(buildDefaultFormData(initialData ?? undefined));
+    setSourceType(initialData?.url ? "url" : "file");
+    setFile(null);
+  }, [initialData]);
 
   const positionOptions = useMemo(
     () => Schemas.PositionSchema.options as Position[],
@@ -100,31 +108,41 @@ export default function ContentForm({
     };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setFile(e.target.files[0]);
-      if (!formData.title) handleChange("title", e.target.files[0].name);
+    const nextFile = e.target.files?.[0] ?? null;
+    setFile(nextFile);
+
+    if (nextFile && !formData.title) {
+      handleChange("title", nextFile.name);
     }
   };
 
   const handleInternalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const data = new FormData();
 
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value instanceof Date) {
-        data.append(key, value.toISOString());
-      } else {
-        data.append(key, String(value));
+    const body = new FormData();
+
+    body.append("title", formData.title);
+    body.append("content_owner", formData.content_owner);
+    body.append("for_position", formData.for_position);
+    body.append(
+      "last_modified_time",
+      formData.last_modified_time.toISOString(),
+    );
+    body.append("expiration_time", formData.expiration_time.toISOString());
+    body.append("content_type", formData.content_type);
+    body.append("status", formData.status);
+
+    if (sourceType === "file") {
+      if (!file) {
+        console.error("A file must be selected for file upload.");
+        return;
       }
-    });
-
-    if (sourceType === "file" && file) {
-      data.append("file", file);
+      body.append("file", file);
     } else {
-      data.append("url", formData.url);
+      body.append("url", formData.url);
     }
 
-    onSave(data);
+    onSave(body);
   };
 
   return (
@@ -141,7 +159,10 @@ export default function ContentForm({
             <ToggleButtonGroup
               value={sourceType}
               exclusive
-              onChange={(_, val) => val && setSourceType(val)}
+              onChange={(_, val) => {
+                if (!val) return;
+                setSourceType(val);
+              }}
               fullWidth
               sx={{ mb: 2 }}
             >
@@ -234,6 +255,7 @@ export default function ContentForm({
                 handleChange("last_modified_time", newDate)
               }
             />
+
             <CalendarInput
               label="Link Expiration Date"
               value={formData.expiration_time}
@@ -293,6 +315,7 @@ export default function ContentForm({
             >
               {isEditing ? "Update Changes" : "Create Content"}
             </Button>
+
             <Button
               variant="outlined"
               fullWidth

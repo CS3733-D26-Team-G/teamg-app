@@ -160,7 +160,6 @@ export default function ContentManagement({
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: payload,
       });
