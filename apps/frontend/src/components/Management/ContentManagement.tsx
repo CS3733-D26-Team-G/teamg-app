@@ -318,7 +318,7 @@ export default function ContentManagement({
   };
 
   return (
-    <Box sx={{ height: 400 }}>
+    <Box sx={{ maxHeight: "100vh", overflowY: "auto" }}>
       {viewState ?
         <ContentForm
           initialData={viewState === "new" ? null : viewState}
@@ -339,12 +339,11 @@ export default function ContentManagement({
               sx={{ width: "100%", boxSizing: "border-box", px: 0 }}
             >
               <Typography
-                variant="h4"
+                variant="h2"
                 sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
               >
                 Content Management
               </Typography>
-
               <Box
                 sx={{
                   display: "flex",
@@ -360,7 +359,7 @@ export default function ContentManagement({
                   onClick={() => setViewState("new")}
                   variant="contained"
                   startIcon={<AddIcon />}
-                  sx={{ whiteSpace: "nowrap" }}
+                  sx={{ whiteSpace: "nowrap", justifySelf: "flex-end" }}
                 >
                   New Content
                 </Button>
