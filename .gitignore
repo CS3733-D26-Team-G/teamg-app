@@ -5,3 +5,6 @@ node_modules
 packages/db/generated
 .DS_Store
 dist/
+package-lock.json
+packages/zod
+pnpm-lock.yaml

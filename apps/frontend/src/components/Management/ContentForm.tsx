@@ -1,19 +1,27 @@
 import * as React from "react";
-import { useMemo, useState } from "react";
-import TextField from "@mui/material/TextField";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Button from "@mui/material/Button";
-import Select, { type SelectChangeEvent } from "@mui/material/Select";
-import { MenuItem } from "@mui/material";
-import Box from "@mui/material/Box";
+import { useEffect, useMemo, useState } from "react";
+import {
+  TextField,
+  FormControl,
+  InputLabel,
+  Button,
+  Select,
+  MenuItem,
+  Box,
+  Typography,
+  ToggleButton,
+  ToggleButtonGroup,
+  type SelectChangeEvent,
+} from "@mui/material";
+import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
 import { z } from "zod";
-
 import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
 import "./ContentForm.css";
 
-type ContentFormData = z.infer<typeof Schemas.ContentCreateInputObjectZodSchema>;
+type ContentFormData = z.infer<
+  typeof Schemas.ContentCreateInputObjectZodSchema
+>;
 type ContentRecord = ContentFormData & { uuid: string };
 type Position = z.infer<typeof Schemas.PositionSchema>;
 type ContentType = z.infer<typeof Schemas.ContentTypeSchema>;
@@ -21,7 +29,7 @@ type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
 
 interface ContentFormProps {
   initialData?: ContentRecord | null;
-  onSave: (data: ContentFormData) => void;
+  onSave: (data: FormData) => void;
   onCancel: () => void;
 }
 
@@ -34,7 +42,9 @@ function coerceToDate(value: unknown): Date {
   return new Date();
 }
 
-function buildDefaultFormData(seed?: Partial<ContentFormData>): ContentFormData {
+function buildDefaultFormData(
+  seed?: Partial<ContentFormData>,
+): ContentFormData {
   return {
     title: seed?.title ?? "",
     url: seed?.url ?? "",
@@ -57,6 +67,16 @@ export default function ContentForm({
   const [formData, setFormData] = useState<ContentFormData>(() =>
     buildDefaultFormData(initialData ?? undefined),
   );
+  const [sourceType, setSourceType] = useState<"url" | "file">(
+    initialData?.url ? "url" : "file",
+  );
+  const [file, setFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    setFormData(buildDefaultFormData(initialData ?? undefined));
+    setSourceType(initialData?.url ? "url" : "file");
+    setFile(null);
+  }, [initialData]);
 
   const positionOptions = useMemo(
     () => Schemas.PositionSchema.options as Position[],
@@ -87,9 +107,42 @@ export default function ContentForm({
       handleChange(field, event.target.value as ContentFormData[K]);
     };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextFile = e.target.files?.[0] ?? null;
+    setFile(nextFile);
+
+    if (nextFile && !formData.title) {
+      handleChange("title", nextFile.name);
+    }
+  };
+
   const handleInternalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+
+    const body = new FormData();
+
+    body.append("title", formData.title);
+    body.append("content_owner", formData.content_owner);
+    body.append("for_position", formData.for_position);
+    body.append(
+      "last_modified_time",
+      formData.last_modified_time.toISOString(),
+    );
+    body.append("expiration_time", formData.expiration_time.toISOString());
+    body.append("content_type", formData.content_type);
+    body.append("status", formData.status);
+
+    if (sourceType === "file") {
+      if (!file) {
+        console.error("A file must be selected for file upload.");
+        return;
+      }
+      body.append("file", file);
+    } else {
+      body.append("url", formData.url);
+    }
+
+    onSave(body);
   };
 
   return (
@@ -102,6 +155,25 @@ export default function ContentForm({
             onSubmit={handleInternalSubmit}
           >
             <h1>{isEditing ? "Edit Document" : "Submit a New File"}</h1>
+
+            <ToggleButtonGroup
+              value={sourceType}
+              exclusive
+              onChange={(_, val) => {
+                if (!val) return;
+                setSourceType(val);
+              }}
+              fullWidth
+              sx={{ mb: 2 }}
+            >
+              <ToggleButton value="url">
+                <LinkIcon sx={{ mr: 1 }} /> External URL
+              </ToggleButton>
+              <ToggleButton value="file">
+                <CloudUpload sx={{ mr: 1 }} /> Local Upload
+              </ToggleButton>
+            </ToggleButtonGroup>
+
             <TextField
               label="Name of Document"
               fullWidth
@@ -110,14 +182,41 @@ export default function ContentForm({
               variant="outlined"
               margin="normal"
             />
-            <TextField
-              label="URL of Link"
-              fullWidth
-              value={formData.url}
-              onChange={(e) => handleChange("url", e.target.value)}
-              variant="outlined"
-              margin="normal"
-            />
+
+            {sourceType === "url" ?
+              <TextField
+                label="URL of Link"
+                fullWidth
+                value={formData.url}
+                onChange={(e) => handleChange("url", e.target.value)}
+                variant="outlined"
+                margin="normal"
+              />
+            : <Box
+                sx={{
+                  "border": "1px solid rgba(0, 0, 0, 0.23)",
+                  "borderRadius": "4px",
+                  "p": 2,
+                  "textAlign": "center",
+                  "my": 2,
+                  "cursor": "pointer",
+                  "&:hover": { borderColor: "rgba(0, 0, 0, 0.87)" },
+                }}
+                component="label"
+              >
+                <input
+                  type="file"
+                  hidden
+                  onChange={handleFileChange}
+                />
+                <Typography color="textSecondary">
+                  {file ?
+                    `Selected: ${file.name}`
+                  : "Click to upload local file"}
+                </Typography>
+              </Box>
+            }
+
             <TextField
               label="Content Owner"
               fullWidth
@@ -152,8 +251,11 @@ export default function ContentForm({
             <CalendarInput
               label="Last Modified Date"
               value={formData.last_modified_time}
-              onChange={(newDate) => handleChange("last_modified_time", newDate)}
+              onChange={(newDate) =>
+                handleChange("last_modified_time", newDate)
+              }
             />
+
             <CalendarInput
               label="Link Expiration Date"
               value={formData.expiration_time}
@@ -203,18 +305,22 @@ export default function ContentForm({
                 ))}
               </Select>
             </FormControl>
+
             <Button
               type="submit"
               variant="contained"
               fullWidth
               color="primary"
+              sx={{ mt: 2 }}
             >
               {isEditing ? "Update Changes" : "Create Content"}
             </Button>
+
             <Button
               variant="outlined"
               fullWidth
               onClick={onCancel}
+              sx={{ mt: 1 }}
             >
               Cancel
             </Button>

@@ -1,8 +1,9 @@
 import jwt from "jsonwebtoken";
 import type { NextFunction, Request, Response } from "express";
 import { prisma } from "@repo/db";
-import type { Position }  from "@repo/db";
+import type { Position } from "@repo/db";
 import { Prisma } from "@repo/db";
+import { authExclude } from "../config.ts";
 
 export interface Auth {
   employeeUuid: string;
@@ -10,7 +11,7 @@ export interface Auth {
 }
 
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.path === "/login") {
+  if (authExclude.includes(req.path)) {
     return next();
   }
   const token = req.cookies.token;
@@ -34,7 +35,10 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
     });
     req.auth = { employeeUuid: decoded.uuid, position: employee.position };
   } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
       return res.status(401).json({
         message:
           "Unauthorized. If you see this message, please report to a system administrator.",

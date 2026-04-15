@@ -24,12 +24,16 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import { API_ENDPOINTS } from "../config.ts";
+import { useNavigate } from "react-router-dom";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorElement);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
   // const [formsOpen, setFormsOpen] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState(
@@ -67,12 +71,32 @@ export default function Sidebar() {
     setAnchorElement(null);
   };
 
+  const handleLogout = async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.LOGOUT, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        navigate("/");
+      } else {
+        console.error("Logout Failed");
+      }
+    } catch (e) {
+      setError("Network error. Check your connection.");
+      console.error(e);
+    }
+  };
+
   return (
     <div
       className={"Sidebar"}
       style={{
         width: isOpen ? "240px" : "64px",
         transition: "width 0.3s",
+        position: "sticky",
+        top: 0,
       }}
     >
       <Box
@@ -227,7 +251,14 @@ export default function Sidebar() {
         >
           Settings
         </MenuItem>
-        <MenuItem onClick={handleClose}>Log Out</MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose();
+            handleLogout();
+          }}
+        >
+          Log Out
+        </MenuItem>
       </Menu>
     </div>
   );

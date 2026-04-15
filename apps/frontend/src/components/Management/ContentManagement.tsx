@@ -1,6 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
-import "@iamjariwala/react-doc-viewer/dist/index.css";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import {
   IconButton,
@@ -19,11 +17,12 @@ import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { z } from "zod";
-
-import { API_ENDPOINTS } from "../../config";
+import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
 import { Schemas } from "@repo/zod";
+import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
+import { API_ENDPOINTS } from "../../config";
 
 type ContentFormData = z.infer<
   typeof Schemas.ContentCreateInputObjectZodSchema
@@ -31,10 +30,6 @@ type ContentFormData = z.infer<
 type ContentRow = ContentFormData & { uuid: string };
 type Position = z.infer<typeof Schemas.PositionSchema>;
 type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
-type ViewerDocument = {
-  uri: string;
-  fileName?: string;
-};
 
 const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   uuid: z.string(),
@@ -71,13 +66,21 @@ export default function ContentManagement({
 }: ContentManagementProps) {
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDoc, setSelectedDoc] = useState<ViewerDocument | null>(null);
+  const [userAccountType] = useState(localStorage.getItem("employee_position"));
+
+  // --- New State for Preview ---
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<{
+    uri: string;
+    fileName: string;
+  } | null>(null);
+
+  const isSystemAdmin = userAccountType === "ADMIN";
+
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
         if (!searchQuery.trim()) return true;
-
         const targetFields = [
           row.title,
           row.url,
@@ -98,19 +101,14 @@ export default function ContentManagement({
           credentials: "include",
         });
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
         const data: unknown = await res.json();
         const parsed = z.array(ContentRowSchema).safeParse(data);
-
         if (!parsed.success) {
-          console.error("Failed to validate content list:", parsed.error);
           setRows([]);
           return;
         }
-
         setRows(parsed.data);
       } catch (error) {
-        console.error("Failed to fetch content:", error);
         setRows([]);
       }
     };
@@ -118,39 +116,24 @@ export default function ContentManagement({
   }, []);
 
   const handleDelete = async (row: ContentRow) => {
-    if (!window.confirm(`Are you sure you want to delete "${row.title}"?`)) {
+    if (!window.confirm(`Are you sure you want to delete "${row.title}"?`))
       return;
-    }
-
-    const { uuid } = row;
-
     try {
       const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(row.uuid), {
         method: "POST",
         credentials: "include",
       });
-
       if (res.ok) {
-        setRows((prev) => prev.filter((r) => r.uuid !== uuid));
-        console.log(`Successfully deleted: ${uuid}`);
-      } else {
-        const errorData = await res.json().catch(() => ({}));
-        console.error("Server rejected delete:", errorData);
+        setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
       }
     } catch (error) {
-      console.error("Network error during delete:", error);
+      console.error(error);
     }
   };
 
-  const handleSave = async (formData: ContentFormData) => {
+  const handleSave = async (payload: FormData) => {
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
-
-    const parsed = Schemas.ContentCreateInputObjectSchema.parse({
-      ...formData,
-      uuid,
-    });
-
     const url =
       isExisting ?
         API_ENDPOINTS.CONTENT_EDIT(uuid)
@@ -159,16 +142,8 @@ export default function ContentManagement({
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(
-          isExisting ?
-            (() => {
-              const { uuid: _uuid, ...rest } = parsed;
-              return rest;
-            })()
-          : parsed,
-        ),
+        body: payload,
       });
 
       if (res.ok) {
@@ -177,32 +152,52 @@ export default function ContentManagement({
         });
         const updatedData: unknown = await refreshRes.json();
         const parsedRows = z.array(ContentRowSchema).safeParse(updatedData);
-
-        if (!parsedRows.success) {
-          console.error(
-            "Failed to validate refreshed content:",
-            parsedRows.error,
-          );
-          setRows([]);
-        } else {
-          setRows(parsedRows.data);
-        }
-
+        if (parsedRows.success) setRows(parsedRows.data);
         setViewState(null);
-      } else {
-        const errorData = await res.json().catch(() => ({}));
-        console.error("Save failed:", errorData);
       }
     } catch (error) {
-      console.error("Network error during save:", error);
+      console.error(error);
     }
   };
 
+  const toggleFavorite = async (row: ContentRow) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT_FAVORITE(row.uuid), {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const updatedRow = await res.json();
+        setRows((prevRows) =>
+          prevRows.map((r) => (r.uuid === updatedRow.uuid ? updatedRow : r)),
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // --- Updated getColumns to handle Preview ---
   const getColumns = (
-    _onEdit: (row: ContentRow) => void,
+    onEdit: (row: ContentRow) => void,
     onDelete: (row: ContentRow) => void,
-    onPreview: (row: ContentRow) => void,
+    onPreview: (row: ContentRow) => void, // New argument
   ): GridColDef<ContentRow>[] => [
+    {
+      field: "favorite",
+      headerName: "Favorite",
+      width: 60,
+      renderCell: (params) => (
+        <IconButton onClick={() => toggleFavorite(params.row)}>
+          <Heart
+            size={20}
+            fill={params.row.is_favorite ? "#e50000" : "none"}
+            color={params.row.is_favorite ? "#ff4d4f" : "#e50000"}
+          />
+        </IconButton>
+      ),
+    },
     { field: "title", headerName: "Title", flex: 1 },
     {
       field: "url",
@@ -213,17 +208,11 @@ export default function ContentManagement({
           href={params.value}
           target="_blank"
           rel="noopener noreferrer"
-          sx={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "block",
-          }}
         >
           {params.value}
         </Link>
       ),
     },
-    { field: "content_owner", headerName: "Content Owner", flex: 1 },
     {
       field: "for_position",
       headerName: "Position",
@@ -240,35 +229,39 @@ export default function ContentManagement({
         );
       },
     },
-    { field: "content_type", headerName: "Type", width: 130 },
-    {
-      field: "status",
-      headerName: "Status",
-      width: 120,
-      renderCell: (params) => {
-        const contStatus = params.value as ContentStatus;
-        return statusLabels[contStatus] ?? contStatus;
-      },
-    },
     {
       field: "actions",
       headerName: "Actions",
-      width: 120,
-      renderCell: (params) => (
-        <>
-          <IconButton onClick={() => onPreview(params.row)}>
-            <VisibilityIcon />
-          </IconButton>
-          <IconButton onClick={() => setViewState(params.row)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton onClick={() => onDelete(params.row)}>
-            <DeleteIcon color="error" />
-          </IconButton>
-        </>
-      ),
+      width: 160, // Widened to fit three icons
+      renderCell: (params) => {
+        const hasPermission =
+          isSystemAdmin || userAccountType === params.row.for_position;
+        return (
+          <>
+            <IconButton
+              onClick={() => onPreview(params.row)}
+              color="primary"
+            >
+              <VisibilityIcon />
+            </IconButton>
+            <IconButton
+              onClick={() => setViewState(params.row)}
+              disabled={!hasPermission}
+            >
+              <EditIcon />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(params.row)}
+              disabled={!hasPermission}
+            >
+              <DeleteIcon color={hasPermission ? "error" : "disabled"} />
+            </IconButton>
+          </>
+        );
+      },
     },
   ];
+
   const colorMap: Record<Position, "error" | "info" | "success"> = {
     ADMIN: "error",
     UNDERWRITER: "info",
@@ -277,7 +270,7 @@ export default function ContentManagement({
 
   if (viewState) {
     return (
-      <Box sx={{ height: 400 }}>
+      <Box sx={{ p: 3 }}>
         <ContentForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
@@ -286,79 +279,101 @@ export default function ContentManagement({
       </Box>
     );
   }
-  return (
-    <Box sx={{ height: 400 }}>
-      <Box>
-        <AppBar
-          position="static"
-          sx={{
-            backgroundColor: "white",
-            boxShadow: "none",
-            width: "100%",
-            boxSizing: "border-box",
-          }}
-        >
-          <StyledToolbar sx={{ width: "100%", boxSizing: "border-box", px: 0 }}>
-            <Typography
-              variant="h4"
-              sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
-            >
-              Content Management
-            </Typography>
 
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                width: "100%",
-              }}
-            >
-              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-                <HeaderSearchBar setSearchQuery={setSearchQuery} />
-              </Box>
-              <Button
-                onClick={() => setViewState("new")}
-                variant="contained"
-                startIcon={<AddIcon />}
-                sx={{ whiteSpace: "nowrap" }}
-              >
-                New Content
-              </Button>
+  return (
+    <Box sx={{ height: "auto", width: "100%" }}>
+      <AppBar
+        position="static"
+        sx={{ backgroundColor: "white", boxShadow: "none" }}
+      >
+        <StyledToolbar>
+          <Typography
+            variant="h4"
+            sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
+          >
+            Content Management
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              width: "100%",
+            }}
+          >
+            <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+              <HeaderSearchBar setSearchQuery={setSearchQuery} />
             </Box>
-          </StyledToolbar>
-        </AppBar>
-        <DataGrid
-          rows={filteredRows}
-          getRowId={(row) => row.uuid}
-          columns={getColumns(setViewState, handleDelete, (row: ContentRow) => {
-            setSelectedDoc({
-              uri: row.url,
-              fileName: row.title,
-            });
-            setPreviewOpen(true);
-          })}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 5 } },
-          }}
-          pageSizeOptions={[5, 10]}
-        />
-        <Dialog
-          open={previewOpen}
-          onClose={() => setPreviewOpen(false)}
-          maxWidth="lg"
-          fullWidth
-        >
-          <Box sx={{ p: 2, height: "80vh" }}>
-            {selectedDoc && (
-              <DocViewer
-                documents={[selectedDoc]}
-                pluginRenderers={DocViewerRenderers}
-              />
-            )}
+            <Button
+              onClick={() => setViewState("new")}
+              variant="contained"
+              startIcon={<AddIcon />}
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              New Content
+            </Button>
           </Box>
-        </Dialog>
-      </Box>
+        </StyledToolbar>
+      </AppBar>
+
+      <DataGrid
+        rows={filteredRows}
+        getRowId={(row) => row.uuid}
+        columns={getColumns(setViewState, handleDelete, (row) => {
+          setSelectedDoc({ uri: row.url, fileName: row.title });
+          setPreviewOpen(true);
+        })}
+        getRowClassName={(params) => {
+          const hasPermission =
+            isSystemAdmin || userAccountType === params.row.for_position;
+          return hasPermission ? "" : "row-locked";
+        }}
+        sx={{
+          "height": 600,
+          "& .row-locked": {
+            backgroundColor: "rgba(245, 245, 245, 1)",
+            color: "text.disabled",
+          },
+        }}
+        initialState={{
+          pagination: { paginationModel: { pageSize: 10 } },
+          sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
+        }}
+        pageSizeOptions={[5, 10]}
+      />
+
+      {/* --- Combined Dialog for Preview --- */}
+      <Dialog
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <Box
+          sx={{
+            p: 1,
+            height: "80vh",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Button
+            onClick={() => setPreviewOpen(false)}
+            sx={{ alignSelf: "flex-end" }}
+          >
+            Close
+          </Button>
+          {selectedDoc && (
+            <DocViewer
+              documents={[selectedDoc]}
+              pluginRenderers={DocViewerRenderers}
+              config={{
+                header: { disableHeader: false, disableFileName: false },
+              }}
+            />
+          )}
+        </Box>
+      </Dialog>
     </Box>
   );
 }

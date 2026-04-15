@@ -9,6 +9,7 @@ import {
   Toolbar,
   Typography,
   styled,
+  Avatar,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -18,7 +19,7 @@ import { z } from "zod";
 import HeaderSearchBar from "./HeaderSearchBar";
 import ManageEmployeeForm from "./ManageEmployeeForm";
 import { Schemas } from "@repo/zod";
-
+import { User } from "lucide-react";
 import { API_ENDPOINTS } from "../../config";
 
 type EmployeeFormData = z.infer<
@@ -130,6 +131,14 @@ export default function EmployeeManagement() {
       ...(uuid ? { uuid } : {}),
     });
 
+    if (
+      !window.confirm(
+        `Are you sure you want to update "${formData.first_name + " " + formData.last_name}"?`,
+      )
+    ) {
+      return;
+    }
+
     const url =
       isExisting ?
         API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
@@ -181,6 +190,42 @@ export default function EmployeeManagement() {
     };
 
     return [
+      {
+        field: "userIcon",
+        headerName: "",
+        width: 60,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => {
+          const { avatar } = params.row;
+          const firstInitial = params.row.first_name?.[0] ?? "";
+          const lastInitial = params.row.last_name?.[0] ?? "";
+          const initials = (firstInitial + lastInitial).toUpperCase() || "?";
+
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+              }}
+            >
+              <Avatar
+                src={avatar || undefined}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: avatar ? "transparent" : "primary.main",
+                  fontSize: "0.875rem",
+                }}
+              >
+                {initials}
+              </Avatar>
+            </Box>
+          );
+        },
+      },
       { field: "first_name", headerName: "First Name", flex: 1, minWidth: 140 },
       { field: "last_name", headerName: "Last Name", flex: 1, minWidth: 140 },
       {
@@ -239,14 +284,14 @@ export default function EmployeeManagement() {
   };
 
   return (
-    <Box sx={{ height: 650, p: 2 }}>
+    <Box sx={{ height: 650 }}>
       {viewState ?
         <ManageEmployeeForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
           onCancel={() => setViewState(null)}
         />
-      : <Box>
+      : <Box sx={{}}>
           <AppBar
             position="static"
             sx={{
@@ -254,11 +299,12 @@ export default function EmployeeManagement() {
               boxShadow: "none",
               width: "100%",
               boxSizing: "border-box",
+              borderRadius: 5,
             }}
           >
             <StyledToolbar sx={{ width: "100%", px: 0 }}>
               <Typography
-                variant="h4"
+                variant="h3"
                 sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
               >
                 Employee Management
@@ -294,9 +340,9 @@ export default function EmployeeManagement() {
             loading={loading}
             pageSizeOptions={[5, 10]}
             initialState={{
-              pagination: { paginationModel: { pageSize: 5 } },
+              pagination: { paginationModel: { pageSize: 10 } },
             }}
-            sx={{ mt: 2 }}
+            sx={{}}
           />
         </Box>
       }
