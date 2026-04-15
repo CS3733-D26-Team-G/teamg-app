@@ -211,8 +211,9 @@ export default function Sidebar() {
           id={"resources-button"}
           sx={{
             px: 2,
-            border: isOpen ? "2px solid black" : null,
+            border: isOpen ? "1px solid lightgray" : null,
             borderRadius: "50px",
+            boxShadow: 2,
           }}
           onClick={handleClick}
           aria-controls={open ? "resources-menu" : undefined}

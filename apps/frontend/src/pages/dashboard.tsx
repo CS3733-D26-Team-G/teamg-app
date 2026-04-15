@@ -6,10 +6,10 @@ import BarChart from "./DashboardComponents/BarChart";
 import { Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import CardHeader from "@mui/material/CardHeader";
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
+  const user = localStorage.getItem("employee_position");
 
   return (
     <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
@@ -21,7 +21,7 @@ export default function Dashboard() {
           variant="h2"
           component="h2"
         >
-          Welcome Back!
+          Welcome Back {user?.toLowerCase()}!
         </Typography>
         <div className="w-70 -mr-8">
           {" "}
