@@ -181,6 +181,9 @@ export default function ContentManagement({
       field: "favorite",
       headerName: "Favorite",
       width: 60,
+      type: "number",
+      sortable: true,
+      valueGetter: (value, row) => (row.is_favorite ? 1 : 0),
       renderCell: (params) => (
         <IconButton onClick={() => toggleFavorite(params.row)}>
           <Heart
