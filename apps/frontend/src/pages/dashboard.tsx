@@ -27,9 +27,11 @@ export default function Dashboard() {
       </div>
       <CardContent className="flex-1 -mr-8 -ml-8 -mt-7">
         <div className="flex justify-between gap-2 h-full items-start">
-          <Card className="flex-1 h-1/3 outline-1 drop-shadow-lg">
-            <CardContent className="h-full p-4">
-              <PieChart />
+          <Card>
+            <CardContent className="h-full">
+              <div className="flex items-center justify-center h-full">
+                <PieChart />
+              </div>
             </CardContent>
           </Card>
 
