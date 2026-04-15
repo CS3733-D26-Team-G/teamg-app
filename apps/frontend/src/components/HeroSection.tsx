@@ -143,11 +143,12 @@ export default function HeroSection() {
             fontSize: 26,
             color: "white",
             fontFamily: theme.typography.h2,
+            lineHeight: 1.75,
           }}
         >
-          Welcome to iBank, Hanover Insurance's content management application.
+          Welcome to iBank, Hanover Insurance's
           <br />
-          Please log in to get started!
+          content management application.
         </Box>
       </Box>
     </Box>

@@ -47,20 +47,22 @@ router.post("/create", upload.single("file"), async (req, res) => {
   if (req.file) {
     const uploadResult = await supabase.storage
       .from("teamg-app")
-      .upload(`/content/${uuid}`, req.file.buffer, {
+      .upload(`content/${uuid}`, req.file.buffer, {
         contentType: req.file.mimetype,
         upsert: false,
       });
     if (!uploadResult.data) {
+      console.error(uploadResult.error);
       return res.status(500).json({ message: uploadResult.error.message });
     }
     const createResult = await supabase.storage
       .from("teamg-app")
       .createSignedUrl(
-        uploadResult.data.fullPath,
-        (parsed.data.expiration_time.getTime() - Date.now()) * 1000,
+        uploadResult.data.path,
+        Math.floor((parsed.data.expiration_time.getTime() - Date.now()) / 1000),
       );
     if (!createResult.data) {
+      console.error(createResult.error);
       return res.status(500).json({ message: createResult.error.message });
     }
     url = createResult.data.signedUrl;

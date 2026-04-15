@@ -140,18 +140,17 @@ export default function ContentManagement({
     }
   };
 
-  const handleSave = async (formData: ContentFormData) => {
+  const handleSave = async (payload: FormData) => {
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
 
-    if (!window.confirm(`Are you sure you want to save "${formData.title}"?`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to save "${payload.get("title")}"?`,
+      )
+    ) {
       return;
     }
-
-    const parsed = Schemas.ContentCreateInputObjectSchema.parse({
-      ...formData,
-      uuid,
-    });
 
     const url =
       isExisting ?
@@ -161,16 +160,8 @@ export default function ContentManagement({
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(
-          isExisting ?
-            (() => {
-              const { uuid: _uuid, ...rest } = parsed;
-              return rest;
-            })()
-          : parsed,
-        ),
+        body: payload,
       });
 
       if (res.ok) {
@@ -401,7 +392,7 @@ export default function ContentManagement({
               },
             }}
             initialState={{
-              pagination: { paginationModel: { pageSize: 5 } },
+              pagination: { paginationModel: { pageSize: 10 } },
               sorting: {
                 sortModel: [{ field: "favorite", sort: "desc" }],
               },
