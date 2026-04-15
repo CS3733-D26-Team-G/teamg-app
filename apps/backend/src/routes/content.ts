@@ -163,6 +163,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
     supabasePath: urlResult.supabasePath,
   };
 
+  console.log(data);
   try {
     const content = await prisma.content.create({ data });
     return res.status(201).json(content);
@@ -208,11 +209,12 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     : existingContent.expiration_time;
 
   if (req.file && existingContent.supabasePath) {
-    const deleteData = await supabase.storage
+    const deleteResult = await supabase.storage
       .from(STORAGE_BUCKET)
       .remove([existingContent.supabasePath]);
-    if (!deleteData.data) {
-      console.error(deleteData.error.message);
+    console.log(deleteResult.data);
+    if (!deleteResult.data) {
+      console.error(deleteResult.error.message);
     }
   }
 
