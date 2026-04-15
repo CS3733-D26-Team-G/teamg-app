@@ -25,3 +25,5 @@ export const routeMap = {
   login: loginRouter,
   logout: logoutRouter,
 };
+
+export const authExclude = ["/login", "/logout"];
