@@ -191,7 +191,6 @@ export default function HeroSection() {
       </Box>
 
       {/* Footer Section */}
-      <Footer />
     </Box>
   );
 }
