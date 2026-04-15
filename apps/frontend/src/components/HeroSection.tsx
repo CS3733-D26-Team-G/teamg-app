@@ -129,7 +129,7 @@ export default function HeroSection() {
           >
             <Box
               component="span"
-              sx={{ fontSize: "clamp(60px, 4vw, 76px)", fontWeight: 900 }}
+              sx={{ fontSize: "clamp(65px, 5vw, 80px)", fontWeight: 700 }}
             >
               {letter}
             </Box>
@@ -142,7 +142,7 @@ export default function HeroSection() {
           sx={{
             fontSize: 26,
             color: "white",
-            fontFamily: theme.typography.h2,
+            fontFamily: "Domine",
             lineHeight: 1.75,
           }}
         >
