@@ -253,7 +253,6 @@ export default function Sidebar() {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            handleClose();
             handleLogout();
           }}
         >
