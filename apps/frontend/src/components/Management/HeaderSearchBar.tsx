@@ -16,7 +16,7 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
         id="search-bar"
         placeholder="search"
         variant="outlined"
-        size="x-small"
+        size="small"
         fullWidth // Added fullWidth so it fills your container
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
           setSearchQuery(e.target.value);
