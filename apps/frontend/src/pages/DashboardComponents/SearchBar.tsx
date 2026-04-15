@@ -2,14 +2,13 @@ import { type ChangeEvent } from "react";
 import { TextField, Box } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import InputAdornment from "@mui/material/InputAdornment";
-import "./dashboard.css";
 
 interface SearchBarProps {
   setSearchQuery: (query: string) => void;
 }
 
 const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
-  <div className="search-container">
+  <div className="bg-white rounded-3xl outline-gray-200 outline-2">
     <Box>
       <form>
         <TextField
