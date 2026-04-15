@@ -223,7 +223,9 @@ export default function Sidebar() {
           <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
             <Avatar sx={{ width: 32, height: 32 }} />
           </ListItemIcon>
-          {isOpen && <ListItemText primary="Name" />}
+          {isOpen && (
+            <ListItemText primary={localStorage.getItem("employee_position")} />
+          )}
           {isOpen && <KeyboardArrowUpIcon />}
         </ListItemButton>
       </Box>
