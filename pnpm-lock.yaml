@@ -127,6 +127,9 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@cyntler/react-doc-viewer':
+        specifier: ^1.17.1
+        version: 1.17.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.2.14)(react@19.2.5)
