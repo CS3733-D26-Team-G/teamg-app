@@ -99,13 +99,10 @@ export default function EmployeeManagement() {
     }
 
     try {
-      const res = await fetch(
-        `${API_ENDPOINTS.EMPLOYEE_DELETE(row.uuid)}/employee/delete/${row.uuid}`,
-        {
-          method: "POST",
-          credentials: "include",
-        },
-      );
+      const res = await fetch(API_ENDPOINTS.EMPLOYEE_DELETE(row.uuid), {
+        method: "POST",
+        credentials: "include",
+      });
 
       if (res.ok) {
         setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
