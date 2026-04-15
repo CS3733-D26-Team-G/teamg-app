@@ -106,7 +106,7 @@ export default function HeroSection() {
       <Box
         className="relative flex flex-col flex-1 justify-center"
         sx={{
-          fontFamily: theme.typography.fontFamily,
+          fontFamily: "Domine",
           color: "white",
           mb: 8,
           zIndex: 1,
