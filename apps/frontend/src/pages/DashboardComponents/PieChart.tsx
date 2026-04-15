@@ -11,7 +11,7 @@ export default function BasicPie() {
           data: [
             { id: 0, value: 10, label: "Business Analyst", color: "#bea5aa" },
             { id: 1, value: 15, label: "Underwriter", color: "#395176" },
-            { id: 2, value: 20, label: "Admin", color: "#74414e" },
+            { id: 2, value: 5, label: "Admin", color: "#74414e" },
           ],
         },
       ]}
