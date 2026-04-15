@@ -13,6 +13,7 @@ export const API_BASE_URL =
 
 export const API_ENDPOINTS = {
   LOGIN: `${API_BASE_URL}/login`,
+  LOGOUT: `${API_BASE_URL}/logout`,
   EMPLOYEE: `${API_BASE_URL}/employee`,
   EMPLOYEE_CREATE: `${API_BASE_URL}/employee/create`,
   EMPLOYEE_UPDATE: (uuid: string) => `${API_BASE_URL}/employee/update/${uuid}`,
