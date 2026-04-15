@@ -44,6 +44,7 @@ model Content {
   content_type       ContentType
   status             ContentStatus
   is_favorite        Boolean       @default(false)
+  supabasePath       String?
 }
 
 model Account {
