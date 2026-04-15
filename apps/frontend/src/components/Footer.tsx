@@ -17,7 +17,7 @@ export default function Footer() {
         direction="row"
         sx={{
           width: "100%",
-          paddingX: "17rem",
+          //paddingX: "17rem",
           justifyContent: "space-between",
           alignItems: "flex-start",
           fontSize: "1.2rem",

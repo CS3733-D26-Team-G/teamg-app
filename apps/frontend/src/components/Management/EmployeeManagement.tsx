@@ -340,7 +340,7 @@ export default function EmployeeManagement() {
             loading={loading}
             pageSizeOptions={[5, 10]}
             initialState={{
-              pagination: { paginationModel: { pageSize: 5 } },
+              pagination: { paginationModel: { pageSize: 10 } },
             }}
             sx={{}}
           />

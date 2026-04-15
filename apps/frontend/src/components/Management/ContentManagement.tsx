@@ -392,7 +392,7 @@ export default function ContentManagement({
               },
             }}
             initialState={{
-              pagination: { paginationModel: { pageSize: 5 } },
+              pagination: { paginationModel: { pageSize: 10 } },
               sorting: {
                 sortModel: [{ field: "favorite", sort: "desc" }],
               },
