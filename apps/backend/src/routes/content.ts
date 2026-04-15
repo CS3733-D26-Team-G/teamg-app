@@ -18,6 +18,10 @@ const upload = multer({
   },
 });
 
+const ParamsSchema = z.object({
+  uuid: z.uuid(),
+});
+
 router.get("/", async (_req, res) => {
   res.status(200).json(await prisma.content.findMany());
 });
@@ -55,6 +59,14 @@ router.post("/create", upload.single("file"), async (req, res) => {
       console.error(uploadResult.error);
       return res.status(500).json({ message: uploadResult.error.message });
     }
+    const expiresIn = Math.floor(
+      (parsed.data.expiration_time.getTime() - Date.now()) / 1000,
+    );
+    if (expiresIn < 0) {
+      return res
+        .status(400)
+        .json({ message: "Expiration time must be in the future!" });
+    }
     const createResult = await supabase.storage
       .from("teamg-app")
       .createSignedUrl(
@@ -69,7 +81,10 @@ router.post("/create", upload.single("file"), async (req, res) => {
   }
 
   if (!url) {
-    return res.status(500).json({ message: "" });
+    return res.status(500).json({
+      message:
+        "Internal server error. If you see this message, please report to a system administrator",
+    });
   }
   const data = { url, uuid, ...parsed.data };
 
@@ -86,49 +101,126 @@ router.post("/create", upload.single("file"), async (req, res) => {
   }
 });
 
-router.put("/edit/:uuid", async (req, res) => {
+router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
+  const params = ParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    return res.status(400).json({
+      message: "Invalid content UUID",
+    });
+  }
+  const uuid = params.data.uuid;
   const auth = req.auth!;
-  const uuid = req.params.uuid;
 
-  const body = Schemas.ContentUpdateInputObjectZodSchema.omit({ uuid: true })
+  const content = await prisma.content.findUnique({ where: { uuid } });
+  if (!content) {
+    return res.status(400).json({
+      message: "Invalid content UUID",
+    });
+  }
+
+  const parsed = Schemas.ContentUpdateInputObjectZodSchema.omit({ uuid: true })
     .partial()
     .safeParse(req.body);
-  if (!body.success) {
-    return res.status(400).json({ message: body.error.issues });
+  if (!parsed.success) {
+    console.log(parsed.error.issues);
+    return res.status(400).json({ message: parsed.error.issues });
   }
-  const data = body.data;
+
+  const data = parsed.data;
   if (auth.position !== "ADMIN" && auth.position !== data.for_position) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  try {
-    const content = await prisma.content.update({
-      where: { uuid: uuid },
-      data,
-    });
-    res.status(200).json(content);
-  } catch (e) {
-    if (
-      e instanceof Prisma.PrismaClientKnownRequestError &&
-      e.code === "P2025"
-    ) {
-      return res.status(400).json({ message: "Invalid content UUID" });
+  let url = parsed.data.url;
+  if (req.file) {
+    const uploadResult = await supabase.storage
+      .from("teamg-app")
+      .upload(`content/${uuid}`, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+    if (!uploadResult.data) {
+      console.error(uploadResult.error);
+      return res.status(500).json({ message: uploadResult.error.message });
     }
-    console.error(e);
+
+    const expirationTime =
+      parsed.data.expiration_time instanceof Date ?
+        parsed.data.expiration_time
+      : content.expiration_time;
+
+    const expiresIn = Math.floor(
+      (expirationTime.getTime() - Date.now()) / 1000,
+    );
+
+    if (expiresIn < 0) {
+      return res
+        .status(400)
+        .json({ message: "Expiration time must be in the future!" });
+    }
+    const createResult = await supabase.storage
+      .from("teamg-app")
+      .createSignedUrl(uploadResult.data.path, expiresIn);
+    if (!createResult.data) {
+      console.error(createResult.error);
+      return res.status(500).json({ message: createResult.error.message });
+    }
+    url = createResult.data.signedUrl;
+  }
+
+  if (!url) {
     return res.status(500).json({
       message:
         "Internal server error. If you see this message, please report to a system administrator",
     });
   }
+
+  try {
+    const content = await prisma.content.update({ where: { uuid }, data });
+    res.status(201).json(content);
+  } catch (e) {
+    console.error(e);
+    if (e instanceof Prisma.PrismaClientKnownRequestError)
+      return res.status(500).json({
+        message:
+          "Internal server error. If you see this message, please report to a system administrator",
+      });
+  }
+
+  // try {
+  //   const content = await prisma.content.update({
+  //     where: { uuid },
+  //     data,
+  //   });
+  //   res.status(200).json(content);
+  // } catch (e) {
+  //   if (
+  //     e instanceof Prisma.PrismaClientKnownRequestError &&
+  //     e.code === "P2025"
+  //   ) {
+  //     return res.status(400).json({ message: "Invalid content UUID" });
+  //   }
+  //   console.error(e);
+  //   return res.status(500).json({
+  //     message:
+  //       "Internal server error. If you see this message, please report to a system administrator",
+  //   });
+  // }
 });
 
 router.post("/delete/:uuid", async (req, res) => {
-  const contentUuid = req.params.uuid;
+  const params = ParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    return res.status(400).json({
+      message: "Invalid content UUID",
+    });
+  }
+  const uuid = params.data.uuid;
   const auth = req.auth!;
 
   try {
     const content = await prisma.content.findUniqueOrThrow({
-      where: { uuid: contentUuid },
+      where: { uuid },
     });
     if (auth.position !== "ADMIN" && auth.position !== content.for_position) {
       res.status(401).json({ message: "Unauthorized" });
