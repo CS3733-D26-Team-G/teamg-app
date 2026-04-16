@@ -44,7 +44,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-        <div className="bg-white h-1/3">
+        <div className="h-1/3">
           <DashboardRecentActivity />
         </div>
       </CardContent>

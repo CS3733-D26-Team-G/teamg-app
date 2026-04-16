@@ -8,7 +8,14 @@ interface SearchBarProps {
 }
 
 const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
-  <div className="bg-white rounded-3xl outline-gray-200 outline-2">
+  <Box
+    sx={{
+      backgroundColor: "background.paper",
+      borderRadius: "24px",
+      outline: "2px solid",
+      outlineColor: "divider",
+    }}
+  >
     <Box>
       <form>
         <TextField
@@ -38,10 +45,18 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
             "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
               border: "none",
             },
+            "& .MuiInputBase-input": {
+              color: "text.primary",
+            },
+            "& .MuiInputBase-input::placeholder": {
+              color: "text.secondary",
+              opacity: 1,
+            },
           }}
-        ></TextField>
+        />
       </form>
     </Box>
-  </div>
+  </Box>
 );
+
 export default SearchBar;

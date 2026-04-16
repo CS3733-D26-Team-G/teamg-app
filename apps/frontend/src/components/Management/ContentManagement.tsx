@@ -70,7 +70,6 @@ export default function ContentManagement({
   const [userAccountType] = useState(localStorage.getItem("employee_position"));
   const [lockMessage, setLockMessage] = useState<string | null>(null);
 
-  // --- State for Preview ---
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
@@ -327,12 +326,12 @@ export default function ContentManagement({
     <Box sx={{ height: "auto", width: "100%" }}>
       <AppBar
         position="static"
-        sx={{ backgroundColor: "white", boxShadow: "none" }}
+        sx={{ backgroundColor: "background.paper", boxShadow: "none" }}
       >
         <StyledToolbar>
           <Typography
             variant="h2"
-            sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
+            sx={{ pb: 2, pt: 4, color: "text.primary", fontWeight: "bold" }}
           >
             Content Management
           </Typography>

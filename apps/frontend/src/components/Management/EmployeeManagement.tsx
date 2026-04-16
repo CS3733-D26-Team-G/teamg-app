@@ -292,7 +292,7 @@ export default function EmployeeManagement() {
           <AppBar
             position="static"
             sx={{
-              backgroundColor: "white",
+              backgroundColor: "background.paper",
               boxShadow: "none",
               width: "100%",
               boxSizing: "border-box",
@@ -301,7 +301,7 @@ export default function EmployeeManagement() {
             <StyledToolbar sx={{ width: "100%", px: 0 }}>
               <Typography
                 variant="h2"
-                sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
+                sx={{ pb: 2, pt: 4, color: "text.primary", fontWeight: "bold" }}
               >
                 Employee Management
               </Typography>
