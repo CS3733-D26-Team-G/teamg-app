@@ -19,10 +19,7 @@ import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
 import "./ContentForm.css";
 
-type ContentFormData = z.infer<
-  typeof Schemas.ContentCreateInputObjectZodSchema
->;
-type ContentRecord = ContentFormData & { uuid: string };
+import type { ContentFormData, ContentRecord } from "../../types/content";
 type Position = z.infer<typeof Schemas.PositionSchema>;
 type ContentType = z.infer<typeof Schemas.ContentTypeSchema>;
 type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
