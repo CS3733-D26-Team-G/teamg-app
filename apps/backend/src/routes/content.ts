@@ -270,7 +270,7 @@ router.post("/lock/:uuid", async (req, res) => {
       locked: true,
       lock: serializeLock(lock as empContentLock),
     });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
@@ -313,7 +313,7 @@ router.delete("/lock/:uuid", async (req, res) => {
       locked: false,
       lock: null,
     });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
