@@ -147,28 +147,6 @@ export const darkTheme: Theme = createTheme({
         },
       },
     },
-    MuiDataGrid: {
-      styleOverrides: {
-        root: {
-          backgroundColor: "#202020",
-          color: "#FFFFFF",
-          borderColor: "#444444",
-        },
-        columnHeaders: {
-          backgroundColor: "#2a2a2a",
-          color: "#FFFFFF",
-        },
-        row: {
-          "&:hover": {
-            backgroundColor: "#2e2e2e",
-          },
-        },
-        footerContainer: {
-          backgroundColor: "#202020",
-          color: "#FFFFFF",
-        },
-      },
-    },
   },
 });
 
