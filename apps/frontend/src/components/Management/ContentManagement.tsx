@@ -134,7 +134,6 @@ export default function ContentManagement({
         method: "POST",
         credentials: "include",
       });
-      const body = await res.json();
       if (res.status == 409) {
         setRows((prev) =>
           prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
