@@ -9,6 +9,7 @@ import {
   Toolbar,
   Typography,
   styled,
+  Avatar,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -18,10 +19,12 @@ import { z } from "zod";
 import HeaderSearchBar from "./HeaderSearchBar";
 import ManageEmployeeForm from "./ManageEmployeeForm";
 import { Schemas } from "@repo/zod";
-
+import { User } from "lucide-react";
 import { API_ENDPOINTS } from "../../config";
 
-type EmployeeFormData = z.infer<typeof Schemas.EmployeeCreateInputObjectZodSchema>;
+type EmployeeFormData = z.infer<
+  typeof Schemas.EmployeeCreateInputObjectZodSchema
+>;
 type EmployeeRow = EmployeeFormData & { uuid: string };
 type Position = z.infer<typeof Schemas.PositionSchema>;
 type Department = z.infer<typeof Schemas.DepartmentSchema>;
@@ -89,18 +92,17 @@ export default function EmployeeManagement() {
   }, [rows, searchQuery]);
 
   const handleDelete = async (row: EmployeeRow) => {
-    if (!window.confirm(`Remove employee ${row.first_name} ${row.last_name}?`)) {
+    if (
+      !window.confirm(`Remove employee ${row.first_name} ${row.last_name}?`)
+    ) {
       return;
     }
 
     try {
-      const res = await fetch(
-        `${API_ENDPOINTS.EMPLOYEE_DELETE(row.uuid)}/employee/delete/${row.uuid}`,
-        {
-          method: "POST",
-          credentials: "include",
-        },
-      );
+      const res = await fetch(API_ENDPOINTS.EMPLOYEE_DELETE(row.uuid), {
+        method: "POST",
+        credentials: "include",
+      });
 
       if (res.ok) {
         setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
@@ -126,12 +128,22 @@ export default function EmployeeManagement() {
       ...(uuid ? { uuid } : {}),
     });
 
-    const url = isExisting
-      ? API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
+    if (
+      !window.confirm(
+        `Are you sure you want to update "${formData.first_name + " " + formData.last_name}"?`,
+      )
+    ) {
+      return;
+    }
+
+    const url =
+      isExisting ?
+        API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
       : API_ENDPOINTS.EMPLOYEE_CREATE;
 
-    const body = isExisting
-      ? (() => {
+    const body =
+      isExisting ?
+        (() => {
           const { uuid: _omit, ...rest } = parsedFull;
           return rest;
         })()
@@ -175,6 +187,42 @@ export default function EmployeeManagement() {
     };
 
     return [
+      {
+        field: "userIcon",
+        headerName: "",
+        width: 60,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => {
+          const { avatar } = params.row;
+          const firstInitial = params.row.first_name?.[0] ?? "";
+          const lastInitial = params.row.last_name?.[0] ?? "";
+          const initials = (firstInitial + lastInitial).toUpperCase() || "?";
+
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+              }}
+            >
+              <Avatar
+                src={avatar || undefined}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: avatar ? "transparent" : "primary.main",
+                  fontSize: "0.875rem",
+                }}
+              >
+                {initials}
+              </Avatar>
+            </Box>
+          );
+        },
+      },
       { field: "first_name", headerName: "First Name", flex: 1, minWidth: 140 },
       { field: "last_name", headerName: "Last Name", flex: 1, minWidth: 140 },
       {
@@ -197,7 +245,8 @@ export default function EmployeeManagement() {
         field: "department",
         headerName: "Department",
         width: 190,
-        valueGetter: (value) => deptLabels[value as Department] ?? String(value),
+        valueGetter: (value) =>
+          deptLabels[value as Department] ?? String(value),
       },
       {
         field: "corporate_email",
@@ -232,15 +281,14 @@ export default function EmployeeManagement() {
   };
 
   return (
-    <Box sx={{ height: 650, width: "100%", p: 2 }}>
-      {viewState ? (
+    <Box sx={{ maxHeight: "100vh", overflowY: "auto" }}>
+      {viewState ?
         <ManageEmployeeForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
           onCancel={() => setViewState(null)}
         />
-      ) : (
-        <Box>
+      : <Box sx={{}}>
           <AppBar
             position="static"
             sx={{
@@ -252,7 +300,7 @@ export default function EmployeeManagement() {
           >
             <StyledToolbar sx={{ width: "100%", px: 0 }}>
               <Typography
-                variant="h4"
+                variant="h2"
                 sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
               >
                 Employee Management
@@ -288,12 +336,12 @@ export default function EmployeeManagement() {
             loading={loading}
             pageSizeOptions={[5, 10]}
             initialState={{
-              pagination: { paginationModel: { pageSize: 5 } },
+              pagination: { paginationModel: { pageSize: 10 } },
             }}
-            sx={{ mt: 2 }}
+            sx={{}}
           />
         </Box>
-      )}
+      }
     </Box>
   );
 }

@@ -4,12 +4,13 @@ import morgan from "morgan";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { auth } from "./middlewares/auth.js";
+import { isProd, environment, allowedOriginsMap } from "./config.ts";
+import { logger } from "./logger.ts";
 
 const app = express();
-const port = process.env.PORT;
+const port = process.env.PORT!;
 
-const isProd = process.env.NODE_ENV === "production";
-console.log("Running as: ", isProd ? "production" : "testing");
+logger.info(`isProd: ${isProd}`);
 
 // Middleware
 app.use(express.json());
@@ -20,45 +21,64 @@ const allowedOrigins =
     ["https://teamg-app-frontend.vercel.app"]
   : ["http://localhost:10000"];
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  }),
-);
-app.get("/", (req, res) => {
+const morganStream = {
+  write: (message: string) => logger.http(message.trim()),
+};
+app.use(morgan("dev", { stream: morganStream }));
+app.use(cookieParser());
+
+const allowedOrigins =
+  allowedOriginsMap[environment as keyof typeof allowedOriginsMap];
+
+const corsOptions: cors.CorsOptions = {
+  origin(origin, callback) {
+    // Allow non-browser / same-origin requests with no Origin header
+    if (!origin) {
+      logger.verbose("Received request with no Origin header");
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      logger.debug(`Received request from allowed origin: ${origin}`);
+      return callback(null, true);
+    }
+
+    logger.debug(`Received request from disallowed origin: ${origin}`);
+    return callback(new Error(`Origin not allowed by CORS: ${origin}`));
+  },
+  credentials: true,
+};
+app.use(cors(corsOptions));
+
+app.get("/", (_req, res) => {
   res.status(200).json({
-    debug: {
-      NODE_ENV: process.env.NODE_ENV,
-    },
+    status: "200 OK",
+    isProd,
+    environment,
+    allowedOrigins,
   });
 });
-
 app.use(auth);
-// Send HTTP 200 at root
-
-// const routesPath = join(process.cwd(), process.env.VERCEL == "1" ? "backend/apps/src/routes" : "src/routes");
-// const routesPath = "/vercel/path0/apps/backend/src/routes";
-// const routesPath = join("/vercel/path0/apps/backend/src/", "routes");
-// for (const file of readdirSync(routesPath)) {
-//   if (!file.endsWith(".js")) continue;
-//   if (file.endsWith(".d.js")) continue;
-//   if (file.startsWith("index.")) continue;
-//
-//   const { default: router } = await import(join(routesPath, file));
-//   app.use(`/${file.replace(/\.js$/, "")}`, router);
-// }
 
 import contentRouter from "./routes/content.ts";
 import employeeRouter from "./routes/employee.ts";
 import loginRouter from "./routes/login.ts";
-app.use("/content", contentRouter);
-app.use("/employee", employeeRouter);
-app.use("/login", loginRouter);
+import logoutRouter from "./routes/logout.ts";
+
+const routeMap = {
+  content: contentRouter,
+  employee: employeeRouter,
+  login: loginRouter,
+  logout: logoutRouter,
+};
+for (const [path, router] of Object.entries(routeMap)) {
+  logger.info(`Loaded /${path} route`);
+  app.use(`/${path}`, router);
+}
 
 // Start server
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  logger.info(`Server running on http://localhost:${port}`);
 });
 
 export default app;

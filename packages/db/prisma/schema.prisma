@@ -20,6 +20,7 @@ datasource db {
 model Employee {
   uuid            String     @id @default(uuid()) @db.Uuid
   account         Account?
+  avatar          String?
   first_name      String
   last_name       String
   date_of_birth   DateTime   @db.Date
@@ -30,6 +31,7 @@ model Employee {
   phone_number    String
   personal_email  String
   corporate_email String
+  contentLocks    ContentEditLock[]
 }
 
 model Content {
@@ -42,6 +44,17 @@ model Content {
   expiration_time    DateTime      @db.Timestamp(6)
   content_type       ContentType
   status             ContentStatus
+  is_favorite        Boolean       @default(false)
+  supabasePath       String?
+  editLock           ContentEditLock?
+}
+model ContentEditLock {
+  contentUuid         String   @id @db.Uuid
+  lockedByEmpUuid String  @db.Uuid
+  lockedAt            DateTime @default(now()) @db.Timestamp(6)
+
+  content            Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
+  lockedByEmp        Employee @relation(fields: [lockedByEmpUuid], references: [uuid], onDelete: Cascade)
 }
 
 model Account {

@@ -1,6 +1,6 @@
-import { createTheme, responsiveFontSizes } from "@mui/material/styles";
+import { createTheme } from "@mui/material/styles";
 
-let theme = createTheme({
+const theme = createTheme({
   palette: {
     primary: {
       dark: "#1A1E4B",
@@ -18,41 +18,39 @@ let theme = createTheme({
     },
   },
   typography: {
-    fontFamily: "Playfair Display",
+    fontFamily: "Rubik, Karla , sans-serif",
     h1: {
-      fontFamily: "Playfair Display",
-      fontSize: "xx-large",
-      fontWeight: "bold",
+      fontSize: "2.5rem",
+      fontWeight: 600,
     },
     h2: {
-      fontFamily: "Playfair Display",
-      fontSize: "x-large",
-      fontWeight: "bold",
+      fontSize: "2rem",
+      fontWeight: 600,
     },
     h3: {
-      fontFamily: "Playfair Display",
-      fontSize: "large",
-      fontWeight: "bold",
+      fontSize: "1rem",
+      fontWeight: 600,
     },
     h4: {
-      fontFamily: "Playfair Display",
-      fontSize: "medium",
-      fontWeight: "bold",
-    },
-    h5: {
-      fontFamily: "Playfair Display",
-      fontSize: "small",
-      fontWeight: "bold",
+      fontSize: ".5rem",
+      fontWeight: 600,
     },
     body1: {
-      fontFamily: "Playfair Display",
-      fontSize: "medium",
-      fontWeight: "regular",
+      fontSize: "1rem",
+      lineHeight: 1.5,
     },
     body2: {
-      fontFamily: "Playfair Display",
-      fontSize: "small",
-      fontWeight: "regular",
+      fontSize: "0.875rem",
+      lineHeight: 1.43,
+    },
+    caption: {
+      fontSize: "0.75rem",
+      color: "#6b6b6b",
+    },
+    overline: {
+      fontSize: "0.75rem",
+      fontWeight: 600,
+      textTransform: "uppercase",
     },
   },
   components: {
@@ -74,7 +72,7 @@ let theme = createTheme({
     MuiFormLabel: {
       styleOverrides: {
         root: {
-          fontFamily: "Playfair Display",
+          fontFamily: "Rubik",
           fontSize: "smaller",
           fontWeight: "lighter",
         },
@@ -82,7 +80,5 @@ let theme = createTheme({
     },
   },
 });
-
-theme = responsiveFontSizes(theme);
 
 export default theme;
