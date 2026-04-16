@@ -1,12 +1,7 @@
 import { useState } from "react";
-import { z } from "zod";
 
 import ContentManagement from "../components/Management/ContentManagement";
-import { Schemas } from "@repo/zod";
-
-type ContentRow = z.infer<typeof Schemas.ContentCreateInputObjectZodSchema> & {
-  uuid: string;
-};
+import type { ContentRow } from "../types/content";
 
 function Library() {
   const [viewState, setViewState] = useState<ContentRow | "new" | null>(null);
