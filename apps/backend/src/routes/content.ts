@@ -43,6 +43,76 @@ function getExpiresInSeconds(expirationTime: Date): number {
   return Math.floor((expirationTime.getTime() - Date.now()) / 1000);
 }
 
+function manageContent(
+  auth: NonNullable<Express.Request["auth"]>,
+  forPosition: z.infer<typeof Schemas.PositionSchema>,
+) {
+  return auth.position === "ADMIN" || auth.position === forPosition;
+}
+
+type empContentLock = {
+  contentUuid: string;
+  lockedByEmpUuid: string;
+  lockedAt: Date;
+  lockedByEmp: {
+    uuid: string;
+    first_name: string;
+    last_name: string;
+    corporate_email: string;
+  };
+};
+
+function serializeLock(lock: empContentLock) {
+  return {
+    content_uuid: lock.contentUuid,
+    locked_by_emp_uuid: lock.lockedByEmpUuid,
+    locked_at: lock.lockedAt,
+    locked_by: {
+      uuid: lock.lockedByEmp.uuid,
+      first_name: lock.lockedByEmp.first_name,
+      last_name: lock.lockedByEmp.last_name,
+      corporate_email: lock.lockedByEmp.corporate_email,
+    },
+  };
+}
+
+async function getcurrContent(uuid: string) {
+  return prisma.content.findUnique({
+    where: { uuid },
+  });
+}
+
+async function getactiveLock(uuid: string) {
+  return prisma.contentEditLock.findUnique({
+    where: { contentUuid: uuid },
+    include: {
+      lockedByEmp: {
+        select: {
+          uuid: true,
+          first_name: true,
+          last_name: true,
+          corporate_email: true,
+        },
+      },
+    },
+  });
+}
+
+async function rejectifLocked(
+  uuid: string,
+  auth: NonNullable<Express.Request["auth"]>,
+  res: express.Response,
+) {
+  const lock = await getactiveLock(uuid);
+  if (!lock || lock.lockedByEmpUuid === auth.employeeUuid) {
+    return false;
+  }
+  res.status(409).json({
+    message: "Content is currently locked by another user",
+    lock: serializeLock(lock as empContentLock),
+  });
+  return true;
+}
 async function resolveContentUrl({
   file,
   uuid,
@@ -129,6 +199,121 @@ router.get("/", async (_req, res) => {
     return res.status(200).json(content);
   } catch (e) {
     logger.error(`Failed to query Content table for all records:\n${e}`);
+    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  }
+});
+
+router.post("/lock/:uuid", async (req, res) => {
+  const params = ParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    return res.status(400).json({ message: "Invalid content UUID" });
+  }
+  const uuid = params.data.uuid;
+  const auth = req.auth!;
+  try {
+    const content = await getcurrContent(uuid);
+    if (!content) {
+      return res.status(400).json({ message: "Invalid content UUID" });
+    }
+    if (!manageContent(auth, content.for_position)) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const existingLock = await getactiveLock(uuid);
+
+    if (existingLock && existingLock.lockedByEmpUuid !== auth.employeeUuid) {
+      return res.status(409).json({
+        message: "Content is currently locked by another user",
+        lock: serializeLock(existingLock as empContentLock),
+      });
+    }
+    //check if there is no lock yet
+    let lock;
+
+    if (!existingLock) {
+      lock = await prisma.contentEditLock.create({
+        data: {
+          contentUuid: uuid,
+          lockedByEmpUuid: auth.employeeUuid,
+        },
+        include: {
+          lockedByEmp: {
+            select: {
+              uuid: true,
+              first_name: true,
+              last_name: true,
+              corporate_email: true,
+            },
+          },
+        },
+      });
+    } else {
+      //update the lock if there is an existing one
+      lock = await prisma.contentEditLock.update({
+        where: { contentUuid: uuid },
+        data: {
+          lockedByEmpUuid: auth.employeeUuid, //original emp
+          lockedAt: new Date(), //refresh time
+        },
+        include: {
+          lockedByEmp: {
+            select: {
+              uuid: true,
+              first_name: true,
+              last_name: true,
+              corporate_email: true,
+            },
+          },
+        },
+      });
+    }
+    return res.status(200).json({
+      locked: true,
+      lock: serializeLock(lock as empContentLock),
+    });
+  } catch (e) {
+    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  }
+});
+//deleting lock row if curr user owns lowk/ is admin
+router.delete("/lock/:uuid", async (req, res) => {
+  const params = ParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    return res.status(400).json({ message: "invalid content uuid" });
+  }
+  const uuid = params.data.uuid;
+  const auth = req.auth!;
+  try {
+    const content = await getcurrContent(uuid);
+    if (!content) {
+      return res.status(400).json({ message: "Invalid content UUID" });
+    }
+    if (!manageContent(auth, content.for_position)) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const existingLock = await getactiveLock(uuid);
+    if (!existingLock) {
+      return res.status(200).json({
+        locked: false,
+        lock: null,
+      });
+    }
+    if (
+      existingLock.lockedByEmpUuid !== auth.employeeUuid &&
+      auth.position !== "ADMIN"
+    ) {
+      return res.status(403).json({
+        message: "Only the lock owner or admin can unlock this content",
+        lock: serializeLock(existingLock as empContentLock),
+      });
+    }
+    await prisma.contentEditLock.delete({
+      where: { contentUuid: uuid },
+    });
+    return res.status(200).json({
+      locked: false,
+      lock: null,
+    });
+  } catch (e) {
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
@@ -236,7 +421,9 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     );
     return res.status(401).json({ message: "Unauthorized" });
   }
-
+  if (await rejectifLocked(uuid, auth, res)) {
+    return;
+  }
   const expirationTime =
     input.expiration_time instanceof Date ?
       input.expiration_time
@@ -326,9 +513,16 @@ router.post("/delete/:uuid", async (req, res) => {
       );
       return res.status(401).json({ message: "Unauthorized" });
     }
-
+    if (await rejectifLocked(uuid, auth, res)) {
+      return;
+    }
     logger.verbose(`Deleting Content table record ${uuid}`);
-    await prisma.content.delete({ where: { uuid } });
+    await prisma.$transaction(async (tx) => {
+      await tx.contentEditLock.deleteMany({
+        where: { contentUuid: uuid },
+      });
+      await tx.content.delete({ where: { uuid } });
+    });
     logger.verbose(`Deleted Content table record ${uuid}`);
 
     return res.status(200).json(content);

@@ -67,6 +67,7 @@ export default function ContentManagement({
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [userAccountType] = useState(localStorage.getItem("employee_position"));
+  const [lockMessage, setLockMessage] = useState<string | null>(null);
 
   // --- State for Preview ---
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -125,6 +126,40 @@ export default function ContentManagement({
     }
   };
 
+  const handleEditStart = async (row: ContentRow) => {
+    setLockMessage(null);
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT_LOCK(row.uuid), {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (res.status == 409) {
+        setLockMessage("This content is locked by another user.");
+        return;
+      }
+      if (!res.ok) {
+        setLockMessage("Unable to lock content");
+        return;
+      }
+      setViewState(row);
+    } catch (error) {
+      console.error(error);
+      setLockMessage("Unable to lock content for editing.");
+    }
+  };
+
+  const releaseLock = async (uuid: string) => {
+    try {
+      await fetch(API_ENDPOINTS.CONTENT_LOCK(uuid), {
+        method: "DELETE",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const handleSave = async (payload: FormData) => {
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
@@ -148,6 +183,9 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
+        if (isExisting) {
+          await releaseLock(uuid);
+        }
         const refreshRes = await fetch(API_ENDPOINTS.CONTENT, {
           credentials: "include",
         });
@@ -268,7 +306,12 @@ export default function ContentManagement({
         <ContentForm
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
-          onCancel={() => setViewState(null)}
+          onCancel={async () => {
+            if (viewState != "new") {
+              await releaseLock(viewState.uuid);
+            }
+            setViewState(null);
+          }}
         />
       </Box>
     );
@@ -307,20 +350,21 @@ export default function ContentManagement({
               New Content
             </Button>
           </Box>
+          {lockMessage && (
+            <Typography sx={{ pt: 1, color: "warning.main" }}>
+              {lockMessage}
+            </Typography>
+          )}
         </StyledToolbar>
       </AppBar>
 
       <DataGrid
         rows={filteredRows}
         getRowId={(row) => row.uuid}
-        columns={getColumns(
-          (row) => setViewState(row),
-          handleDelete,
-          (row) => {
-            setSelectedDoc({ uri: row.url, fileName: row.title });
-            setPreviewOpen(true);
-          },
-        )}
+        columns={getColumns(handleEditStart, handleDelete, (row) => {
+          setSelectedDoc({ uri: row.url, fileName: row.title });
+          setPreviewOpen(true);
+        })}
         getRowClassName={(params) => {
           const hasPermission =
             isSystemAdmin || userAccountType === params.row.for_position;
