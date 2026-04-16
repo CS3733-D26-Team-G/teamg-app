@@ -27,12 +27,13 @@ import { API_ENDPOINTS } from "../../config";
 type ContentFormData = z.infer<
   typeof Schemas.ContentCreateInputObjectZodSchema
 >;
-type ContentRow = ContentFormData & { uuid: string };
+type ContentRow = ContentFormData & { uuid: string; isLocked?: boolean };
 type Position = z.infer<typeof Schemas.PositionSchema>;
 type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
 
 const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   uuid: z.string(),
+  isLocked: z.boolean().optional(),
 });
 
 const positionLabels: Record<Position, string> = {
@@ -135,7 +136,10 @@ export default function ContentManagement({
       });
       const body = await res.json();
       if (res.status == 409) {
-        setLockMessage("This content is locked by another user.");
+        setRows((prev) =>
+          prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
+        );
+        setLockMessage("This content is locked by another user");
         return;
       }
       if (!res.ok) {
@@ -155,6 +159,9 @@ export default function ContentManagement({
         method: "DELETE",
         credentials: "include",
       });
+      setRows((prev) =>
+        prev.map((r) => (r.uuid === uuid ? { ...r, isLocked: true } : r)),
+      );
     } catch (error) {
       console.error(error);
     }
@@ -284,7 +291,7 @@ export default function ContentManagement({
             </IconButton>
             <IconButton
               onClick={() => onEdit(params.row)}
-              disabled={!hasPermission}
+              disabled={!hasPermission || params.row.isLocked}
             >
               <EditIcon />
             </IconButton>
