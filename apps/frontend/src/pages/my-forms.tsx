@@ -1,13 +1,7 @@
 import React from "react";
-import { z } from "zod";
-import { Schemas } from "@repo/zod";
 
 import ContentForm from "../components/Management/ContentForm";
-
-type ContentFormData = z.infer<
-  typeof Schemas.ContentCreateInputObjectZodSchema
->;
-type ContentRecord = ContentFormData & { uuid: string };
+import type { ContentRecord } from "../types/content";
 
 interface ContentManagementProps {
   viewState: ContentRecord | "new" | null;

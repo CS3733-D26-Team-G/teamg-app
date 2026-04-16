@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import {
   IconButton,
@@ -23,18 +23,13 @@ import HeaderSearchBar from "./HeaderSearchBar";
 import { Schemas } from "@repo/zod";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
 import { API_ENDPOINTS } from "../../config";
+import {
+  ContentFavoriteResponseSchema,
+  ContentRowsSchema,
+  type ContentRow,
+} from "../../types/content";
 
-type ContentFormData = z.infer<
-  typeof Schemas.ContentCreateInputObjectZodSchema
->;
-type ContentRow = ContentFormData & { uuid: string; isLocked?: boolean };
 type Position = z.infer<typeof Schemas.PositionSchema>;
-type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
-
-const ContentRowSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
-  uuid: z.string(),
-  isLocked: z.boolean().optional(),
-});
 
 const positionLabels: Record<Position, string> = {
   UNDERWRITER: "UNDERWRITER",
@@ -69,8 +64,10 @@ export default function ContentManagement({
   const [searchQuery, setSearchQuery] = useState("");
   const [userAccountType] = useState(localStorage.getItem("employee_position"));
   const [lockMessage, setLockMessage] = useState<string | null>(null);
+  const [favoritePending, setFavoritePending] = useState<
+    Record<string, boolean>
+  >({});
 
-  // --- State for Preview ---
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
@@ -78,6 +75,35 @@ export default function ContentManagement({
   } | null>(null);
 
   const isSystemAdmin = userAccountType === "ADMIN";
+
+  const fetchRows = useCallback(async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data: unknown = await res.json();
+      const parsed = ContentRowsSchema.safeParse(data);
+
+      if (!parsed.success) {
+        console.error(parsed.error);
+        setRows([]);
+        return;
+      }
+
+      setRows(parsed.data);
+    } catch (error) {
+      console.error(error);
+      setRows([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchRows();
+  }, [fetchRows]);
 
   const filteredRows = useMemo(
     () =>
@@ -96,32 +122,20 @@ export default function ContentManagement({
     [rows, searchQuery],
   );
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(API_ENDPOINTS.CONTENT, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data: unknown = await res.json();
-        const parsed = z.array(ContentRowSchema).safeParse(data);
-        if (parsed.success) setRows(parsed.data);
-      } catch (error) {
-        setRows([]);
-      }
-    };
-    void fetchData();
-  }, []);
-
   const handleDelete = async (row: ContentRow) => {
-    if (!window.confirm(`Are you sure you want to delete "${row.title}"?`))
+    if (!window.confirm(`Are you sure you want to delete "${row.title}"?`)) {
       return;
+    }
+
     try {
       const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(row.uuid), {
         method: "POST",
         credentials: "include",
       });
-      if (res.ok) setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
+
+      if (res.ok) {
+        setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
+      }
     } catch (error) {
       console.error(error);
     }
@@ -129,22 +143,26 @@ export default function ContentManagement({
 
   const handleEditStart = async (row: ContentRow) => {
     setLockMessage(null);
+
     try {
       const res = await fetch(API_ENDPOINTS.CONTENT_LOCK(row.uuid), {
         method: "POST",
         credentials: "include",
       });
-      if (res.status == 409) {
+
+      if (res.status === 409) {
         setRows((prev) =>
           prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
         );
         setLockMessage("This content is locked by another user");
         return;
       }
+
       if (!res.ok) {
         setLockMessage("Unable to lock content");
         return;
       }
+
       setViewState(row);
     } catch (error) {
       console.error(error);
@@ -158,8 +176,9 @@ export default function ContentManagement({
         method: "DELETE",
         credentials: "include",
       });
+
       setRows((prev) =>
-        prev.map((r) => (r.uuid === uuid ? { ...r, isLocked: true } : r)),
+        prev.map((r) => (r.uuid === uuid ? { ...r, isLocked: false } : r)),
       );
     } catch (error) {
       console.error(error);
@@ -178,8 +197,9 @@ export default function ContentManagement({
       !window.confirm(
         `Are you sure you want to save "${payload.get("title")}"?`,
       )
-    )
+    ) {
       return;
+    }
 
     try {
       const res = await fetch(url, {
@@ -192,12 +212,7 @@ export default function ContentManagement({
         if (isExisting) {
           await releaseLock(uuid);
         }
-        const refreshRes = await fetch(API_ENDPOINTS.CONTENT, {
-          credentials: "include",
-        });
-        const updatedData: unknown = await refreshRes.json();
-        const parsedRows = z.array(ContentRowSchema).safeParse(updatedData);
-        if (parsedRows.success) setRows(parsedRows.data);
+        await fetchRows();
         setViewState(null);
       }
     } catch (error) {
@@ -206,20 +221,48 @@ export default function ContentManagement({
   };
 
   const toggleFavorite = async (row: ContentRow) => {
+    const nextIsFavorite = !row.is_favorite;
+
+    setFavoritePending((prev) => ({
+      ...prev,
+      [row.uuid]: true,
+    }));
+
     try {
       const res = await fetch(API_ENDPOINTS.CONTENT_FAVORITE(row.uuid), {
-        method: "PATCH",
+        method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isFavorite: nextIsFavorite }),
       });
-      if (res.ok) {
-        const updatedRow = await res.json();
-        setRows((prevRows) =>
-          prevRows.map((r) => (r.uuid === updatedRow.uuid ? updatedRow : r)),
-        );
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
+
+      const data: unknown = await res.json();
+      const parsed = ContentFavoriteResponseSchema.safeParse(data);
+
+      if (!parsed.success) {
+        console.error(parsed.error);
+        await fetchRows();
+        return;
+      }
+
+      setRows((prevRows) =>
+        prevRows.map((r) =>
+          r.uuid === parsed.data.contentUuid ?
+            { ...r, is_favorite: parsed.data.isFavorite }
+          : r,
+        ),
+      );
     } catch (error) {
       console.error(error);
+    } finally {
+      setFavoritePending((prev) => ({
+        ...prev,
+        [row.uuid]: false,
+      }));
     }
   };
 
@@ -231,12 +274,15 @@ export default function ContentManagement({
     {
       field: "favorite",
       headerName: "Favorite",
-      width: 60,
+      width: 70,
       type: "number",
       sortable: true,
-      valueGetter: (value, row) => (row.is_favorite ? 1 : 0),
+      valueGetter: (_value, row) => (row.is_favorite ? 1 : 0),
       renderCell: (params) => (
-        <IconButton onClick={() => toggleFavorite(params.row)}>
+        <IconButton
+          onClick={() => void toggleFavorite(params.row)}
+          disabled={favoritePending[params.row.uuid]}
+        >
           <Heart
             size={20}
             fill={params.row.is_favorite ? "#e50000" : "none"}
@@ -280,6 +326,7 @@ export default function ContentManagement({
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userAccountType === params.row.for_position;
+
         return (
           <>
             <IconButton
@@ -313,7 +360,7 @@ export default function ContentManagement({
           initialData={viewState === "new" ? null : viewState}
           onSave={handleSave}
           onCancel={async () => {
-            if (viewState != "new") {
+            if (viewState !== "new") {
               await releaseLock(viewState.uuid);
             }
             setViewState(null);
@@ -336,6 +383,7 @@ export default function ContentManagement({
           >
             Content Management
           </Typography>
+
           <Box
             sx={{
               display: "flex",
@@ -347,6 +395,7 @@ export default function ContentManagement({
             <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
               <HeaderSearchBar setSearchQuery={setSearchQuery} />
             </Box>
+
             <Button
               onClick={() => setViewState("new")}
               variant="contained"
@@ -356,6 +405,7 @@ export default function ContentManagement({
               New Content
             </Button>
           </Box>
+
           {lockMessage && (
             <Typography sx={{ pt: 1, color: "warning.main" }}>
               {lockMessage}
@@ -416,6 +466,7 @@ export default function ContentManagement({
           >
             Close
           </Button>
+
           {selectedDoc && (
             <DocViewer
               documents={[selectedDoc]}
