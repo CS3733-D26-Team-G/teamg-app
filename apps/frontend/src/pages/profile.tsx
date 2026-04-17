@@ -10,6 +10,7 @@ import Stack from "@mui/material/Stack";
 import { Grid } from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
+import { useAuth } from "../auth/AuthContext.tsx";
 
 function Profile() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -58,10 +59,10 @@ function Profile() {
         >
           {/*'My Account text in header'*/}
           <Typography
-            variant="h4"
             sx={{
               color: "primary.contrastText",
               p: 2,
+              fontSize: 30,
             }}
           >
             My Account
@@ -77,10 +78,11 @@ function Profile() {
             }}
           >
             <Typography
-              variant={"h5"}
               sx={{
+                display: "flex",
+                alignItems: "center",
                 color: "primary.contrastText",
-                mt: 0.5,
+                fontSize: 16,
               }}
             >
               {formattedDate}
@@ -100,7 +102,6 @@ function Profile() {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
             alignItems: "center",
             width: "90%",
             height: 200,
@@ -129,7 +130,7 @@ function Profile() {
             <Stack>
               <Typography
                 sx={{
-                  fontSize: 64,
+                  fontSize: 48,
                   fontWeight: 500,
                   lineHeight: 1.1,
                   ml: -0.8,
@@ -139,7 +140,7 @@ function Profile() {
               </Typography>
               <Typography
                 sx={{
-                  fontSize: 20,
+                  fontSize: 16,
                   fontWeight: 500,
                 }}
               >
@@ -147,7 +148,7 @@ function Profile() {
               </Typography>
               <Typography
                 sx={{
-                  fontSize: 20,
+                  fontSize: 16,
                   fontWeight: 500,
                   mt: 0.5,
                 }}
@@ -155,38 +156,6 @@ function Profile() {
                 Business Analyst
               </Typography>
             </Stack>
-          </Stack>
-
-          {/*User stats on the right*/}
-          <Stack
-            sx={{
-              pr: 4,
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: 36,
-                fontWeight: 400,
-              }}
-            >
-              Drafts: 12
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: 36,
-                fontWeight: 400,
-              }}
-            >
-              Published: 10
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: 36,
-                fontWeight: 400,
-              }}
-            >
-              Pending: 3
-            </Typography>
           </Stack>
         </Box>
 
@@ -204,9 +173,8 @@ function Profile() {
           <Stack sx={{ width: "100%" }}>
             <Typography
               sx={{
-                fontSize: 36,
-                fontWeight: 500,
-                pl: 1,
+                fontSize: 32,
+                pl: 1.6,
                 pt: 0.5,
                 pb: 0.3,
               }}
@@ -310,9 +278,8 @@ function Profile() {
             <Stack sx={{ width: "96%" }}>
               <Typography
                 sx={{
-                  fontSize: 36,
-                  fontWeight: 500,
-                  pl: 1,
+                  fontSize: 32,
+                  pl: 1.6,
                   pt: 0.3,
                   pb: 0.3,
                 }}
@@ -405,9 +372,8 @@ function Profile() {
             <Stack sx={{ width: "100%" }}>
               <Typography
                 sx={{
-                  fontSize: 36,
-                  fontWeight: 500,
-                  pl: 1,
+                  fontSize: 32,
+                  pl: 1.6,
                   pt: 0.3,
                   pb: 0.4,
                 }}
@@ -459,9 +425,8 @@ function Profile() {
             <Stack sx={{ width: "100%" }}>
               <Typography
                 sx={{
-                  fontSize: 36,
-                  fontWeight: 500,
-                  pl: 1,
+                  fontSize: 32,
+                  pl: 1.6,
                   pt: 0.3,
                   pb: 0.4,
                 }}
