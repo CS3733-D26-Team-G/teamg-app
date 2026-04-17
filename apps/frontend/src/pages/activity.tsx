@@ -1,8 +1,15 @@
+import { Typography, Box } from "@mui/material";
+
 function Activity() {
   return (
-    <>
-      <h1>Activity</h1>
-    </>
+    <Box sx={{ px: 3, pt: 3 }}>
+      <Typography
+        variant="h1"
+        color="text.primary"
+      >
+        Activity
+      </Typography>
+    </Box>
   );
 }
 

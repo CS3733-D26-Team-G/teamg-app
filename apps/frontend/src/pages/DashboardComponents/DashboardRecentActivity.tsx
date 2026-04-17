@@ -4,13 +4,11 @@ import { Typography } from "@mui/material";
 import Divider from "@mui/material/Divider";
 import CardHeader from "@mui/material/CardHeader";
 
-import { Co2 } from "@mui/icons-material";
-
 export default function DashboardRecentActivity() {
   return (
     <Card
-      className="max-h-200px min-w-500px right-[20%]
-     outline-gray-200 outline-1 drop-shadow-lg"
+      className="max-h-200px min-w-500px right-[20%] outline-gray-200 outline-1 drop-shadow-lg"
+      sx={{ backgroundColor: "background.paper" }}
     >
       <CardContent className="p=0 -mt-8 text-left max-h-270px">
         <CardHeader

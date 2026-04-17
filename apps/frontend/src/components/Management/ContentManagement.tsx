@@ -374,12 +374,12 @@ export default function ContentManagement({
     <Box sx={{ height: "auto", width: "100%" }}>
       <AppBar
         position="static"
-        sx={{ backgroundColor: "white", boxShadow: "none" }}
+        sx={{ backgroundColor: "background.paper", boxShadow: "none" }}
       >
         <StyledToolbar>
           <Typography
             variant="h2"
-            sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
+            sx={{ pb: 2, pt: 4, color: "text.primary", fontWeight: "bold" }}
           >
             Content Management
           </Typography>

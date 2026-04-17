@@ -1,8 +1,7 @@
 import "./App.css";
 import { Routes, Route } from "react-router";
 import Sidebar from "./components/Sidebar.tsx";
-import theme from "./theme.tsx";
-import { ThemeProvider, CssBaseline } from "@mui/material";
+import { AppThemeProvider } from "./Themecontext.tsx";
 
 import Hero from "./pages/hero.tsx";
 import Dashboard from "./pages/dashboard.tsx";
@@ -18,72 +17,77 @@ import EmployeeFormPage from "./pages/employees-form.tsx";
 
 import { useLocation } from "react-router";
 
-function App() {
+function AppLayout() {
   const location = useLocation();
   const isHeroPage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <div style={{ display: "flex", minHeight: "100vh" }}>
-        {!isHeroPage && !isLoginPage && <Sidebar />}
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      {!isHeroPage && !isLoginPage && <Sidebar />}
 
-        <div style={{ flexGrow: 1, minWidth: 0 }}>
-          <Routes>
-            <Route
-              path="/"
-              element={<Hero />}
-            />
+      <div style={{ flexGrow: 1, minWidth: 0 }}>
+        <Routes>
+          <Route
+            path="/"
+            element={<Hero />}
+          />
 
-            <Route
-              path="/dashboard"
-              element={<Dashboard />}
-            />
-            <Route
-              path="/my-forms"
-              element={<MyForms />}
-            />
-            <Route
-              path="/library"
-              element={<Library />}
-            />
-            <Route
-              path="/activity"
-              element={<Activity />}
-            />
-            <Route
-              path="/settings"
-              element={<Settings />}
-            />
-            <Route
-              path="/profile"
-              element={<Profile />}
-            />
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
+          <Route
+            path="/my-forms"
+            element={<MyForms />}
+          />
+          <Route
+            path="/library"
+            element={<Library />}
+          />
+          <Route
+            path="/activity"
+            element={<Activity />}
+          />
+          <Route
+            path="/settings"
+            element={<Settings />}
+          />
+          <Route
+            path="/profile"
+            element={<Profile />}
+          />
 
-            <Route
-              path="/employee-management"
-              element={<EmployeeManagement />}
-            />
+          <Route
+            path="/employee-management"
+            element={<EmployeeManagement />}
+          />
 
-            <Route
-              path="/content-management"
-              element={<Library />}
-            />
+          <Route
+            path="/content-management"
+            element={<Library />}
+          />
 
-            <Route
-              path="/employee-form"
-              element={<EmployeeFormPage />}
-            />
+          <Route
+            path="/employee-form"
+            element={<EmployeeFormPage />}
+          />
 
-            <Route
-              path="/content-form"
-              element={<MyForms />}
-            />
-          </Routes>
-        </div>
+          <Route
+            path="/content-form"
+            element={<MyForms />}
+          />
+        </Routes>
       </div>
-    </ThemeProvider>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <AppThemeProvider>
+      <AppLayout />
+    </AppThemeProvider>
   );
 }
 
