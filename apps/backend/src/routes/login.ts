@@ -88,7 +88,6 @@ router.post("/", async (req, res) => {
 
     return res.status(200).json({
       username: account.username,
-      account_type: account.type,
       employee_position: employee.position,
     });
   } catch (e) {
