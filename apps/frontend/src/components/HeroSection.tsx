@@ -4,11 +4,11 @@ import { Box, Button, Alert, Collapse, Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import { motion } from "framer-motion";
 import HanoverLogoWhite from "../assets/HanoverLogoWhite.png";
-import HanoverVols from "../assets/HanoverVols.png";
 import LoginPopUp from "../pages/LoginPopUp.tsx";
 import theme from "../theme.tsx";
 import Footer from "./Footer.tsx";
 import { type Variants } from "framer-motion";
+import CarouselBackground from "./CarouselBackground";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -48,18 +48,7 @@ export default function HeroSection() {
   ];
 
   return (
-    <Box
-      className="relative flex flex-col"
-      sx={{
-        width: "100%",
-        minHeight: "100vh",
-        backgroundImage: `url(${HanoverVols})`,
-        backgroundSize: "cover",
-        backgroundPosition: "top left",
-        backgroundRepeat: "no-repeat",
-        overflowX: "hidden",
-      }}
-    >
+    <CarouselBackground>
       {/* Login Modal */}
       <LoginPopUp
         open={loginOpen}
@@ -73,7 +62,7 @@ export default function HeroSection() {
           position: "absolute",
           background:
             "linear-gradient(90deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,0.75) 25%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0) 100%)",
-          zIndex: 0,
+          zIndex: 11,
         }}
       />
 
@@ -85,7 +74,7 @@ export default function HeroSection() {
           onClose={() => setDisclaimerOpen(false)}
           sx={{
             "position": "relative",
-            "zIndex": 2,
+            "zIndex": 12,
             "boxShadow": "none !important",
             "backgroundColor": "#1A1E4B !important",
             "fontFamily": theme.typography.fontFamily,
@@ -103,7 +92,7 @@ export default function HeroSection() {
       {/* Top Navigation Bar */}
       <Box
         className="relative flex items-center justify-between px-7 py-4"
-        sx={{ zIndex: 1 }}
+        sx={{ zIndex: 12 }}
       >
         <Box>
           <img
@@ -146,7 +135,7 @@ export default function HeroSection() {
           fontFamily: "Domine",
           color: "white",
           mb: 8,
-          zIndex: 1,
+          zIndex: 13,
         }}
       >
         {/* CARE Acronym Waterfall */}
@@ -191,6 +180,6 @@ export default function HeroSection() {
       </Box>
 
       {/* Footer Section */}
-    </Box>
+    </CarouselBackground>
   );
 }
