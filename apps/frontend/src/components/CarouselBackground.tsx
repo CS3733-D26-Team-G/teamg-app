@@ -59,7 +59,7 @@ export default function CarouselBackground({
 
       {/* Arrows to control carousel */}
       <IconButton
-        onClick={prev}
+        onClick={next}
         size="small"
         sx={{
           "position": "absolute",
