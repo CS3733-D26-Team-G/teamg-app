@@ -1,5 +1,5 @@
 import express from "express";
-import { Prisma, prisma } from "@repo/db";
+import { prisma } from "@repo/db";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import { isProd, INTERNAL_ERROR_MESSAGE } from "../config.ts";

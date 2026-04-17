@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import type { NextFunction, Request, Response } from "express";
-import { prisma, Prisma } from "@repo/db";
+import { prisma } from "@repo/db";
 import type { Position } from "@repo/db";
 import { authExclude } from "../config.ts";
 import { logger } from "../logger.ts";

@@ -23,6 +23,7 @@ import HeaderSearchBar from "./HeaderSearchBar";
 import { Schemas } from "@repo/zod";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
 import { API_ENDPOINTS } from "../../config";
+import { useAuth } from "../../auth/AuthContext";
 import {
   ContentFavoriteResponseSchema,
   ContentRowsSchema,
@@ -62,11 +63,11 @@ export default function ContentManagement({
 }: ContentManagementProps) {
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [userAccountType] = useState(localStorage.getItem("employee_position"));
   const [lockMessage, setLockMessage] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState<
     Record<string, boolean>
   >({});
+  const { session } = useAuth();
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{
@@ -74,7 +75,8 @@ export default function ContentManagement({
     fileName: string;
   } | null>(null);
 
-  const isSystemAdmin = userAccountType === "ADMIN";
+  const userPosition = session?.position ?? null;
+  const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
 
   const fetchRows = useCallback(async () => {
     try {
@@ -325,7 +327,7 @@ export default function ContentManagement({
       width: 160,
       renderCell: (params) => {
         const hasPermission =
-          isSystemAdmin || userAccountType === params.row.for_position;
+          isSystemAdmin || userPosition === params.row.for_position;
 
         return (
           <>
@@ -423,7 +425,7 @@ export default function ContentManagement({
         })}
         getRowClassName={(params) => {
           const hasPermission =
-            isSystemAdmin || userAccountType === params.row.for_position;
+            isSystemAdmin || userPosition === params.row.for_position;
           return hasPermission ? "" : "row-locked";
         }}
         sx={{
