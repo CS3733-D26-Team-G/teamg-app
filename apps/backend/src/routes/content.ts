@@ -1,5 +1,6 @@
 import express from "express";
 import { prisma, Prisma } from "@repo/db";
+import type { Position } from "@repo/db";
 import multer from "multer";
 import { supabase } from "../lib/supabase.ts";
 import { Schemas } from "@repo/zod";
@@ -19,7 +20,7 @@ const upload = multer({
   },
 });
 
-const ParamsSchema = z.object({
+const ParamsSchema = Schemas.ContentWhereUniqueInputObjectZodSchema.extend({
   uuid: z.uuid(),
 });
 
@@ -49,24 +50,12 @@ function getExpiresInSeconds(expirationTime: Date): number {
 
 function manageContent(
   auth: NonNullable<Express.Request["auth"]>,
-  forPosition: z.infer<typeof Schemas.PositionSchema>,
+  forPosition: Position,
 ) {
   return auth.position === "ADMIN" || auth.position === forPosition;
 }
 
-type empContentLock = {
-  contentUuid: string;
-  lockedByEmpUuid: string;
-  lockedAt: Date;
-  lockedByEmp: {
-    uuid: string;
-    first_name: string;
-    last_name: string;
-    corporate_email: string;
-  };
-};
-
-function serializeLock(lock: empContentLock) {
+function serializeLock(lock: ActiveContentLock) {
   return {
     content_uuid: lock.contentUuid,
     locked_by_emp_uuid: lock.lockedByEmpUuid,
@@ -102,6 +91,8 @@ async function getactiveLock(uuid: string) {
   });
 }
 
+type ActiveContentLock = NonNullable<Awaited<ReturnType<typeof getactiveLock>>>;
+
 async function rejectifLocked(
   uuid: string,
   auth: NonNullable<Express.Request["auth"]>,
@@ -113,7 +104,7 @@ async function rejectifLocked(
   }
   res.status(409).json({
     message: "Content is currently locked by another user",
-    lock: serializeLock(lock as empContentLock),
+    lock: serializeLock(lock),
   });
   return true;
 }
@@ -243,11 +234,11 @@ router.post("/lock/:uuid", async (req, res) => {
     if (existingLock && existingLock.lockedByEmpUuid !== auth.employeeUuid) {
       return res.status(409).json({
         message: "Content is currently locked by another user",
-        lock: serializeLock(existingLock as empContentLock),
+        lock: serializeLock(existingLock),
       });
     }
     //check if there is no lock yet
-    let lock;
+    let lock: ActiveContentLock;
 
     if (!existingLock) {
       lock = await prisma.contentEditLock.create({
@@ -288,7 +279,7 @@ router.post("/lock/:uuid", async (req, res) => {
     }
     return res.status(200).json({
       locked: true,
-      lock: serializeLock(lock as empContentLock),
+      lock: serializeLock(lock),
     });
   } catch {
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
@@ -324,7 +315,7 @@ router.delete("/lock/:uuid", async (req, res) => {
     ) {
       return res.status(403).json({
         message: "Only the lock owner or admin can unlock this content",
-        lock: serializeLock(existingLock as empContentLock),
+        lock: serializeLock(existingLock),
       });
     }
     await prisma.contentEditLock.delete({

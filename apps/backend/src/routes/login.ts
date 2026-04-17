@@ -1,5 +1,5 @@
 import express from "express";
-import { Prisma, prisma } from "@repo/db";
+import { prisma } from "@repo/db";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import { isProd, INTERNAL_ERROR_MESSAGE } from "../config.ts";
@@ -30,6 +30,13 @@ router.post("/", async (req, res) => {
         username: body.data.username,
         password: body.data.password,
       },
+      include: {
+        settings: {
+          where: {
+            accountUsername: body.data.username,
+          },
+        },
+      },
     });
 
     if (!account) {
@@ -42,15 +49,14 @@ router.post("/", async (req, res) => {
       `Queried Account table for username ${body.data.username} during login: record found`,
     );
 
-    const token = jwt.sign(
-      {
-        uuid: account.employeeUuid,
-      },
-      process.env.JWT_SECRET!,
-      {
-        expiresIn: "1h",
-      },
-    );
+    const payload = {
+      uuid: account.employeeUuid,
+      settings: account.settings,
+    };
+    logger.verbose(`Signing payload:\n${payload}`);
+    const token = jwt.sign(payload, process.env.JWT_SECRET!, {
+      expiresIn: "1h",
+    });
 
     res.cookie("token", token, {
       httpOnly: true,
