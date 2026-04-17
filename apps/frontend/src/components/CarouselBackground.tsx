@@ -59,7 +59,7 @@ export default function CarouselBackground({
 
       {/* Arrows to control carousel */}
       <IconButton
-        onClick={next}
+        onClick={prev}
         size="small"
         sx={{
           "position": "absolute",
@@ -78,7 +78,7 @@ export default function CarouselBackground({
         <ArrowBackIosNewIcon sx={{ fontSize: 16 }} />
       </IconButton>
       <IconButton
-        onClick={prev}
+        onClick={next}
         size="small"
         sx={{
           "position": "absolute",
