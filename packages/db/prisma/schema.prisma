@@ -76,7 +76,6 @@ model Account {
   employeeUuid String           @unique @db.Uuid
   username     String           @id @unique
   password     String
-  type         AccountType
   settings     AccountSettings?
 }
 
@@ -107,9 +106,4 @@ enum ContentStatus {
   AVAILABLE
   IN_USE
   UNAVAILABLE
-}
-
-enum AccountType {
-  ADMIN
-  EMPLOYEE
 }
