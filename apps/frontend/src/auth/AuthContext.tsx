@@ -5,32 +5,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { z } from "zod";
 import { API_ENDPOINTS } from "../config";
-
-const SessionSettingsSchema = z.object({
-  darkMode: z.boolean().default(false),
-});
-
-const SessionSchema = z.object({
-  employeeUuid: z.string(),
-  position: z.enum(["UNDERWRITER", "BUSINESS_ANALYST", "ADMIN"]),
-  settings: SessionSettingsSchema.default({ darkMode: false }),
-  permissions: z.object({
-    canManageEmployees: z.boolean(),
-    canManageAllContent: z.boolean(),
-  }),
-});
-
-export interface Session {
-  employeeUuid: string;
-  position: "UNDERWRITER" | "BUSINESS_ANALYST" | "ADMIN";
-  settings: z.infer<typeof SessionSettingsSchema>;
-  permissions: {
-    canManageEmployees: boolean;
-    canManageAllContent: boolean;
-  };
-}
+import { SessionSchema, type Session } from "../types/auth";
 
 interface AuthContextValue {
   isLoading: boolean;

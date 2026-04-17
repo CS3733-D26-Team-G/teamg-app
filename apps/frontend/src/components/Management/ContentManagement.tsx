@@ -16,11 +16,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { z } from "zod";
+import type { Position } from "@repo/db";
 import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
-import { Schemas } from "@repo/zod";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
 import { API_ENDPOINTS } from "../../config";
 import { useAuth } from "../../auth/AuthContext";
@@ -29,8 +28,6 @@ import {
   ContentRowsSchema,
   type ContentRow,
 } from "../../types/content";
-
-type Position = z.infer<typeof Schemas.PositionSchema>;
 
 const positionLabels: Record<Position, string> = {
   UNDERWRITER: "UNDERWRITER",

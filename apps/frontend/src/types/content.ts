@@ -1,5 +1,6 @@
-import { z } from "zod";
+import type { Content, FavoriteContent } from "@repo/db";
 import { Schemas } from "@repo/zod";
+import { z } from "zod";
 
 /**
  * Create/edit form schemas
@@ -43,11 +44,16 @@ export const ContentRecordSchema =
   })
     .extend({
       uuid: z.string(),
+      supabasePath: z.string().nullable(),
       is_favorite: z.boolean(),
+      favorite_count: z.number().int().nonnegative(),
     })
     .strip();
 
-export type ContentRecord = z.infer<typeof ContentRecordSchema>;
+export type ContentRecord = Content & {
+  is_favorite: boolean;
+  favorite_count: number;
+};
 export const ContentRecordsSchema = z.array(ContentRecordSchema);
 
 /**
@@ -59,7 +65,9 @@ export const ContentRowSchema = ContentRecordSchema.extend({
   isLocked: z.boolean().optional(),
 }).strip();
 
-export type ContentRow = z.infer<typeof ContentRowSchema>;
+export type ContentRow = ContentRecord & {
+  isLocked?: boolean;
+};
 export const ContentRowsSchema = z.array(ContentRowSchema);
 
 /**
@@ -68,14 +76,15 @@ export const ContentRowsSchema = z.array(ContentRowSchema);
  * Centralized here so the endpoint contract is shared instead of duplicated
  * inside ContentManagement.tsx.
  */
-export const ContentFavoriteResponseSchema = z.object({
-  employeeUuid: z.string(),
-  contentUuid: z.string(),
-  isFavorite: z.boolean(),
-  changed: z.boolean(),
-  message: z.string(),
-});
+export const ContentFavoriteResponseSchema =
+  Schemas.FavoriteContentCreateManyInputObjectZodSchema.extend({
+    isFavorite: z.boolean(),
+    changed: z.boolean(),
+    message: z.string(),
+  });
 
-export type ContentFavoriteResponse = z.infer<
-  typeof ContentFavoriteResponseSchema
->;
+export type ContentFavoriteResponse = FavoriteContent & {
+  isFavorite: boolean;
+  changed: boolean;
+  message: string;
+};

@@ -24,17 +24,9 @@ const Themecontext = createContext<ThemeContextType>({
 
 export const useThemeMode = () => useContext(Themecontext);
 
-function getInitialDarkMode(): boolean {
-  try {
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
-  } catch {
-    return false;
-  }
-}
-
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   const { isLoading, session } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(getInitialDarkMode);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -47,7 +39,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setIsDarkMode(getInitialDarkMode());
+    setIsDarkMode(false);
   }, [isLoading, session]);
 
   const toggleDarkMode = async () => {

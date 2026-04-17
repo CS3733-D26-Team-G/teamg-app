@@ -14,16 +14,13 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
-import { z } from "zod";
+import type { ContentStatus, ContentType, Position } from "@repo/db";
 import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
 import "./ContentForm.css";
 import { useAuth } from "../../auth/AuthContext.tsx";
 
 import type { ContentFormData, ContentRecord } from "../../types/content";
-type Position = z.infer<typeof Schemas.PositionSchema>;
-type ContentType = z.infer<typeof Schemas.ContentTypeSchema>;
-type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
 
 interface ContentFormProps {
   initialData?: ContentRecord | null;

@@ -2,7 +2,6 @@ import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   Box,
-  Button,
   FormControl,
   InputLabel,
   MenuItem,
@@ -11,16 +10,18 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { z } from "zod";
 
 import CalendarInput from "../CalendarInput.tsx";
 import "./EmployeeForm.css";
 import { Schemas } from "@repo/zod";
-
-type EmployeeFormData = z.infer<typeof Schemas.EmployeeCreateInputObjectZodSchema>;
-type EmployeeRecord = EmployeeFormData & { uuid: string };
-type Position = z.infer<typeof Schemas.PositionSchema>;
-type Department = z.infer<typeof Schemas.DepartmentSchema>;
+import {
+  EmployeeFormSchema,
+  type Department,
+  type EmployeeFormData,
+  type EmployeeRecord,
+  type Position,
+} from "../../types/employee";
+import Button from "@mui/material/Button";
 
 interface ManageEmployeeFormProps {
   initialData: EmployeeRecord | null;
@@ -71,7 +72,10 @@ export default function ManageEmployeeForm({
     setFormData(buildDefaultFormData(initialData ?? undefined));
   }, [initialData]);
 
-  const positionOptions = useMemo(() => Schemas.PositionSchema.options as Position[], []);
+  const positionOptions = useMemo(
+    () => Schemas.PositionSchema.options as Position[],
+    [],
+  );
   const departmentOptions = useMemo(
     () => Schemas.DepartmentSchema.options as Department[],
     [],
@@ -99,7 +103,7 @@ export default function ManageEmployeeForm({
     e.preventDefault();
     setSubmitError(null);
 
-    const parsed = Schemas.EmployeeCreateInputObjectZodSchema.safeParse(formData);
+    const parsed = EmployeeFormSchema.safeParse(formData);
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0];
       setSubmitError(firstIssue?.message ?? "Invalid form data.");
@@ -186,7 +190,9 @@ export default function ManageEmployeeForm({
                 labelId="position-label"
                 label="Position"
                 value={formData.position}
-                onChange={(e) => handleChange("position", e.target.value as Position)}
+                onChange={(e) =>
+                  handleChange("position", e.target.value as Position)
+                }
               >
                 {positionOptions.map((p) => (
                   <MenuItem
@@ -209,7 +215,9 @@ export default function ManageEmployeeForm({
                 labelId="department-label"
                 label="Department"
                 value={formData.department}
-                onChange={(e) => handleChange("department", e.target.value as Department)}
+                onChange={(e) =>
+                  handleChange("department", e.target.value as Department)
+                }
               >
                 {departmentOptions.map((d) => (
                   <MenuItem
@@ -271,14 +279,14 @@ export default function ManageEmployeeForm({
             />
           </Stack>
 
-          {submitError ? (
+          {submitError ?
             <Typography
               color="error"
               sx={{ mt: 1 }}
             >
               {submitError}
             </Typography>
-          ) : null}
+          : null}
 
           <Stack
             direction="row"

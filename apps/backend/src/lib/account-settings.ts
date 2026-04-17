@@ -1,32 +1,53 @@
+import type { AccountSettings as DbAccountSettings } from "@repo/db";
+import { Schemas } from "@repo/zod";
 import { z } from "zod";
 
-const accountSettingsFieldMap = {
-  darkMode: "dark_mode",
-} as const;
+const AccountSettingsDbSchema =
+  Schemas.AccountSettingsCreateManyInputObjectZodSchema.pick({
+    dark_mode: true,
+  });
 
-export const AccountSettingsSchema = z.object({
-  darkMode: z.boolean().default(false),
-});
+export const AccountSettingsSchema = z
+  .preprocess((value) => {
+    if (value && typeof value === "object") {
+      const input = value as Record<string, unknown>;
+      return {
+        dark_mode: input.darkMode,
+      };
+    }
 
-export const AccountSettingsUpdateSchema = AccountSettingsSchema.partial();
+    return value;
+  }, AccountSettingsDbSchema)
+  .transform(({ dark_mode }) => ({
+    darkMode: dark_mode,
+  }))
+  .default({ darkMode: false });
+
+export const AccountSettingsUpdateSchema = z
+  .preprocess((value) => {
+    if (value && typeof value === "object") {
+      const input = value as Record<string, unknown>;
+      return {
+        dark_mode: input.darkMode,
+      };
+    }
+
+    return value;
+  }, AccountSettingsDbSchema.partial())
+  .transform((settings) => ({
+    darkMode: settings.dark_mode,
+  }));
 
 export type AccountSettings = z.infer<typeof AccountSettingsSchema>;
 
-const defaultAccountSettings = AccountSettingsSchema.parse({});
-
 export function normalizeAccountSettings(
-  rawSettings: Record<string, unknown> | null | undefined,
+  rawSettings: Pick<DbAccountSettings, "dark_mode"> | null | undefined,
 ): AccountSettings {
-  const normalized = Object.fromEntries(
-    Object.entries(accountSettingsFieldMap).map(([appKey, dbKey]) => [
-      appKey,
-      rawSettings?.[dbKey],
-    ]),
-  );
-
-  const parsed = AccountSettingsSchema.safeParse(normalized);
+  const parsed = AccountSettingsSchema.safeParse({
+    darkMode: rawSettings?.dark_mode,
+  });
   if (!parsed.success) {
-    return defaultAccountSettings;
+    return { darkMode: false };
   }
 
   return parsed.data;
@@ -35,16 +56,12 @@ export function normalizeAccountSettings(
 export function serializeAccountSettingsUpdate(
   settings: Partial<AccountSettings>,
 ): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(settings).flatMap(([appKey, value]) => {
-      const dbKey =
-        accountSettingsFieldMap[appKey as keyof typeof accountSettingsFieldMap];
+  const parsed = AccountSettingsUpdateSchema.safeParse(settings);
+  if (!parsed.success || parsed.data.darkMode === undefined) {
+    return {};
+  }
 
-      if (dbKey === undefined || value === undefined) {
-        return [];
-      }
-
-      return [[dbKey, value]];
-    }),
-  );
+  return {
+    dark_mode: parsed.data.darkMode,
+  };
 }
