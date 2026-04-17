@@ -18,11 +18,11 @@ export default function CarouselBackground({
 }: CarouselBackgroundProps) {
   const [current, setCurrent] = useState(0);
 
-  /* Change image in carousel every 7 seconds */
+  /* Change image in carousel every 8 seconds */
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % carouselImages.length);
-    }, 7000);
+    }, 8000);
     return () => clearInterval(timer);
   }, [current]);
 
@@ -51,7 +51,7 @@ export default function CarouselBackground({
             backgroundPosition: "top left",
             backgroundRepeat: "no-repeat",
             opacity: index === current ? 1 : 0,
-            transition: "opacity 0.8s ease-in-out",
+            transition: "opacity 1.5s ease-in-out",
             zIndex: 0,
           }}
         />
@@ -60,6 +60,7 @@ export default function CarouselBackground({
       {/* Arrows to control carousel */}
       <IconButton
         onClick={prev}
+        size="small"
         sx={{
           "position": "absolute",
           "left": 16,
@@ -67,17 +68,18 @@ export default function CarouselBackground({
           "transform": "translateY(-50%)",
           "zIndex": 20,
           "color": "white",
-          "backgroundColor": "rgba(0,0,0,0.3)",
-          "width": 44,
-          "height": 44,
+          "backgroundColor": "rgba(0,0,0,0.35)",
+          "width": 32,
+          "height": 32,
           "borderRadius": "50%",
           "&:hover": { backgroundColor: "rgba(0,0,0,0.6)" },
         }}
       >
-        <ArrowBackIosNewIcon />
+        <ArrowBackIosNewIcon sx={{ fontSize: 16 }} />
       </IconButton>
       <IconButton
         onClick={prev}
+        size="small"
         sx={{
           "position": "absolute",
           "right": 16,
@@ -85,14 +87,14 @@ export default function CarouselBackground({
           "transform": "translateY(-50%)",
           "zIndex": 20,
           "color": "white",
-          "backgroundColor": "rgba(0,0,0,0.3)",
-          "width": 44,
-          "height": 44,
+          "backgroundColor": "rgba(0,0,0,0.35)",
+          "width": 32,
+          "height": 32,
           "borderRadius": "50%",
           "&:hover": { backgroundColor: "rgba(0,0,0,0.6)" },
         }}
       >
-        <ArrowForwardIosIcon />
+        <ArrowForwardIosIcon sx={{ fontSize: 16 }} />
       </IconButton>
 
       {/* Dot indicators */}
