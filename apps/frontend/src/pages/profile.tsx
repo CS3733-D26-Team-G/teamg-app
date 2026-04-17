@@ -31,6 +31,14 @@ function Profile() {
     setToggle2(event.target.checked);
   };
 
+  const cardSx = {
+    backgroundColor: "background.paper",
+    border: "2px solid",
+    borderColor: "divider",
+    boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.15)",
+    borderRadius: 4,
+  };
+
   return (
     <div className={"Profile-Page"}>
       <Box>
@@ -43,7 +51,7 @@ function Profile() {
             width: "90%",
             height: 80,
             mx: "auto",
-            backgroundColor: "#395277",
+            backgroundColor: "primary.main",
             mt: 4,
             borderRadius: 4,
           }}
@@ -52,7 +60,7 @@ function Profile() {
           <Typography
             variant="h4"
             sx={{
-              color: "#FFFFFF",
+              color: "primary.contrastText",
               p: 2,
             }}
           >
@@ -71,7 +79,7 @@ function Profile() {
             <Typography
               variant={"h5"}
               sx={{
-                color: "#FFFFFF",
+                color: "primary.contrastText",
                 mt: 0.5,
               }}
             >
@@ -79,7 +87,7 @@ function Profile() {
             </Typography>
             <IconButton
               sx={{
-                color: "#FFFFFF",
+                color: "primary.contrastText",
               }}
             >
               <NotificationsIcon />
@@ -97,11 +105,8 @@ function Profile() {
             width: "90%",
             height: 200,
             mx: "auto",
-            backgroundColor: "white",
             mt: 2,
-            borderRadius: 4,
-            border: "2px solid black",
-            boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.15)",
+            ...cardSx,
           }}
         >
           <Stack
@@ -192,11 +197,8 @@ function Profile() {
             width: "90%",
             height: 225,
             mx: "auto",
-            backgroundColor: "white",
             mt: 2,
-            borderRadius: 4,
-            border: "2px solid black",
-            boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.15)",
+            ...cardSx,
           }}
         >
           <Stack sx={{ width: "100%" }}>
@@ -301,11 +303,8 @@ function Profile() {
               width: "32%",
               height: 215,
               marginLeft: "4.8%",
-              backgroundColor: "white",
               mt: 2,
-              borderRadius: 4,
-              border: "2px solid black",
-              boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.15)",
+              ...cardSx,
             }}
           >
             <Stack sx={{ width: "96%" }}>
@@ -398,12 +397,9 @@ function Profile() {
               display: "flex",
               width: "27.9%",
               height: 215,
-              backgroundColor: "white",
               mt: 2,
               ml: 1.5,
-              borderRadius: 4,
-              border: "2px solid black",
-              boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.15)",
+              ...cardSx,
             }}
           >
             <Stack sx={{ width: "100%" }}>
@@ -455,12 +451,9 @@ function Profile() {
               display: "flex",
               width: "27.9%",
               height: 215,
-              backgroundColor: "white",
               mt: 2,
               ml: 1.5,
-              borderRadius: 4,
-              border: "2px solid black",
-              boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.15)",
+              ...cardSx,
             }}
           >
             <Stack sx={{ width: "100%" }}>

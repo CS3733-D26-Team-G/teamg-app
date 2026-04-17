@@ -34,7 +34,6 @@ export default function Sidebar() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  // const [formsOpen, setFormsOpen] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState(
     localStorage.getItem("account_type") === "ADMIN",
@@ -90,13 +89,16 @@ export default function Sidebar() {
   };
 
   return (
-    <div
-      className={"Sidebar"}
-      style={{
+    <Box
+      className="Sidebar"
+      sx={{
         width: isOpen ? "240px" : "64px",
         transition: "width 0.3s",
         position: "sticky",
         top: 0,
+        backgroundColor: "background.paper",
+        borderRight: "1px solid",
+        borderColor: "divider",
       }}
     >
       <Box
@@ -107,13 +109,16 @@ export default function Sidebar() {
           padding: "8px",
         }}
       >
-        <img
+        <Box
+          component="img"
           src={"/hanover_logo.png"}
           alt="Hanover Logo"
-          style={{
+          sx={{
             width: "140px",
             display: isOpen ? "block" : "none",
             imageRendering: "crisp-edges",
+            filter: (theme) =>
+              theme.palette.mode === "dark" ? "invert(1)" : "none",
           }}
         />
         <IconButton onClick={() => setIsOpen(!isOpen)}>
@@ -211,7 +216,8 @@ export default function Sidebar() {
           id={"resources-button"}
           sx={{
             px: 2,
-            border: isOpen ? "1px solid lightgray" : null,
+            border: isOpen ? "1px solid" : "none",
+            borderColor: "divider",
             borderRadius: "50px",
             boxShadow: 2,
           }}
@@ -263,6 +269,6 @@ export default function Sidebar() {
           Log Out
         </MenuItem>
       </Menu>
-    </div>
+    </Box>
   );
 }
