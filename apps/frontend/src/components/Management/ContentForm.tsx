@@ -14,18 +14,13 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
-import { z } from "zod";
+import type { ContentStatus, ContentType, Position } from "@repo/db";
 import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
 import "./ContentForm.css";
+import { useAuth } from "../../auth/AuthContext.tsx";
 
-type ContentFormData = z.infer<
-  typeof Schemas.ContentCreateInputObjectZodSchema
->;
-type ContentRecord = ContentFormData & { uuid: string };
-type Position = z.infer<typeof Schemas.PositionSchema>;
-type ContentType = z.infer<typeof Schemas.ContentTypeSchema>;
-type ContentStatus = z.infer<typeof Schemas.ContentStatusSchema>;
+import type { ContentFormData, ContentRecord } from "../../types/content";
 
 interface ContentFormProps {
   initialData?: ContentRecord | null;
@@ -63,9 +58,14 @@ export default function ContentForm({
   onCancel,
 }: ContentFormProps) {
   const isEditing = !!initialData;
+  const { session } = useAuth();
+  const isAdmin = session?.permissions.canManageAllContent ?? false;
 
   const [formData, setFormData] = useState<ContentFormData>(() =>
-    buildDefaultFormData(initialData ?? undefined),
+    buildDefaultFormData({
+      ...(initialData ?? undefined),
+      for_position: initialData?.for_position ?? session?.position,
+    }),
   );
   const [sourceType, setSourceType] = useState<"url" | "file">(
     initialData?.url ? "url" : "file",
@@ -73,14 +73,22 @@ export default function ContentForm({
   const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
-    setFormData(buildDefaultFormData(initialData ?? undefined));
+    setFormData(
+      buildDefaultFormData({
+        ...(initialData ?? undefined),
+        for_position: initialData?.for_position ?? session?.position,
+      }),
+    );
     setSourceType(initialData?.url ? "url" : "file");
     setFile(null);
-  }, [initialData]);
+  }, [initialData, session?.position]);
 
   const positionOptions = useMemo(
-    () => Schemas.PositionSchema.options as Position[],
-    [],
+    () =>
+      isAdmin ?
+        (Schemas.PositionSchema.options as Position[])
+      : ([session?.position ?? "UNDERWRITER"] as Position[]),
+    [isAdmin, session?.position],
   );
   const contentTypeOptions = useMemo(
     () => Schemas.ContentTypeSchema.options as ContentType[],
@@ -236,6 +244,7 @@ export default function ContentForm({
                 label="Intended Recipient"
                 value={formData.for_position}
                 onChange={handleSelectChange("for_position")}
+                disabled={!isAdmin}
               >
                 {positionOptions.map((position) => (
                   <MenuItem

@@ -1,13 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { z } from "zod";
 
-import { Schemas } from "@repo/zod";
 import ManageEmployeeForm from "../components/Management/ManageEmployeeForm.tsx";
 
 import { API_ENDPOINTS } from "../config.ts";
-
-type EmployeeFormData = z.infer<typeof Schemas.EmployeeCreateInputObjectZodSchema>;
+import { EmployeeFormSchema, type EmployeeFormData } from "../types/employee";
 
 export default function EmployeeFormPage() {
   const navigate = useNavigate();
@@ -16,7 +13,7 @@ export default function EmployeeFormPage() {
   const handleSave = async (formData: EmployeeFormData) => {
     if (saving) return;
 
-    const parsed = Schemas.EmployeeCreateInputObjectZodSchema.parse(formData);
+    const parsed = EmployeeFormSchema.parse(formData);
 
     try {
       setSaving(true);

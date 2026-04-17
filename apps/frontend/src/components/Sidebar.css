@@ -1,6 +1,5 @@
 .Sidebar {
     height: 100vh;
-    background-color: #EBF5FF;
     transition: width 0.3s ease;
     overflow: hidden;
     display: flex;

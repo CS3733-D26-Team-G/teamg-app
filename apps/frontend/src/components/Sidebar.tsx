@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./Sidebar.css";
 import {
   IconButton,
@@ -26,6 +26,7 @@ import MenuItem from "@mui/material/MenuItem";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { API_ENDPOINTS } from "../config.ts";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext.tsx";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -34,26 +35,8 @@ export default function Sidebar() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  // const [formsOpen, setFormsOpen] = useState(false);
-
-  const [isAdmin, setIsAdmin] = useState(
-    localStorage.getItem("account_type") === "ADMIN",
-  );
-
-  useEffect(() => {
-    const checkAdminStatus = () => {
-      setIsAdmin(localStorage.getItem("account_type") === "ADMIN");
-    };
-
-    window.addEventListener("storage", checkAdminStatus);
-
-    const interval = setInterval(checkAdminStatus, 1000);
-
-    return () => {
-      window.removeEventListener("storage", checkAdminStatus);
-      clearInterval(interval);
-    };
-  }, []);
+  const { clearSession, session } = useAuth();
+  const isAdmin = session?.permissions.canManageEmployees ?? false;
 
   const handleToggle = (
     setter: React.Dispatch<React.SetStateAction<boolean>>,
@@ -79,6 +62,7 @@ export default function Sidebar() {
       });
 
       if (res.ok) {
+        clearSession();
         navigate("/");
       } else {
         console.error("Logout Failed");
@@ -90,13 +74,16 @@ export default function Sidebar() {
   };
 
   return (
-    <div
-      className={"Sidebar"}
-      style={{
+    <Box
+      className="Sidebar"
+      sx={{
         width: isOpen ? "240px" : "64px",
         transition: "width 0.3s",
         position: "sticky",
         top: 0,
+        backgroundColor: "background.paper",
+        borderRight: "1px solid",
+        borderColor: "divider",
       }}
     >
       <Box
@@ -107,13 +94,16 @@ export default function Sidebar() {
           padding: "8px",
         }}
       >
-        <img
+        <Box
+          component="img"
           src={"/hanover_logo.png"}
           alt="Hanover Logo"
-          style={{
+          sx={{
             width: "140px",
             display: isOpen ? "block" : "none",
             imageRendering: "crisp-edges",
+            filter: (theme) =>
+              theme.palette.mode === "dark" ? "invert(1)" : "none",
           }}
         />
         <IconButton onClick={() => setIsOpen(!isOpen)}>
@@ -211,7 +201,8 @@ export default function Sidebar() {
           id={"resources-button"}
           sx={{
             px: 2,
-            border: isOpen ? "1px solid lightgray" : null,
+            border: isOpen ? "1px solid" : "none",
+            borderColor: "divider",
             borderRadius: "50px",
             boxShadow: 2,
           }}
@@ -223,9 +214,7 @@ export default function Sidebar() {
           <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
             <Avatar sx={{ width: 32, height: 32 }} />
           </ListItemIcon>
-          {isOpen && (
-            <ListItemText primary={localStorage.getItem("employee_position")} />
-          )}
+          {isOpen && <ListItemText primary={session?.position ?? ""} />}
           {isOpen && <KeyboardArrowUpIcon />}
         </ListItemButton>
       </Box>
@@ -263,6 +252,6 @@ export default function Sidebar() {
           Log Out
         </MenuItem>
       </Menu>
-    </div>
+    </Box>
   );
 }

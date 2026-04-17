@@ -14,6 +14,7 @@ import {
 import { Visibility, VisibilityOff, Close } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "../config.ts";
+import { useAuth } from "../auth/AuthContext.tsx";
 import HanoverLoginPic from "../assets/hannoverBuilding.jpg";
 import HanoverLogo from "../assets/HanoverLogo.png";
 
@@ -30,6 +31,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null); // Added for UI feedback
   const navigate = useNavigate();
+  const { refreshSession } = useAuth();
 
   if (!open) return null;
 
@@ -60,13 +62,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
         return;
       }
 
-      const body = await resp.json();
-
-      // RESTORED: All localStorage items from the old version
-      localStorage.setItem("account_type", body.account_type);
-      localStorage.setItem("employee_position", body.employee_position);
-
-      console.log("Login successful:", body);
+      await refreshSession();
 
       // Close modal before navigating
       onClose();

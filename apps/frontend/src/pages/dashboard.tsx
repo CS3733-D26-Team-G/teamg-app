@@ -6,10 +6,11 @@ import BarChart from "./DashboardComponents/BarChart";
 import { Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import { useAuth } from "../auth/AuthContext.tsx";
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
-  const user = localStorage.getItem("employee_position");
+  const { session } = useAuth();
 
   return (
     <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
@@ -21,7 +22,7 @@ export default function Dashboard() {
           variant="h2"
           component="h2"
         >
-          Welcome Back {user?.toLowerCase()}!
+          Welcome Back {(session?.position ?? "employee").toLowerCase()}!
         </Typography>
         <div className="w-70 -mr-8">
           {" "}
@@ -44,7 +45,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-        <div className="bg-white h-1/3">
+        <div className="h-1/3">
           <DashboardRecentActivity />
         </div>
       </CardContent>

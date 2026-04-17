@@ -63,12 +63,11 @@ router.post("/create", async (req, res) => {
 router.put("/update/:uuid", async (req, res) => {
   const uuid = req.params.uuid;
 
-  const body =
-    Schemas.EmployeeUncheckedCreateWithoutAccountInputObjectZodSchema.omit({
-      uuid: true,
-    })
-      .partial()
-      .safeParse(req.body);
+  const body = Schemas.EmployeeUpdateManyMutationInputObjectZodSchema.omit({
+    uuid: true,
+  })
+    .partial()
+    .safeParse(req.body);
 
   if (!body.success) {
     logger.verbose(

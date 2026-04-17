@@ -18,51 +18,73 @@ datasource db {
 }
 
 model Employee {
-  uuid            String     @id @default(uuid()) @db.Uuid
-  account         Account?
-  avatar          String?
-  first_name      String
-  last_name       String
-  date_of_birth   DateTime   @db.Date
-  position        Position
-  department      Department
-  start_date      DateTime   @db.Date
-  supervisor      String
-  phone_number    String
-  personal_email  String
-  corporate_email String
-  contentLocks    ContentEditLock[]
+  uuid             String            @id @default(uuid()) @db.Uuid
+  account          Account?
+  avatar           String?
+  first_name       String
+  last_name        String
+  date_of_birth    DateTime          @db.Date
+  position         Position
+  department       Department
+  start_date       DateTime          @db.Date
+  supervisor       String
+  phone_number     String
+  personal_email   String
+  corporate_email  String
+  contentLocks     ContentEditLock[]
+  favoriteContents FavoriteContent[]
 }
 
 model Content {
-  uuid               String        @id @default(uuid()) @db.Uuid
+  uuid               String            @id @default(uuid()) @db.Uuid
   title              String
   url                String
   content_owner      String
   for_position       Position
-  last_modified_time DateTime      @db.Timestamp(6)
-  expiration_time    DateTime      @db.Timestamp(6)
+  last_modified_time DateTime          @db.Timestamp(6)
+  expiration_time    DateTime          @db.Timestamp(6)
   content_type       ContentType
   status             ContentStatus
-  is_favorite        Boolean       @default(false)
   supabasePath       String?
   editLock           ContentEditLock?
+  favoritedBy        FavoriteContent[]
 }
-model ContentEditLock {
-  contentUuid         String   @id @db.Uuid
-  lockedByEmpUuid String  @db.Uuid
-  lockedAt            DateTime @default(now()) @db.Timestamp(6)
 
-  content            Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
-  lockedByEmp        Employee @relation(fields: [lockedByEmpUuid], references: [uuid], onDelete: Cascade)
+model FavoriteContent {
+  employeeUuid String   @db.Uuid
+  contentUuid  String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeUuid], references: [uuid], onDelete: Cascade)
+  content  Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
+
+  @@id([employeeUuid, contentUuid])
+  @@index([contentUuid])
+}
+
+model ContentEditLock {
+  contentUuid     String   @id @db.Uuid
+  lockedByEmpUuid String   @db.Uuid
+  lockedAt        DateTime @default(now()) @db.Timestamp(6)
+
+  content     Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
+  lockedByEmp Employee @relation(fields: [lockedByEmpUuid], references: [uuid], onDelete: Cascade)
 }
 
 model Account {
-  employee     Employee    @relation(fields: [employeeUuid], references: [uuid])
-  employeeUuid String      @unique @db.Uuid
-  username     String      @id @unique
+  employee     Employee         @relation(fields: [employeeUuid], references: [uuid])
+  employeeUuid String           @unique @db.Uuid
+  username     String           @id @unique
   password     String
   type         AccountType
+  settings     AccountSettings?
+}
+
+model AccountSettings {
+  accountUsername String  @id
+  dark_mode       Boolean @default(false)
+
+  account Account @relation(fields: [accountUsername], references: [username], onDelete: Cascade)
 }
 
 enum Department {

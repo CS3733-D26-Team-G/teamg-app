@@ -18,11 +18,9 @@ body {
 }
 
 .main {
-  background: linear-gradient(135deg, #9abce0 0%, #ffffff 48%);
-  /* height: 100vh; */
+  /* background removed — handled by MUI CssBaseline + theme */
 }
 
 div#root {
-  /*background: linear-gradient(135deg, #9abce0 0%, #ffffff 48%);*/
-  background: #EBF5FF
+  /* background removed — handled by MUI CssBaseline + theme */
 }

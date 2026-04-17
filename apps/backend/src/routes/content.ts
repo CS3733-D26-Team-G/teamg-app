@@ -1,5 +1,6 @@
 import express from "express";
 import { prisma, Prisma } from "@repo/db";
+import type { Position } from "@repo/db";
 import multer from "multer";
 import { supabase } from "../lib/supabase.ts";
 import { Schemas } from "@repo/zod";
@@ -19,7 +20,7 @@ const upload = multer({
   },
 });
 
-const ParamsSchema = z.object({
+const ParamsSchema = Schemas.ContentWhereUniqueInputObjectZodSchema.extend({
   uuid: z.uuid(),
 });
 
@@ -35,6 +36,10 @@ const UpdateContentSchema = Schemas.ContentUpdateInputObjectZodSchema.omit({
     url: z.string().optional(),
   });
 
+const FavoriteContentSchema = z.object({
+  isFavorite: z.boolean(),
+});
+
 type UploadResult =
   | { ok: true; url: string; supabasePath?: string }
   | { ok: false; status: number; message: string };
@@ -45,24 +50,12 @@ function getExpiresInSeconds(expirationTime: Date): number {
 
 function manageContent(
   auth: NonNullable<Express.Request["auth"]>,
-  forPosition: z.infer<typeof Schemas.PositionSchema>,
+  forPosition: Position,
 ) {
   return auth.position === "ADMIN" || auth.position === forPosition;
 }
 
-type empContentLock = {
-  contentUuid: string;
-  lockedByEmpUuid: string;
-  lockedAt: Date;
-  lockedByEmp: {
-    uuid: string;
-    first_name: string;
-    last_name: string;
-    corporate_email: string;
-  };
-};
-
-function serializeLock(lock: empContentLock) {
+function serializeLock(lock: ActiveContentLock) {
   return {
     content_uuid: lock.contentUuid,
     locked_by_emp_uuid: lock.lockedByEmpUuid,
@@ -98,6 +91,8 @@ async function getactiveLock(uuid: string) {
   });
 }
 
+type ActiveContentLock = NonNullable<Awaited<ReturnType<typeof getactiveLock>>>;
+
 async function rejectifLocked(
   uuid: string,
   auth: NonNullable<Express.Request["auth"]>,
@@ -113,7 +108,7 @@ async function rejectifLocked(
   }
   res.status(409).json({
     message: "Content is currently locked by another user",
-    lock: serializeLock(lock as empContentLock),
+    lock: serializeLock(lock),
   });
   return true;
 }
@@ -193,14 +188,30 @@ async function resolveContentUrl({
   };
 }
 
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
+  const auth = req.auth!;
   logger.verbose("Querying Content table for all records");
   try {
-    const content = await prisma.content.findMany();
+    const content = await prisma.content.findMany({
+      include: {
+        favoritedBy: {
+          where: { employeeUuid: auth.employeeUuid },
+          select: { employeeUuid: true },
+        },
+        _count: {
+          select: { favoritedBy: true },
+        },
+      },
+    });
     logger.verbose(
       `Queried Content table for all records: found ${content.length} record(s)`,
     );
-    return res.status(200).json(content);
+    const response = content.map(({ favoritedBy, _count, ...item }) => ({
+      ...item,
+      is_favorite: favoritedBy.length > 0,
+      favorite_count: _count.favoritedBy,
+    }));
+    return res.status(200).json(response);
   } catch (e) {
     logger.error(`Failed to query Content table for all records:\n${e}`);
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
@@ -227,11 +238,11 @@ router.post("/lock/:uuid", async (req, res) => {
     if (existingLock && existingLock.lockedByEmpUuid !== auth.employeeUuid) {
       return res.status(409).json({
         message: "Content is currently locked by another user",
-        lock: serializeLock(existingLock as empContentLock),
+        lock: serializeLock(existingLock),
       });
     }
     //check if there is no lock yet
-    let lock;
+    let lock: ActiveContentLock;
 
     if (!existingLock) {
       lock = await prisma.contentEditLock.create({
@@ -272,12 +283,13 @@ router.post("/lock/:uuid", async (req, res) => {
     }
     return res.status(200).json({
       locked: true,
-      lock: serializeLock(lock as empContentLock),
+      lock: serializeLock(lock),
     });
   } catch {
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
+
 //deleting lock row if curr user owns lowk/ is admin
 router.delete("/lock/:uuid", async (req, res) => {
   const params = ParamsSchema.safeParse(req.params);
@@ -307,7 +319,7 @@ router.delete("/lock/:uuid", async (req, res) => {
     ) {
       return res.status(403).json({
         message: "Only the lock owner or admin can unlock this content",
-        lock: serializeLock(existingLock as empContentLock),
+        lock: serializeLock(existingLock),
       });
     }
     await prisma.contentEditLock.delete({
@@ -536,7 +548,7 @@ router.post("/delete/:uuid", async (req, res) => {
   }
 });
 
-router.patch("/favorite/:uuid", async (req, res) => {
+router.post("/favorite/:uuid", async (req, res) => {
   const params = ParamsSchema.safeParse(req.params);
   if (!params.success) {
     logger.warn(
@@ -546,45 +558,116 @@ router.patch("/favorite/:uuid", async (req, res) => {
   }
 
   const uuid = params.data.uuid;
+  const auth = req.auth!;
+
+  logger.verbose(
+    `Received Content favorite request for content ${uuid} from employee ${auth.employeeUuid}`,
+  );
+
+  const parsed = FavoriteContentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    logger.verbose(
+      `Failed to parse Content favorite request body for record ${uuid}:\n${parsed.error.issues}`,
+    );
+    return res.status(400).json({ message: parsed.error.issues });
+  }
+
+  const input = parsed.data;
+  logger.verbose(
+    `Parsed Content favorite request for content ${uuid}: isFavorite=${input.isFavorite}`,
+  );
 
   try {
     logger.verbose(
-      `Querying Content table for record ${uuid} before favorite toggle`,
+      `Querying FavoriteContent for employee ${auth.employeeUuid} and content ${uuid}`,
     );
-    const currentContent = await prisma.content.findUnique({
-      where: { uuid },
-    });
-
-    if (!currentContent) {
-      logger.warn(
-        `Received favorite request for Content table record ${uuid} that does not exist`,
-      );
-      return res.status(400).json({ message: "Invalid content UUID" });
-    }
-    logger.verbose(
-      `Queried Content table for record ${uuid} before favorite toggle: record found`,
-    );
-
-    const nextFavoriteValue = !currentContent.is_favorite;
-    logger.verbose(
-      `Updating Content table record ${uuid}: setting is_favorite to ${nextFavoriteValue}`,
-    );
-
-    const updatedContent = await prisma.content.update({
-      where: { uuid },
-      data: {
-        is_favorite: nextFavoriteValue,
+    const favoriteContentRecord = await prisma.favoriteContent.findUnique({
+      where: {
+        employeeUuid_contentUuid: {
+          employeeUuid: auth.employeeUuid,
+          contentUuid: uuid,
+        },
       },
     });
 
     logger.verbose(
-      `Updated Content table record ${uuid}: is_favorite is now ${updatedContent.is_favorite}`,
+      `Queried FavoriteContent for employee ${auth.employeeUuid} and content ${uuid}: ${favoriteContentRecord ? "record found" : "no record found"}`,
     );
 
-    return res.status(200).json(updatedContent);
+    if (favoriteContentRecord) {
+      if (input.isFavorite) {
+        logger.warn(
+          `Received content favorite request by employee ${auth.employeeUuid} for content ${uuid} that was already favorited`,
+        );
+        return res.status(200).json({
+          employeeUuid: auth.employeeUuid,
+          contentUuid: uuid,
+          isFavorite: true,
+          changed: false,
+          message: "Content was already favorited",
+        });
+      }
+
+      logger.verbose(
+        `Deleting FavoriteContent for employee ${auth.employeeUuid} and content ${uuid}`,
+      );
+      await prisma.favoriteContent.delete({
+        where: {
+          employeeUuid_contentUuid: {
+            employeeUuid: auth.employeeUuid,
+            contentUuid: uuid,
+          },
+        },
+      });
+      logger.verbose(
+        `Deleted FavoriteContent for employee ${auth.employeeUuid} and content ${uuid}`,
+      );
+
+      return res.status(200).json({
+        employeeUuid: auth.employeeUuid,
+        contentUuid: uuid,
+        isFavorite: false,
+        changed: true,
+        message: "Content unfavorited successfully",
+      });
+    }
+
+    if (!input.isFavorite) {
+      logger.warn(
+        `Received content unfavorite request by employee ${auth.employeeUuid} for content ${uuid} that was not favorited`,
+      );
+      return res.status(200).json({
+        employeeUuid: auth.employeeUuid,
+        contentUuid: uuid,
+        isFavorite: false,
+        changed: false,
+        message: "Content was not favorited",
+      });
+    }
+
+    logger.verbose(
+      `Creating FavoriteContent for employee ${auth.employeeUuid} and content ${uuid}`,
+    );
+    await prisma.favoriteContent.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        contentUuid: uuid,
+      },
+    });
+    logger.verbose(
+      `Created FavoriteContent for employee ${auth.employeeUuid} and content ${uuid}`,
+    );
+
+    return res.status(200).json({
+      employeeUuid: auth.employeeUuid,
+      contentUuid: uuid,
+      isFavorite: true,
+      changed: true,
+      message: "Content favorited successfully",
+    });
   } catch (e) {
     logger.error(
-      `Failed to update Content table record ${uuid} favorite status:\n${e}`,
+      `Failed to update content ${uuid} favorite status for employee ${auth.employeeUuid}:\n${e}`,
     );
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }

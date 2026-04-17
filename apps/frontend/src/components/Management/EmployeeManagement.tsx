@@ -14,20 +14,19 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import { z } from "zod";
 
 import HeaderSearchBar from "./HeaderSearchBar";
 import ManageEmployeeForm from "./ManageEmployeeForm";
-import { Schemas } from "@repo/zod";
 import { User } from "lucide-react";
 import { API_ENDPOINTS } from "../../config";
-
-type EmployeeFormData = z.infer<
-  typeof Schemas.EmployeeCreateInputObjectZodSchema
->;
-type EmployeeRow = EmployeeFormData & { uuid: string };
-type Position = z.infer<typeof Schemas.PositionSchema>;
-type Department = z.infer<typeof Schemas.DepartmentSchema>;
+import {
+  EmployeeFormSchema,
+  EmployeeRecordsSchema,
+  type Department,
+  type EmployeeFormData,
+  type EmployeeRecord,
+  type Position,
+} from "../../types/employee";
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   flexDirection: "column",
@@ -37,14 +36,12 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 128,
 }));
 
-const EmployeeRowSchema = Schemas.EmployeeCreateInputObjectZodSchema.extend({
-  uuid: z.string(),
-});
-
 export default function EmployeeManagement() {
-  const [rows, setRows] = useState<EmployeeRow[]>([]);
+  const [rows, setRows] = useState<EmployeeRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewState, setViewState] = useState<EmployeeRow | "new" | null>(null);
+  const [viewState, setViewState] = useState<EmployeeRecord | "new" | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   const loadEmployees = async () => {
@@ -56,7 +53,7 @@ export default function EmployeeManagement() {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data: unknown = await res.json();
 
-      const parsed = z.array(EmployeeRowSchema).safeParse(data);
+      const parsed = EmployeeRecordsSchema.safeParse(data);
       if (!parsed.success) {
         console.error("Employee list failed schema validation:", parsed.error);
         setRows([]);
@@ -91,7 +88,7 @@ export default function EmployeeManagement() {
     });
   }, [rows, searchQuery]);
 
-  const handleDelete = async (row: EmployeeRow) => {
+  const handleDelete = async (row: EmployeeRecord) => {
     if (
       !window.confirm(`Remove employee ${row.first_name} ${row.last_name}?`)
     ) {
@@ -122,11 +119,7 @@ export default function EmployeeManagement() {
   const handleSave = async (formData: EmployeeFormData) => {
     const isExisting = viewState !== null && viewState !== "new";
     const uuid = isExisting ? viewState.uuid : undefined;
-
-    const parsedFull = Schemas.EmployeeUpdateInputObjectSchema.parse({
-      ...formData,
-      ...(uuid ? { uuid } : {}),
-    });
+    const parsedBody = EmployeeFormSchema.parse(formData);
 
     if (
       !window.confirm(
@@ -141,20 +134,12 @@ export default function EmployeeManagement() {
         API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
       : API_ENDPOINTS.EMPLOYEE_CREATE;
 
-    const body =
-      isExisting ?
-        (() => {
-          const { uuid: _omit, ...rest } = parsedFull;
-          return rest;
-        })()
-      : parsedFull;
-
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(body),
+        body: JSON.stringify(parsedBody),
       });
 
       if (res.ok) {
@@ -172,9 +157,9 @@ export default function EmployeeManagement() {
   };
 
   const getColumns = (
-    onEdit: (row: EmployeeRow) => void,
-    onDelete: (row: EmployeeRow) => void,
-  ): GridColDef<EmployeeRow>[] => {
+    onEdit: (row: EmployeeRecord) => void,
+    onDelete: (row: EmployeeRecord) => void,
+  ): GridColDef<EmployeeRecord>[] => {
     const colorMap: Record<Position, "error" | "info" | "success"> = {
       ADMIN: "error",
       UNDERWRITER: "info",
@@ -292,7 +277,7 @@ export default function EmployeeManagement() {
           <AppBar
             position="static"
             sx={{
-              backgroundColor: "white",
+              backgroundColor: "background.paper",
               boxShadow: "none",
               width: "100%",
               boxSizing: "border-box",
@@ -301,7 +286,7 @@ export default function EmployeeManagement() {
             <StyledToolbar sx={{ width: "100%", px: 0 }}>
               <Typography
                 variant="h2"
-                sx={{ pb: 2, pt: 4, color: "black", fontWeight: "bold" }}
+                sx={{ pb: 2, pt: 4, color: "text.primary", fontWeight: "bold" }}
               >
                 Employee Management
               </Typography>
