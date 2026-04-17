@@ -12,7 +12,7 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import { useThemeMode } from "../Themecontext.tsx";
 
 function Settings() {
-  const { isDarkMode, toggleDarkMode } = useThemeMode();
+  const { isDarkMode, isSaving, toggleDarkMode } = useThemeMode();
 
   return (
     <Box sx={{ maxWidth: 600, mx: "auto", mt: 4, px: 2 }}>
@@ -72,8 +72,11 @@ function Settings() {
 
             <Switch
               checked={isDarkMode}
-              onChange={toggleDarkMode}
+              onChange={() => {
+                void toggleDarkMode();
+              }}
               color="primary"
+              disabled={isSaving}
               inputProps={{ "aria-label": "Toggle dark mode" }}
             />
           </Stack>

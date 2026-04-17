@@ -60,12 +60,16 @@ import contentRouter from "./routes/content.ts";
 import employeeRouter from "./routes/employee.ts";
 import loginRouter from "./routes/login.ts";
 import logoutRouter from "./routes/logout.ts";
+import sessionRouter from "./routes/session.ts";
+import accountSettingsRouter from "./routes/account-settings.ts";
 
 const routeMap = {
-  content: contentRouter,
-  employee: employeeRouter,
-  login: loginRouter,
-  logout: logoutRouter,
+  "account-settings": accountSettingsRouter,
+  "content": contentRouter,
+  "employee": employeeRouter,
+  "login": loginRouter,
+  "logout": logoutRouter,
+  "session": sessionRouter,
 };
 for (const [path, router] of Object.entries(routeMap)) {
   logger.info(`Loaded /${path} route`);

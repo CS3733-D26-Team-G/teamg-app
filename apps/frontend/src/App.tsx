@@ -1,7 +1,10 @@
+import type { ReactElement } from "react";
 import "./App.css";
 import { Routes, Route } from "react-router";
+import { Navigate, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar.tsx";
 import { AppThemeProvider } from "./Themecontext.tsx";
+import { AuthProvider, useAuth } from "./auth/AuthContext.tsx";
 
 import Hero from "./pages/hero.tsx";
 import Dashboard from "./pages/dashboard.tsx";
@@ -15,16 +18,62 @@ import LoginPopUp from "./pages/LoginPopUp.tsx";
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
 
-import { useLocation } from "react-router";
+function ProtectedRoute({ children }: { children: ReactElement }) {
+  const { isLoading, session } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (!session) {
+    return (
+      <Navigate
+        to="/"
+        replace
+      />
+    );
+  }
+
+  return children;
+}
+
+function AdminRoute({ children }: { children: ReactElement }) {
+  const { isLoading, session } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (!session) {
+    return (
+      <Navigate
+        to="/"
+        replace
+      />
+    );
+  }
+
+  if (!session.permissions.canManageEmployees) {
+    return (
+      <Navigate
+        to="/library"
+        replace
+      />
+    );
+  }
+
+  return children;
+}
 
 function AppLayout() {
   const location = useLocation();
+  const { session } = useAuth();
   const isHeroPage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      {!isHeroPage && !isLoginPage && <Sidebar />}
+      {!isHeroPage && !isLoginPage && session && <Sidebar />}
 
       <div style={{ flexGrow: 1, minWidth: 0 }}>
         <Routes>
@@ -35,47 +84,87 @@ function AppLayout() {
 
           <Route
             path="/dashboard"
-            element={<Dashboard />}
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/my-forms"
-            element={<MyForms />}
+            element={
+              <ProtectedRoute>
+                <MyForms />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/library"
-            element={<Library />}
+            element={
+              <ProtectedRoute>
+                <Library />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/activity"
-            element={<Activity />}
+            element={
+              <ProtectedRoute>
+                <Activity />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/settings"
-            element={<Settings />}
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/profile"
-            element={<Profile />}
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="/employee-management"
-            element={<EmployeeManagement />}
+            element={
+              <AdminRoute>
+                <EmployeeManagement />
+              </AdminRoute>
+            }
           />
 
           <Route
             path="/content-management"
-            element={<Library />}
+            element={
+              <ProtectedRoute>
+                <Library />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="/employee-form"
-            element={<EmployeeFormPage />}
+            element={
+              <AdminRoute>
+                <EmployeeFormPage />
+              </AdminRoute>
+            }
           />
 
           <Route
             path="/content-form"
-            element={<MyForms />}
+            element={
+              <ProtectedRoute>
+                <MyForms />
+              </ProtectedRoute>
+            }
           />
         </Routes>
       </div>
@@ -85,9 +174,11 @@ function AppLayout() {
 
 function App() {
   return (
-    <AppThemeProvider>
-      <AppLayout />
-    </AppThemeProvider>
+    <AuthProvider>
+      <AppThemeProvider>
+        <AppLayout />
+      </AppThemeProvider>
+    </AuthProvider>
   );
 }
 

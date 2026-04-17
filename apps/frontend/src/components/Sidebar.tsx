@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./Sidebar.css";
 import {
   IconButton,
@@ -26,6 +26,7 @@ import MenuItem from "@mui/material/MenuItem";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { API_ENDPOINTS } from "../config.ts";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext.tsx";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -34,25 +35,8 @@ export default function Sidebar() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  const [isAdmin, setIsAdmin] = useState(
-    localStorage.getItem("account_type") === "ADMIN",
-  );
-
-  useEffect(() => {
-    const checkAdminStatus = () => {
-      setIsAdmin(localStorage.getItem("account_type") === "ADMIN");
-    };
-
-    window.addEventListener("storage", checkAdminStatus);
-
-    const interval = setInterval(checkAdminStatus, 1000);
-
-    return () => {
-      window.removeEventListener("storage", checkAdminStatus);
-      clearInterval(interval);
-    };
-  }, []);
+  const { clearSession, session } = useAuth();
+  const isAdmin = session?.permissions.canManageEmployees ?? false;
 
   const handleToggle = (
     setter: React.Dispatch<React.SetStateAction<boolean>>,
@@ -78,6 +62,7 @@ export default function Sidebar() {
       });
 
       if (res.ok) {
+        clearSession();
         navigate("/");
       } else {
         console.error("Logout Failed");
@@ -229,9 +214,7 @@ export default function Sidebar() {
           <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
             <Avatar sx={{ width: 32, height: 32 }} />
           </ListItemIcon>
-          {isOpen && (
-            <ListItemText primary={localStorage.getItem("employee_position")} />
-          )}
+          {isOpen && <ListItemText primary={session?.position ?? ""} />}
           {isOpen && <KeyboardArrowUpIcon />}
         </ListItemButton>
       </Box>

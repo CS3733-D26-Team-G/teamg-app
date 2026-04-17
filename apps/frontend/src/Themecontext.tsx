@@ -1,47 +1,76 @@
 import React, {
   createContext,
   useContext,
-  useState,
-  useMemo,
   useEffect,
+  useMemo,
+  useState,
 } from "react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import { lightTheme, darkTheme } from "./theme";
+import { API_ENDPOINTS } from "./config";
+import { useAuth } from "./auth/AuthContext.tsx";
 
 interface ThemeContextType {
   isDarkMode: boolean;
-  toggleDarkMode: () => void;
+  isSaving: boolean;
+  toggleDarkMode: () => Promise<void>;
 }
 
 const Themecontext = createContext<ThemeContextType>({
   isDarkMode: false,
-  toggleDarkMode: () => {},
+  isSaving: false,
+  toggleDarkMode: async () => {},
 });
 
 export const useThemeMode = () => useContext(Themecontext);
 
-function getInitialDarkMode(): boolean {
-  try {
-    const stored = localStorage.getItem("darkMode");
-    if (stored !== null) return stored === "true";
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
-  } catch {
-    return false;
-  }
-}
-
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(getInitialDarkMode);
+  const { isLoading, session } = useAuth();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("darkMode", String(isDarkMode));
-    } catch {
-      // localStorage unavailable, silently ignore
+    if (isLoading) {
+      return;
     }
-  }, [isDarkMode]);
 
-  const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+    if (session) {
+      setIsDarkMode(session.settings.darkMode);
+      return;
+    }
+
+    setIsDarkMode(false);
+  }, [isLoading, session]);
+
+  const toggleDarkMode = async () => {
+    if (!session || isSaving) {
+      return;
+    }
+
+    const nextDarkMode = !isDarkMode;
+    setIsDarkMode(nextDarkMode);
+    setIsSaving(true);
+
+    try {
+      const res = await fetch(API_ENDPOINTS.ACCOUNT_SETTINGS, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ darkMode: nextDarkMode }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to update theme preference: ${res.status}`);
+      }
+    } catch (error) {
+      console.error(error);
+      setIsDarkMode((prev) => !prev);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const theme = useMemo(
     () => (isDarkMode ? darkTheme : lightTheme),
@@ -49,7 +78,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <Themecontext.Provider value={{ isDarkMode, toggleDarkMode }}>
+    <Themecontext.Provider value={{ isDarkMode, isSaving, toggleDarkMode }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
