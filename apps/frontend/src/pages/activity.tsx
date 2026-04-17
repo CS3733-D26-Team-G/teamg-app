@@ -1,9 +1,8 @@
-import ActivityTimeline from "../components/Activity/ActivityTimeline";
-
+import ActivityComponent from "../components/Activity/ActivityComponent";
 function Activity() {
   return (
     <>
-      <ActivityTimeline></ActivityTimeline>
+      <ActivityComponent></ActivityComponent>
     </>
   );
 }

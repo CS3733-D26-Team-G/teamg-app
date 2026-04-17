@@ -34,14 +34,13 @@ export default function ActivityTimelineItem() {
         </TimelineDot>
         <TimelineConnector />
       </TimelineSeparator>
-      <TimelineContent sx={{ py: "12px", px: 2 }}>
+      <TimelineContent sx={{ px: 2, alignItems: "center" }}>
         <Typography
           variant="h6"
           component="span"
         >
-          Eat
+          Colin Truong viewed Isaac's Documentation
         </Typography>
-        <Typography>Because you need strength</Typography>
       </TimelineContent>
     </TimelineItem>
   );

@@ -16,10 +16,6 @@ logger.info(`isProd: ${isProd}`);
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(cookieParser());
-const allowedOrigins =
-  isProd ?
-    ["https://teamg-app-frontend.vercel.app"]
-  : ["http://localhost:10000"];
 
 const morganStream = {
   write: (message: string) => logger.http(message.trim()),

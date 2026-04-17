@@ -18,7 +18,6 @@ export default function CustomizedTimeline() {
   return (
     <Box
       sx={{
-        backgroundColor: "white",
         height: "75%",
       }}
     >
