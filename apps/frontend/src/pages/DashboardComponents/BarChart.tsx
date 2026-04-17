@@ -20,7 +20,7 @@ function BarChart() {
           colorMap: {
             type: "ordinal",
             values: xLabels,
-            colors: ["#1A1E4B", "#395176", "#74414e"],
+            colors: ["#4D9FFF", "#395176", "#74414e"],
           },
         },
       ]}

@@ -12,6 +12,7 @@ import {
   Chip,
   Dialog,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
@@ -60,6 +61,9 @@ export default function ContentManagement({
   viewState,
   setViewState,
 }: ContentManagementProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [userAccountType] = useState(localStorage.getItem("employee_position"));
@@ -429,7 +433,8 @@ export default function ContentManagement({
         sx={{
           "height": 600,
           "& .row-locked": {
-            backgroundColor: "rgba(245, 245, 245, 1)",
+            backgroundColor:
+              isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(245, 245, 245, 1)",
             color: "text.disabled",
             cursor: "not-allowed",
           },
