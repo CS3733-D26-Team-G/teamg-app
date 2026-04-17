@@ -72,11 +72,19 @@ model ContentEditLock {
 }
 
 model Account {
-  employee     Employee    @relation(fields: [employeeUuid], references: [uuid])
-  employeeUuid String      @unique @db.Uuid
-  username     String      @id @unique
+  employee     Employee         @relation(fields: [employeeUuid], references: [uuid])
+  employeeUuid String           @unique @db.Uuid
+  username     String           @id @unique
   password     String
   type         AccountType
+  settings     AccountSettings?
+}
+
+model AccountSettings {
+  accountUsername String  @id
+  dark_mode       Boolean @default(false)
+
+  account Account @relation(fields: [accountUsername], references: [username], onDelete: Cascade)
 }
 
 enum Department {
