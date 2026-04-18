@@ -10,7 +10,6 @@ import Stack from "@mui/material/Stack";
 import { Grid } from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
-import { useAuth } from "../auth/AuthContext.tsx";
 
 function Profile() {
   const [_searchQuery, setSearchQuery] = useState("");
