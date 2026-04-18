@@ -383,6 +383,16 @@ router.post("/create", upload.single("file"), async (req, res) => {
   logger.verbose(`Inserting Content table record ${uuid}`);
   try {
     const content = await prisma.content.create({ data });
+    //Creates a new row in Activity table, i.e. logs the action
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "CREATE_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: content.uuid,
+        resourceName: content.title,
+      },
+    });
     logger.verbose(`Inserted Content table record ${uuid}`);
     return res.status(201).json(content);
   } catch (e) {
