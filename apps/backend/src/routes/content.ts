@@ -491,6 +491,17 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
       where: { uuid },
       data,
     });
+    // Creates a new row in Activity table, i.e. logs the action
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "EDIT_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: updatedContent.uuid,
+        resourceName: updatedContent.title,
+      },
+    });
+
     logger.verbose(`Updated Content table record ${uuid}`);
     return res.status(200).json(updatedContent);
   } catch (e) {
@@ -540,6 +551,17 @@ router.post("/delete/:uuid", async (req, res) => {
     }
     logger.verbose(`Deleting Content table record ${uuid}`);
     await prisma.$transaction(async (tx) => {
+      // Creates a new row in Activity table, i.e. logs the action
+      await tx.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "DELETE_CONTENT",
+          resource: "CONTENT",
+          resourceUuid: content.uuid,
+          resourceName: content.title,
+        },
+      });
+
       await tx.contentEditLock.deleteMany({
         where: { contentUuid: uuid },
       });
