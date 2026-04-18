@@ -17,6 +17,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import FiberNewIcon from "@mui/icons-material/FiberNew";
 import type { Position } from "@repo/db";
 import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
@@ -269,6 +270,19 @@ export default function ContentManagement({
     }
   };
 
+  {
+    /* Highlights new content based on how many days since creation */
+  }
+  const NEW_THRESHOLD_DAYS = 5;
+
+  function isNewContent(
+    lastModified: Date | string | null | undefined,
+  ): boolean {
+    if (!lastModified) return false;
+    const diff = Date.now() - new Date(lastModified).getTime();
+    return diff < NEW_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+  }
+
   const getColumns = (
     onEdit: (row: ContentRow) => void,
     onDelete: (row: ContentRow) => void,
@@ -295,6 +309,37 @@ export default function ContentManagement({
       ),
     },
     { field: "title", headerName: "Title", flex: 1 },
+    {
+      field: "last_modified_time",
+      headerName: "Last Modified",
+      type: "dateTime",
+      width: 200,
+      valueGetter: (_value, row) =>
+        row.last_modified_time ? new Date(row.last_modified_time) : null,
+      renderCell: (params) => {
+        const date = params.value as Date | null;
+        const isNew = isNewContent(date);
+        return (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            {isNew && (
+              <FiberNewIcon
+                sx={{ color: theme.palette.primary.main }}
+                fontSize="medium"
+              />
+            )}
+            <span>
+              {date ?
+                date.toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "—"}
+            </span>
+          </Box>
+        );
+      },
+    },
     {
       field: "url",
       headerName: "URL",
@@ -427,7 +472,11 @@ export default function ContentManagement({
         getRowClassName={(params) => {
           const hasPermission =
             isSystemAdmin || userPosition === params.row.for_position;
-          return hasPermission ? "" : "row-locked";
+          const isNew = isNewContent(params.row.last_modified_time);
+          const classes: string[] = [];
+          if (!hasPermission) classes.push("row-locked");
+          if (isNew) classes.push("row-new");
+          return classes.join(" ");
         }}
         sx={{
           "height": 600,
@@ -441,6 +490,20 @@ export default function ContentManagement({
             color: "inherit",
             pointerEvents: "none",
             textDecoration: "none",
+          },
+          "& .row-new": {
+            backgroundColor:
+              isDark ?
+                `${theme.palette.primary.main}1F`
+              : `${theme.palette.primary.light}80`,
+            borderLeft: "3px solid",
+            borderLeftColor: theme.palette.primary.main,
+          },
+          "& .row-new:hover": {
+            backgroundColor:
+              isDark ?
+                `${theme.palette.primary.main}38`
+              : `${theme.palette.primary.light}D9`,
           },
         }}
         initialState={{

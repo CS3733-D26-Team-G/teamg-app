@@ -198,6 +198,9 @@ router.get("/", async (req, res) => {
           select: { favoritedBy: true },
         },
       },
+      orderBy: {
+        last_modified_time: "desc",
+      },
     });
     logger.verbose(
       `Queried Content table for all records: found ${content.length} record(s)`,
