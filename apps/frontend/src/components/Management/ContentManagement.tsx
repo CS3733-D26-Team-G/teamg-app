@@ -23,8 +23,10 @@ import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
+import "@cyntler/react-doc-viewer";
 import { API_ENDPOINTS } from "../../config";
 import { useAuth } from "../../auth/AuthContext";
+import "./ContentManagement.css";
 import {
   ContentFavoriteResponseSchema,
   ContentRowsSchema,
@@ -474,6 +476,7 @@ export default function ContentManagement({
             height: "80vh",
             display: "flex",
             flexDirection: "column",
+            minHeight: 0,
           }}
         >
           <Button
@@ -484,13 +487,23 @@ export default function ContentManagement({
           </Button>
 
           {selectedDoc && (
-            <DocViewer
-              documents={[selectedDoc]}
-              pluginRenderers={DocViewerRenderers}
-              config={{
-                header: { disableHeader: false, disableFileName: false },
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
               }}
-            />
+            >
+              <DocViewer
+                className="content-preview-viewer"
+                documents={[selectedDoc]}
+                pluginRenderers={DocViewerRenderers}
+                config={{
+                  header: { disableHeader: false, disableFileName: false },
+                }}
+                style={{ width: "100%", height: "100%" }}
+              />
+            </Box>
           )}
         </Box>
       </Dialog>
