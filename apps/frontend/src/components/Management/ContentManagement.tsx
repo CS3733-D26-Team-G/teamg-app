@@ -11,6 +11,7 @@ import {
   Link,
   Chip,
   Dialog,
+  Tooltip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -157,7 +158,6 @@ export default function ContentManagement({
         setRows((prev) =>
           prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
         );
-        setLockMessage("This content is locked by another user");
         return;
       }
 
@@ -329,7 +329,6 @@ export default function ContentManagement({
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
-
         return (
           <>
             <IconButton
@@ -338,12 +337,25 @@ export default function ContentManagement({
             >
               <VisibilityIcon />
             </IconButton>
-            <IconButton
-              onClick={() => onEdit(params.row)}
-              disabled={!hasPermission || params.row.isLocked}
+            <Tooltip
+              title={params.row.isLocked ? "Content is currently in use" : ""}
+              arrow
             >
-              <EditIcon />
-            </IconButton>
+              <span>
+                <IconButton
+                  onClick={() => onEdit(params.row)}
+                  disabled={!hasPermission || params.row.isLocked}
+                  sx={{
+                    color:
+                      !hasPermission || params.row.isLocked ?
+                        "text.disabled"
+                      : "inherit",
+                  }}
+                >
+                  <EditIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
             <IconButton
               onClick={() => onDelete(params.row)}
               disabled={!hasPermission}
