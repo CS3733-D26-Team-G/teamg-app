@@ -30,6 +30,7 @@ import {
   ContentRowsSchema,
   type ContentRow,
 } from "../../types/content";
+import { param } from "framer-motion/m";
 
 const positionLabels: Record<Position, string> = {
   UNDERWRITER: "UNDERWRITER",
@@ -55,6 +56,46 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   paddingBottom: theme.spacing(2),
   minHeight: 128,
 }));
+
+{
+  /* Highlights new content based on what is different from start of session */
+}
+const NEW_THRESHOLD_DAYS = 5;
+
+function isNewContent(lastModified: Date | string | null | undefined): boolean {
+  if (!lastModified) return false;
+  const diff = Date.now() - new Date(lastModified).getTime();
+  return diff < NEW_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function getSessionNewIds(rows: ContentRow[]): Set<string> {
+  const KEY = "new_content_ids";
+  const SESSION_START_KEY = "session_start_time";
+
+  if (!sessionStorage.getItem(SESSION_START_KEY)) {
+    sessionStorage.setItem(SESSION_START_KEY, Date.now().toString());
+    sessionStorage.removeItem(KEY);
+  }
+
+  const sessionStart = parseInt(sessionStorage.getItem(SESSION_START_KEY)!);
+  const existing = sessionStorage.getItem(KEY);
+  const storedIds: string[] =
+    existing ? (JSON.parse(existing) as string[]) : [];
+
+  const newIds = rows
+    .filter((row) => {
+      if (!row.last_modified_time) return false;
+      return new Date(row.last_modified_time).getTime() > sessionStart;
+    })
+    .map((row) => row.uuid);
+
+  const mergedSet = new Set(storedIds);
+  newIds.forEach((id) => mergedSet.add(id));
+  const merged = Array.from(mergedSet);
+
+  sessionStorage.setItem(KEY, JSON.stringify(merged));
+  return mergedSet;
+}
 
 export default function ContentManagement({
   viewState,
@@ -270,18 +311,13 @@ export default function ContentManagement({
     }
   };
 
-  {
-    /* Highlights new content based on how many days since creation */
-  }
-  const NEW_THRESHOLD_DAYS = 5;
+  const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
 
-  function isNewContent(
-    lastModified: Date | string | null | undefined,
-  ): boolean {
-    if (!lastModified) return false;
-    const diff = Date.now() - new Date(lastModified).getTime();
-    return diff < NEW_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
-  }
+  useEffect(() => {
+    if (rows.length > 0) {
+      setSessionNewIds(getSessionNewIds(rows));
+    }
+  }, [rows]);
 
   const getColumns = (
     onEdit: (row: ContentRow) => void,
@@ -318,7 +354,7 @@ export default function ContentManagement({
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
         const date = params.value as Date | null;
-        const isNew = isNewContent(date);
+        const isNew = sessionNewIds.has(params.row.uuid);
         return (
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             {isNew && (
@@ -472,7 +508,7 @@ export default function ContentManagement({
         getRowClassName={(params) => {
           const hasPermission =
             isSystemAdmin || userPosition === params.row.for_position;
-          const isNew = isNewContent(params.row.last_modified_time);
+          const isNew = sessionNewIds.has(params.row.uuid);
           const classes: string[] = [];
           if (!hasPermission) classes.push("row-locked");
           if (isNew) classes.push("row-new");
