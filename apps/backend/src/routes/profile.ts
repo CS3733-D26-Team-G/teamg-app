@@ -15,15 +15,6 @@ router.get("/", async (req, res) => {
 
     const profile = await prisma.employee.findUnique({
       where: { uuid: auth.employeeUuid },
-      select: {
-        first_name: true,
-        last_name: true,
-        date_of_birth: true,
-        phone_number: true,
-        corporation_email: true,
-        position: true,
-        avatar: true,
-      },
     });
 
     return res.status(200).json(profile);

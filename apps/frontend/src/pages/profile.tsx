@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as React from "react";
 import SearchBar from "./DashboardComponents/SearchBar";
 import Box from "@mui/material/Box";
@@ -7,9 +7,14 @@ import IconButton from "@mui/material/IconButton";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
-import { Grid } from "@mui/material";
+import { CircularProgress, Grid } from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
+import {
+  type EmployeeRecord,
+  EmployeeRecordSchema,
+} from "../types/employee.ts";
+import { API_ENDPOINTS } from "../config.ts";
 
 function Profile() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -30,6 +35,44 @@ function Profile() {
   const handleToggle2 = (event: React.ChangeEvent<HTMLInputElement>) => {
     setToggle2(event.target.checked);
   };
+
+  const [profile, setProfile] = React.useState<EmployeeRecord | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(API_ENDPOINTS.PROFILE, {
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data: unknown = await res.json();
+      console.log("Raw profile data:", data);
+
+      const parsed = EmployeeRecordSchema.safeParse(data);
+      if (!parsed.success) {
+        console.error("Profile failed schema validation:", parsed.error);
+        setProfile(null);
+        return;
+      }
+
+      setProfile(parsed.data);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadProfile();
+  }, []);
+
+  if (!profile) {
+    return <Typography>Failed to load profile.</Typography>;
+  }
 
   const cardSx = {
     backgroundColor: "background.paper",
@@ -194,7 +237,7 @@ function Profile() {
                 >
                   First Name
                 </Typography>
-                <Typography fontWeight="bold">Colin</Typography>
+                <Typography fontWeight="bold">{profile.first_name}</Typography>
               </Grid>
               <Grid
                 size={4}
@@ -206,7 +249,7 @@ function Profile() {
                 >
                   Last Name
                 </Typography>
-                <Typography fontWeight="bold">Truong</Typography>
+                <Typography fontWeight="bold">{profile.last_name}</Typography>
               </Grid>
               <Grid
                 size={4}
@@ -218,7 +261,7 @@ function Profile() {
                 >
                   Date of Birth
                 </Typography>
-                <Typography fontWeight="bold">04/12/2006</Typography>
+                <Typography fontWeight="bold">test</Typography>
               </Grid>
             </Grid>
             <Grid container>
@@ -232,7 +275,9 @@ function Profile() {
                 >
                   Phone
                 </Typography>
-                <Typography fontWeight="bold">123-456-7890</Typography>
+                <Typography fontWeight="bold">
+                  {profile.phone_number}
+                </Typography>
               </Grid>
               <Grid
                 size={4}
@@ -244,7 +289,9 @@ function Profile() {
                 >
                   Email
                 </Typography>
-                <Typography fontWeight="bold">cptruong@wpi.edu</Typography>
+                <Typography fontWeight="bold">
+                  {profile.corporate_email}
+                </Typography>
               </Grid>
               <Grid
                 size={4}
@@ -256,7 +303,7 @@ function Profile() {
                 >
                   User Role
                 </Typography>
-                <Typography fontWeight="bold">Business Analyst</Typography>
+                <Typography fontWeight="bold">{profile.position}</Typography>
               </Grid>
             </Grid>
           </Stack>
