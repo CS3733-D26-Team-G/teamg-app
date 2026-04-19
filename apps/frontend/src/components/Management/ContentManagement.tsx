@@ -17,6 +17,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import FiberNewIcon from "@mui/icons-material/FiberNew";
 import type { Position } from "@repo/db";
 import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
@@ -29,6 +30,7 @@ import {
   ContentRowsSchema,
   type ContentRow,
 } from "../../types/content";
+import { param } from "framer-motion/m";
 
 const positionLabels: Record<Position, string> = {
   UNDERWRITER: "UNDERWRITER",
@@ -54,6 +56,46 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   paddingBottom: theme.spacing(2),
   minHeight: 128,
 }));
+
+{
+  /* Highlights new content based on what is different from start of session */
+}
+const NEW_THRESHOLD_DAYS = 5;
+
+function isNewContent(lastModified: Date | string | null | undefined): boolean {
+  if (!lastModified) return false;
+  const diff = Date.now() - new Date(lastModified).getTime();
+  return diff < NEW_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function getSessionNewIds(rows: ContentRow[]): Set<string> {
+  const KEY = "new_content_ids";
+  const SESSION_START_KEY = "session_start_time";
+
+  if (!sessionStorage.getItem(SESSION_START_KEY)) {
+    sessionStorage.setItem(SESSION_START_KEY, Date.now().toString());
+    sessionStorage.removeItem(KEY);
+  }
+
+  const sessionStart = parseInt(sessionStorage.getItem(SESSION_START_KEY)!);
+  const existing = sessionStorage.getItem(KEY);
+  const storedIds: string[] =
+    existing ? (JSON.parse(existing) as string[]) : [];
+
+  const newIds = rows
+    .filter((row) => {
+      if (!row.last_modified_time) return false;
+      return new Date(row.last_modified_time).getTime() > sessionStart;
+    })
+    .map((row) => row.uuid);
+
+  const mergedSet = new Set(storedIds);
+  newIds.forEach((id) => mergedSet.add(id));
+  const merged = Array.from(mergedSet);
+
+  sessionStorage.setItem(KEY, JSON.stringify(merged));
+  return mergedSet;
+}
 
 export default function ContentManagement({
   viewState,
@@ -269,6 +311,14 @@ export default function ContentManagement({
     }
   };
 
+  const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (rows.length > 0) {
+      setSessionNewIds(getSessionNewIds(rows));
+    }
+  }, [rows]);
+
   const getColumns = (
     onEdit: (row: ContentRow) => void,
     onDelete: (row: ContentRow) => void,
@@ -295,6 +345,37 @@ export default function ContentManagement({
       ),
     },
     { field: "title", headerName: "Title", flex: 1 },
+    {
+      field: "last_modified_time",
+      headerName: "Last Modified",
+      type: "dateTime",
+      width: 200,
+      valueGetter: (_value, row) =>
+        row.last_modified_time ? new Date(row.last_modified_time) : null,
+      renderCell: (params) => {
+        const date = params.value as Date | null;
+        const isNew = sessionNewIds.has(params.row.uuid);
+        return (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            {isNew && (
+              <FiberNewIcon
+                sx={{ color: theme.palette.primary.main }}
+                fontSize="medium"
+              />
+            )}
+            <span>
+              {date ?
+                date.toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "—"}
+            </span>
+          </Box>
+        );
+      },
+    },
     {
       field: "url",
       headerName: "URL",
@@ -427,7 +508,11 @@ export default function ContentManagement({
         getRowClassName={(params) => {
           const hasPermission =
             isSystemAdmin || userPosition === params.row.for_position;
-          return hasPermission ? "" : "row-locked";
+          const isNew = sessionNewIds.has(params.row.uuid);
+          const classes: string[] = [];
+          if (!hasPermission) classes.push("row-locked");
+          if (isNew) classes.push("row-new");
+          return classes.join(" ");
         }}
         sx={{
           "height": 600,
@@ -441,6 +526,20 @@ export default function ContentManagement({
             color: "inherit",
             pointerEvents: "none",
             textDecoration: "none",
+          },
+          "& .row-new": {
+            backgroundColor:
+              isDark ?
+                `${theme.palette.primary.main}1F`
+              : `${theme.palette.primary.light}80`,
+            borderLeft: "3px solid",
+            borderLeftColor: theme.palette.primary.main,
+          },
+          "& .row-new:hover": {
+            backgroundColor:
+              isDark ?
+                `${theme.palette.primary.main}38`
+              : `${theme.palette.primary.light}D9`,
           },
         }}
         initialState={{
