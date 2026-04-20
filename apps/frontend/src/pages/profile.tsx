@@ -178,7 +178,7 @@ function Profile() {
                   ml: -0.8,
                 }}
               >
-                Colin Truong
+                {profile.first_name} {profile.last_name}
               </Typography>
               <Typography
                 sx={{
@@ -186,7 +186,7 @@ function Profile() {
                   fontWeight: 500,
                 }}
               >
-                cptruong@wpi.edu
+                {profile.corporate_email}
               </Typography>
               <Typography
                 sx={{
@@ -195,7 +195,7 @@ function Profile() {
                   mt: 0.5,
                 }}
               >
-                Business Analyst
+                {profile.position}
               </Typography>
             </Stack>
           </Stack>
@@ -261,7 +261,9 @@ function Profile() {
                 >
                   Date of Birth
                 </Typography>
-                <Typography fontWeight="bold">test</Typography>
+                <Typography fontWeight="bold">
+                  {profile.date_of_birth.toLocaleDateString()}
+                </Typography>
               </Grid>
             </Grid>
             <Grid container>
@@ -404,7 +406,7 @@ function Profile() {
             </Stack>
           </Box>
 
-          {/*'My Portal' Card*/}
+          {/*'Department Info' Card*/}
           <Box
             sx={{
               display: "flex",
@@ -424,7 +426,7 @@ function Profile() {
                   pb: 0.4,
                 }}
               >
-                My Portal
+                Department
               </Typography>
 
               <Typography
@@ -433,27 +435,32 @@ function Profile() {
                   fontSize: 20,
                 }}
               >
-                Business Analyst Portal
+                {profile.department}
               </Typography>
 
               <Typography
                 variant="caption"
-                color="text.secondary"
+                color="text.primary"
                 sx={{
                   pl: 1,
-                  fontSize: 14,
-                  mt: -0.8,
+                  fontSize: 16,
+                  mt: 1,
                 }}
               >
-                Your role-based tools and resources
+                Supervisor: {profile.supervisor}
               </Typography>
 
-              <Button
-                variant="contained"
-                sx={{ mt: 2, alignSelf: "center" }}
+              <Typography
+                variant="caption"
+                color="text.primary"
+                sx={{
+                  pl: 1,
+                  fontSize: 16,
+                  mt: 1,
+                }}
               >
-                Go To Portal
-              </Button>
+                Member Since: {profile.start_date.toDateString()}
+              </Typography>
             </Stack>
           </Box>
 
