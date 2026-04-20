@@ -19,7 +19,14 @@ import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import type { Position } from "@repo/db";
-import { Heart } from "lucide-react";
+import {
+  Heart,
+  FileText, // PDF
+  Image as ImageIcon, // JPG/PNG
+  Video, // MP4
+  Music, // MP3
+  ExternalLink, // Hyperlink/Web
+} from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
@@ -67,6 +74,56 @@ function isNewContent(lastModified: Date | string | null | undefined): boolean {
   const diff = Date.now() - new Date(lastModified).getTime();
   return diff < NEW_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
 }
+
+const getFileTypeIcon = (title: string) => {
+  if (!title) return <ExternalLink size={18} />;
+
+  const extension = title.split(".").pop()?.toLowerCase();
+
+  switch (extension) {
+    case "pdf":
+      return (
+        <FileText
+          size={18}
+          color="#ff4d4f"
+        />
+      );
+    case "jpg":
+    case "jpeg":
+    case "png":
+    case "gif":
+      return (
+        <ImageIcon
+          size={18}
+          color="#1890ff"
+        />
+      );
+    case "mp4":
+    case "mkv":
+    case "mov":
+      return (
+        <Video
+          size={18}
+          color="#722ed1"
+        />
+      );
+    case "mp3":
+    case "wav":
+      return (
+        <Music
+          size={18}
+          color="#52c41a"
+        />
+      );
+    default:
+      return (
+        <ExternalLink
+          size={18}
+          color="#8c8c8c"
+        />
+      );
+  }
+};
 
 function getSessionNewIds(rows: ContentRow[]): Set<string> {
   const KEY = "new_content_ids";
@@ -344,7 +401,29 @@ export default function ContentManagement({
         </IconButton>
       ),
     },
-    { field: "title", headerName: "Title", flex: 1 },
+    {
+      field: "title",
+      headerName: "Title",
+      flex: 1,
+      renderCell: (params) => (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            height: "100%",
+            gap: 1.5,
+          }}
+        >
+          {getFileTypeIcon(params.row.title)}
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 500 }}
+          >
+            {params.value}
+          </Typography>
+        </Box>
+      ),
+    },
     {
       field: "last_modified_time",
       headerName: "Last Modified",
