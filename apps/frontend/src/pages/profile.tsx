@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as React from "react";
 import SearchBar from "./DashboardComponents/SearchBar";
 import Box from "@mui/material/Box";
@@ -7,9 +7,14 @@ import IconButton from "@mui/material/IconButton";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
-import { Grid } from "@mui/material";
+import { CircularProgress, Grid } from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
+import {
+  type EmployeeRecord,
+  EmployeeRecordSchema,
+} from "../types/employee.ts";
+import { API_ENDPOINTS } from "../config.ts";
 
 function Profile() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -30,6 +35,44 @@ function Profile() {
   const handleToggle2 = (event: React.ChangeEvent<HTMLInputElement>) => {
     setToggle2(event.target.checked);
   };
+
+  const [profile, setProfile] = React.useState<EmployeeRecord | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(API_ENDPOINTS.PROFILE, {
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data: unknown = await res.json();
+      console.log("Raw profile data:", data);
+
+      const parsed = EmployeeRecordSchema.safeParse(data);
+      if (!parsed.success) {
+        console.error("Profile failed schema validation:", parsed.error);
+        setProfile(null);
+        return;
+      }
+
+      setProfile(parsed.data);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadProfile();
+  }, []);
+
+  if (!profile) {
+    return <Typography>Failed to load profile.</Typography>;
+  }
 
   const cardSx = {
     backgroundColor: "background.paper",
@@ -58,10 +101,10 @@ function Profile() {
         >
           {/*'My Account text in header'*/}
           <Typography
-            variant="h4"
             sx={{
               color: "primary.contrastText",
               p: 2,
+              fontSize: 30,
             }}
           >
             My Account
@@ -77,10 +120,11 @@ function Profile() {
             }}
           >
             <Typography
-              variant={"h5"}
               sx={{
+                display: "flex",
+                alignItems: "center",
                 color: "primary.contrastText",
-                mt: 0.5,
+                fontSize: 16,
               }}
             >
               {formattedDate}
@@ -100,7 +144,6 @@ function Profile() {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
             alignItems: "center",
             width: "90%",
             height: 200,
@@ -129,64 +172,32 @@ function Profile() {
             <Stack>
               <Typography
                 sx={{
-                  fontSize: 64,
+                  fontSize: 48,
                   fontWeight: 500,
                   lineHeight: 1.1,
                   ml: -0.8,
                 }}
               >
-                Colin Truong
+                {profile.first_name} {profile.last_name}
               </Typography>
               <Typography
                 sx={{
-                  fontSize: 20,
+                  fontSize: 16,
                   fontWeight: 500,
                 }}
               >
-                cptruong@wpi.edu
+                {profile.corporate_email}
               </Typography>
               <Typography
                 sx={{
-                  fontSize: 20,
+                  fontSize: 16,
                   fontWeight: 500,
                   mt: 0.5,
                 }}
               >
-                Business Analyst
+                {profile.position}
               </Typography>
             </Stack>
-          </Stack>
-
-          {/*User stats on the right*/}
-          <Stack
-            sx={{
-              pr: 4,
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: 36,
-                fontWeight: 400,
-              }}
-            >
-              Drafts: 12
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: 36,
-                fontWeight: 400,
-              }}
-            >
-              Published: 10
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: 36,
-                fontWeight: 400,
-              }}
-            >
-              Pending: 3
-            </Typography>
           </Stack>
         </Box>
 
@@ -204,9 +215,8 @@ function Profile() {
           <Stack sx={{ width: "100%" }}>
             <Typography
               sx={{
-                fontSize: 36,
-                fontWeight: 500,
-                pl: 1,
+                fontSize: 32,
+                pl: 1.6,
                 pt: 0.5,
                 pb: 0.3,
               }}
@@ -227,7 +237,7 @@ function Profile() {
                 >
                   First Name
                 </Typography>
-                <Typography fontWeight="bold">Colin</Typography>
+                <Typography fontWeight="bold">{profile.first_name}</Typography>
               </Grid>
               <Grid
                 size={4}
@@ -239,7 +249,7 @@ function Profile() {
                 >
                   Last Name
                 </Typography>
-                <Typography fontWeight="bold">Truong</Typography>
+                <Typography fontWeight="bold">{profile.last_name}</Typography>
               </Grid>
               <Grid
                 size={4}
@@ -251,7 +261,9 @@ function Profile() {
                 >
                   Date of Birth
                 </Typography>
-                <Typography fontWeight="bold">04/12/2006</Typography>
+                <Typography fontWeight="bold">
+                  {profile.date_of_birth.toLocaleDateString()}
+                </Typography>
               </Grid>
             </Grid>
             <Grid container>
@@ -265,7 +277,9 @@ function Profile() {
                 >
                   Phone
                 </Typography>
-                <Typography fontWeight="bold">123-456-7890</Typography>
+                <Typography fontWeight="bold">
+                  {profile.phone_number}
+                </Typography>
               </Grid>
               <Grid
                 size={4}
@@ -277,7 +291,9 @@ function Profile() {
                 >
                   Email
                 </Typography>
-                <Typography fontWeight="bold">cptruong@wpi.edu</Typography>
+                <Typography fontWeight="bold">
+                  {profile.corporate_email}
+                </Typography>
               </Grid>
               <Grid
                 size={4}
@@ -289,7 +305,7 @@ function Profile() {
                 >
                   User Role
                 </Typography>
-                <Typography fontWeight="bold">Business Analyst</Typography>
+                <Typography fontWeight="bold">{profile.position}</Typography>
               </Grid>
             </Grid>
           </Stack>
@@ -310,9 +326,8 @@ function Profile() {
             <Stack sx={{ width: "96%" }}>
               <Typography
                 sx={{
-                  fontSize: 36,
-                  fontWeight: 500,
-                  pl: 1,
+                  fontSize: 32,
+                  pl: 1.6,
                   pt: 0.3,
                   pb: 0.3,
                 }}
@@ -391,7 +406,7 @@ function Profile() {
             </Stack>
           </Box>
 
-          {/*'My Portal' Card*/}
+          {/*'Department Info' Card*/}
           <Box
             sx={{
               display: "flex",
@@ -405,14 +420,13 @@ function Profile() {
             <Stack sx={{ width: "100%" }}>
               <Typography
                 sx={{
-                  fontSize: 36,
-                  fontWeight: 500,
-                  pl: 1,
+                  fontSize: 32,
+                  pl: 1.6,
                   pt: 0.3,
                   pb: 0.4,
                 }}
               >
-                My Portal
+                Department
               </Typography>
 
               <Typography
@@ -421,27 +435,32 @@ function Profile() {
                   fontSize: 20,
                 }}
               >
-                Business Analyst Portal
+                {profile.department}
               </Typography>
 
               <Typography
                 variant="caption"
-                color="text.secondary"
+                color="text.primary"
                 sx={{
                   pl: 1,
-                  fontSize: 14,
-                  mt: -0.8,
+                  fontSize: 16,
+                  mt: 1,
                 }}
               >
-                Your role-based tools and resources
+                Supervisor: {profile.supervisor}
               </Typography>
 
-              <Button
-                variant="contained"
-                sx={{ mt: 2, alignSelf: "center" }}
+              <Typography
+                variant="caption"
+                color="text.primary"
+                sx={{
+                  pl: 1,
+                  fontSize: 16,
+                  mt: 1,
+                }}
               >
-                Go To Portal
-              </Button>
+                Member Since: {profile.start_date.toDateString()}
+              </Typography>
             </Stack>
           </Box>
 
@@ -459,9 +478,8 @@ function Profile() {
             <Stack sx={{ width: "100%" }}>
               <Typography
                 sx={{
-                  fontSize: 36,
-                  fontWeight: 500,
-                  pl: 1,
+                  fontSize: 32,
+                  pl: 1.6,
                   pt: 0.3,
                   pb: 0.4,
                 }}
