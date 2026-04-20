@@ -198,6 +198,9 @@ router.get("/", async (req, res) => {
           select: { favoritedBy: true },
         },
       },
+      orderBy: {
+        last_modified_time: "desc",
+      },
     });
     logger.verbose(
       `Queried Content table for all records: found ${content.length} record(s)`,
@@ -383,6 +386,16 @@ router.post("/create", upload.single("file"), async (req, res) => {
   logger.verbose(`Inserting Content table record ${uuid}`);
   try {
     const content = await prisma.content.create({ data });
+    //Creates a new row in Activity table, i.e. logs the action
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "CREATE_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: content.uuid,
+        resourceName: content.title,
+      },
+    });
     logger.verbose(`Inserted Content table record ${uuid}`);
     return res.status(201).json(content);
   } catch (e) {
@@ -481,6 +494,17 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
       where: { uuid },
       data,
     });
+    // Creates a new row in Activity table, i.e. logs the action
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "EDIT_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: updatedContent.uuid,
+        resourceName: updatedContent.title,
+      },
+    });
+
     logger.verbose(`Updated Content table record ${uuid}`);
     return res.status(200).json(updatedContent);
   } catch (e) {
@@ -530,6 +554,17 @@ router.post("/delete/:uuid", async (req, res) => {
     }
     logger.verbose(`Deleting Content table record ${uuid}`);
     await prisma.$transaction(async (tx) => {
+      // Creates a new row in Activity table, i.e. logs the action
+      await tx.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "DELETE_CONTENT",
+          resource: "CONTENT",
+          resourceUuid: content.uuid,
+          resourceName: content.title,
+        },
+      });
+
       await tx.contentEditLock.deleteMany({
         where: { contentUuid: uuid },
       });

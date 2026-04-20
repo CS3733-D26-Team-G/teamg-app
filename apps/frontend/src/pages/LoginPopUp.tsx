@@ -23,7 +23,6 @@ interface LoginPopUpProps {
   onClose: () => void;
 }
 
-// 2. Apply it to the function parameters
 function LoginPopUp({ open, onClose }: LoginPopUpProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -45,7 +44,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Essential for cookies/sessions
+        credentials: "include",
         body: JSON.stringify({
           username: username,
           password: password,
@@ -64,7 +63,6 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
 
       await refreshSession();
 
-      // Close modal before navigating
       onClose();
       navigate("/dashboard");
     } catch (e) {
@@ -101,7 +99,6 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
           backgroundColor: "white",
         }}
       >
-        {/* Left Side: Image */}
         <Box
           sx={{
             width: "60%",
@@ -116,12 +113,11 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
             sx={{
               width: "100%",
               height: "100%",
-              objectFit: "cover", // Changed from fill to cover for better aspect ratio
+              objectFit: "cover",
             }}
           />
         </Box>
 
-        {/* Right Side: Form */}
         <Box
           sx={{
             width: { xs: "100%", sm: "40%" },
@@ -180,6 +176,9 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
             />
 
             <TextField
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handleLogin();
+              }}
               id="password"
               label="Password"
               sx={inputLook("10px", "-18px")}
@@ -192,6 +191,9 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
               slotProps={{
                 inputLabel: { shrink: true },
                 input: {
+                  onKeyDown: (e) => {
+                    if (e.key === "Enter") void handleLogin();
+                  },
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton

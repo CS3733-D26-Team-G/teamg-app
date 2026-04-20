@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@cyntler/react-doc-viewer": "^1.17.1",
-    "@mui/x-charts": "^9.0.1",
+    "@mui/x-charts": "^9.0.2",
     "@tailwindcss/vite": "^4.2.2",
     "tailwindcss": "^4.2.2"
   }
