@@ -9,6 +9,7 @@ import theme from "../theme.tsx";
 import Footer from "./Footer.tsx";
 import { type Variants } from "framer-motion";
 import CarouselBackground from "./CarouselBackground";
+import { useTranslation } from "react-i18next";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -39,6 +40,7 @@ export default function HeroSection() {
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(true);
+  const { t } = useTranslation();
 
   const careLines = [
     { letter: "C", word: "ollaboration", indent: "pl-25" },
@@ -83,9 +85,7 @@ export default function HeroSection() {
             "& .MuiIconButton-root": { color: "white" },
           }}
         >
-          This site is created for a course at Worcester Polytechnic Institute.
-          It is not affiliated with or operated by the Hanover Insurance Group.
-          This is a student project created solely for academic purposes.
+          {t("heroSection.disclaimer")}
         </Alert>
       </Collapse>
 
@@ -120,7 +120,7 @@ export default function HeroSection() {
             "&:hover": { background: "#d9d2c5" },
           }}
         >
-          Log In
+          {t("heroSection.login")}
         </Button>
       </Box>
 
@@ -171,11 +171,10 @@ export default function HeroSection() {
             color: "white",
             fontFamily: "Domine",
             lineHeight: 1.75,
+            whiteSpace: "pre-line",
           }}
         >
-          Welcome to iBank, Hanover Insurance's
-          <br />
-          content management application.
+          {t("heroSection.welcome")}
         </Box>
       </Box>
 
