@@ -76,7 +76,7 @@ model Account {
   employeeUuid String           @unique @db.Uuid
   username     String           @id @unique
   password     String
-  type         AccountType
+  
   settings     AccountSettings?
 }
 

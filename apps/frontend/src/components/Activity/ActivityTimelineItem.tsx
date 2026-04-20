@@ -5,12 +5,14 @@ import TimelineContent from "@mui/lab/TimelineContent";
 import TimelineOppositeContent from "@mui/lab/TimelineOppositeContent";
 import TimelineDot from "@mui/lab/TimelineDot";
 import FastfoodIcon from "@mui/icons-material/Fastfood";
-import LaptopMacIcon from "@mui/icons-material/LaptopMac";
-import HotelIcon from "@mui/icons-material/Hotel";
-import RepeatIcon from "@mui/icons-material/Repeat";
 import Typography from "@mui/material/Typography";
+import { type ActivityItem } from "./activityData";
 
-export default function ActivityTimelineItem() {
+export default function ActivityTimelineItem({
+  time,
+  user,
+  action,
+}: ActivityItem) {
   return (
     <TimelineItem>
       <TimelineOppositeContent
@@ -25,7 +27,7 @@ export default function ActivityTimelineItem() {
           alignContent: "start",
         }}
       >
-        9:30 am
+        {time}
       </TimelineOppositeContent>
       <TimelineSeparator>
         <TimelineConnector />
@@ -34,12 +36,20 @@ export default function ActivityTimelineItem() {
         </TimelineDot>
         <TimelineConnector />
       </TimelineSeparator>
-      <TimelineContent sx={{ px: 2, alignItems: "center" }}>
+      <TimelineContent
+        sx={{
+          px: 2,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
         <Typography
           variant="h6"
           component="span"
+          sx={{}}
         >
-          Colin Truong viewed Isaac's Documentation
+          {user} {action}
         </Typography>
       </TimelineContent>
     </TimelineItem>
