@@ -1,12 +1,4 @@
-import {
-  Box,
-  Typography,
-  Paper,
-  Divider,
-  Switch,
-  FormControlLabel,
-  Stack,
-} from "@mui/material";
+import { Box, Typography, Paper, Divider, Switch, Stack } from "@mui/material";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import { useThemeMode } from "../Themecontext.tsx";
@@ -19,6 +11,7 @@ function Settings() {
       <Typography
         variant="h1"
         gutterBottom
+        color="text.primary"
       >
         Settings
       </Typography>
