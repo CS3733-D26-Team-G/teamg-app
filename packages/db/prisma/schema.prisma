@@ -107,6 +107,9 @@ enum Position {
   UNDERWRITER
   BUSINESS_ANALYST
   ADMIN
+  ACTUARIAL_ANALYST
+  EXL_OPS
+  BUSINESS_OPS
 }
 
 enum ContentType {
