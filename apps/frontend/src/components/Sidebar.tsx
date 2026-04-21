@@ -125,9 +125,7 @@ export default function Sidebar() {
         transition: "width 0.3s",
         position: "sticky",
         top: 0,
-        backgroundColor: "background.paper",
-        borderRight: "1px solid",
-        borderColor: "divider",
+        backgroundColor: "background",
       }}
     >
       <Box
