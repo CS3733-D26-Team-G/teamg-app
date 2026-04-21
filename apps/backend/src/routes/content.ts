@@ -238,7 +238,11 @@ router.post("/lock/:uuid", async (req, res) => {
     }
     const existingLock = await getactiveLock(uuid);
 
-    if (existingLock && existingLock.lockedByEmpUuid !== auth.employeeUuid) {
+    if (
+      existingLock &&
+      existingLock.lockedByEmpUuid !== auth.employeeUuid &&
+      auth.position !== "ADMIN"
+    ) {
       return res.status(409).json({
         message: "Content is currently locked by another user",
         lock: serializeLock(existingLock),
