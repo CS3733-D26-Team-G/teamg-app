@@ -26,7 +26,12 @@
   },
   "dependencies": {
     "@cyntler/react-doc-viewer": "^1.17.1",
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
     "@mui/x-charts": "^9.0.2",
+    "@pdftron/webviewer": "^11.12.0",
+    "@syncfusion/ej2-react-documenteditor": "^33.1.49",
+    "@syncfusion/ej2-react-pdfviewer": "^33.1.49",
     "@tailwindcss/vite": "^4.2.2",
     "tailwindcss": "^4.2.2"
   }
