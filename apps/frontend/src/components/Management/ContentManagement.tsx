@@ -11,11 +11,15 @@ import {
   Link,
   Chip,
   Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Tooltip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -135,6 +139,8 @@ export default function ContentManagement({
     uri: string;
     fileName: string;
   } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
+  const [pendingSave, setPendingSave] = useState<FormData | null>(null);
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
@@ -185,19 +191,24 @@ export default function ContentManagement({
     [rows, searchQuery],
   );
 
-  const handleDelete = async (row: ContentRow) => {
-    if (!window.confirm(`Are you sure you want to delete "${row.title}"?`)) {
+  const handleDelete = (row: ContentRow) => {
+    setPendingDelete(row);
+  };
+  const confirmDelete = async () => {
+    if (!pendingDelete) {
       return;
     }
 
+    const rowToDelete = pendingDelete;
+    setPendingDelete(null);
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(rowToDelete.uuid), {
         method: "POST",
         credentials: "include",
       });
 
       if (res.ok) {
-        setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
+        setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
       }
     } catch (error) {
       console.error(error);
@@ -217,7 +228,6 @@ export default function ContentManagement({
         setRows((prev) =>
           prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
         );
-        setLockMessage("This content is locked by another user");
         return;
       }
 
@@ -248,7 +258,17 @@ export default function ContentManagement({
     }
   };
 
-  const handleSave = async (payload: FormData) => {
+  const handleSave = (payload: FormData) => {
+    setPendingSave(payload);
+  };
+
+  const confirmSave = async () => {
+    if (!pendingSave) {
+      return;
+    }
+
+    const payloadToSave = pendingSave;
+    setPendingSave(null);
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
     const url =
@@ -256,19 +276,11 @@ export default function ContentManagement({
         API_ENDPOINTS.CONTENT_EDIT(uuid)
       : API_ENDPOINTS.CONTENT_CREATE;
 
-    if (
-      !window.confirm(
-        `Are you sure you want to save "${payload.get("title")}"?`,
-      )
-    ) {
-      return;
-    }
-
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
         credentials: "include",
-        body: payload,
+        body: payloadToSave,
       });
 
       if (res.ok) {
@@ -344,6 +356,53 @@ export default function ContentManagement({
       setSessionNewIds(getSessionNewIds(rows));
     }
   }, [rows]);
+
+  const confirmationDialogs = (
+    <>
+      <Dialog
+        open={pendingSave !== null}
+        onClose={() => setPendingSave(null)}
+      >
+        <DialogTitle>Submit content</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "1.1rem" }}>
+            Are you sure you want to submit this content?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingSave(null)}>Cancel</Button>
+          <Button
+            onClick={() => void confirmSave()}
+            variant="contained"
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+      >
+        <DialogTitle>Delete content</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "1.1rem" }}>
+            Are you sure you want to delete this content?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingDelete(null)}>Cancel</Button>
+          <Button
+            onClick={() => void confirmDelete()}
+            color="error"
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
 
   const getColumns = (
     onEdit: (row: ContentRow) => void,
@@ -473,10 +532,11 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 160,
+      width: 200,
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
+        const isCheckedOut = params.row.isLocked;
 
         return (
           <>
@@ -486,17 +546,26 @@ export default function ContentManagement({
             >
               <VisibilityIcon />
             </IconButton>
-            <IconButton
-              onClick={() => onEdit(params.row)}
-              disabled={!hasPermission || params.row.isLocked}
-            >
-              <EditIcon />
-            </IconButton>
+            <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
+              <span>
+                <Button
+                  size="small"
+                  onClick={() => onEdit(params.row)}
+                  disabled={!hasPermission || isCheckedOut}
+                  sx={{ border: "0.5px solid" }}
+                >
+                  {" "}
+                  CHECK OUT
+                </Button>
+              </span>
+            </Tooltip>
             <IconButton
               onClick={() => onDelete(params.row)}
-              disabled={!hasPermission}
+              disabled={!hasPermission || isCheckedOut}
             >
-              <DeleteIcon color={hasPermission ? "error" : "disabled"} />
+              <DeleteIcon
+                color={hasPermission && !isCheckedOut ? "error" : "disabled"}
+              />
             </IconButton>
           </>
         );
@@ -517,6 +586,7 @@ export default function ContentManagement({
             setViewState(null);
           }}
         />
+        {confirmationDialogs}
       </Box>
     );
   }
@@ -762,6 +832,7 @@ export default function ContentManagement({
           )}
         </Box>
       </Dialog>
+      {confirmationDialogs}
     </Box>
   );
 }
