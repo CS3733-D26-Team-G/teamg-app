@@ -112,6 +112,8 @@ export default function ContentManagement({
 }: ContentManagementProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const [positionFilters, setPositionFilters] = useState<string[]>([]);
+  const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
 
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
@@ -172,21 +174,72 @@ export default function ContentManagement({
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        if (!searchQuery.trim()) return true;
-        const targetFields = [
-          row.title,
-          row.status,
-          row.url,
-          row.content_owner,
-          row.for_position,
-          row.file_type,
-        ];
-        return targetFields.some((field) =>
-          field?.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+        // Search Bar Filter Logic
+        if (searchQuery.trim()) {
+          const targetFields = [
+            row.title,
+            row.status,
+            row.url,
+            row.content_owner,
+            row.for_position,
+            row.file_type,
+          ];
+          const searchMatch = targetFields.some((field) =>
+            field?.toLowerCase().includes(searchQuery.toLowerCase()),
+          );
+
+          if (!searchMatch) return false;
+        }
+
+        //Filter Button Logic
+
+        //Position Filter
+        if (
+          positionFilters.length > 0 &&
+          !positionFilters.includes(row.for_position)
+        ) {
+          return false;
+        }
+
+        //File Type Filter
+        if (
+          fileTypeFilters.length > 0 &&
+          !fileTypeFilters.includes(row.file_type ?? "")
+        ) {
+          return false;
+        }
+
+        return true;
       }),
-    [rows, searchQuery],
+    [rows, searchQuery, positionFilters, fileTypeFilters],
   );
+
+  const togglePosition = (position: string) => {
+    //update the position filters array
+    setPositionFilters((currentPositionFilters) => {
+      //check if the current array already has the toggled position
+      if (currentPositionFilters.includes(position)) {
+        //clear selected filter
+        return currentPositionFilters.filter((pos) => pos !== position);
+      } else {
+        //add selected position filter
+        return currentPositionFilters.concat(position);
+      }
+    });
+  };
+
+  const toggleFileType = (fileType: string) => {
+    //update the file type filters array
+    setFileTypeFilters((currentFileTypeFilters) => {
+      //check if the current array already has the toggled file type
+      if (currentFileTypeFilters.includes(fileType)) {
+        //clear selected filter
+        return currentFileTypeFilters.filter((type) => type !== fileType);
+      } else {
+        return currentFileTypeFilters.concat(fileType);
+      }
+    });
+  };
 
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
@@ -691,9 +744,15 @@ export default function ContentManagement({
                   },
                 }}
               >
-                <MenuItem>Underwriter</MenuItem>
-                <MenuItem>Business Analyst</MenuItem>
-                <MenuItem>Admin</MenuItem>
+                <MenuItem onClick={() => togglePosition("UNDERWRITER")}>
+                  Underwriter
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("BUSINESS_ANALYST")}>
+                  Business Analyst
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("ADMIN")}>
+                  Admin
+                </MenuItem>
               </Menu>
 
               {/*File Type Submenu*/}
@@ -712,10 +771,39 @@ export default function ContentManagement({
                   },
                 }}
               >
-                <MenuItem>.PDF</MenuItem>
-                <MenuItem>.DOCX</MenuItem>
-                <MenuItem>XLSX</MenuItem>
-                <MenuItem>.PNG</MenuItem>
+                <MenuItem onClick={() => toggleFileType("application/pdf")}>
+                  .PDF
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    toggleFileType(
+                      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                  }
+                >
+                  .DOCX
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    toggleFileType(
+                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                  }
+                >
+                  XLSX
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("image/png")}>
+                  .PNG
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    toggleFileType(
+                      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    )
+                  }
+                >
+                  .PPTX
+                </MenuItem>
               </Menu>
 
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
