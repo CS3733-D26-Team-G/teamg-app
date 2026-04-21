@@ -161,7 +161,7 @@ export default function ContentManagement({
       }
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-expect-error
+      //@ts-ignore
       setRows(parsed.data);
     } catch (error) {
       console.error(error);
