@@ -99,7 +99,11 @@ async function rejectifLocked(
   res: express.Response,
 ) {
   const lock = await getactiveLock(uuid);
-  if (!lock || lock.lockedByEmpUuid === auth.employeeUuid) {
+  if (
+    !lock ||
+    lock.lockedByEmpUuid === auth.employeeUuid ||
+    auth.position === "ADMIN"
+  ) {
     return false;
   }
   res.status(409).json({
@@ -209,6 +213,9 @@ router.get("/", async (req, res) => {
           },
         },
       },
+      orderBy: {
+        last_modified_time: "desc",
+      },
     });
     logger.verbose(
       `Queried Content table for all records: found ${content.length} record(s)`,
@@ -242,7 +249,11 @@ router.post("/lock/:uuid", async (req, res) => {
     }
     const existingLock = await getactiveLock(uuid);
 
-    if (existingLock && existingLock.lockedByEmpUuid !== auth.employeeUuid) {
+    if (
+      existingLock &&
+      existingLock.lockedByEmpUuid !== auth.employeeUuid &&
+      auth.position !== "ADMIN"
+    ) {
       return res.status(409).json({
         message: "Content is currently locked by another user",
         lock: serializeLock(existingLock),

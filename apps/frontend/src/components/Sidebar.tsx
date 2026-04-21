@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./Sidebar.css";
 import {
   IconButton,
@@ -27,6 +27,11 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { API_ENDPOINTS } from "../config.ts";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.tsx";
+import {
+  type EmployeeRecord,
+  EmployeeRecordSchema,
+} from "../types/employee.ts";
+import Typography from "@mui/material/Typography";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -63,6 +68,7 @@ export default function Sidebar() {
 
       if (res.ok) {
         clearSession();
+        localStorage.clear();
         navigate("/");
       } else {
         console.error("Logout Failed");
@@ -72,6 +78,44 @@ export default function Sidebar() {
       console.error(e);
     }
   };
+
+  const [profile, setProfile] = React.useState<EmployeeRecord | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(API_ENDPOINTS.PROFILE, {
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data: unknown = await res.json();
+      console.log("Raw profile data:", data);
+
+      const parsed = EmployeeRecordSchema.safeParse(data);
+      if (!parsed.success) {
+        console.error("Profile failed schema validation:", parsed.error);
+        setProfile(null);
+        return;
+      }
+
+      setProfile(parsed.data);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadProfile();
+  }, []);
+
+  if (!profile) {
+    return;
+  }
 
   return (
     <Box
@@ -204,7 +248,7 @@ export default function Sidebar() {
             border: isOpen ? "1px solid" : "none",
             borderColor: "divider",
             borderRadius: "50px",
-            boxShadow: 2,
+            boxShadow: isOpen ? 2 : 0,
           }}
           onClick={handleClick}
           aria-controls={open ? "resources-menu" : undefined}
@@ -214,7 +258,7 @@ export default function Sidebar() {
           <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
             <Avatar sx={{ width: 32, height: 32 }} />
           </ListItemIcon>
-          {isOpen && <ListItemText primary={session?.position ?? ""} />}
+          {isOpen && <ListItemText primary={profile.first_name ?? ""} />}
           {isOpen && <KeyboardArrowUpIcon />}
         </ListItemButton>
       </Box>
@@ -228,6 +272,7 @@ export default function Sidebar() {
         onClose={handleClose}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
         transformOrigin={{ vertical: "bottom", horizontal: "left" }}
+        sx={{ mt: -1.5 }}
       >
         <MenuItem
           component={Link}
