@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { Dialog, Box, Button, Stack, Typography } from "@mui/material";
 import WebViewer, { type WebViewerInstance } from "@pdftron/webviewer";
 
@@ -21,66 +21,89 @@ export default function DocumentEditorModal({
 }: Props) {
   const viewerDivRef = useRef<HTMLDivElement | null>(null);
   const instanceRef = useRef<WebViewerInstance | null>(null);
-  const initializedRef = useRef(false);
+  const pendingLoadRef = useRef<(() => void) | null>(null);
+  const hasInitializedRef = useRef(false);
 
-  // Runs once when the div mounts (keepMounted means this only fires once ever)
-  const setViewerDiv = (node: HTMLDivElement | null) => {
-    if (!node || initializedRef.current) return;
-    viewerDivRef.current = node;
-
-    WebViewer(
-      {
-        path: "/webviewer/lib",
-        licenseKey:
-          "demo:1776714799946:6325df920300000000de6805a4f71c4346d6e510d1c42048e35ab36d86",
-        disabledElements:
-          readOnly ? ["toolsHeader", "ribbons", "toggleNotesButton"] : [],
-      },
-      node,
-    ).then((instance) => {
-      instanceRef.current = instance;
-      initializedRef.current = true;
-      if (readOnly) {
-        instance.UI.setToolMode("Pan");
-      }
-    });
-  };
-
-  // Load the correct document whenever uri changes or modal opens
+  // Initialize WebViewer once on mount
   useEffect(() => {
-    if (!open || !instanceRef.current || !uri) return;
+    const timer = setTimeout(() => {
+      if (hasInitializedRef.current || !viewerDivRef.current) return;
+      hasInitializedRef.current = true;
 
-    const instance = instanceRef.current;
+      WebViewer(
+        {
+          path: "/webviewer/lib",
+          licenseKey:
+            "demo:1776714799946:6325df920300000000de6805a4f71c4346d6e510d1c42048e35ab36d86",
+          disabledElements:
+            readOnly ? ["toolsHeader", "ribbons", "toggleNotesButton"] : [],
+        },
+        viewerDivRef.current,
+      ).then((instance) => {
+        instanceRef.current = instance;
+        console.log(
+          "WebViewer initialized, pending load:",
+          !!pendingLoadRef.current,
+        );
+        if (readOnly) instance.UI.setToolMode("Pan");
+        if (pendingLoadRef.current) {
+          pendingLoadRef.current();
+          pendingLoadRef.current = null;
+        }
+      });
+    }, 500);
 
-    const loadDoc = async () => {
-      // Fetch with credentials so your auth cookies are sent
-      const response = await fetch(uri, { credentials: "include" });
-      if (!response.ok)
-        throw new Error(`Failed to fetch document: ${response.status}`);
+    return () => clearTimeout(timer);
+  }, []);
 
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
+  const currentUriRef = useRef<string>("");
 
-      const doLoad = () => {
-        void instanceRef.current!.UI.loadDocument(objectUrl, {
-          filename: fileName,
-          extension: fileName.split(".").pop(),
+  // Fetch and load document when modal opens
+  useEffect(() => {
+    if (!open || !uri) return;
+    if (uri === currentUriRef.current && instanceRef.current) return;
+    currentUriRef.current = uri;
+
+    const abortController = new AbortController();
+
+    const doFetchAndLoad = async () => {
+      try {
+        const response = await fetch(uri, {
+          credentials: "include",
+          signal: abortController.signal,
         });
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
-      };
+        if (!response.ok)
+          throw new Error(`Failed to fetch document: ${response.status}`);
 
-      const { Core } = instance;
-      if (
-        Core.documentViewer.getDocument !== null ||
-        Core.documentViewer.getScrollViewElement()
-      ) {
-        doLoad();
-      } else {
-        Core.documentViewer.addEventListener("ready", doLoad, { once: true });
+        const blob = await response.blob();
+        if (abortController.signal.aborted) return; // Another file was selected
+
+        const objectUrl = URL.createObjectURL(blob);
+
+        const doLoad = () => {
+          const instance = instanceRef.current;
+          if (!instance) return;
+          void instance.UI.loadDocument(objectUrl, {
+            filename: fileName,
+            extension: fileName.split(".").pop(),
+          });
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
+        };
+
+        if (instanceRef.current) {
+          doLoad();
+        } else {
+          pendingLoadRef.current = doLoad;
+        }
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return; // Expected, ignore
+        console.error("Failed to load document:", err);
       }
     };
 
-    void loadDoc();
+    void doFetchAndLoad();
+
+    return () => abortController.abort();
   }, [open, uri, fileName]);
 
   const handleSave = async () => {
@@ -88,7 +111,6 @@ export default function DocumentEditorModal({
     const { Core } = instanceRef.current;
     const doc = Core.documentViewer.getDocument();
     if (!doc) return;
-
     const data = await doc.getFileData({ downloadType: "pdf" });
     const blob = new Blob([data], { type: "application/octet-stream" });
     await onSave(blob);
@@ -131,10 +153,9 @@ export default function DocumentEditorModal({
             <Button onClick={onClose}>Close</Button>
           </Stack>
         </Stack>
-
         <Box
           sx={{ flex: 1, overflow: "hidden", minHeight: 0 }}
-          ref={setViewerDiv}
+          ref={viewerDivRef}
         />
       </Box>
     </Dialog>
