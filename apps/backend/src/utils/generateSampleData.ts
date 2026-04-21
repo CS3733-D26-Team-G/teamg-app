@@ -35,7 +35,7 @@ async function generateSampleContentData() {
         title: "Prc Exp Rating GL LossEligibilityTool",
         url: "https://zhwxfsahkisstuxignvi.supabase.co/storage/v1/object/public/teamg-prototype/prc_exp_rating_gl_LossEligibilityTool_11767.xls",
         content_owner: "David Kim",
-        for_position: "ACTUARIAL_ANALYST",
+        for_position: "BUSINESS_ANALYST",
         last_modified_time: new Date("2023-06-07"),
         expiration_time: new Date("2024-06-07"),
         content_type: "WORKFLOW",

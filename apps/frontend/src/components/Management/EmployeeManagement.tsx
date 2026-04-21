@@ -165,6 +165,8 @@ export default function EmployeeManagement() {
       UNDERWRITER: "info",
       BUSINESS_ANALYST: "success",
       ACTUARIAL_ANALYST: "info",
+      EXL_OPERATIONS: "success",
+      BUSINESS_OP_RATING: "success",
     };
 
     const deptLabels: Record<Department, string> = {

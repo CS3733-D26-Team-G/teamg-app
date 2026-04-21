@@ -85,6 +85,9 @@ export default function ManageEmployeeForm({
     ADMIN: "Admin",
     UNDERWRITER: "Underwriter",
     BUSINESS_ANALYST: "Business Analyst",
+    ACTUARIAL_ANALYST: "Actuarial Analyst",
+    EXL_OPERATIONS: "EXL Operations",
+    BUSINESS_OP_RATING: "Business Ops Rating Team",
   };
 
   const departmentLabel: Record<Department, string> = {

@@ -43,6 +43,9 @@ const positionLabels: Record<Position, string> = {
   UNDERWRITER: "Underwriter",
   BUSINESS_ANALYST: "Business Analyst",
   ADMIN: "Admin",
+  ACTUARIAL_ANALYST: "Actuarial Analyst",
+  EXL_OPERATIONS: "EXL Operations",
+  BUSINESS_OP_RATING: "Business Ops Rating Team",
 };
 
 const statusLabels: Record<ContentStatus, string> = {
@@ -55,6 +58,9 @@ const colorMap: Record<Position, "error" | "info" | "success"> = {
   ADMIN: "error",
   UNDERWRITER: "info",
   BUSINESS_ANALYST: "success",
+  ACTUARIAL_ANALYST: "success",
+  EXL_OPERATIONS: "error",
+  BUSINESS_OP_RATING: "error",
 };
 
 interface ContentManagementProps {
@@ -154,6 +160,8 @@ export default function ContentManagement({
         return;
       }
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-expect-error
       setRows(parsed.data);
     } catch (error) {
       console.error(error);
