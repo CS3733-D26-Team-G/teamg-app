@@ -400,6 +400,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
     uuid,
     url: urlResult.url,
     supabasePath: urlResult.supabasePath,
+    file_type: req.file?.mimetype ?? null,
   };
 
   logger.verbose(`Inserting Content table record ${uuid}`);
@@ -505,6 +506,7 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   const data = {
     ...input,
     url: urlResult.url,
+    file_type: req.file?.mimetype ?? null,
   };
 
   logger.verbose(`Updating Content table record ${uuid}`);

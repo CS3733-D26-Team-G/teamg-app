@@ -37,24 +37,16 @@ import {
   ContentRowsSchema,
   type ContentRow,
 } from "../../types/content";
+import {
+  getPositionChipColor,
+  getPositionLabel,
+} from "../../utils/positionDisplay";
 import { param } from "framer-motion/m";
-
-const positionLabels: Record<Position, string> = {
-  UNDERWRITER: "Underwriter",
-  BUSINESS_ANALYST: "Business Analyst",
-  ADMIN: "Admin",
-};
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
   IN_USE: "In-Use",
   UNAVAILABLE: "Unavailable",
-};
-
-const colorMap: Record<Position, "error" | "info" | "success"> = {
-  ADMIN: "error",
-  UNDERWRITER: "info",
-  BUSINESS_ANALYST: "success",
 };
 
 interface ContentManagementProps {
@@ -479,8 +471,8 @@ export default function ContentManagement({
       align: "center",
       renderCell: (params) => (
         <Chip
-          label={positionLabels[params.value as Position]}
-          color={colorMap[params.value as Position] ?? "default"}
+          label={getPositionLabel(params.value as Position)}
+          color={getPositionChipColor(params.value as Position)}
           size="small"
           variant="outlined"
         />
