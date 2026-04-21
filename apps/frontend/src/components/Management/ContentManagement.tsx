@@ -183,28 +183,24 @@ export default function ContentManagement({
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
   };
-
   const confirmDelete = async () => {
     if (!pendingDelete) {
       return;
     }
 
+    const rowToDelete = pendingDelete;
+    setPendingDelete(null);
     try {
-      const res = await fetch(
-        API_ENDPOINTS.CONTENT_DELETE(pendingDelete.uuid),
-        {
-          method: "POST",
-          credentials: "include",
-        },
-      );
+      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(rowToDelete.uuid), {
+        method: "POST",
+        credentials: "include",
+      });
 
       if (res.ok) {
-        setRows((prev) => prev.filter((r) => r.uuid !== pendingDelete.uuid));
+        setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
       }
     } catch (error) {
       console.error(error);
-    } finally {
-      setPendingDelete(null);
     }
   };
 
@@ -260,6 +256,8 @@ export default function ContentManagement({
       return;
     }
 
+    const payloadToSave = pendingSave;
+    setPendingSave(null);
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
     const url =
@@ -271,7 +269,7 @@ export default function ContentManagement({
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
         credentials: "include",
-        body: pendingSave,
+        body: payloadToSave,
       });
 
       if (res.ok) {
@@ -283,8 +281,6 @@ export default function ContentManagement({
       }
     } catch (error) {
       console.error(error);
-    } finally {
-      setPendingSave(null);
     }
   };
 
@@ -539,6 +535,7 @@ export default function ContentManagement({
                   disabled={!hasPermission || isCheckedOut}
                   sx={{ border: "0.5px solid" }}
                 >
+                  {" "}
                   CHECK OUT
                 </Button>
               </span>
