@@ -1,0 +1,16 @@
+.content-preview-viewer #msdoc-renderer,
+.content-preview-viewer #msdoc-iframe {
+  height: 100% !important;
+}
+
+.content-preview-viewer #proxy-renderer {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.content-preview-viewer #msdoc-renderer {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}

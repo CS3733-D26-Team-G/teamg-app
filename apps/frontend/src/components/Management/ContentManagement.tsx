@@ -11,37 +11,42 @@ import {
   Link,
   Chip,
   Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Tooltip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
-import type { Position } from "@repo/db";
+import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
+import "@cyntler/react-doc-viewer";
 import { API_ENDPOINTS } from "../../config";
 import { useAuth } from "../../auth/AuthContext";
+import "./ContentManagement.css";
 import {
   ContentFavoriteResponseSchema,
   ContentRowsSchema,
   type ContentRow,
 } from "../../types/content";
+import {
+  getPositionChipColor,
+  getPositionLabel,
+} from "../../utils/positionDisplay";
 import { param } from "framer-motion/m";
 
-const positionLabels: Record<Position, string> = {
-  UNDERWRITER: "UNDERWRITER",
-  BUSINESS_ANALYST: "BUSINESS ANALYST",
-  ADMIN: "ADMIN",
-};
-
-const colorMap: Record<Position, "error" | "info" | "success"> = {
-  ADMIN: "error",
-  UNDERWRITER: "info",
-  BUSINESS_ANALYST: "success",
+const statusLabels: Record<ContentStatus, string> = {
+  AVAILABLE: "Available",
+  IN_USE: "In-Use",
+  UNAVAILABLE: "Unavailable",
 };
 
 interface ContentManagementProps {
@@ -117,6 +122,8 @@ export default function ContentManagement({
     uri: string;
     fileName: string;
   } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
+  const [pendingSave, setPendingSave] = useState<FormData | null>(null);
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
@@ -167,19 +174,24 @@ export default function ContentManagement({
     [rows, searchQuery],
   );
 
-  const handleDelete = async (row: ContentRow) => {
-    if (!window.confirm(`Are you sure you want to delete "${row.title}"?`)) {
+  const handleDelete = (row: ContentRow) => {
+    setPendingDelete(row);
+  };
+  const confirmDelete = async () => {
+    if (!pendingDelete) {
       return;
     }
 
+    const rowToDelete = pendingDelete;
+    setPendingDelete(null);
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(rowToDelete.uuid), {
         method: "POST",
         credentials: "include",
       });
 
       if (res.ok) {
-        setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
+        setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
       }
     } catch (error) {
       console.error(error);
@@ -199,7 +211,6 @@ export default function ContentManagement({
         setRows((prev) =>
           prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
         );
-        setLockMessage("This content is locked by another user");
         return;
       }
 
@@ -230,7 +241,17 @@ export default function ContentManagement({
     }
   };
 
-  const handleSave = async (payload: FormData) => {
+  const handleSave = (payload: FormData) => {
+    setPendingSave(payload);
+  };
+
+  const confirmSave = async () => {
+    if (!pendingSave) {
+      return;
+    }
+
+    const payloadToSave = pendingSave;
+    setPendingSave(null);
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
     const url =
@@ -238,19 +259,11 @@ export default function ContentManagement({
         API_ENDPOINTS.CONTENT_EDIT(uuid)
       : API_ENDPOINTS.CONTENT_CREATE;
 
-    if (
-      !window.confirm(
-        `Are you sure you want to save "${payload.get("title")}"?`,
-      )
-    ) {
-      return;
-    }
-
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
         credentials: "include",
-        body: payload,
+        body: payloadToSave,
       });
 
       if (res.ok) {
@@ -319,6 +332,53 @@ export default function ContentManagement({
     }
   }, [rows]);
 
+  const confirmationDialogs = (
+    <>
+      <Dialog
+        open={pendingSave !== null}
+        onClose={() => setPendingSave(null)}
+      >
+        <DialogTitle>Submit content</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "1.1rem" }}>
+            Are you sure you want to submit this content?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingSave(null)}>Cancel</Button>
+          <Button
+            onClick={() => void confirmSave()}
+            variant="contained"
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+      >
+        <DialogTitle>Delete content</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "1.1rem" }}>
+            Are you sure you want to delete this content?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingDelete(null)}>Cancel</Button>
+          <Button
+            onClick={() => void confirmDelete()}
+            color="error"
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+
   const getColumns = (
     onEdit: (row: ContentRow) => void,
     onDelete: (row: ContentRow) => void,
@@ -326,10 +386,10 @@ export default function ContentManagement({
   ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
-      headerName: "Favorite",
+      headerName: "",
       width: 70,
       type: "number",
-      sortable: true,
+      sortable: false,
       valueGetter: (_value, row) => (row.is_favorite ? 1 : 0),
       renderCell: (params) => (
         <IconButton
@@ -349,7 +409,7 @@ export default function ContentManagement({
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 200,
+      width: 150,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -376,40 +436,82 @@ export default function ContentManagement({
         );
       },
     },
+    // {
+    //   field: "url",
+    //   headerName: "URL",
+    //   flex: 1,
+    //   renderCell: (params) => (
+    //     <Link
+    //       href={params.value}
+    //       target="_blank"
+    //       rel="noopener noreferrer"
+    //     >
+    //       {params.value}
+    //     </Link>
+    //   ),
+    // },
     {
-      field: "url",
-      headerName: "URL",
-      flex: 1,
-      renderCell: (params) => (
-        <Link
-          href={params.value}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {params.value}
-        </Link>
-      ),
+      field: "content_owner",
+      headerName: "Author",
+      width: 150,
     },
     {
       field: "for_position",
       headerName: "Position",
       width: 160,
+      align: "center",
       renderCell: (params) => (
         <Chip
-          label={positionLabels[params.value as Position]}
-          color={colorMap[params.value as Position] ?? "default"}
+          label={getPositionLabel(params.value as Position)}
+          color={getPositionChipColor(params.value as Position)}
           size="small"
           variant="outlined"
         />
       ),
     },
     {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      align: "center",
+      renderCell: (params) => (
+        <Chip
+          label={statusLabels[params.value as ContentStatus]}
+          size="small"
+          variant="outlined"
+          sx={{ borderColor: "black" }}
+        />
+      ),
+    },
+    {
+      field: "url",
+      headerName: "File Type",
+      width: 120,
+      align: "center",
+      renderCell: (params) => {
+        const properURL = params.value?.split("?")[0] ?? "";
+        const segment = properURL.split(".").pop() ?? "";
+        const extension =
+          segment.length <= 5 && !segment.includes("/") ?
+            segment.toUpperCase()
+          : null;
+        return (
+          <Chip
+            label={extension ? `.${extension}` : "N/A"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
+    },
+    {
       field: "actions",
       headerName: "Actions",
-      width: 160,
+      width: 200,
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
+        const isCheckedOut = params.row.isLocked;
 
         return (
           <>
@@ -419,17 +521,26 @@ export default function ContentManagement({
             >
               <VisibilityIcon />
             </IconButton>
-            <IconButton
-              onClick={() => onEdit(params.row)}
-              disabled={!hasPermission || params.row.isLocked}
-            >
-              <EditIcon />
-            </IconButton>
+            <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
+              <span>
+                <Button
+                  size="small"
+                  onClick={() => onEdit(params.row)}
+                  disabled={!hasPermission || isCheckedOut}
+                  sx={{ border: "0.5px solid" }}
+                >
+                  {" "}
+                  CHECK OUT
+                </Button>
+              </span>
+            </Tooltip>
             <IconButton
               onClick={() => onDelete(params.row)}
-              disabled={!hasPermission}
+              disabled={!hasPermission || isCheckedOut}
             >
-              <DeleteIcon color={hasPermission ? "error" : "disabled"} />
+              <DeleteIcon
+                color={hasPermission && !isCheckedOut ? "error" : "disabled"}
+              />
             </IconButton>
           </>
         );
@@ -450,6 +561,7 @@ export default function ContentManagement({
             setViewState(null);
           }}
         />
+        {confirmationDialogs}
       </Box>
     );
   }
@@ -472,12 +584,23 @@ export default function ContentManagement({
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 2,
+              justifyContent: "space-between",
               width: "100%",
             }}
           >
-            <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-              <HeaderSearchBar setSearchQuery={setSearchQuery} />
+            <Box sx={{ display: "flex", gap: 4 }}>
+              <Box>
+                <Button
+                  variant="outlined"
+                  startIcon={<FilterAltIcon />}
+                  sx={{ border: "2px solid" }}
+                >
+                  Filter
+                </Button>
+              </Box>
+              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+                <HeaderSearchBar setSearchQuery={setSearchQuery} />
+              </Box>
             </Box>
 
             <Button
@@ -561,6 +684,7 @@ export default function ContentManagement({
             height: "80vh",
             display: "flex",
             flexDirection: "column",
+            minHeight: 0,
           }}
         >
           <Button
@@ -571,16 +695,27 @@ export default function ContentManagement({
           </Button>
 
           {selectedDoc && (
-            <DocViewer
-              documents={[selectedDoc]}
-              pluginRenderers={DocViewerRenderers}
-              config={{
-                header: { disableHeader: false, disableFileName: false },
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
               }}
-            />
+            >
+              <DocViewer
+                className="content-preview-viewer"
+                documents={[selectedDoc]}
+                pluginRenderers={DocViewerRenderers}
+                config={{
+                  header: { disableHeader: false, disableFileName: false },
+                }}
+                style={{ width: "100%", height: "100%" }}
+              />
+            </Box>
           )}
         </Box>
       </Dialog>
+      {confirmationDialogs}
     </Box>
   );
 }
