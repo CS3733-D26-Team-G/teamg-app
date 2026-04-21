@@ -1,8 +1,10 @@
 export interface ActivityItem {
-  id: number;
+  id: string | number;
   time: string;
   user: string;
   action: string;
+  resourceUuid?: string; // UUID for content or employees
+  resourceName?: string; // Name for content or employees
 }
 
 export interface ActivityGroup {
@@ -10,33 +12,25 @@ export interface ActivityGroup {
   items: ActivityItem[];
 }
 
-export const activityData: ActivityGroup[] = [
-  {
-    date: "Today",
-    items: [
-      {
-        id: 1,
-        time: "9:30 am",
-        user: "Colin Truong",
-        action: "viewed Isaac's Documentation",
-      },
-      {
-        id: 2,
-        time: "11:00 am",
-        user: "Sarah Chen",
-        action: "updated the API routes",
-      },
-    ],
-  },
-  {
-    date: "Yesterday",
-    items: [
-      {
-        id: 3,
-        time: "4:15 pm",
-        user: "Alex Rivera",
-        action: "merged a Pull Request",
-      },
-    ],
-  },
-];
+/**
+ * Transforms raw backend activity logs into grouped data for the Timeline UI.
+ * Handles "Invalid Date" errors by checking timestamp validity.
+ */
+export function transformBackendData(rawData: any): ActivityGroup[] {
+  const groups: { [key: string]: ActivityItem[] } = {};
+
+  // If rawData is not an array (e.g., it's a string, null, or an error object), return empty
+  if (!Array.isArray(rawData)) {
+    console.error("transformBackendData received non-array data:", rawData);
+    return [];
+  }
+
+  rawData.forEach((row) => {
+    // ... rest of your existing logic ...
+  });
+
+  return Object.entries(groups).map(([date, items]) => ({
+    date,
+    items,
+  }));
+}

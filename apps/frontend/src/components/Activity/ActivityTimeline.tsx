@@ -2,31 +2,38 @@ import { Box, Divider, Typography } from "@mui/material";
 import { Fragment } from "react";
 import Timeline from "@mui/lab/Timeline";
 import ActivityTimelineItem from "./ActivityTimelineItem";
-import { type ActivityGroup } from "./activityData.ts";
+import { type ActivityGroup } from "./activityData";
 
-interface CustomizedTimelineProps {
+interface ActivityTimelineProps {
   data: ActivityGroup[];
 }
 
-export default function CustomizedTimeline({ data }: CustomizedTimelineProps) {
+export default function ActivityTimeline({ data }: ActivityTimelineProps) {
+  if (!data || data.length === 0) {
+    return <Typography>No data to display in Timeline</Typography>;
+  }
   return (
     <Box sx={{ height: "100%", overflowY: "auto" }}>
       <Timeline
         position="right"
         sx={{ p: 0 }}
       >
-        {data.map((group: { date: string; items: any[] }) => (
-          <Fragment key={group.date}>
+        {data.map((group, index) => (
+          <Fragment key={`${group.date}-${index}`}>
             {/* Day Separator */}
-            <Box sx={{ display: "flex", alignItems: "center", my: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", my: 3 }}>
               <Typography
-                variant="h3"
-                sx={{ mx: 2, fontWeight: "semi-bold" }}
+                variant="h6"
+                sx={{ mx: 2, fontWeight: "bold", whiteSpace: "nowrap" }}
               >
                 {group.date}
               </Typography>
               <Divider
-                sx={{ flexGrow: 1, borderBottomWidth: 2, borderColor: "black" }}
+                sx={{
+                  flexGrow: 1,
+                  borderBottomWidth: 2,
+                  borderColor: "divider",
+                }}
               />
             </Box>
 
@@ -34,7 +41,7 @@ export default function CustomizedTimeline({ data }: CustomizedTimelineProps) {
             {group.items.map((item) => (
               <ActivityTimelineItem
                 key={item.id}
-                {...item}
+                {...item} // Spreads time, user, action, resourceName, etc.
               />
             ))}
           </Fragment>

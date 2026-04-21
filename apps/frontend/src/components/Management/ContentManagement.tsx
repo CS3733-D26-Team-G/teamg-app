@@ -30,6 +30,7 @@ import {
   ContentRowsSchema,
   type ContentRow,
 } from "../../types/content";
+import { useSearchParams } from "react-router-dom";
 import { param } from "framer-motion/m";
 
 const positionLabels: Record<Position, string> = {
@@ -104,6 +105,8 @@ export default function ContentManagement({
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
+  const [searchParams, setSearchParams] = useSearchParams(); // Add this
+
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [lockMessage, setLockMessage] = useState<string | null>(null);
@@ -120,6 +123,13 @@ export default function ContentManagement({
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
+
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    if (filterParam) {
+      setSearchQuery(filterParam);
+    }
+  }, [searchParams]);
 
   const fetchRows = useCallback(async () => {
     try {
