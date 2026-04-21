@@ -207,7 +207,7 @@ router.get("/", async (req, res) => {
               select: {
                 uuid: true,
                 first_name: true,
-                last_name: false,
+                last_name: true,
               },
             },
           },

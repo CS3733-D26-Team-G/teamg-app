@@ -468,28 +468,8 @@ export default function ContentManagement({
       headerName: "Editor",
       width: 180,
       valueGetter: (_, row) => {
-        const employee = row.lock?.locked_by;
+        const employee = row.editLock?.lockedByEmp;
         return employee ? `${employee.first_name} ${employee.last_name}` : "";
-      },
-      renderCell: (params) => {
-        const employee = params.row.lock?.locked_by;
-        if (!employee) {
-          return null;
-        }
-        return (
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "flex-end",
-              height: "70%",
-              pt: 4,
-            }}
-          >
-            <Typography variant="body2">
-              {employee.first_name} {employee.last_name}
-            </Typography>
-          </Box>
-        );
       },
     },
     {
