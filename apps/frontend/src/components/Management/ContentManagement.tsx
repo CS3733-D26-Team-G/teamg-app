@@ -17,6 +17,7 @@ import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import type { ContentStatus, Position } from "@repo/db";
@@ -115,6 +116,9 @@ export default function ContentManagement({
 
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
+    null,
+  );
+  const [fileTypeAnchor, setFileTypeAnchor] = useState<null | HTMLElement>(
     null,
   );
 
@@ -566,8 +570,92 @@ export default function ContentManagement({
                 anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
               >
-                <MenuItem onMouseEnter={}></MenuItem>
+                {/*Position Item*/}
+                <MenuItem
+                  onMouseEnter={(event) => {
+                    setPositionAnchor(event.currentTarget);
+                    setFileTypeAnchor(null);
+                  }}
+                  onMouseLeave={(event) => {
+                    if (
+                      !event.relatedTarget ||
+                      !(event.relatedTarget as HTMLElement).closest?.(
+                        "#position-menu",
+                      )
+                    ) {
+                      setPositionAnchor(null);
+                    }
+                  }}
+                >
+                  Position
+                  <ArrowRightIcon />
+                </MenuItem>
+
+                {/*File Type Item*/}
+                <MenuItem
+                  onMouseEnter={(event) => {
+                    setFileTypeAnchor(event.currentTarget);
+                    setPositionAnchor(null);
+                  }}
+                  onMouseLeave={(event) => {
+                    if (
+                      !event.relatedTarget ||
+                      !(event.relatedTarget as HTMLElement).closest?.(
+                        "#file-type-menu",
+                      )
+                    ) {
+                      setFileTypeAnchor(null);
+                    }
+                  }}
+                >
+                  File Type
+                  <ArrowRightIcon />
+                </MenuItem>
               </Menu>
+
+              {/*Position Submenu Pop-Up*/}
+              <Menu
+                id="position-menu"
+                anchorEl={positionAnchor}
+                open={Boolean(positionAnchor)}
+                onClose={() => setPositionAnchor(null)}
+                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                sx={{ mt: -3, ml: 2 }}
+                slotProps={{
+                  list: {
+                    "aria-labelledby": "position-menu",
+                    "onMouseLeave": () => setPositionAnchor(null),
+                  },
+                }}
+              >
+                <MenuItem>Underwriter</MenuItem>
+                <MenuItem>Business Analyst</MenuItem>
+                <MenuItem>Admin</MenuItem>
+              </Menu>
+
+              {/*File Type Submenu*/}
+              <Menu
+                id="file-type-menu"
+                anchorEl={fileTypeAnchor}
+                open={Boolean(fileTypeAnchor)}
+                onClose={() => setFileTypeAnchor(null)}
+                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                sx={{ mt: -3, ml: 2 }}
+                slotProps={{
+                  list: {
+                    "aria-labelledby": "position-menu",
+                    "onMouseLeave": () => setFileTypeAnchor(null),
+                  },
+                }}
+              >
+                <MenuItem>.PDF</MenuItem>
+                <MenuItem>.DOCX</MenuItem>
+                <MenuItem>XLSX</MenuItem>
+                <MenuItem>.PNG</MenuItem>
+              </Menu>
+
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
