@@ -21,6 +21,7 @@ import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import type { ContentStatus, Position } from "@repo/db";
@@ -43,6 +44,9 @@ import {
   getPositionLabel,
 } from "../../utils/positionDisplay";
 import { param } from "framer-motion/m";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import mime from "mime-types";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -109,6 +113,16 @@ export default function ContentManagement({
 }: ContentManagementProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const [positionFilters, setPositionFilters] = useState<string[]>([]);
+  const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+
+  const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
+  const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
+    null,
+  );
+  const [fileTypeAnchor, setFileTypeAnchor] = useState<null | HTMLElement>(
+    null,
+  );
 
   const [searchParams, setSearchParams] = useSearchParams(); // Add this
 
@@ -170,19 +184,72 @@ export default function ContentManagement({
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        if (!searchQuery.trim()) return true;
-        const targetFields = [
-          row.title,
-          row.url,
-          row.content_owner,
-          row.for_position,
-        ];
-        return targetFields.some((field) =>
-          field?.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+        // Search Bar Filter Logic
+        if (searchQuery.trim()) {
+          const targetFields = [
+            row.title,
+            row.status,
+            row.url,
+            row.content_owner,
+            row.for_position,
+            row.file_type,
+          ];
+          const searchMatch = targetFields.some((field) =>
+            field?.toLowerCase().includes(searchQuery.toLowerCase()),
+          );
+
+          if (!searchMatch) return false;
+        }
+
+        //Filter Button Logic
+
+        //Position Filter
+        if (
+          positionFilters.length > 0 &&
+          !positionFilters.includes(row.for_position)
+        ) {
+          return false;
+        }
+
+        //File Type Filter
+        if (
+          fileTypeFilters.length > 0 &&
+          !fileTypeFilters.includes(row.file_type ?? "")
+        ) {
+          return false;
+        }
+
+        return true;
       }),
-    [rows, searchQuery],
+    [rows, searchQuery, positionFilters, fileTypeFilters],
   );
+
+  const togglePosition = (position: string) => {
+    //update the position filters array
+    setPositionFilters((currentPositionFilters) => {
+      //check if the current array already has the toggled position
+      if (currentPositionFilters.includes(position)) {
+        //clear selected filter
+        return currentPositionFilters.filter((pos) => pos !== position);
+      } else {
+        //add selected position filter
+        return currentPositionFilters.concat(position);
+      }
+    });
+  };
+
+  const toggleFileType = (fileType: string) => {
+    //update the file type filters array
+    setFileTypeFilters((currentFileTypeFilters) => {
+      //check if the current array already has the toggled file type
+      if (currentFileTypeFilters.includes(fileType)) {
+        //clear selected filter
+        return currentFileTypeFilters.filter((type) => type !== fileType);
+      } else {
+        return currentFileTypeFilters.concat(fileType);
+      }
+    });
+  };
 
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
@@ -332,6 +399,14 @@ export default function ContentManagement({
         [row.uuid]: false,
       }));
     }
+  };
+
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElement(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorElement(null);
   };
 
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
@@ -494,20 +569,15 @@ export default function ContentManagement({
       ),
     },
     {
-      field: "url",
+      field: "file_type",
       headerName: "File Type",
       width: 120,
       align: "center",
       renderCell: (params) => {
-        const properURL = params.value?.split("?")[0] ?? "";
-        const segment = properURL.split(".").pop() ?? "";
-        const extension =
-          segment.length <= 5 && !segment.includes("/") ?
-            segment.toUpperCase()
-          : null;
+        const ext = params.value ? mime.extension(params.value) : null;
         return (
           <Chip
-            label={extension ? `.${extension}` : "N/A"}
+            label={ext ? `.${ext.toUpperCase()}` : "N/A"}
             size="small"
             variant="outlined"
           />
@@ -601,6 +671,10 @@ export default function ContentManagement({
             <Box sx={{ display: "flex", gap: 4 }}>
               <Box>
                 <Button
+                  onClick={handleFilterClick}
+                  aria-controls={anchorElement ? "filter-menu" : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={anchorElement ? "true" : undefined}
                   variant="outlined"
                   startIcon={<FilterAltIcon />}
                   sx={{ border: "2px solid" }}
@@ -608,6 +682,140 @@ export default function ContentManagement({
                   Filter
                 </Button>
               </Box>
+
+              {/*Filter Menu Pop-Up*/}
+              <Menu
+                id="filter-menu"
+                anchorEl={anchorElement}
+                open={Boolean(anchorElement)}
+                slotProps={{
+                  list: { "aria-labelledby": "filter-menu" },
+                }}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+              >
+                {/*Position Item*/}
+                <MenuItem
+                  onMouseEnter={(event) => {
+                    setPositionAnchor(event.currentTarget);
+                    setFileTypeAnchor(null);
+                  }}
+                  onMouseLeave={(event) => {
+                    if (
+                      !event.relatedTarget ||
+                      !(event.relatedTarget as HTMLElement).closest?.(
+                        "#position-menu",
+                      )
+                    ) {
+                      setPositionAnchor(null);
+                    }
+                  }}
+                >
+                  Position
+                  <ArrowRightIcon />
+                </MenuItem>
+
+                {/*File Type Item*/}
+                <MenuItem
+                  onMouseEnter={(event) => {
+                    setFileTypeAnchor(event.currentTarget);
+                    setPositionAnchor(null);
+                  }}
+                  onMouseLeave={(event) => {
+                    if (
+                      !event.relatedTarget ||
+                      !(event.relatedTarget as HTMLElement).closest?.(
+                        "#file-type-menu",
+                      )
+                    ) {
+                      setFileTypeAnchor(null);
+                    }
+                  }}
+                >
+                  File Type
+                  <ArrowRightIcon />
+                </MenuItem>
+              </Menu>
+
+              {/*Position Submenu Pop-Up*/}
+              <Menu
+                id="position-menu"
+                anchorEl={positionAnchor}
+                open={Boolean(positionAnchor)}
+                onClose={() => setPositionAnchor(null)}
+                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                sx={{ mt: -3, ml: 2 }}
+                slotProps={{
+                  list: {
+                    "aria-labelledby": "position-menu",
+                    "onMouseLeave": () => setPositionAnchor(null),
+                  },
+                }}
+              >
+                <MenuItem onClick={() => togglePosition("UNDERWRITER")}>
+                  Underwriter
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("BUSINESS_ANALYST")}>
+                  Business Analyst
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("ADMIN")}>
+                  Admin
+                </MenuItem>
+              </Menu>
+
+              {/*File Type Submenu*/}
+              <Menu
+                id="file-type-menu"
+                anchorEl={fileTypeAnchor}
+                open={Boolean(fileTypeAnchor)}
+                onClose={() => setFileTypeAnchor(null)}
+                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                sx={{ mt: -3, ml: 2 }}
+                slotProps={{
+                  list: {
+                    "aria-labelledby": "position-menu",
+                    "onMouseLeave": () => setFileTypeAnchor(null),
+                  },
+                }}
+              >
+                <MenuItem onClick={() => toggleFileType("application/pdf")}>
+                  .PDF
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    toggleFileType(
+                      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                  }
+                >
+                  .DOCX
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    toggleFileType(
+                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                  }
+                >
+                  XLSX
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("image/png")}>
+                  .PNG
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    toggleFileType(
+                      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    )
+                  }
+                >
+                  .PPTX
+                </MenuItem>
+              </Menu>
+
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
