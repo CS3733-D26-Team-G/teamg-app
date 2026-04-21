@@ -47,6 +47,7 @@ model Content {
   content_type       ContentType
   status             ContentStatus
   supabasePath       String?
+  file_type          String?
   editLock           ContentEditLock?
   favoritedBy        FavoriteContent[]
 }
@@ -107,6 +108,9 @@ enum Position {
   UNDERWRITER
   BUSINESS_ANALYST
   ADMIN
+  ACTUARIAL_ANALYST
+  EXL_OPERATIONS
+  BUSINESS_OP_RATING
 }
 
 enum ContentType {
