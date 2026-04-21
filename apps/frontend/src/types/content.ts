@@ -45,6 +45,7 @@ export const ContentRecordSchema =
     .extend({
       uuid: z.string(),
       supabasePath: z.string().nullable(),
+      file_type: z.string().nullable(),
       is_favorite: z.boolean(),
       favorite_count: z.number().int().nonnegative(),
     })
