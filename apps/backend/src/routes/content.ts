@@ -238,7 +238,11 @@ router.post("/lock/:uuid", async (req, res) => {
     }
     const existingLock = await getactiveLock(uuid);
 
-    if (existingLock && existingLock.lockedByEmpUuid !== auth.employeeUuid) {
+    if (
+      existingLock &&
+      existingLock.lockedByEmpUuid !== auth.employeeUuid &&
+      auth.position !== "ADMIN"
+    ) {
       return res.status(409).json({
         message: "Content is currently locked by another user",
         lock: serializeLock(existingLock),
@@ -385,6 +389,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
     uuid,
     url: urlResult.url,
     supabasePath: urlResult.supabasePath,
+    file_type: req.file?.mimetype ?? null,
   };
 
   logger.verbose(`Inserting Content table record ${uuid}`);
@@ -490,6 +495,7 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   const data = {
     ...input,
     url: urlResult.url,
+    file_type: req.file?.mimetype ?? null,
   };
 
   logger.verbose(`Updating Content table record ${uuid}`);
