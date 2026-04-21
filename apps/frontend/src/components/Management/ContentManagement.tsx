@@ -32,6 +32,8 @@ import {
   type ContentRow,
 } from "../../types/content";
 import { param } from "framer-motion/m";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 
 const positionLabels: Record<Position, string> = {
   UNDERWRITER: "Underwriter",
@@ -110,6 +112,11 @@ export default function ContentManagement({
 }: ContentManagementProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+
+  const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
+  const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
+    null,
+  );
 
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -316,6 +323,14 @@ export default function ContentManagement({
         [row.uuid]: false,
       }));
     }
+  };
+
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElement(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorElement(null);
   };
 
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
@@ -527,6 +542,10 @@ export default function ContentManagement({
             <Box sx={{ display: "flex", gap: 4 }}>
               <Box>
                 <Button
+                  onClick={handleFilterClick}
+                  aria-controls={anchorElement ? "filter-menu" : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={anchorElement ? "true" : undefined}
                   variant="outlined"
                   startIcon={<FilterAltIcon />}
                   sx={{ border: "2px solid" }}
@@ -534,6 +553,21 @@ export default function ContentManagement({
                   Filter
                 </Button>
               </Box>
+
+              {/*Filter Menu Pop-Up*/}
+              <Menu
+                id="filter-menu"
+                anchorEl={anchorElement}
+                open={Boolean(anchorElement)}
+                slotProps={{
+                  list: { "aria-labelledby": "filter-menu" },
+                }}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+              >
+                <MenuItem onMouseEnter={}></MenuItem>
+              </Menu>
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
