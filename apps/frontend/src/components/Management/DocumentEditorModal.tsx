@@ -11,6 +11,18 @@ interface Props {
   onSave?: (blob: Blob) => Promise<void>;
 }
 
+const mimeToExt: Record<string, string> = {
+  "application/pdf": "pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "docx",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+    "pptx",
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "video/mp4": "mp4",
+};
+
 export default function DocumentEditorModal({
   open,
   onClose,
@@ -61,6 +73,7 @@ export default function DocumentEditorModal({
   // Fetch and load document when modal opens
   useEffect(() => {
     if (!open || !uri) return;
+    if (!uri.includes("/content/file/")) return;
     if (uri === currentUriRef.current && instanceRef.current) return;
     currentUriRef.current = uri;
 
@@ -76,6 +89,10 @@ export default function DocumentEditorModal({
           throw new Error(`Failed to fetch document: ${response.status}`);
 
         const blob = await response.blob();
+        const extFromMime = mimeToExt[blob.type] ?? undefined;
+        const extFromName =
+          fileName.includes(".") ? fileName.split(".").pop() : undefined;
+        const ext = extFromName ?? extFromMime;
         if (abortController.signal.aborted) return; // Another file was selected
 
         const objectUrl = URL.createObjectURL(blob);
@@ -85,7 +102,7 @@ export default function DocumentEditorModal({
           if (!instance) return;
           void instance.UI.loadDocument(objectUrl, {
             filename: fileName,
-            extension: fileName.split(".").pop(),
+            extension: ext,
           });
           setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
         };

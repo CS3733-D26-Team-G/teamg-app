@@ -11,38 +11,43 @@ import {
   Link,
   Chip,
   Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Tooltip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
-import type { Position } from "@repo/db";
+import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
+import "@cyntler/react-doc-viewer";
 import { API_ENDPOINTS } from "../../config";
 import { useAuth } from "../../auth/AuthContext";
+import "./ContentManagement.css";
 import {
   ContentFavoriteResponseSchema,
   ContentRowsSchema,
   type ContentRow,
 } from "../../types/content";
+import {
+  getPositionChipColor,
+  getPositionLabel,
+} from "../../utils/positionDisplay";
 import { param } from "framer-motion/m";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
 
-const positionLabels: Record<Position, string> = {
-  UNDERWRITER: "UNDERWRITER",
-  BUSINESS_ANALYST: "BUSINESS ANALYST",
-  ADMIN: "ADMIN",
-};
-
-const colorMap: Record<Position, "error" | "info" | "success"> = {
-  ADMIN: "error",
-  UNDERWRITER: "info",
-  BUSINESS_ANALYST: "success",
+const statusLabels: Record<ContentStatus, string> = {
+  AVAILABLE: "Available",
+  IN_USE: "In-Use",
+  UNAVAILABLE: "Unavailable",
 };
 
 interface ContentManagementProps {
@@ -61,32 +66,40 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
 {
   /* Highlights new content based on what is different from start of session */
 }
-function getSessionNewIds(rows: ContentRow[]): Set<string> {
-  const KEY = "new_content_ids";
-  const SESSION_START_KEY = "session_start_time";
+function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
+  const KEY = `new_content_ids_${userUuid}`;
+  const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
+  const SESSION_KEY = `session_id_${userUuid}`;
 
-  if (!sessionStorage.getItem(SESSION_START_KEY)) {
-    sessionStorage.setItem(SESSION_START_KEY, Date.now().toString());
-    sessionStorage.removeItem(KEY);
+  // Generate a session ID for this tab using sessionStorage
+  if (!sessionStorage.getItem(SESSION_KEY)) {
+    sessionStorage.setItem(SESSION_KEY, crypto.randomUUID());
+  }
+  const sessionId = sessionStorage.getItem(SESSION_KEY)!;
+
+  const fullInitialKey = `${INITIAL_IDS_KEY}_${sessionId}`;
+  const fullNewKey = `${KEY}_${sessionId}`;
+
+  if (!localStorage.getItem(fullInitialKey)) {
+    const initialIds = rows.map((r) => r.uuid);
+    localStorage.setItem(fullInitialKey, JSON.stringify(initialIds));
+    return new Set();
   }
 
-  const sessionStart = parseInt(sessionStorage.getItem(SESSION_START_KEY)!);
-  const existing = sessionStorage.getItem(KEY);
-  const storedIds: string[] =
-    existing ? (JSON.parse(existing) as string[]) : [];
+  const initialIds = new Set(
+    JSON.parse(localStorage.getItem(fullInitialKey)!) as string[],
+  );
 
   const newIds = rows
-    .filter((row) => {
-      if (!row.last_modified_time) return false;
-      return new Date(row.last_modified_time).getTime() > sessionStart;
-    })
+    .filter((row) => !initialIds.has(row.uuid))
     .map((row) => row.uuid);
 
-  const mergedSet = new Set(storedIds);
-  newIds.forEach((id) => mergedSet.add(id));
-  const merged = Array.from(mergedSet);
+  const existing = localStorage.getItem(fullNewKey);
+  const storedIds: string[] =
+    existing ? (JSON.parse(existing) as string[]) : [];
+  const mergedSet = new Set([...storedIds, ...newIds]);
+  localStorage.setItem(fullNewKey, JSON.stringify(Array.from(mergedSet)));
 
-  sessionStorage.setItem(KEY, JSON.stringify(merged));
   return mergedSet;
 }
 
@@ -112,6 +125,8 @@ export default function ContentManagement({
     uuid: string;
     for_position: Position;
   } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
+  const [pendingSave, setPendingSave] = useState<FormData | null>(null);
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
@@ -145,36 +160,51 @@ export default function ContentManagement({
     void fetchRows();
   }, [fetchRows]);
 
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
+
+  function getFileExtension(url: string): string | null {
+    const properURL = url?.split("?")[0] ?? "";
+    const segment = properURL.split(".").pop() ?? "";
+    return segment.length <= 5 && !segment.includes("/") ?
+        segment.toUpperCase()
+      : null;
+  }
+
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        if (!searchQuery.trim()) return true;
-        const targetFields = [
-          row.title,
-          row.url,
-          row.content_owner,
-          row.for_position,
-        ];
-        return targetFields.some((field) =>
-          field?.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+        const matchesSearch =
+          !searchQuery.trim() ||
+          [row.title, row.url, row.content_owner, row.for_position].some(
+            (field) => field?.toLowerCase().includes(searchQuery.toLowerCase()),
+          );
+
+        const ext = getFileExtension(row.url) ?? "N/A";
+        const matchesType = typeFilter.length === 0 || typeFilter.includes(ext);
+
+        return matchesSearch && matchesType;
       }),
-    [rows, searchQuery],
+    [rows, searchQuery, typeFilter],
   );
 
-  const handleDelete = async (row: ContentRow) => {
-    if (!window.confirm(`Are you sure you want to delete "${row.title}"?`)) {
+  const handleDelete = (row: ContentRow) => {
+    setPendingDelete(row);
+  };
+  const confirmDelete = async () => {
+    if (!pendingDelete) {
       return;
     }
 
+    const rowToDelete = pendingDelete;
+    setPendingDelete(null);
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(rowToDelete.uuid), {
         method: "POST",
         credentials: "include",
       });
 
       if (res.ok) {
-        setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
+        setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
       }
     } catch (error) {
       console.error(error);
@@ -194,7 +224,6 @@ export default function ContentManagement({
         setRows((prev) =>
           prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
         );
-        setLockMessage("This content is locked by another user");
         return;
       }
 
@@ -225,7 +254,17 @@ export default function ContentManagement({
     }
   };
 
-  const handleSave = async (payload: FormData) => {
+  const handleSave = (payload: FormData) => {
+    setPendingSave(payload);
+  };
+
+  const confirmSave = async () => {
+    if (!pendingSave) {
+      return;
+    }
+
+    const payloadToSave = pendingSave;
+    setPendingSave(null);
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
     const url =
@@ -233,19 +272,11 @@ export default function ContentManagement({
         API_ENDPOINTS.CONTENT_EDIT(uuid)
       : API_ENDPOINTS.CONTENT_CREATE;
 
-    if (
-      !window.confirm(
-        `Are you sure you want to save "${payload.get("title")}"?`,
-      )
-    ) {
-      return;
-    }
-
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
         credentials: "include",
-        body: payload,
+        body: payloadToSave,
       });
 
       if (res.ok) {
@@ -309,10 +340,57 @@ export default function ContentManagement({
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (rows.length > 0) {
-      setSessionNewIds(getSessionNewIds(rows));
+    if (rows.length > 0 && session?.employeeUuid) {
+      setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
     }
-  }, [rows]);
+  }, [rows, session?.employeeUuid]);
+
+  const confirmationDialogs = (
+    <>
+      <Dialog
+        open={pendingSave !== null}
+        onClose={() => setPendingSave(null)}
+      >
+        <DialogTitle>Submit content</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "1.1rem" }}>
+            Are you sure you want to submit this content?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingSave(null)}>Cancel</Button>
+          <Button
+            onClick={() => void confirmSave()}
+            variant="contained"
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+      >
+        <DialogTitle>Delete content</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "1.1rem" }}>
+            Are you sure you want to delete this content?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingDelete(null)}>Cancel</Button>
+          <Button
+            onClick={() => void confirmDelete()}
+            color="error"
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
 
   const getColumns = (
     onEdit: (row: ContentRow) => void,
@@ -321,10 +399,10 @@ export default function ContentManagement({
   ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
-      headerName: "Favorite",
+      headerName: "",
       width: 70,
       type: "number",
-      sortable: true,
+      sortable: false,
       valueGetter: (_value, row) => (row.is_favorite ? 1 : 0),
       renderCell: (params) => (
         <IconButton
@@ -344,7 +422,7 @@ export default function ContentManagement({
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 200,
+      width: 150,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -371,40 +449,82 @@ export default function ContentManagement({
         );
       },
     },
+    // {
+    //   field: "url",
+    //   headerName: "URL",
+    //   flex: 1,
+    //   renderCell: (params) => (
+    //     <Link
+    //       href={params.value}
+    //       target="_blank"
+    //       rel="noopener noreferrer"
+    //     >
+    //       {params.value}
+    //     </Link>
+    //   ),
+    // },
     {
-      field: "url",
-      headerName: "URL",
-      flex: 1,
-      renderCell: (params) => (
-        <Link
-          href={params.value}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {params.value}
-        </Link>
-      ),
+      field: "content_owner",
+      headerName: "Author",
+      width: 150,
     },
     {
       field: "for_position",
       headerName: "Position",
       width: 160,
+      align: "center",
       renderCell: (params) => (
         <Chip
-          label={positionLabels[params.value as Position]}
-          color={colorMap[params.value as Position] ?? "default"}
+          label={getPositionLabel(params.value as Position)}
+          color={getPositionChipColor(params.value as Position)}
           size="small"
           variant="outlined"
         />
       ),
     },
     {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      align: "center",
+      renderCell: (params) => (
+        <Chip
+          label={statusLabels[params.value as ContentStatus]}
+          size="small"
+          variant="outlined"
+          sx={{ borderColor: "black" }}
+        />
+      ),
+    },
+    {
+      field: "url",
+      headerName: "File Type",
+      width: 120,
+      align: "center",
+      renderCell: (params) => {
+        const properURL = params.value?.split("?")[0] ?? "";
+        const segment = properURL.split(".").pop() ?? "";
+        const extension =
+          segment.length <= 5 && !segment.includes("/") ?
+            segment.toUpperCase()
+          : null;
+        return (
+          <Chip
+            label={extension ? `.${extension}` : "N/A"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
+    },
+    {
       field: "actions",
       headerName: "Actions",
-      width: 160,
+      width: 200,
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
+        const isCheckedOut = params.row.isLocked;
 
         return (
           <>
@@ -414,17 +534,26 @@ export default function ContentManagement({
             >
               <VisibilityIcon />
             </IconButton>
-            <IconButton
-              onClick={() => onEdit(params.row)}
-              disabled={!hasPermission || params.row.isLocked}
-            >
-              <EditIcon />
-            </IconButton>
+            <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
+              <span>
+                <Button
+                  size="small"
+                  onClick={() => onEdit(params.row)}
+                  disabled={!hasPermission || isCheckedOut}
+                  sx={{ border: "0.5px solid" }}
+                >
+                  {" "}
+                  CHECK OUT
+                </Button>
+              </span>
+            </Tooltip>
             <IconButton
               onClick={() => onDelete(params.row)}
-              disabled={!hasPermission}
+              disabled={!hasPermission || isCheckedOut}
             >
-              <DeleteIcon color={hasPermission ? "error" : "disabled"} />
+              <DeleteIcon
+                color={hasPermission && !isCheckedOut ? "error" : "disabled"}
+              />
             </IconButton>
           </>
         );
@@ -445,6 +574,7 @@ export default function ContentManagement({
             setViewState(null);
           }}
         />
+        {confirmationDialogs}
       </Box>
     );
   }
@@ -467,12 +597,23 @@ export default function ContentManagement({
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 2,
+              justifyContent: "space-between",
               width: "100%",
             }}
           >
-            <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-              <HeaderSearchBar setSearchQuery={setSearchQuery} />
+            <Box sx={{ display: "flex", gap: 4 }}>
+              <Box>
+                <Button
+                  variant="outlined"
+                  startIcon={<FilterAltIcon />}
+                  sx={{ border: "2px solid" }}
+                >
+                  Filter
+                </Button>
+              </Box>
+              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+                <HeaderSearchBar setSearchQuery={setSearchQuery} />
+              </Box>
             </Box>
 
             <Button
@@ -497,8 +638,14 @@ export default function ContentManagement({
         rows={filteredRows}
         getRowId={(row) => row.uuid}
         columns={getColumns(handleEditStart, handleDelete, (row) => {
+          const isExternalUrl =
+            !row.supabasePath && !row.url.includes("supabase.co/storage");
+          if (isExternalUrl) {
+            window.open(row.url, "_blank");
+            return;
+          }
           setSelectedDoc({
-            uri: row.url,
+            uri: API_ENDPOINTS.CONTENT_FILE(row.uuid),
             fileName: row.title,
             uuid: row.uuid,
             for_position: row.for_position,
@@ -567,6 +714,7 @@ export default function ContentManagement({
           await fetchRows();
         }}
       />
+      {confirmationDialogs}
     </Box>
   );
 }
