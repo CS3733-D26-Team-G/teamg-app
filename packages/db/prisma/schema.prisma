@@ -47,6 +47,7 @@ model Content {
   content_type       ContentType
   status             ContentStatus
   supabasePath       String?
+  file_type          String?
   editLock           ContentEditLock?
   favoritedBy        FavoriteContent[]
 }
