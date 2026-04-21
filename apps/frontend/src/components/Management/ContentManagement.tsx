@@ -45,6 +45,7 @@ import {
 import { param } from "framer-motion/m";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import mime from "mime-types";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -178,6 +179,7 @@ export default function ContentManagement({
           row.url,
           row.content_owner,
           row.for_position,
+          row.file_type,
         ];
         return targetFields.some((field) =>
           field?.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -504,20 +506,15 @@ export default function ContentManagement({
       ),
     },
     {
-      field: "url",
+      field: "file_type",
       headerName: "File Type",
       width: 120,
       align: "center",
       renderCell: (params) => {
-        const properURL = params.value?.split("?")[0] ?? "";
-        const segment = properURL.split(".").pop() ?? "";
-        const extension =
-          segment.length <= 5 && !segment.includes("/") ?
-            segment.toUpperCase()
-          : null;
+        const ext = params.value ? mime.extension(params.value) : null;
         return (
           <Chip
-            label={extension ? `.${extension}` : "N/A"}
+            label={ext ? `.${ext.toUpperCase()}` : "N/A"}
             size="small"
             variant="outlined"
           />
