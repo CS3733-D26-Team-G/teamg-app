@@ -13,12 +13,13 @@ import {
   Dialog,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
-import type { Position } from "@repo/db";
+import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
@@ -33,9 +34,15 @@ import {
 import { param } from "framer-motion/m";
 
 const positionLabels: Record<Position, string> = {
-  UNDERWRITER: "UNDERWRITER",
-  BUSINESS_ANALYST: "BUSINESS ANALYST",
-  ADMIN: "ADMIN",
+  UNDERWRITER: "Underwriter",
+  BUSINESS_ANALYST: "Business Analyst",
+  ADMIN: "Admin",
+};
+
+const statusLabels: Record<ContentStatus, string> = {
+  AVAILABLE: "Available",
+  IN_USE: "In-Use",
+  UNAVAILABLE: "Unavailable",
 };
 
 const colorMap: Record<Position, "error" | "info" | "success"> = {
@@ -326,10 +333,10 @@ export default function ContentManagement({
   ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
-      headerName: "Favorite",
+      headerName: "",
       width: 70,
       type: "number",
-      sortable: true,
+      sortable: false,
       valueGetter: (_value, row) => (row.is_favorite ? 1 : 0),
       renderCell: (params) => (
         <IconButton
@@ -349,7 +356,7 @@ export default function ContentManagement({
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 200,
+      width: 150,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -376,24 +383,30 @@ export default function ContentManagement({
         );
       },
     },
+    // {
+    //   field: "url",
+    //   headerName: "URL",
+    //   flex: 1,
+    //   renderCell: (params) => (
+    //     <Link
+    //       href={params.value}
+    //       target="_blank"
+    //       rel="noopener noreferrer"
+    //     >
+    //       {params.value}
+    //     </Link>
+    //   ),
+    // },
     {
-      field: "url",
-      headerName: "URL",
-      flex: 1,
-      renderCell: (params) => (
-        <Link
-          href={params.value}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {params.value}
-        </Link>
-      ),
+      field: "content_owner",
+      headerName: "Author",
+      width: 150,
     },
     {
       field: "for_position",
       headerName: "Position",
       width: 160,
+      align: "center",
       renderCell: (params) => (
         <Chip
           label={positionLabels[params.value as Position]}
@@ -402,6 +415,41 @@ export default function ContentManagement({
           variant="outlined"
         />
       ),
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      align: "center",
+      renderCell: (params) => (
+        <Chip
+          label={statusLabels[params.value as ContentStatus]}
+          size="small"
+          variant="outlined"
+          sx={{ borderColor: "black" }}
+        />
+      ),
+    },
+    {
+      field: "url",
+      headerName: "File Type",
+      width: 120,
+      align: "center",
+      renderCell: (params) => {
+        const properURL = params.value?.split("?")[0] ?? "";
+        const segment = properURL.split(".").pop() ?? "";
+        const extension =
+          segment.length <= 5 && !segment.includes("/") ?
+            segment.toUpperCase()
+          : null;
+        return (
+          <Chip
+            label={extension ? `.${extension}` : "N/A"}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
     },
     {
       field: "actions",
@@ -472,12 +520,23 @@ export default function ContentManagement({
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 2,
+              justifyContent: "space-between",
               width: "100%",
             }}
           >
-            <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-              <HeaderSearchBar setSearchQuery={setSearchQuery} />
+            <Box sx={{ display: "flex", gap: 4 }}>
+              <Box>
+                <Button
+                  variant="outlined"
+                  startIcon={<FilterAltIcon />}
+                  sx={{ border: "2px solid" }}
+                >
+                  Filter
+                </Button>
+              </Box>
+              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+                <HeaderSearchBar setSearchQuery={setSearchQuery} />
+              </Box>
             </Box>
 
             <Button
