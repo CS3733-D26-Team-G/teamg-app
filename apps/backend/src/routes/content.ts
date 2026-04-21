@@ -99,13 +99,11 @@ async function rejectifLocked(
   res: express.Response,
 ) {
   const lock = await getactiveLock(uuid);
-  if (!lock) {
-    return false;
-  }
-  if (auth.position === "ADMIN") {
-    return false;
-  }
-  if (!lock || lock.lockedByEmpUuid === auth.employeeUuid) {
+  if (
+    !lock ||
+    lock.lockedByEmpUuid === auth.employeeUuid ||
+    auth.position === "ADMIN"
+  ) {
     return false;
   }
   res.status(409).json({
