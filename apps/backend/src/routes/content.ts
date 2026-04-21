@@ -197,6 +197,17 @@ router.get("/", async (req, res) => {
         _count: {
           select: { favoritedBy: true },
         },
+        editLock: {
+          include: {
+            lockedByEmp: {
+              select: {
+                uuid: true,
+                first_name: true,
+                last_name: false,
+              },
+            },
+          },
+        },
       },
     });
     logger.verbose(

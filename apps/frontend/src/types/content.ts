@@ -55,7 +55,16 @@ export type ContentRecord = Content & {
   favorite_count: number;
 };
 export const ContentRecordsSchema = z.array(ContentRecordSchema);
-
+export const ContentLockSchema = z.object({
+  content_uuid: z.string(),
+  locked_by_emp_uuid: z.string(),
+  locked_by: z.object({
+    uuid: z.string(),
+    first_name: z.string(),
+    last_name: z.string(),
+    isLocked: z.boolean(),
+  }),
+});
 /**
  * UI row schema for ContentManagement/DataGrid
  *
@@ -66,6 +75,7 @@ export const ContentRowSchema = ContentRecordSchema.extend({
 }).strip();
 
 export type ContentRow = ContentRecord & {
+  lock?: z.infer<typeof ContentLockSchema>;
   isLocked?: boolean;
 };
 export const ContentRowsSchema = z.array(ContentRowSchema);
