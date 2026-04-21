@@ -182,6 +182,7 @@ export default function ContentManagement({
         if (!searchQuery.trim()) return true;
         const targetFields = [
           row.title,
+          row.status,
           row.url,
           row.content_owner,
           row.for_position,
