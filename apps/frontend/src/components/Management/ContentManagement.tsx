@@ -516,7 +516,7 @@ export default function ContentManagement({
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 150,
+      width: 130,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -560,12 +560,12 @@ export default function ContentManagement({
     {
       field: "content_owner",
       headerName: "Author",
-      width: 150,
+      width: 140,
     },
     {
       field: "edited-by",
       headerName: "Editor",
-      width: 180,
+      width: 140,
       valueGetter: (_, row) => {
         const employee = row.editLock?.lockedByEmp;
         return employee ? `${employee.first_name} ${employee.last_name}` : "";
@@ -602,7 +602,7 @@ export default function ContentManagement({
     {
       field: "file_type",
       headerName: "File Type",
-      width: 120,
+      width: 110,
       align: "center",
       renderCell: (params) => {
         const ext = params.value ? mime.extension(params.value) : null;
@@ -618,7 +618,8 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 240,
+      width: 190,
+      align: "center",
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
