@@ -10,7 +10,9 @@ import Stack from "@mui/material/Stack";
 import { CircularProgress, Grid } from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
+import { getPositionLabel } from "../utils/positionDisplay.ts";
 import {
+  type Department,
   type EmployeeRecord,
   EmployeeRecordSchema,
 } from "../types/employee.ts";
@@ -24,6 +26,11 @@ function Profile() {
     day: "numeric",
     month: "long",
   });
+
+  const deptLabels: Record<Department, string> = {
+    OPERATION_TECHNOLOGY: "Operation Technology",
+    ACCOUNTING: "Accounting",
+  };
 
   const [toggle1, setToggle1] = React.useState(true);
   const [toggle2, setToggle2] = React.useState(true);
@@ -195,7 +202,7 @@ function Profile() {
                   mt: 0.5,
                 }}
               >
-                {profile.position}
+                {getPositionLabel(profile.position)}
               </Typography>
             </Stack>
           </Stack>
@@ -305,7 +312,9 @@ function Profile() {
                 >
                   User Role
                 </Typography>
-                <Typography fontWeight="bold">{profile.position}</Typography>
+                <Typography fontWeight="bold">
+                  {getPositionLabel(profile.position)}
+                </Typography>
               </Grid>
             </Grid>
           </Stack>
@@ -435,7 +444,7 @@ function Profile() {
                   fontSize: 20,
                 }}
               >
-                {profile.department}
+                {deptLabels[profile.department as Department]}
               </Typography>
 
               <Typography

@@ -465,6 +465,7 @@ export default function ContentManagement({
       width: 70,
       type: "number",
       sortable: false,
+      filterable: false,
       valueGetter: (_value, row) => (row.is_favorite ? 1 : 0),
       renderCell: (params) => (
         <IconButton
