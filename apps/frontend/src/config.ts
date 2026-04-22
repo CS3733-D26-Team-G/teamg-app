@@ -12,6 +12,7 @@ export const API_BASE_URL =
   apiBaseUrlMap[environment as keyof typeof apiBaseUrlMap];
 
 export const API_ENDPOINTS = {
+  ACTIVITY: `${API_BASE_URL}/activity`,
   LOGIN: `${API_BASE_URL}/login`,
   LOGOUT: `${API_BASE_URL}/logout`,
   SESSION: `${API_BASE_URL}/session`,

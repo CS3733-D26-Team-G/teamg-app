@@ -1,0 +1,41 @@
+{
+  "footer": {
+    "browser": "Browser",
+    "home": "Home",
+    "aboutUs": "About Us",
+    "guideTour": "Guide Tour",
+    "employeeAccess": "Employee Access",
+    "employeePortal": "Employee Portal",
+    "hrSelfService": "HR-Self Service",
+    "newsUpdates": "News & Updates",
+    "support": "Support",
+    "faq": "FAQ",
+    "itSupport": "IT Support",
+    "legalSecurity": "Legal & Security",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "cookiePolicy": "Cookie Policy",
+    "accessibility": "Accessibility",
+    "contactUs": "Contact Us",
+    "copyright": " © 2026 The Hanover Insurance Group, Team G Prototype Inc. All rights reserved."
+  },
+  "heroSection": {
+    "disclaimer": "This site is created for a course at Worcester Polytechnic Institute. It is not affiliated with or operated by the Hanover Insurance Group.This is a student project created solely for academic purposes.",
+    "login": "Log In",
+    "welcome": "Welcome to iBank, Hanover Insurance's \n content management application."
+  },
+
+  "login": {
+    "username": "Username",
+    "password": "Password",
+    "rememberMe": "Remember Me",
+    "forgotUsername": "Forgot Username?",
+    "forgotPassword": "Forgot Password?",
+    "invalidCredentials": "Invalid credentials",
+    "serverError": "Server error. Please try again.",
+    "networkError": "Network error. Check your connection."
+  }
+}
+
+
+

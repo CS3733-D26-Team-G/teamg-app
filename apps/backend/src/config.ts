@@ -10,11 +10,11 @@ export const allowedOriginsMap = {
   development: [
     "http://localhost:5147",
     "http://localhost:9999",
-    "http://localhost:10000",
+    "http://localhost:9999",
   ],
 };
 
-export const authExclude = ["/login", "/logout"];
+export const authExclude = ["/login"];
 export const STORAGE_BUCKET = "teamg-app";
 export const INTERNAL_ERROR_MESSAGE =
   "Internal server error. If you see this message, please report to a system administrator";
