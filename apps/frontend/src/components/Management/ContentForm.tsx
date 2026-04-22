@@ -27,6 +27,7 @@ interface ContentFormProps {
   initialData?: ContentRecord | null;
   onSave: (data: FormData) => void;
   onCancel: () => void;
+  onDelete?: () => void;
 }
 
 function coerceToDate(value: unknown): Date {
@@ -57,6 +58,7 @@ export default function ContentForm({
   initialData,
   onSave,
   onCancel,
+  onDelete,
 }: ContentFormProps) {
   const isEditing = !!initialData;
   const { session } = useAuth();
@@ -325,6 +327,17 @@ export default function ContentForm({
             >
               {isEditing ? "Update Changes" : "Create Content"}
             </Button>
+            {isEditing && onDelete && (
+              <Button
+                variant="contained"
+                fullWidth
+                color="error"
+                onClick={onDelete}
+                sx={{ mt: 1 }}
+              >
+                Delete
+              </Button>
+            )}
 
             <Button
               variant="outlined"
