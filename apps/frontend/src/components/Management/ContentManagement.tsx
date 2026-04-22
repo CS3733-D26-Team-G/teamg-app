@@ -629,12 +629,23 @@ export default function ContentManagement({
             >
               <VisibilityIcon />
             </IconButton>
-            <IconButton
-              color="primary"
-              onClick={() => void onDownload(params.row)}
+            <Tooltip
+              title={
+                !hasPermission ?
+                  "You don't have access to download this file"
+                : ""
+              }
             >
-              <DownloadIcon />
-            </IconButton>
+              <span>
+                <IconButton
+                  color="primary"
+                  onClick={() => void onDownload(params.row)}
+                  disabled={!hasPermission}
+                >
+                  <DownloadIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
             <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
               <span>
                 <Button
