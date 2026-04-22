@@ -288,6 +288,14 @@ router.post("/lock/:uuid", async (req, res) => {
         },
       });
     }
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "CHECK_OUT_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: uuid,
+      },
+    });
     return res.status(200).json({
       locked: true,
       lock: serializeLock(lock),
@@ -332,6 +340,16 @@ router.delete("/lock/:uuid", async (req, res) => {
     await prisma.contentEditLock.delete({
       where: { contentUuid: uuid },
     });
+
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "CHECK_IN_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: uuid,
+      },
+    });
+
     return res.status(200).json({
       locked: false,
       lock: null,
