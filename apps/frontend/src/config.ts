@@ -30,4 +30,5 @@ export const API_ENDPOINTS = {
   CONTENT_EDIT: (uuid: string) => `${API_BASE_URL}/content/edit/${uuid}`,
   CONTENT_DELETE: (uuid: string) => `${API_BASE_URL}/content/delete/${uuid}`,
   CONTENT_LOCK: (uuid: string) => `${API_BASE_URL}/content/lock/${uuid}`,
+  CONTENT_FILE: (uuid: string) => `${API_BASE_URL}/content/file/${uuid}`,
 };
