@@ -86,9 +86,9 @@ export default function Dashboard() {
   };
 
   return (
-    <Card className="flex flex-col h-auto min-h-[95vh] m-auto bg-gray-50">
+    <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
       {/* Header Section */}
-      <div className="flex justify-between items-center px-8 py-6 bg-white border-b border-gray-200">
+      <div className="flex justify-between items-center px-8 py-6 border-b border-gray-200">
         <Typography
           variant="h2"
           sx={{ fontWeight: "bold" }}
