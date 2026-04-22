@@ -18,6 +18,7 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
         size="small"
         sx={{
           width: "40%",
+          paddingLeft: "24px",
         }}
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
           setSearchQuery(e.target.value);

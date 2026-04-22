@@ -10,7 +10,6 @@ import { Avatar, Typography, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { type ActivityItem } from "./activityData";
 
-// Helper to make backend enums human-readable
 function actionDictator(action: string) {
   const map: Record<string, string> = {
     EDIT_CONTENT: "edited",
@@ -18,6 +17,8 @@ function actionDictator(action: string) {
     CREATE_CONTENT: "created",
     LOG_IN: "Logged In",
     LOG_OUT: "Logged Out",
+    checked_in_content: "checked in",
+    checked_out_content: "checked out",
   };
   return map[action] || action.toLowerCase();
 }
@@ -32,9 +33,11 @@ export default function ActivityTimelineItem({
   const navigate = useNavigate();
 
   const handleTitleClick = () => {
-    // Only route if it's a content action and we have a name to filter by
     if (
-      (action === "EDIT_CONTENT" || action === "CREATE_CONTENT") &&
+      (action === "EDIT_CONTENT" ||
+        action === "CREATE_CONTENT" ||
+        action === "check_in_content" ||
+        action === "check_out_content") &&
       resourceName
     ) {
       navigate(`/library?filter=${encodeURIComponent(resourceName)}`);

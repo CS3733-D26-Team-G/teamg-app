@@ -66,7 +66,7 @@ export default function ActivityComponent() {
   };
 
   return (
-    <Box sx={{ width: "90%", justifySelf: "center" }}>
+    <Box sx={{ width: "100%", justifySelf: "center" }}>
       <SearchBar setSearchQuery={setSearchQuery} />
 
       {loading ?

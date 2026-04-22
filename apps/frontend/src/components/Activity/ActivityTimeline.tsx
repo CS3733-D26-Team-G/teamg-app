@@ -16,7 +16,10 @@ export default function ActivityTimeline({ data }: ActivityTimelineProps) {
     <Box sx={{ height: "100%", overflowY: "auto" }}>
       <Timeline
         position="right"
-        sx={{ p: 0 }}
+        sx={{
+          p: 0,
+          marginLeft: "8px",
+        }}
       >
         {data.map((group, index) => (
           <Fragment key={`${group.date}-${index}`}>
@@ -25,6 +28,7 @@ export default function ActivityTimeline({ data }: ActivityTimelineProps) {
               <Typography
                 variant="h6"
                 sx={{ mx: 2, fontWeight: "bold", whiteSpace: "nowrap" }}
+                onClick={() => console.log(group.date)}
               >
                 {group.date}
               </Typography>
