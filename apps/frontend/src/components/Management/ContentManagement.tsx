@@ -560,6 +560,15 @@ export default function ContentManagement({
       width: 150,
     },
     {
+      field: "edited-by",
+      headerName: "Editor",
+      width: 180,
+      valueGetter: (_, row) => {
+        const employee = row.editLock?.lockedByEmp;
+        return employee ? `${employee.first_name} ${employee.last_name}` : "";
+      },
+    },
+    {
       field: "for_position",
       headerName: "Position",
       width: 160,
