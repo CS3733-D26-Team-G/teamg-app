@@ -11,43 +11,79 @@ import { API_ENDPOINTS } from "../config";
 
 export function useActivityData() {
   const [rawLogs, setRawLogs] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchActivity = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(API_ENDPOINTS.ACTIVITY, {
-        method: "GET",
-        credentials: "include",
-      });
+      const [logsRes, countsRes] = await Promise.all([
+        fetch(API_ENDPOINTS.ACTIVITY, { credentials: "include" }),
+        fetch(API_ENDPOINTS.CONTENT_COUNT, { credentials: "include" }),
+      ]);
 
-      if (!res.ok) {
-        throw new Error(`Failed to fetch: ${res.statusText}`);
+      // Check Logs
+      if (logsRes.headers.get("content-type")?.includes("application/json")) {
+        const logsData = await logsRes.json();
+        setRawLogs(logsData);
+      } else {
+        const text = await logsRes.text();
+        console.error("Logs endpoint returned non-JSON:", text.slice(0, 100));
       }
 
-      const data = await res.json();
-      setRawLogs(data);
+      // Check Analytics
+      if (countsRes.headers.get("content-type")?.includes("application/json")) {
+        const countsData = await countsRes.json();
+        setAnalytics(countsData);
+      } else {
+        const text = await countsRes.text();
+        console.error(
+          "Analytics endpoint returned non-JSON:",
+          text.slice(0, 100),
+        );
+      }
+
       setError(null);
     } catch (err: any) {
       setError(err.message);
-      console.error("Error fetching activity:", err);
+      console.error("Fetch failed:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchActivity();
+    fetchData();
   }, []);
 
-  return { rawLogs, loading, error, refetch: fetchActivity };
+  return { rawLogs, analytics, loading, error, refetch: fetchData };
 }
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
   const { session } = useAuth();
-  const { rawLogs } = useActivityData();
+  const { rawLogs, analytics } = useActivityData();
+
+  const roles = [
+    "Business Analyst",
+    "Underwriter",
+    "Actuarial Analyst",
+    "EXL Operations",
+    "Business Ops Team",
+  ];
+
+  const getAnalyticsKey = (role: string) => {
+    const mapping: Record<string, string> = {
+      "Business Analyst": "BUSINESS_ANALYST",
+      "Underwriter": "UNDERWRITER",
+      "Actuarial Analyst": "ACTUARIAL_ANALYST",
+      "EXL Operations": "EXL_OPERATIONS",
+      "Business Ops Team": "BUSINESS_OP_RATING", // Matches your console log!
+    };
+
+    return mapping[role] || role.replace(/\s+/g, "_").toUpperCase();
+  };
 
   return (
     <Card className="flex flex-col h-auto min-h-[95vh] m-auto bg-gray-50">
@@ -66,7 +102,7 @@ export default function Dashboard() {
 
       <CardContent className="flex flex-col gap-8 p-8">
         {/* Row Container: items-stretch forces children to equal height */}
-        <div className="flex flex-row gap-8 items-stretch pr-12">
+        <div className="flex flex-row gap-8 items-stretch">
           {/* Pie Chart: The "Height Driver" */}
           <Card
             className="flex-none w-fit outline-1 outline-gray-200"
@@ -88,7 +124,43 @@ export default function Dashboard() {
         </div>
 
         {/* Second Row for Bar Chart */}
-        <div className="w-full"></div>
+        <div className="w-full flex flex-row gap-6">
+          {roles.map((role) => {
+            const key = getAnalyticsKey(role);
+            const count = analytics[key] ?? 0;
+
+            return (
+              <Card
+                key={role}
+                className="flex-1 drop-shadow-md outline-1 outline-gray-200"
+                onClick={() => console.log(analytics)}
+              >
+                <CardContent className="p-4">
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
+                    {role}
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: "bold", fontSize: "2rem" }}
+                  >
+                    {count}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="primary.main"
+                    sx={{ fontWeight: "bold" }}
+                  >
+                    Total Items
+                  </Typography>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
