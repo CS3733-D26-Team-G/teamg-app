@@ -1,0 +1,39 @@
+{
+  "footer": {
+    "browser": "Navegador",
+    "home": "Inicio",
+    "aboutUs": "Acerca de nosotros",
+    "guideTour": "Visita guiada",
+    "employeeAccess": "Acceso a empleados",
+    "employeePortal": "Portal del empleado",
+    "hrSelfService": "Servicio al empleado",
+    "newsUpdates": "Noticias y actualizaciones",
+    "support": "Apoyo",
+    "faq": "Preguntas frecuentes",
+    "itSupport": "Soporte de TI",
+    "legalSecurity": "Legal y Seguridad",
+    "privacyPolicy": "Política de privacidad",
+    "termsOfUse": "Condiciones de uso",
+    "cookiePolicy": "Política de cookies",
+    "accessibility": "Accesibilidad",
+    "contactUs": "Contáctanos",
+    "copyright": "© 2026 The Hanover Insurance Group, Team G Prototype Inc. Todos los derechos reservados."
+  },
+
+  "heroSection":{
+    "disclaimer": "Este sitio web se creó para un curso en el Instituto Politécnico de Worcester. No está afiliado ni gestionado por el Grupo de Seguros Hanover. Este es un proyecto estudiantil creado exclusivamente con fines académicos.",
+    "login": "Iniciar sesión",
+    "welcome": "Bienvenido a iBank, la aplicación de gestión de contenidos de Hanover Insurance."
+  },
+
+  "login": {
+    "username": "Nombre de usuario",
+    "password": "Contraseña",
+    "rememberMe": "Recuérdame",
+    "forgotUsername": "¿Olvidó su usuario?",
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "invalidCredentials": "Credenciales incorrectas",
+    "serverError": "Error del servidor. Por favor, inténtelo de nuevo.",
+    "networkError": "Error de red. Comprueba tu conexión."
+  }
+}
