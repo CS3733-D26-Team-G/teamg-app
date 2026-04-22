@@ -408,6 +408,7 @@ export default function ContentManagement({
     } catch (error) {
       console.error("Download failed:", error);
     }
+  };
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElement(event.currentTarget);
   };
