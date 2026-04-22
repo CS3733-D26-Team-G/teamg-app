@@ -19,7 +19,6 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -255,7 +254,6 @@ export default function ContentManagement({
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
   };
-
   const confirmDelete = async () => {
     if (!pendingDelete) {
       return;
@@ -271,6 +269,11 @@ export default function ContentManagement({
 
       if (res.ok) {
         setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
+        setViewState((current) =>
+          current !== "new" && current?.uuid === rowToDelete.uuid ?
+            null
+          : current,
+        );
       }
     } catch (error) {
       console.error(error);
@@ -484,7 +487,6 @@ export default function ContentManagement({
 
   const getColumns = (
     onEdit: (row: ContentRow) => void,
-    onDelete: (row: ContentRow) => void,
     onPreview: (row: ContentRow) => void,
     onDownload: (row: ContentRow) => void,
   ): GridColDef<ContentRow>[] => [
@@ -660,14 +662,6 @@ export default function ContentManagement({
                 </Button>
               </span>
             </Tooltip>
-            <IconButton
-              onClick={() => onDelete(params.row)}
-              disabled={!hasPermission || isCheckedOut}
-            >
-              <DeleteIcon
-                color={hasPermission && !isCheckedOut ? "error" : "disabled"}
-              />
-            </IconButton>
           </>
         );
       },
@@ -686,6 +680,9 @@ export default function ContentManagement({
             }
             setViewState(null);
           }}
+          onDelete={
+            viewState !== "new" ? () => handleDelete(viewState) : undefined
+          }
         />
         {confirmationDialogs}
       </Box>
@@ -890,7 +887,6 @@ export default function ContentManagement({
         getRowId={(row) => row.uuid}
         columns={getColumns(
           handleEditStart,
-          handleDelete,
           (row) => {
             setSelectedDoc({ uri: row.url, fileName: row.title });
             setPreviewOpen(true);
