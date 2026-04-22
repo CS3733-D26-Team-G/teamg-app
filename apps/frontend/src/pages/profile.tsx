@@ -90,133 +90,343 @@ function Profile() {
   };
 
   return (
-    <div className={"Profile-Page"}>
-      <Box>
-        {/*Top Header Bar*/}
-        <Box
+    <Box
+      sx={{
+        minHeight: "100vh",
+        backgroundColor: "background.paper",
+        overflow: "auto",
+      }}
+    >
+      {/*Top Header Bar*/}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          width: "90%",
+          height: 80,
+          mx: "auto",
+          backgroundColor: "primary.main",
+          mt: 4,
+          borderRadius: 4,
+        }}
+      >
+        {/*'My Account text in header'*/}
+        <Typography
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            width: "90%",
-            height: 80,
-            mx: "auto",
-            backgroundColor: "primary.main",
-            mt: 4,
-            borderRadius: 4,
+            color: "primary.contrastText",
+            p: 2,
+            fontSize: 30,
           }}
         >
-          {/*'My Account text in header'*/}
-          <Typography
-            sx={{
-              color: "primary.contrastText",
-              p: 2,
-              fontSize: 30,
-            }}
-          >
-            My Account
-          </Typography>
+          My Account
+        </Typography>
 
-          {/*All components on the right side of the header bar*/}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              gap: 3,
-              p: 2,
-            }}
-          >
-            <Typography
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                color: "primary.contrastText",
-                fontSize: 16,
-              }}
-            >
-              {formattedDate}
-            </Typography>
-            <IconButton
-              sx={{
-                color: "primary.contrastText",
-              }}
-            >
-              <NotificationsIcon />
-            </IconButton>
-            <SearchBar setSearchQuery={setSearchQuery}></SearchBar>
-          </Box>
-        </Box>
-
-        {/*Profile Tag Bar*/}
+        {/*All components on the right side of the header bar*/}
         <Box
           sx={{
             display: "flex",
-            alignItems: "center",
-            width: "90%",
-            height: 200,
-            mx: "auto",
+            flexDirection: "row",
+            gap: 3,
+            p: 2,
+          }}
+        >
+          <Typography
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              color: "primary.contrastText",
+              fontSize: 16,
+            }}
+          >
+            {formattedDate}
+          </Typography>
+          <IconButton
+            sx={{
+              color: "primary.contrastText",
+            }}
+          >
+            <NotificationsIcon />
+          </IconButton>
+          <SearchBar setSearchQuery={setSearchQuery}></SearchBar>
+        </Box>
+      </Box>
+
+      {/*Profile Tag Bar*/}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          width: "90%",
+          height: 200,
+          mx: "auto",
+          mt: 2,
+          ...cardSx,
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={3}
+        >
+          <Box
+            sx={{
+              pl: 3,
+            }}
+          >
+            <Avatar
+              src={profile.avatar ?? undefined}
+              sx={{
+                width: 180,
+                height: 180,
+              }}
+            />
+          </Box>
+          <Stack>
+            <Typography
+              sx={{
+                fontSize: 48,
+                fontWeight: 500,
+                lineHeight: 1.1,
+                ml: -0.8,
+              }}
+            >
+              {profile.first_name} {profile.last_name}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: 16,
+                fontWeight: 500,
+              }}
+            >
+              {profile.corporate_email}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: 16,
+                fontWeight: 500,
+                mt: 0.5,
+              }}
+            >
+              {getPositionLabel(profile.position)}
+            </Typography>
+          </Stack>
+        </Stack>
+      </Box>
+
+      {/*Personal Info Card*/}
+      <Box
+        sx={{
+          display: "flex",
+          width: "90%",
+          height: 225,
+          mx: "auto",
+          mt: 2,
+          ...cardSx,
+        }}
+      >
+        <Stack sx={{ width: "100%" }}>
+          <Typography
+            sx={{
+              fontSize: 32,
+              pl: 1.6,
+              pt: 0.5,
+              pb: 0.3,
+            }}
+          >
+            Personal Information
+          </Typography>
+          <Grid
+            container
+            sx={{ mb: 2 }}
+          >
+            <Grid
+              size={4}
+              sx={{ textAlign: "center" }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                First Name
+              </Typography>
+              <Typography fontWeight="bold">{profile.first_name}</Typography>
+            </Grid>
+            <Grid
+              size={4}
+              sx={{ textAlign: "center" }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Last Name
+              </Typography>
+              <Typography fontWeight="bold">{profile.last_name}</Typography>
+            </Grid>
+            <Grid
+              size={4}
+              sx={{ textAlign: "center" }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Date of Birth
+              </Typography>
+              <Typography fontWeight="bold">
+                {profile.date_of_birth.toLocaleDateString()}
+              </Typography>
+            </Grid>
+          </Grid>
+          <Grid container>
+            <Grid
+              size={4}
+              sx={{ textAlign: "center" }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Phone
+              </Typography>
+              <Typography fontWeight="bold">{profile.phone_number}</Typography>
+            </Grid>
+            <Grid
+              size={4}
+              sx={{ textAlign: "center" }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Email
+              </Typography>
+              <Typography fontWeight="bold">
+                {profile.corporate_email}
+              </Typography>
+            </Grid>
+            <Grid
+              size={4}
+              sx={{ textAlign: "center" }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                User Role
+              </Typography>
+              <Typography fontWeight="bold">
+                {getPositionLabel(profile.position)}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Stack>
+      </Box>
+
+      <Stack direction={"row"}>
+        {/*Notifications Card*/}
+        <Box
+          sx={{
+            display: "flex",
+            width: "32%",
+            height: 215,
+            marginLeft: "4.8%",
             mt: 2,
             ...cardSx,
           }}
         >
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={3}
-          >
-            <Box
+          <Stack sx={{ width: "96%" }}>
+            <Typography
               sx={{
-                pl: 3,
+                fontSize: 32,
+                pl: 1.6,
+                pt: 0.3,
+                pb: 0.3,
               }}
             >
-              <Avatar
-                src={profile.avatar ?? undefined}
+              Notifications
+            </Typography>
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography
                 sx={{
-                  width: 180,
-                  height: 180,
+                  pl: 1,
+                  fontSize: 20,
                 }}
+              >
+                Document Expiration Alerts
+              </Typography>
+              <Switch
+                checked={toggle1}
+                onChange={handleToggle1}
+                slotProps={{ input: { "aria-label": "controlled" } }}
               />
             </Box>
-            <Stack>
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                pl: 1,
+                fontSize: 14,
+                mt: -1.3,
+              }}
+            >
+              Notify me when a document I own is expiring
+            </Typography>
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mt: 1.5,
+              }}
+            >
               <Typography
                 sx={{
-                  fontSize: 48,
-                  fontWeight: 500,
-                  lineHeight: 1.1,
-                  ml: -0.8,
+                  pl: 1,
+                  fontSize: 20,
                 }}
               >
-                {profile.first_name} {profile.last_name}
+                Document Change Alerts
               </Typography>
-              <Typography
-                sx={{
-                  fontSize: 16,
-                  fontWeight: 500,
-                }}
-              >
-                {profile.corporate_email}
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: 16,
-                  fontWeight: 500,
-                  mt: 0.5,
-                }}
-              >
-                {getPositionLabel(profile.position)}
-              </Typography>
-            </Stack>
+              <Switch
+                checked={toggle2}
+                onChange={handleToggle2}
+                slotProps={{ input: { "aria-label": "controlled" } }}
+              />
+            </Box>
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                pl: 1,
+                fontSize: 14,
+                mt: -1.3,
+              }}
+            >
+              Notify me when a document I follow is updated
+            </Typography>
           </Stack>
         </Box>
 
-        {/*Personal Info Card*/}
+        {/*'Department Info' Card*/}
         <Box
           sx={{
             display: "flex",
-            width: "90%",
-            height: 225,
-            mx: "auto",
+            width: "27.9%",
+            height: 215,
             mt: 2,
+            ml: 1.5,
             ...cardSx,
           }}
         >
@@ -225,311 +435,103 @@ function Profile() {
               sx={{
                 fontSize: 32,
                 pl: 1.6,
-                pt: 0.5,
-                pb: 0.3,
+                pt: 0.3,
+                pb: 0.4,
               }}
             >
-              Personal Information
+              Department
             </Typography>
-            <Grid
-              container
-              sx={{ mb: 2 }}
+
+            <Typography
+              sx={{
+                pl: 1,
+                fontSize: 20,
+              }}
             >
-              <Grid
-                size={4}
-                sx={{ textAlign: "center" }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  First Name
-                </Typography>
-                <Typography fontWeight="bold">{profile.first_name}</Typography>
-              </Grid>
-              <Grid
-                size={4}
-                sx={{ textAlign: "center" }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Last Name
-                </Typography>
-                <Typography fontWeight="bold">{profile.last_name}</Typography>
-              </Grid>
-              <Grid
-                size={4}
-                sx={{ textAlign: "center" }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Date of Birth
-                </Typography>
-                <Typography fontWeight="bold">
-                  {profile.date_of_birth.toLocaleDateString()}
-                </Typography>
-              </Grid>
-            </Grid>
-            <Grid container>
-              <Grid
-                size={4}
-                sx={{ textAlign: "center" }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Phone
-                </Typography>
-                <Typography fontWeight="bold">
-                  {profile.phone_number}
-                </Typography>
-              </Grid>
-              <Grid
-                size={4}
-                sx={{ textAlign: "center" }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Email
-                </Typography>
-                <Typography fontWeight="bold">
-                  {profile.corporate_email}
-                </Typography>
-              </Grid>
-              <Grid
-                size={4}
-                sx={{ textAlign: "center" }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  User Role
-                </Typography>
-                <Typography fontWeight="bold">
-                  {getPositionLabel(profile.position)}
-                </Typography>
-              </Grid>
-            </Grid>
+              {deptLabels[profile.department as Department]}
+            </Typography>
+
+            <Typography
+              variant="caption"
+              color="text.primary"
+              sx={{
+                pl: 1,
+                fontSize: 16,
+                mt: 1,
+              }}
+            >
+              Supervisor: {profile.supervisor}
+            </Typography>
+
+            <Typography
+              variant="caption"
+              color="text.primary"
+              sx={{
+                pl: 1,
+                fontSize: 16,
+                mt: 1,
+              }}
+            >
+              Member Since: {profile.start_date.toDateString()}
+            </Typography>
           </Stack>
         </Box>
 
-        <Stack direction={"row"}>
-          {/*Notifications Card*/}
-          <Box
-            sx={{
-              display: "flex",
-              width: "32%",
-              height: 215,
-              marginLeft: "4.8%",
-              mt: 2,
-              ...cardSx,
-            }}
-          >
-            <Stack sx={{ width: "96%" }}>
-              <Typography
-                sx={{
-                  fontSize: 32,
-                  pl: 1.6,
-                  pt: 0.3,
-                  pb: 0.3,
-                }}
-              >
-                Notifications
-              </Typography>
+        {/*'Security Card*/}
+        <Box
+          sx={{
+            display: "flex",
+            width: "27.9%",
+            height: 215,
+            mt: 2,
+            ml: 1.5,
+            ...cardSx,
+          }}
+        >
+          <Stack sx={{ width: "100%" }}>
+            <Typography
+              sx={{
+                fontSize: 32,
+                pl: 1.6,
+                pt: 0.3,
+                pb: 0.4,
+              }}
+            >
+              Security
+            </Typography>
 
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Typography
-                  sx={{
-                    pl: 1,
-                    fontSize: 20,
-                  }}
-                >
-                  Document Expiration Alerts
-                </Typography>
-                <Switch
-                  checked={toggle1}
-                  onChange={handleToggle1}
-                  slotProps={{ input: { "aria-label": "controlled" } }}
-                />
-              </Box>
+            <Typography
+              color="text.secondary"
+              sx={{
+                pl: 1,
+                fontSize: 20,
+              }}
+            >
+              Password: ••••••••••••
+            </Typography>
 
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  pl: 1,
-                  fontSize: 14,
-                  mt: -1.3,
-                }}
-              >
-                Notify me when a document I own is expiring
-              </Typography>
+            <Button
+              variant="contained"
+              sx={{ mt: 2, alignSelf: "center" }}
+            >
+              Change Password
+            </Button>
 
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mt: 1.5,
-                }}
-              >
-                <Typography
-                  sx={{
-                    pl: 1,
-                    fontSize: 20,
-                  }}
-                >
-                  Document Change Alerts
-                </Typography>
-                <Switch
-                  checked={toggle2}
-                  onChange={handleToggle2}
-                  slotProps={{ input: { "aria-label": "controlled" } }}
-                />
-              </Box>
-
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  pl: 1,
-                  fontSize: 14,
-                  mt: -1.3,
-                }}
-              >
-                Notify me when a document I follow is updated
-              </Typography>
-            </Stack>
-          </Box>
-
-          {/*'Department Info' Card*/}
-          <Box
-            sx={{
-              display: "flex",
-              width: "27.9%",
-              height: 215,
-              mt: 2,
-              ml: 1.5,
-              ...cardSx,
-            }}
-          >
-            <Stack sx={{ width: "100%" }}>
-              <Typography
-                sx={{
-                  fontSize: 32,
-                  pl: 1.6,
-                  pt: 0.3,
-                  pb: 0.4,
-                }}
-              >
-                Department
-              </Typography>
-
-              <Typography
-                sx={{
-                  pl: 1,
-                  fontSize: 20,
-                }}
-              >
-                {deptLabels[profile.department as Department]}
-              </Typography>
-
-              <Typography
-                variant="caption"
-                color="text.primary"
-                sx={{
-                  pl: 1,
-                  fontSize: 16,
-                  mt: 1,
-                }}
-              >
-                Supervisor: {profile.supervisor}
-              </Typography>
-
-              <Typography
-                variant="caption"
-                color="text.primary"
-                sx={{
-                  pl: 1,
-                  fontSize: 16,
-                  mt: 1,
-                }}
-              >
-                Member Since: {profile.start_date.toDateString()}
-              </Typography>
-            </Stack>
-          </Box>
-
-          {/*'Security Card*/}
-          <Box
-            sx={{
-              display: "flex",
-              width: "27.9%",
-              height: 215,
-              mt: 2,
-              ml: 1.5,
-              ...cardSx,
-            }}
-          >
-            <Stack sx={{ width: "100%" }}>
-              <Typography
-                sx={{
-                  fontSize: 32,
-                  pl: 1.6,
-                  pt: 0.3,
-                  pb: 0.4,
-                }}
-              >
-                Security
-              </Typography>
-
-              <Typography
-                color="text.secondary"
-                sx={{
-                  pl: 1,
-                  fontSize: 20,
-                }}
-              >
-                Password: ••••••••••••
-              </Typography>
-
-              <Button
-                variant="contained"
-                sx={{ mt: 2, alignSelf: "center" }}
-              >
-                Change Password
-              </Button>
-
-              <Typography
-                variant="caption"
-                color="text.primary"
-                sx={{
-                  pl: 1,
-                  fontSize: 14,
-                  mt: 5,
-                }}
-              >
-                Last Login: Today at 8:42 AM
-              </Typography>
-            </Stack>
-          </Box>
-        </Stack>
-      </Box>
-    </div>
+            <Typography
+              variant="caption"
+              color="text.primary"
+              sx={{
+                pl: 1,
+                fontSize: 14,
+                mt: 5,
+              }}
+            >
+              Last Login: Today at 8:42 AM
+            </Typography>
+          </Stack>
+        </Box>
+      </Stack>
+    </Box>
   );
 }
 

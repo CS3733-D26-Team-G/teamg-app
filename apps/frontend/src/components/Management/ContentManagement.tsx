@@ -47,6 +47,7 @@ import { param } from "framer-motion/m";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import mime from "mime-types";
+import DocumentEditorModal from "./DocumentEditorModal.tsx";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -70,40 +71,40 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
 {
   /* Highlights new content based on what is different from start of session */
 }
-const NEW_THRESHOLD_DAYS = 5;
+function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
+  const KEY = `new_content_ids_${userUuid}`;
+  const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
+  const SESSION_KEY = `session_id_${userUuid}`;
 
-function isNewContent(lastModified: Date | string | null | undefined): boolean {
-  if (!lastModified) return false;
-  const diff = Date.now() - new Date(lastModified).getTime();
-  return diff < NEW_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
-}
+  // Generate a session ID for this tab using sessionStorage
+  if (!sessionStorage.getItem(SESSION_KEY)) {
+    sessionStorage.setItem(SESSION_KEY, crypto.randomUUID());
+  }
+  const sessionId = sessionStorage.getItem(SESSION_KEY)!;
 
-function getSessionNewIds(rows: ContentRow[]): Set<string> {
-  const KEY = "new_content_ids";
-  const SESSION_START_KEY = "session_start_time";
+  const fullInitialKey = `${INITIAL_IDS_KEY}_${sessionId}`;
+  const fullNewKey = `${KEY}_${sessionId}`;
 
-  if (!sessionStorage.getItem(SESSION_START_KEY)) {
-    sessionStorage.setItem(SESSION_START_KEY, Date.now().toString());
-    sessionStorage.removeItem(KEY);
+  if (!localStorage.getItem(fullInitialKey)) {
+    const initialIds = rows.map((r) => r.uuid);
+    localStorage.setItem(fullInitialKey, JSON.stringify(initialIds));
+    return new Set();
   }
 
-  const sessionStart = parseInt(sessionStorage.getItem(SESSION_START_KEY)!);
-  const existing = sessionStorage.getItem(KEY);
-  const storedIds: string[] =
-    existing ? (JSON.parse(existing) as string[]) : [];
+  const initialIds = new Set(
+    JSON.parse(localStorage.getItem(fullInitialKey)!) as string[],
+  );
 
   const newIds = rows
-    .filter((row) => {
-      if (!row.last_modified_time) return false;
-      return new Date(row.last_modified_time).getTime() > sessionStart;
-    })
+    .filter((row) => !initialIds.has(row.uuid))
     .map((row) => row.uuid);
 
-  const mergedSet = new Set(storedIds);
-  newIds.forEach((id) => mergedSet.add(id));
-  const merged = Array.from(mergedSet);
+  const existing = localStorage.getItem(fullNewKey);
+  const storedIds: string[] =
+    existing ? (JSON.parse(existing) as string[]) : [];
+  const mergedSet = new Set([...storedIds, ...newIds]);
+  localStorage.setItem(fullNewKey, JSON.stringify(Array.from(mergedSet)));
 
-  sessionStorage.setItem(KEY, JSON.stringify(merged));
   return mergedSet;
 }
 
@@ -138,6 +139,8 @@ export default function ContentManagement({
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
     fileName: string;
+    uuid: string;
+    for_position: Position;
   } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
   const [pendingSave, setPendingSave] = useState<FormData | null>(null);
@@ -433,10 +436,10 @@ export default function ContentManagement({
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (rows.length > 0) {
-      setSessionNewIds(getSessionNewIds(rows));
+    if (rows.length > 0 && session?.employeeUuid) {
+      setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
     }
-  }, [rows]);
+  }, [rows, session?.employeeUuid]);
 
   const confirmationDialogs = (
     <>
@@ -543,20 +546,20 @@ export default function ContentManagement({
         );
       },
     },
-    // {
-    //   field: "url",
-    //   headerName: "URL",
-    //   flex: 1,
-    //   renderCell: (params) => (
-    //     <Link
-    //       href={params.value}
-    //       target="_blank"
-    //       rel="noopener noreferrer"
-    //     >
-    //       {params.value}
-    //     </Link>
-    //   ),
-    // },
+    {
+      field: "url",
+      headerName: "URL",
+      flex: 1,
+      renderCell: (params) => (
+        <Link
+          href={params.value}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {params.value}
+        </Link>
+      ),
+    },
     {
       field: "content_owner",
       headerName: "Author",
@@ -804,6 +807,15 @@ export default function ContentManagement({
                 <MenuItem onClick={() => togglePosition("BUSINESS_ANALYST")}>
                   Business Analyst
                 </MenuItem>
+                <MenuItem onClick={() => togglePosition("ACTUARIAL_ANALYST")}>
+                  Actuarial Analyst
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("EXL_OPERATIONS")}>
+                  EXL Operations
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("BUSINESS_OP_RATING")}>
+                  Business Ops Rating
+                </MenuItem>
                 <MenuItem onClick={() => togglePosition("ADMIN")}>
                   Admin
                 </MenuItem>
@@ -858,6 +870,18 @@ export default function ContentManagement({
                 >
                   .PPTX
                 </MenuItem>
+                <MenuItem onClick={() => toggleFileType("text/plain")}>
+                  .TXT
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("text/csv")}>
+                  .CSV
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("application/json")}>
+                  .JSON
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("video/mp4")}>
+                  .MP4
+                </MenuItem>
               </Menu>
 
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
@@ -889,7 +913,18 @@ export default function ContentManagement({
         columns={getColumns(
           handleEditStart,
           (row) => {
-            setSelectedDoc({ uri: row.url, fileName: row.title });
+            const isExternalUrl =
+              !row.supabasePath && !row.url.includes("supabase.co/storage");
+            if (isExternalUrl) {
+              window.open(row.url, "_blank");
+              return;
+            }
+            setSelectedDoc({
+              uri: API_ENDPOINTS.CONTENT_FILE(row.uuid),
+              fileName: row.title,
+              uuid: row.uuid,
+              for_position: row.for_position,
+            });
             setPreviewOpen(true);
           },
           handleDownload,
@@ -938,49 +973,28 @@ export default function ContentManagement({
         pageSizeOptions={[5, 10]}
       />
 
-      <Dialog
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <Box
-          sx={{
-            p: 1,
-            height: "80vh",
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
+      {previewOpen && (
+        <DocumentEditorModal
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          uri={selectedDoc?.uri ?? ""}
+          fileName={selectedDoc?.fileName ?? ""}
+          readOnly={
+            !isSystemAdmin && userPosition !== selectedDoc?.for_position
+          }
+          onSave={async (blob) => {
+            if (!selectedDoc) return;
+            const formData = new FormData();
+            formData.append("file", blob, selectedDoc.fileName);
+            await fetch(API_ENDPOINTS.CONTENT_EDIT(selectedDoc.uuid), {
+              method: "PUT",
+              credentials: "include",
+              body: formData,
+            });
+            await fetchRows();
           }}
-        >
-          <Button
-            onClick={() => setPreviewOpen(false)}
-            sx={{ alignSelf: "flex-end" }}
-          >
-            Close
-          </Button>
-
-          {selectedDoc && (
-            <Box
-              sx={{
-                flex: 1,
-                minHeight: 0,
-                display: "flex",
-              }}
-            >
-              <DocViewer
-                className="content-preview-viewer"
-                documents={[selectedDoc]}
-                pluginRenderers={DocViewerRenderers}
-                config={{
-                  header: { disableHeader: false, disableFileName: false },
-                }}
-                style={{ width: "100%", height: "100%" }}
-              />
-            </Box>
-          )}
-        </Box>
-      </Dialog>
+        />
+      )}
       {confirmationDialogs}
     </Box>
   );

@@ -7,10 +7,9 @@ generator client {
 generator zod {
   provider              = "prisma-zod-generator"
   output                = "../../zod/generated"
-  useMultipleFiles      = false
-  // mode                  = minimal
-  optionalFieldBehavior = optional
-  dateTimeStrategy      = coerce
+  dateTimeStrategy      = "coerce"
+  optionalFieldBehavior = "optional"
+  useMultipleFiles      = "false"
 }
 
 datasource db {
@@ -19,21 +18,21 @@ datasource db {
 
 model Employee {
   uuid             String            @id @default(uuid()) @db.Uuid
-  account          Account?
-  avatar           String?
   first_name       String
   last_name        String
   date_of_birth    DateTime          @db.Date
-  position         Position
   department       Department
   start_date       DateTime          @db.Date
   supervisor       String
   phone_number     String
   personal_email   String
   corporate_email  String
+  position         Position
+  avatar           String?
+  account          Account?
+  activities       Activity[]
   contentLocks     ContentEditLock[]
   favoriteContents FavoriteContent[]
-  activities       Activity[]
 }
 
 model Content {
@@ -41,11 +40,11 @@ model Content {
   title              String
   url                String
   content_owner      String
-  for_position       Position
   last_modified_time DateTime          @db.Timestamp(6)
   expiration_time    DateTime          @db.Timestamp(6)
   content_type       ContentType
   status             ContentStatus
+  for_position       Position
   supabasePath       String?
   file_type          String?
   editLock           ContentEditLock?
@@ -56,9 +55,8 @@ model FavoriteContent {
   employeeUuid String   @db.Uuid
   contentUuid  String   @db.Uuid
   createdAt    DateTime @default(now())
-
-  employee Employee @relation(fields: [employeeUuid], references: [uuid], onDelete: Cascade)
-  content  Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
+  content      Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
+  employee     Employee @relation(fields: [employeeUuid], references: [uuid], onDelete: Cascade)
 
   @@id([employeeUuid, contentUuid])
   @@index([contentUuid])
@@ -68,35 +66,33 @@ model ContentEditLock {
   contentUuid     String   @id @db.Uuid
   lockedByEmpUuid String   @db.Uuid
   lockedAt        DateTime @default(now()) @db.Timestamp(6)
-
-  content     Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
-  lockedByEmp Employee @relation(fields: [lockedByEmpUuid], references: [uuid], onDelete: Cascade)
+  content         Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
+  lockedByEmp     Employee @relation(fields: [lockedByEmpUuid], references: [uuid], onDelete: Cascade)
 }
 
 model Account {
-  employee     Employee         @relation(fields: [employeeUuid], references: [uuid])
   employeeUuid String           @unique @db.Uuid
   username     String           @id @unique
   password     String
+  employee     Employee         @relation(fields: [employeeUuid], references: [uuid])
   settings     AccountSettings?
 }
 
 model AccountSettings {
   accountUsername String  @id
   dark_mode       Boolean @default(false)
-
-  account Account @relation(fields: [accountUsername], references: [username], onDelete: Cascade)
+  account         Account @relation(fields: [accountUsername], references: [username], onDelete: Cascade)
 }
 
 model Activity {
   uuid         String        @id @default(uuid()) @db.Uuid
   employeeUuid String        @db.Uuid
-  employee     Employee      @relation(fields: [employeeUuid], references: [uuid])
   action       ActionType
   resource     ResourceType?
   resourceUuid String?       @db.Uuid
   resourceName String?
   timestamp    DateTime      @default(now()) @db.Timestamp(6)
+  employee     Employee      @relation(fields: [employeeUuid], references: [uuid])
 }
 
 enum Department {
