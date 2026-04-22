@@ -1,6 +1,5 @@
 import express from "express";
-import { prisma, Prisma } from "@repo/db";
-import type { Position } from "@repo/db";
+import { Position, prisma, Prisma } from "@repo/db";
 import multer from "multer";
 import { supabase } from "../lib/supabase.ts";
 import { Schemas } from "@repo/zod";
@@ -739,6 +738,34 @@ router.post("/favorite/:uuid", async (req, res) => {
     logger.error(
       `Failed to update content ${uuid} favorite status for employee ${auth.employeeUuid}:\n${e}`,
     );
+    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  }
+});
+
+router.get("/count", async (req, res) => {
+  try {
+    const positions = Object.values(Position);
+
+    const groupedCounts = await prisma.content.groupBy({
+      by: ["for_position"],
+      _count: {
+        _all: true,
+      },
+    });
+
+    const stats = positions.reduce<Record<Position, number>>(
+      (acc, position) => {
+        acc[position] =
+          groupedCounts.find((group) => group.for_position === position)?._count
+            ._all ?? 0;
+        return acc;
+      },
+      {} as Record<Position, number>,
+    );
+
+    return res.status(200).json(stats);
+  } catch (e) {
+    logger.error(`Failed to retrieve content stats:\n${e}`);
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
