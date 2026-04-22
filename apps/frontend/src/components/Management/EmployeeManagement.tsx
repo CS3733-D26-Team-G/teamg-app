@@ -163,15 +163,6 @@ export default function EmployeeManagement() {
     onEdit: (row: EmployeeRecord) => void,
     onDelete: (row: EmployeeRecord) => void,
   ): GridColDef<EmployeeRecord>[] => {
-    const colorMap: Record<Position, "error" | "info" | "success"> = {
-      ADMIN: "error",
-      UNDERWRITER: "info",
-      BUSINESS_ANALYST: "success",
-      ACTUARIAL_ANALYST: "info",
-      EXL_OPERATIONS: "success",
-      BUSINESS_OP_RATING: "success",
-    };
-
     const deptLabels: Record<Department, string> = {
       OPERATION_TECHNOLOGY: "Ops & Technology",
       ACCOUNTING: "Accounting",
