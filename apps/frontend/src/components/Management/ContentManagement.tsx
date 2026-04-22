@@ -170,21 +170,47 @@ export default function ContentManagement({
       : null;
   }
 
+  const [positionFilters, setPositionFilters] = useState<string[]>([]);
+  const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        const matchesSearch =
-          !searchQuery.trim() ||
-          [row.title, row.url, row.content_owner, row.for_position].some(
-            (field) => field?.toLowerCase().includes(searchQuery.toLowerCase()),
+        // Search Bar Filter Logic
+        if (searchQuery.trim()) {
+          const targetFields = [
+            row.title,
+            row.status,
+            row.url,
+            row.content_owner,
+            row.for_position,
+            row.file_type,
+          ];
+          const searchMatch = targetFields.some((field) =>
+            field?.toLowerCase().includes(searchQuery.toLowerCase()),
           );
+          if (!searchMatch) return false;
+        }
 
-        const ext = getFileExtension(row.url) ?? "N/A";
-        const matchesType = typeFilter.length === 0 || typeFilter.includes(ext);
+        // Position Filter
+        if (
+          positionFilters.length > 0 &&
+          !positionFilters.includes(row.for_position)
+        ) {
+          return false;
+        }
 
-        return matchesSearch && matchesType;
+        // File Type Filter
+        if (
+          fileTypeFilters.length > 0 &&
+          !fileTypeFilters.includes(row.file_type ?? "")
+        ) {
+          return false;
+        }
+
+        return true;
       }),
-    [rows, searchQuery, typeFilter],
+    [rows, searchQuery, positionFilters, fileTypeFilters],
   );
 
   const handleDelete = (row: ContentRow) => {
