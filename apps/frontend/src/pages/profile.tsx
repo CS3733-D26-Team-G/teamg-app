@@ -170,6 +170,7 @@ function Profile() {
               }}
             >
               <Avatar
+                src={profile.avatar ?? undefined}
                 sx={{
                   width: 180,
                   height: 180,
