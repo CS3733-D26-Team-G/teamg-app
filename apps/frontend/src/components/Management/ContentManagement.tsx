@@ -160,7 +160,8 @@ export default function ContentManagement({
     void fetchRows();
   }, [fetchRows]);
 
-  const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [positionFilters, setPositionFilters] = useState<string[]>([]);
+  const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
 
   function getFileExtension(url: string): string | null {
     const properURL = url?.split("?")[0] ?? "";
@@ -170,13 +171,9 @@ export default function ContentManagement({
       : null;
   }
 
-  const [positionFilters, setPositionFilters] = useState<string[]>([]);
-  const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
-
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        // Search Bar Filter Logic
         if (searchQuery.trim()) {
           const targetFields = [
             row.title,
@@ -186,13 +183,14 @@ export default function ContentManagement({
             row.for_position,
             row.file_type,
           ];
+
           const searchMatch = targetFields.some((field) =>
             field?.toLowerCase().includes(searchQuery.toLowerCase()),
           );
+
           if (!searchMatch) return false;
         }
 
-        // Position Filter
         if (
           positionFilters.length > 0 &&
           !positionFilters.includes(row.for_position)
@@ -200,10 +198,12 @@ export default function ContentManagement({
           return false;
         }
 
-        // File Type Filter
+        const resolvedFileType =
+          row.file_type?.toUpperCase() ?? getFileExtension(row.url) ?? "";
+
         if (
           fileTypeFilters.length > 0 &&
-          !fileTypeFilters.includes(row.file_type ?? "")
+          !fileTypeFilters.includes(resolvedFileType)
         ) {
           return false;
         }
