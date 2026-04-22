@@ -546,20 +546,20 @@ export default function ContentManagement({
         );
       },
     },
-    // {
-    //   field: "url",
-    //   headerName: "URL",
-    //   flex: 1,
-    //   renderCell: (params) => (
-    //     <Link
-    //       href={params.value}
-    //       target="_blank"
-    //       rel="noopener noreferrer"
-    //     >
-    //       {params.value}
-    //     </Link>
-    //   ),
-    // },
+    {
+      field: "url",
+      headerName: "URL",
+      flex: 1,
+      renderCell: (params) => (
+        <Link
+          href={params.value}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {params.value}
+        </Link>
+      ),
+    },
     {
       field: "content_owner",
       headerName: "Author",
@@ -807,6 +807,15 @@ export default function ContentManagement({
                 <MenuItem onClick={() => togglePosition("BUSINESS_ANALYST")}>
                   Business Analyst
                 </MenuItem>
+                <MenuItem onClick={() => togglePosition("ACTUARIAL_ANALYST")}>
+                  Actuarial Analyst
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("EXL_OPERATIONS")}>
+                  EXL Operations
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("BUSINESS_OP_RATING")}>
+                  Business Ops Rating
+                </MenuItem>
                 <MenuItem onClick={() => togglePosition("ADMIN")}>
                   Admin
                 </MenuItem>
@@ -860,6 +869,18 @@ export default function ContentManagement({
                   }
                 >
                   .PPTX
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("text/plain")}>
+                  .TXT
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("text/csv")}>
+                  .CSV
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("application/json")}>
+                  .JSON
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("video/mp4")}>
+                  .MP4
                 </MenuItem>
               </Menu>
 
@@ -952,24 +973,28 @@ export default function ContentManagement({
         pageSizeOptions={[5, 10]}
       />
 
-      <DocumentEditorModal
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        uri={selectedDoc?.uri ?? ""}
-        fileName={selectedDoc?.fileName ?? ""}
-        readOnly={!isSystemAdmin && userPosition !== selectedDoc?.for_position}
-        onSave={async (blob) => {
-          if (!selectedDoc) return;
-          const formData = new FormData();
-          formData.append("file", blob, selectedDoc.fileName);
-          await fetch(API_ENDPOINTS.CONTENT_EDIT(selectedDoc.uuid), {
-            method: "PUT",
-            credentials: "include",
-            body: formData,
-          });
-          await fetchRows();
-        }}
-      />
+      {previewOpen && (
+        <DocumentEditorModal
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          uri={selectedDoc?.uri ?? ""}
+          fileName={selectedDoc?.fileName ?? ""}
+          readOnly={
+            !isSystemAdmin && userPosition !== selectedDoc?.for_position
+          }
+          onSave={async (blob) => {
+            if (!selectedDoc) return;
+            const formData = new FormData();
+            formData.append("file", blob, selectedDoc.fileName);
+            await fetch(API_ENDPOINTS.CONTENT_EDIT(selectedDoc.uuid), {
+              method: "PUT",
+              credentials: "include",
+              body: formData,
+            });
+            await fetchRows();
+          }}
+        />
+      )}
       {confirmationDialogs}
     </Box>
   );
