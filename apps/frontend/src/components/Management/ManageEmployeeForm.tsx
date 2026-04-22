@@ -22,6 +22,7 @@ import {
   type Position,
 } from "../../types/employee";
 import Button from "@mui/material/Button";
+import { getPositionLabel } from "../../utils/positionDisplay";
 
 interface ManageEmployeeFormProps {
   initialData: EmployeeRecord | null;
@@ -80,12 +81,6 @@ export default function ManageEmployeeForm({
     () => Schemas.DepartmentSchema.options as Department[],
     [],
   );
-
-  const positionLabel: Record<Position, string> = {
-    ADMIN: "Admin",
-    UNDERWRITER: "Underwriter",
-    BUSINESS_ANALYST: "Business Analyst",
-  };
 
   const departmentLabel: Record<Department, string> = {
     OPERATION_TECHNOLOGY: "Operations & Technology",
@@ -199,7 +194,7 @@ export default function ManageEmployeeForm({
                     key={p}
                     value={p}
                   >
-                    {positionLabel[p]}
+                    {getPositionLabel(p)}
                   </MenuItem>
                 ))}
               </Select>

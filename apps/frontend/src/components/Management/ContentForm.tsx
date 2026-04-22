@@ -19,6 +19,7 @@ import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
 import "./ContentForm.css";
 import { useAuth } from "../../auth/AuthContext.tsx";
+import { getPositionLabel } from "../../utils/positionDisplay";
 
 import type { ContentFormData, ContentRecord } from "../../types/content";
 
@@ -251,7 +252,7 @@ export default function ContentForm({
                     key={position}
                     value={position}
                   >
-                    {position}
+                    {getPositionLabel(position)}
                   </MenuItem>
                 ))}
               </Select>
