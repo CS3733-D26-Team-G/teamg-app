@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
     "@repo/db": "workspace:*",
     "@repo/zod": "workspace:*",
     "@supabase/supabase-js": "^2.103.0",

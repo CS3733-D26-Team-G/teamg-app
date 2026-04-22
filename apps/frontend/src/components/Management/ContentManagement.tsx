@@ -19,9 +19,10 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import DownloadIcon from "@mui/icons-material/Download";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
@@ -37,7 +38,13 @@ import {
   ContentRowsSchema,
   type ContentRow,
 } from "../../types/content";
+import { useSearchParams } from "react-router-dom";
+import {
+  getPositionChipColor,
+  getPositionLabel,
+} from "../../utils/positionDisplay";
 import { param } from "framer-motion/m";
+<<<<<<< content
 
 const positionLabels: Record<Position, string> = {
   UNDERWRITER: "Underwriter",
@@ -47,6 +54,11 @@ const positionLabels: Record<Position, string> = {
   EXL_OPERATIONS: "EXL Operations",
   BUSINESS_OP_RATING: "Business Ops Rating Team",
 };
+=======
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import mime from "mime-types";
+>>>>>>> main
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -54,6 +66,7 @@ const statusLabels: Record<ContentStatus, string> = {
   UNAVAILABLE: "Unavailable",
 };
 
+<<<<<<< content
 const colorMap: Record<Position, "error" | "info" | "success"> = {
   ADMIN: "error",
   UNDERWRITER: "info",
@@ -63,6 +76,8 @@ const colorMap: Record<Position, "error" | "info" | "success"> = {
   BUSINESS_OP_RATING: "error",
 };
 
+=======
+>>>>>>> main
 interface ContentManagementProps {
   viewState: ContentRow | "new" | null;
   setViewState: React.Dispatch<React.SetStateAction<ContentRow | "new" | null>>;
@@ -122,6 +137,18 @@ export default function ContentManagement({
 }: ContentManagementProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const [positionFilters, setPositionFilters] = useState<string[]>([]);
+  const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+
+  const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
+  const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
+    null,
+  );
+  const [fileTypeAnchor, setFileTypeAnchor] = useState<null | HTMLElement>(
+    null,
+  );
+
+  const [searchParams, setSearchParams] = useSearchParams(); // Add this
 
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -141,6 +168,13 @@ export default function ContentManagement({
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
+
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    if (filterParam) {
+      setSearchQuery(filterParam);
+    }
+  }, [searchParams]);
 
   const fetchRows = useCallback(async () => {
     try {
@@ -176,19 +210,72 @@ export default function ContentManagement({
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        if (!searchQuery.trim()) return true;
-        const targetFields = [
-          row.title,
-          row.url,
-          row.content_owner,
-          row.for_position,
-        ];
-        return targetFields.some((field) =>
-          field?.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+        // Search Bar Filter Logic
+        if (searchQuery.trim()) {
+          const targetFields = [
+            row.title,
+            row.status,
+            row.url,
+            row.content_owner,
+            row.for_position,
+            row.file_type,
+          ];
+          const searchMatch = targetFields.some((field) =>
+            field?.toLowerCase().includes(searchQuery.toLowerCase()),
+          );
+
+          if (!searchMatch) return false;
+        }
+
+        //Filter Button Logic
+
+        //Position Filter
+        if (
+          positionFilters.length > 0 &&
+          !positionFilters.includes(row.for_position)
+        ) {
+          return false;
+        }
+
+        //File Type Filter
+        if (
+          fileTypeFilters.length > 0 &&
+          !fileTypeFilters.includes(row.file_type ?? "")
+        ) {
+          return false;
+        }
+
+        return true;
       }),
-    [rows, searchQuery],
+    [rows, searchQuery, positionFilters, fileTypeFilters],
   );
+
+  const togglePosition = (position: string) => {
+    //update the position filters array
+    setPositionFilters((currentPositionFilters) => {
+      //check if the current array already has the toggled position
+      if (currentPositionFilters.includes(position)) {
+        //clear selected filter
+        return currentPositionFilters.filter((pos) => pos !== position);
+      } else {
+        //add selected position filter
+        return currentPositionFilters.concat(position);
+      }
+    });
+  };
+
+  const toggleFileType = (fileType: string) => {
+    //update the file type filters array
+    setFileTypeFilters((currentFileTypeFilters) => {
+      //check if the current array already has the toggled file type
+      if (currentFileTypeFilters.includes(fileType)) {
+        //clear selected filter
+        return currentFileTypeFilters.filter((type) => type !== fileType);
+      } else {
+        return currentFileTypeFilters.concat(fileType);
+      }
+    });
+  };
 
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
@@ -208,6 +295,11 @@ export default function ContentManagement({
 
       if (res.ok) {
         setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
+        setViewState((current) =>
+          current !== "new" && current?.uuid === rowToDelete.uuid ?
+            null
+          : current,
+        );
       }
     } catch (error) {
       console.error(error);
@@ -340,6 +432,30 @@ export default function ContentManagement({
     }
   };
 
+  const handleDownload = async (row: ContentRow) => {
+    try {
+      const response = await fetch(row.url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = row.title;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElement(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorElement(null);
+  };
+
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -397,8 +513,8 @@ export default function ContentManagement({
 
   const getColumns = (
     onEdit: (row: ContentRow) => void,
-    onDelete: (row: ContentRow) => void,
     onPreview: (row: ContentRow) => void,
+    onDownload: (row: ContentRow) => void,
   ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
@@ -406,6 +522,7 @@ export default function ContentManagement({
       width: 70,
       type: "number",
       sortable: false,
+      filterable: false,
       valueGetter: (_value, row) => (row.is_favorite ? 1 : 0),
       renderCell: (params) => (
         <IconButton
@@ -472,14 +589,23 @@ export default function ContentManagement({
       width: 150,
     },
     {
+      field: "edited-by",
+      headerName: "Editor",
+      width: 180,
+      valueGetter: (_, row) => {
+        const employee = row.editLock?.lockedByEmp;
+        return employee ? `${employee.first_name} ${employee.last_name}` : "";
+      },
+    },
+    {
       field: "for_position",
       headerName: "Position",
       width: 160,
       align: "center",
       renderCell: (params) => (
         <Chip
-          label={positionLabels[params.value as Position]}
-          color={colorMap[params.value as Position] ?? "default"}
+          label={getPositionLabel(params.value as Position)}
+          color={getPositionChipColor(params.value as Position)}
           size="small"
           variant="outlined"
         />
@@ -500,20 +626,15 @@ export default function ContentManagement({
       ),
     },
     {
-      field: "url",
+      field: "file_type",
       headerName: "File Type",
       width: 120,
       align: "center",
       renderCell: (params) => {
-        const properURL = params.value?.split("?")[0] ?? "";
-        const segment = properURL.split(".").pop() ?? "";
-        const extension =
-          segment.length <= 5 && !segment.includes("/") ?
-            segment.toUpperCase()
-          : null;
+        const ext = params.value ? mime.extension(params.value) : null;
         return (
           <Chip
-            label={extension ? `.${extension}` : "N/A"}
+            label={ext ? `.${ext.toUpperCase()}` : "N/A"}
             size="small"
             variant="outlined"
           />
@@ -523,7 +644,7 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 200,
+      width: 240,
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
@@ -537,6 +658,23 @@ export default function ContentManagement({
             >
               <VisibilityIcon />
             </IconButton>
+            <Tooltip
+              title={
+                !hasPermission ?
+                  "You don't have access to download this file"
+                : ""
+              }
+            >
+              <span>
+                <IconButton
+                  color="primary"
+                  onClick={() => void onDownload(params.row)}
+                  disabled={!hasPermission}
+                >
+                  <DownloadIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
             <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
               <span>
                 <Button
@@ -550,14 +688,6 @@ export default function ContentManagement({
                 </Button>
               </span>
             </Tooltip>
-            <IconButton
-              onClick={() => onDelete(params.row)}
-              disabled={!hasPermission || isCheckedOut}
-            >
-              <DeleteIcon
-                color={hasPermission && !isCheckedOut ? "error" : "disabled"}
-              />
-            </IconButton>
           </>
         );
       },
@@ -576,6 +706,9 @@ export default function ContentManagement({
             }
             setViewState(null);
           }}
+          onDelete={
+            viewState !== "new" ? () => handleDelete(viewState) : undefined
+          }
         />
         {confirmationDialogs}
       </Box>
@@ -607,6 +740,10 @@ export default function ContentManagement({
             <Box sx={{ display: "flex", gap: 4 }}>
               <Box>
                 <Button
+                  onClick={handleFilterClick}
+                  aria-controls={anchorElement ? "filter-menu" : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={anchorElement ? "true" : undefined}
                   variant="outlined"
                   startIcon={<FilterAltIcon />}
                   sx={{ border: "2px solid" }}
@@ -614,6 +751,140 @@ export default function ContentManagement({
                   Filter
                 </Button>
               </Box>
+
+              {/*Filter Menu Pop-Up*/}
+              <Menu
+                id="filter-menu"
+                anchorEl={anchorElement}
+                open={Boolean(anchorElement)}
+                slotProps={{
+                  list: { "aria-labelledby": "filter-menu" },
+                }}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+              >
+                {/*Position Item*/}
+                <MenuItem
+                  onMouseEnter={(event) => {
+                    setPositionAnchor(event.currentTarget);
+                    setFileTypeAnchor(null);
+                  }}
+                  onMouseLeave={(event) => {
+                    if (
+                      !event.relatedTarget ||
+                      !(event.relatedTarget as HTMLElement).closest?.(
+                        "#position-menu",
+                      )
+                    ) {
+                      setPositionAnchor(null);
+                    }
+                  }}
+                >
+                  Position
+                  <ArrowRightIcon />
+                </MenuItem>
+
+                {/*File Type Item*/}
+                <MenuItem
+                  onMouseEnter={(event) => {
+                    setFileTypeAnchor(event.currentTarget);
+                    setPositionAnchor(null);
+                  }}
+                  onMouseLeave={(event) => {
+                    if (
+                      !event.relatedTarget ||
+                      !(event.relatedTarget as HTMLElement).closest?.(
+                        "#file-type-menu",
+                      )
+                    ) {
+                      setFileTypeAnchor(null);
+                    }
+                  }}
+                >
+                  File Type
+                  <ArrowRightIcon />
+                </MenuItem>
+              </Menu>
+
+              {/*Position Submenu Pop-Up*/}
+              <Menu
+                id="position-menu"
+                anchorEl={positionAnchor}
+                open={Boolean(positionAnchor)}
+                onClose={() => setPositionAnchor(null)}
+                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                sx={{ mt: -3, ml: 2 }}
+                slotProps={{
+                  list: {
+                    "aria-labelledby": "position-menu",
+                    "onMouseLeave": () => setPositionAnchor(null),
+                  },
+                }}
+              >
+                <MenuItem onClick={() => togglePosition("UNDERWRITER")}>
+                  Underwriter
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("BUSINESS_ANALYST")}>
+                  Business Analyst
+                </MenuItem>
+                <MenuItem onClick={() => togglePosition("ADMIN")}>
+                  Admin
+                </MenuItem>
+              </Menu>
+
+              {/*File Type Submenu*/}
+              <Menu
+                id="file-type-menu"
+                anchorEl={fileTypeAnchor}
+                open={Boolean(fileTypeAnchor)}
+                onClose={() => setFileTypeAnchor(null)}
+                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                sx={{ mt: -3, ml: 2 }}
+                slotProps={{
+                  list: {
+                    "aria-labelledby": "position-menu",
+                    "onMouseLeave": () => setFileTypeAnchor(null),
+                  },
+                }}
+              >
+                <MenuItem onClick={() => toggleFileType("application/pdf")}>
+                  .PDF
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    toggleFileType(
+                      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                  }
+                >
+                  .DOCX
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    toggleFileType(
+                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                  }
+                >
+                  XLSX
+                </MenuItem>
+                <MenuItem onClick={() => toggleFileType("image/png")}>
+                  .PNG
+                </MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    toggleFileType(
+                      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    )
+                  }
+                >
+                  .PPTX
+                </MenuItem>
+              </Menu>
+
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
@@ -640,10 +911,14 @@ export default function ContentManagement({
       <DataGrid
         rows={filteredRows}
         getRowId={(row) => row.uuid}
-        columns={getColumns(handleEditStart, handleDelete, (row) => {
-          setSelectedDoc({ uri: row.url, fileName: row.title });
-          setPreviewOpen(true);
-        })}
+        columns={getColumns(
+          handleEditStart,
+          (row) => {
+            setSelectedDoc({ uri: row.url, fileName: row.title });
+            setPreviewOpen(true);
+          },
+          handleDownload,
+        )}
         getRowClassName={(params) => {
           const hasPermission =
             isSystemAdmin || userPosition === params.row.for_position;

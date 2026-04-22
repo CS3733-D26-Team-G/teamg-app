@@ -22,6 +22,7 @@ import {
   type Position,
 } from "../../types/employee";
 import Button from "@mui/material/Button";
+import { getPositionLabel } from "../../utils/positionDisplay";
 
 interface ManageEmployeeFormProps {
   initialData: EmployeeRecord | null;
@@ -202,7 +203,7 @@ export default function ManageEmployeeForm({
                     key={p}
                     value={p}
                   >
-                    {positionLabel[p]}
+                    {getPositionLabel(p)}
                   </MenuItem>
                 ))}
               </Select>

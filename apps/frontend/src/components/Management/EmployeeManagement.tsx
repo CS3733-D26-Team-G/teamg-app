@@ -25,8 +25,11 @@ import {
   type Department,
   type EmployeeFormData,
   type EmployeeRecord,
-  type Position,
 } from "../../types/employee";
+import {
+  getPositionChipColor,
+  getPositionLabel,
+} from "../../utils/positionDisplay";
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   flexDirection: "column",
@@ -217,12 +220,13 @@ export default function EmployeeManagement() {
         field: "position",
         headerName: "Position",
         width: 160,
+        align: "center",
         renderCell: (params) => {
-          const role = params.value as Position;
+          const role = params.value as EmployeeRecord["position"];
           return (
             <Chip
-              label={role}
-              color={colorMap[role] ?? "default"}
+              label={getPositionLabel(role)}
+              color={getPositionChipColor(role)}
               size="small"
               variant="outlined"
             />

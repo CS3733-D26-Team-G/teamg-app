@@ -125,9 +125,7 @@ export default function Sidebar() {
         transition: "width 0.3s",
         position: "sticky",
         top: 0,
-        backgroundColor: "background.paper",
-        borderRight: "1px solid",
-        borderColor: "divider",
+        backgroundColor: "background",
       }}
     >
       <Box
@@ -256,7 +254,10 @@ export default function Sidebar() {
           aria-expanded={open ? "true" : undefined}
         >
           <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
-            <Avatar sx={{ width: 32, height: 32 }} />
+            <Avatar
+              src={profile.avatar ?? undefined}
+              sx={{ width: 32, height: 32 }}
+            />
           </ListItemIcon>
           {isOpen && <ListItemText primary={profile.first_name ?? ""} />}
           {isOpen && <KeyboardArrowUpIcon />}

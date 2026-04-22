@@ -1,6 +1,5 @@
 import express from "express";
-import { prisma, Prisma } from "@repo/db";
-import type { Position } from "@repo/db";
+import { Position, prisma, Prisma } from "@repo/db";
 import multer from "multer";
 import { supabase } from "../lib/supabase.ts";
 import { Schemas } from "@repo/zod";
@@ -201,6 +200,17 @@ router.get("/", async (req, res) => {
         _count: {
           select: { favoritedBy: true },
         },
+        editLock: {
+          include: {
+            lockedByEmp: {
+              select: {
+                uuid: true,
+                first_name: true,
+                last_name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         last_modified_time: "desc",
@@ -288,6 +298,14 @@ router.post("/lock/:uuid", async (req, res) => {
         },
       });
     }
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "CHECK_OUT_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: uuid,
+      },
+    });
     return res.status(200).json({
       locked: true,
       lock: serializeLock(lock),
@@ -332,6 +350,16 @@ router.delete("/lock/:uuid", async (req, res) => {
     await prisma.contentEditLock.delete({
       where: { contentUuid: uuid },
     });
+
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "CHECK_IN_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: uuid,
+      },
+    });
+
     return res.status(200).json({
       locked: false,
       lock: null,
@@ -710,6 +738,34 @@ router.post("/favorite/:uuid", async (req, res) => {
     logger.error(
       `Failed to update content ${uuid} favorite status for employee ${auth.employeeUuid}:\n${e}`,
     );
+    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  }
+});
+
+router.get("/count", async (req, res) => {
+  try {
+    const positions = Object.values(Position);
+
+    const groupedCounts = await prisma.content.groupBy({
+      by: ["for_position"],
+      _count: {
+        _all: true,
+      },
+    });
+
+    const stats = positions.reduce<Record<Position, number>>(
+      (acc, position) => {
+        acc[position] =
+          groupedCounts.find((group) => group.for_position === position)?._count
+            ._all ?? 0;
+        return acc;
+      },
+      {} as Record<Position, number>,
+    );
+
+    return res.status(200).json(stats);
+  } catch (e) {
+    logger.error(`Failed to retrieve content stats:\n${e}`);
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
