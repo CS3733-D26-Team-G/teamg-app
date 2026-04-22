@@ -20,8 +20,8 @@ function actionDictator(action: string) {
     CREATE_CONTENT: "created",
     LOG_IN: "Logged In",
     LOG_OUT: "Logged Out",
-    checked_in_content: "checked in",
-    checked_out_content: "checked out",
+    CHECK_IN_CONTENT: "checked in",
+    CHECK_OUT_CONTENT: "checked out",
   };
   return map[action] || action.toLowerCase();
 }
@@ -117,18 +117,22 @@ export default function DashboardRecentActivity({
                   >
                     <strong>{action.user}</strong>{" "}
                     {actionDictator(action.action)}{" "}
-                    <Box
-                      component="span"
-                      sx={{
-                        "fontWeight": "bold",
-                        "color": "primary.main",
-                        "cursor": "pointer",
-                        "fontSize": "0.875rem",
-                        "&:hover": { textDecoration: "underline" },
-                      }}
-                    >
-                      {action.resourceName}
-                    </Box>
+                    {/* 👇 Only show resource name if it's NOT a login or logout event */}
+                    {action.action !== "LOG_IN" &&
+                      action.action !== "LOG_OUT" && (
+                        <Box
+                          component="span"
+                          sx={{
+                            "fontWeight": "bold",
+                            "color": "primary.main",
+                            "cursor": "pointer",
+                            "fontSize": "0.875rem",
+                            "&:hover": { textDecoration: "underline" },
+                          }}
+                        >
+                          {action.resourceName}
+                        </Box>
+                      )}
                   </Typography>
                   <Typography
                     variant="caption"
