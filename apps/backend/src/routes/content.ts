@@ -294,6 +294,7 @@ router.post("/lock/:uuid", async (req, res) => {
         action: "CHECK_OUT_CONTENT",
         resource: "CONTENT",
         resourceUuid: uuid,
+        resourceName: content.title,
       },
     });
     return res.status(200).json({
@@ -347,6 +348,7 @@ router.delete("/lock/:uuid", async (req, res) => {
         action: "CHECK_IN_CONTENT",
         resource: "CONTENT",
         resourceUuid: uuid,
+        resourceName: content.title,
       },
     });
 
