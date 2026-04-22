@@ -4,3 +4,7 @@ body {
   overflow-y: auto;
   margin: 0;
 }
+
+.pr-12 {
+  padding-right: 0px !important;
+}
