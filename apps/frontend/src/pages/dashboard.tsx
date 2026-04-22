@@ -6,6 +6,7 @@ import BarChart from "./DashboardComponents/BarChart";
 import { Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import { CardHeader, Divider } from "@mui/material";
 import { useAuth } from "../auth/AuthContext.tsx";
 import { API_ENDPOINTS } from "../config";
 
@@ -110,6 +111,18 @@ export default function Dashboard() {
               margin: 0,
             }}
           >
+            <CardHeader
+              sx={{ py: 1.5, px: 2 }}
+              title={
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+                >
+                  Employee Demographics
+                </Typography>
+              }
+            />
+            <Divider />
             <CardContent className="h-full flex items-center justify-center p-6">
               <div className="w-[400px]">
                 <PieChart />

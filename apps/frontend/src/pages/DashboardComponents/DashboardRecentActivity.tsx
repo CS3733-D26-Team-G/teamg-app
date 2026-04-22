@@ -52,11 +52,11 @@ export default function DashboardRecentActivity({
       }}
     >
       <CardHeader
-        sx={{ py: 1.5, px: 2 }}
+        sx={{ py: 1.5, px: 2, paddingTop: "32px" }}
         title={
           <Typography
             variant="h6"
-            sx={{ fontWeight: "bold", fontSize: "1.1rem" }}
+            sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
             Recent Activity
           </Typography>
@@ -89,6 +89,7 @@ export default function DashboardRecentActivity({
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
+              paddingBottom: "10px",
             }}
           >
             {recentActions.map((action, index) => (
@@ -101,7 +102,8 @@ export default function DashboardRecentActivity({
                   borderBottom:
                     index !== recentActions.length - 1 ? "1px solid" : "none",
                   borderColor: "divider",
-                  pb: index !== recentActions.length - 1 ? 1 : 0,
+                  pt: index === 0 ? 0 : 1,
+                  pb: index === recentActions.length - 1 ? 0 : 1,
                 }}
               >
                 <Box
@@ -117,7 +119,6 @@ export default function DashboardRecentActivity({
                   >
                     <strong>{action.user}</strong>{" "}
                     {actionDictator(action.action)}{" "}
-                    {/* 👇 Only show resource name if it's NOT a login or logout event */}
                     {action.action !== "LOG_IN" &&
                       action.action !== "LOG_OUT" && (
                         <Box
