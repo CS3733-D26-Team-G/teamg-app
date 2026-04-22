@@ -1,56 +1,159 @@
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import { Typography } from "@mui/material";
-import Divider from "@mui/material/Divider";
-import CardHeader from "@mui/material/CardHeader";
+import { useMemo } from "react";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Divider,
+  CardHeader,
+  Box,
+} from "@mui/material";
+import { transformBackendData } from "./activityData.ts";
 
-export default function DashboardRecentActivity() {
+interface DashboardRecentActivityProps {
+  rawLogs: any[];
+}
+
+function actionDictator(action: string) {
+  const map: Record<string, string> = {
+    EDIT_CONTENT: "edited",
+    DELETE_CONTENT: "deleted",
+    CREATE_CONTENT: "created",
+    LOG_IN: "Logged In",
+    LOG_OUT: "Logged Out",
+    CHECK_IN_CONTENT: "checked in",
+    CHECK_OUT_CONTENT: "checked out",
+  };
+  return map[action] || action.toLowerCase();
+}
+
+export default function DashboardRecentActivity({
+  rawLogs,
+}: DashboardRecentActivityProps) {
+  const recentActions = useMemo(() => {
+    const groupedData = transformBackendData(rawLogs);
+    const allItems = groupedData.flatMap((group) =>
+      group.items.map((item) => ({
+        ...item,
+        dateLabel: group.date,
+      })),
+    );
+    return allItems.slice(0, 4);
+  }, [rawLogs]);
+
   return (
     <Card
-      className="max-h-200px min-w-500px right-[20%] outline-gray-200 outline-1 drop-shadow-lg"
-      sx={{ backgroundColor: "background.paper" }}
+      className="min-w-[500px] outline-gray-200 outline-1  "
+      sx={{
+        backgroundColor: "background.paper",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        padding: "0 !important",
+      }}
     >
-      <CardContent className="p=0 -mt-8 text-left max-h-270px">
-        <CardHeader
-          title={<Typography variant="h3">Recent Activity</Typography>}
-        />
-        <Divider />
-        <div className="pb-1 pt-3 pr-5 pl-5">
+      <CardHeader
+        sx={{ py: 1.5, px: 2 }}
+        title={
           <Typography
-            variant="h3"
-            component="h3"
-            className="pb-1"
+            variant="h6"
+            sx={{ fontWeight: "bold", fontSize: "1.1rem" }}
           >
-            Today
+            Recent Activity
           </Typography>
-          <Typography
-            variant="body1"
-            component="div"
-          >
-            <ul>
-              <li>Colin edited XXXX</li>
-              <li>Jillian edited 'Hanover Home Page'</li>
-            </ul>
-          </Typography>
+        }
+      />
+      <Divider />
 
+      <CardContent
+        sx={{
+          p: 2,
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {recentActions.length === 0 ?
           <Typography
-            variant="h3"
-            component="h3"
-            className="pb-1, pt-1"
+            variant="body2"
+            color="text.secondary"
           >
-            Yesterday
+            No recent activity.
           </Typography>
-
-          <Typography
-            variant="body1"
-            component="div"
+        : <Box
+            component="ul"
+            sx={{
+              listStyle: "none",
+              p: 0,
+              m: 0,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+            }}
           >
-            <ul>
-              <li>Myer published 'Dangers of Student Drivers'</li>
-              <li>Sam edited 'Dummy Databases'</li>
-            </ul>
-          </Typography>
-        </div>
+            {recentActions.map((action, index) => (
+              <Box
+                component="li"
+                key={action.id || index}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  borderBottom:
+                    index !== recentActions.length - 1 ? "1px solid" : "none",
+                  borderColor: "divider",
+                  pb: index !== recentActions.length - 1 ? 1 : 0,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{ lineHeight: 1.2 }}
+                  >
+                    <strong>{action.user}</strong>{" "}
+                    {actionDictator(action.action)}{" "}
+                    {/* 👇 Only show resource name if it's NOT a login or logout event */}
+                    {action.action !== "LOG_IN" &&
+                      action.action !== "LOG_OUT" && (
+                        <Box
+                          component="span"
+                          sx={{
+                            "fontWeight": "bold",
+                            "color": "primary.main",
+                            "cursor": "pointer",
+                            "fontSize": "0.875rem",
+                            "&:hover": { textDecoration: "underline" },
+                          }}
+                        >
+                          {action.resourceName}
+                        </Box>
+                      )}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ ml: 1, whiteSpace: "nowrap" }}
+                  >
+                    {action.time}
+                  </Typography>
+                </Box>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "text.disabled", fontStyle: "italic" }}
+                >
+                  {action.dateLabel === "Invalid Date" ?
+                    "Recent"
+                  : action.dateLabel}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        }
       </CardContent>
     </Card>
   );

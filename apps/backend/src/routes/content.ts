@@ -408,7 +408,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
     upsert: false,
   });
 
-  if (!urlResult.ok) {
+  if (urlResult.ok === false) {
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 
@@ -516,7 +516,7 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     upsert: true,
   });
 
-  if (!urlResult.ok) {
+  if (urlResult.ok === false) {
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 
@@ -766,6 +766,76 @@ router.get("/count", async (req, res) => {
     return res.status(200).json(stats);
   } catch (e) {
     logger.error(`Failed to retrieve content stats:\n${e}`);
+    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  }
+});
+
+router.get("/file/:uuid", async (req, res) => {
+  const params = ParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    return res.status(400).json({ message: "Invalid content UUID" });
+  }
+
+  const uuid = params.data.uuid;
+
+  try {
+    const content = await prisma.content.findUnique({ where: { uuid } });
+    if (!content) {
+      return res.status(404).json({ message: "Content not found" });
+    }
+
+    logger.info(`Content URL: ${content.url}`);
+    logger.info(`Content supabasePath: ${content?.supabasePath}`);
+
+    if (!content.supabasePath) {
+      if (!content.url.includes("supabase.co/storage")) {
+        // External URL — just redirect
+        return res.redirect(content.url);
+      }
+
+      // Supabase signed URL — proxy it server-side
+      const response = await fetch(content.url);
+
+      if (!response.ok) {
+        logger.error(
+          `Failed to fetch signed URL for ${uuid}: ${response.status}`,
+        );
+        return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const contentType =
+        response.headers.get("content-type") || "application/octet-stream";
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${content.title}"`,
+      );
+      res.setHeader("Content-Length", buffer.length);
+      return res.send(buffer);
+    }
+
+    // Download the file server-side
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .download(content.supabasePath);
+
+    if (error || !data) {
+      logger.error(`Failed to download file for ${uuid}: ${error?.message}`);
+      return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+    }
+
+    // Stream it back to the client directly
+    const buffer = Buffer.from(await data.arrayBuffer());
+    const mimeType = data.type || "application/octet-stream";
+
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Disposition", `inline; filename="${content.title}"`);
+    res.setHeader("Content-Length", buffer.length);
+    return res.send(buffer);
+  } catch (e) {
+    logger.error(`Failed to serve file for content ${uuid}:\n${e}`);
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });

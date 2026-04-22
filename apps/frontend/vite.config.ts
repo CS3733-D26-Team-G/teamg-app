@@ -8,7 +8,13 @@ export default defineConfig({
     react(),
     tailwindcss()],
   define: {
-    'process.env': {},
-    'process.platform': '"browser"',
+    "process.env": {},
+    "process.platform": '"browser"',
+  },
+  server: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp",
+    },
   },
 });

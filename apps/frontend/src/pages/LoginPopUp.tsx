@@ -63,10 +63,17 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
         return;
       }
 
-      await refreshSession();
+      // Most refreshSession implementations return the user object
+      const userData = await refreshSession();
 
       onClose();
-      navigate("/dashboard");
+
+      // Adjust "ADMIN" to match whatever string your backend sends (e.g., "admin", 1, etc.)
+      if (userData?.position === "ADMIN") {
+        navigate("/dashboard");
+      } else {
+        navigate("/library");
+      }
     } catch (e) {
       setError(t("login.networkError"));
       console.error(e);

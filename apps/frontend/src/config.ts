@@ -25,9 +25,11 @@ export const API_ENDPOINTS = {
 
   CONTENT: `${API_BASE_URL}/content`,
   CONTENT_CREATE: `${API_BASE_URL}/content/create`,
+  CONTENT_COUNT: `${API_BASE_URL}/content/count`,
   CONTENT_FAVORITE: (uuid: string) =>
     `${API_BASE_URL}/content/favorite/${uuid}`,
   CONTENT_EDIT: (uuid: string) => `${API_BASE_URL}/content/edit/${uuid}`,
   CONTENT_DELETE: (uuid: string) => `${API_BASE_URL}/content/delete/${uuid}`,
   CONTENT_LOCK: (uuid: string) => `${API_BASE_URL}/content/lock/${uuid}`,
+  CONTENT_FILE: (uuid: string) => `${API_BASE_URL}/content/file/${uuid}`,
 };
