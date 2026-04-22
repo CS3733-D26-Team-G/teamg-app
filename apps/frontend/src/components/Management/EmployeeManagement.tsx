@@ -211,6 +211,7 @@ export default function EmployeeManagement() {
         field: "position",
         headerName: "Position",
         width: 160,
+        align: "center",
         renderCell: (params) => {
           const role = params.value as EmployeeRecord["position"];
           return (

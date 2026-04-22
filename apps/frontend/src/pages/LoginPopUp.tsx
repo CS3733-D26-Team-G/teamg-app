@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import {
   Box,
@@ -24,6 +25,7 @@ interface LoginPopUpProps {
 }
 
 function LoginPopUp({ open, onClose }: LoginPopUpProps) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -52,12 +54,12 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
       });
 
       if (resp.status === 401) {
-        setError("Invalid credentials");
+        setError(t("login.invalidCredentials"));
         return console.error("Invalid credentials");
       }
 
       if (!resp.ok) {
-        setError("Server error. Please try again.");
+        setError(t("login.serverError"));
         return;
       }
 
@@ -66,7 +68,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
       onClose();
       navigate("/dashboard");
     } catch (e) {
-      setError("Network error. Check your connection.");
+      setError(t("login.networkError"));
       console.error(e);
     }
   };
@@ -165,7 +167,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
 
             <TextField
               id="username"
-              label="Username"
+              label={t("login.username")}
               sx={inputLook("0px", "-28px")}
               placeholder="...@Hanover.org"
               fullWidth
@@ -180,9 +182,9 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
                 if (e.key === "Enter") void handleLogin();
               }}
               id="password"
-              label="Password"
+              label={t("login.password")}
               sx={inputLook("10px", "-18px")}
-              placeholder="Password"
+              placeholder={t("login.password")}
               type={showPass ? "text" : "password"}
               fullWidth
               value={password}
@@ -222,7 +224,11 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
                     }}
                   />
                 }
-                label={<Typography fontWeight="bold">Remember Me</Typography>}
+                label={
+                  <Typography fontWeight="bold">
+                    {t("login.rememberMe")}
+                  </Typography>
+                }
               />
             </Box>
 
@@ -239,7 +245,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
                 "&:hover": { backgroundColor: "#3a6a9b" },
               }}
             >
-              Log In
+              {t("heroSection.login")}
             </Button>
 
             <Stack
@@ -253,7 +259,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
                 color="text.secondary"
                 variant="body2"
               >
-                Forgot Username?
+                {t("login.forgotUsername")}
               </Link>
               <Link
                 href="#"
@@ -261,7 +267,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
                 color="text.secondary"
                 variant="body2"
               >
-                Forgot Password?
+                {t("login.forgotPassword")}
               </Link>
             </Stack>
           </Stack>

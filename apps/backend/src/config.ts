@@ -14,7 +14,7 @@ export const allowedOriginsMap = {
   ],
 };
 
-export const authExclude = ["/login", "/logout"];
+export const authExclude = ["/login"];
 export const STORAGE_BUCKET = "teamg-app";
 export const INTERNAL_ERROR_MESSAGE =
   "Internal server error. If you see this message, please report to a system administrator";

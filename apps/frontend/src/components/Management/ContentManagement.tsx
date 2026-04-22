@@ -23,6 +23,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import DownloadIcon from "@mui/icons-material/Download";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
@@ -254,6 +255,7 @@ export default function ContentManagement({
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
   };
+
   const confirmDelete = async () => {
     if (!pendingDelete) {
       return;
@@ -401,6 +403,22 @@ export default function ContentManagement({
     }
   };
 
+  const handleDownload = async (row: ContentRow) => {
+    try {
+      const response = await fetch(row.url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = row.title;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElement(event.currentTarget);
   };
@@ -468,6 +486,7 @@ export default function ContentManagement({
     onEdit: (row: ContentRow) => void,
     onDelete: (row: ContentRow) => void,
     onPreview: (row: ContentRow) => void,
+    onDownload: (row: ContentRow) => void,
   ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
@@ -475,6 +494,7 @@ export default function ContentManagement({
       width: 70,
       type: "number",
       sortable: false,
+      filterable: false,
       valueGetter: (_value, row) => (row.is_favorite ? 1 : 0),
       renderCell: (params) => (
         <IconButton
@@ -541,6 +561,15 @@ export default function ContentManagement({
       width: 150,
     },
     {
+      field: "edited-by",
+      headerName: "Editor",
+      width: 180,
+      valueGetter: (_, row) => {
+        const employee = row.editLock?.lockedByEmp;
+        return employee ? `${employee.first_name} ${employee.last_name}` : "";
+      },
+    },
+    {
       field: "for_position",
       headerName: "Position",
       width: 160,
@@ -587,7 +616,7 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 200,
+      width: 240,
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
@@ -601,6 +630,23 @@ export default function ContentManagement({
             >
               <VisibilityIcon />
             </IconButton>
+            <Tooltip
+              title={
+                !hasPermission ?
+                  "You don't have access to download this file"
+                : ""
+              }
+            >
+              <span>
+                <IconButton
+                  color="primary"
+                  onClick={() => void onDownload(params.row)}
+                  disabled={!hasPermission}
+                >
+                  <DownloadIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
             <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
               <span>
                 <Button
@@ -842,10 +888,15 @@ export default function ContentManagement({
       <DataGrid
         rows={filteredRows}
         getRowId={(row) => row.uuid}
-        columns={getColumns(handleEditStart, handleDelete, (row) => {
-          setSelectedDoc({ uri: row.url, fileName: row.title });
-          setPreviewOpen(true);
-        })}
+        columns={getColumns(
+          handleEditStart,
+          handleDelete,
+          (row) => {
+            setSelectedDoc({ uri: row.url, fileName: row.title });
+            setPreviewOpen(true);
+          },
+          handleDownload,
+        )}
         getRowClassName={(params) => {
           const hasPermission =
             isSystemAdmin || userPosition === params.row.for_position;
