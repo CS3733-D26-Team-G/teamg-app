@@ -943,7 +943,7 @@ router.post("/favorite/:uuid", async (req, res) => {
   }
 });
 
-router.get("/count", async (req, res) => {
+router.get("/count/position", async (req, res) => {
   const auth = getAuth(req);
 
   try {

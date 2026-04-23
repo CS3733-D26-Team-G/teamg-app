@@ -21,7 +21,7 @@ export function useActivityData() {
       setLoading(true);
       const [logsRes, countsRes] = await Promise.all([
         fetch(API_ENDPOINTS.ACTIVITY, { credentials: "include" }),
-        fetch(API_ENDPOINTS.CONTENT_COUNT, { credentials: "include" }),
+        fetch(API_ENDPOINTS.CONTENT_COUNT_POSITION, { credentials: "include" }),
       ]);
 
       // Check Logs

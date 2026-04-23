@@ -25,7 +25,7 @@ export const API_ENDPOINTS = {
 
   CONTENT: `${API_BASE_URL}/content`,
   CONTENT_CREATE: `${API_BASE_URL}/content/create`,
-  CONTENT_COUNT: `${API_BASE_URL}/content/count`,
+  CONTENT_COUNT_POSITION: `${API_BASE_URL}/content/count/position`,
   CONTENT_FAVORITE: (uuid: string) =>
     `${API_BASE_URL}/content/favorite/${uuid}`,
   CONTENT_EDIT: (uuid: string) => `${API_BASE_URL}/content/edit/${uuid}`,
