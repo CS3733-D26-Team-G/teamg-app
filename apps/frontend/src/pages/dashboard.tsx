@@ -9,6 +9,7 @@ import CardContent from "@mui/material/CardContent";
 import { CardHeader, Divider } from "@mui/material";
 import { useAuth } from "../auth/AuthContext.tsx";
 import { API_ENDPOINTS } from "../config";
+import { dedupeAsync } from "../lib/async-cache";
 
 export function useActivityData() {
   const [rawLogs, setRawLogs] = useState<any[]>([]);
@@ -19,31 +20,36 @@ export function useActivityData() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [logsRes, countsRes] = await Promise.all([
-        fetch(API_ENDPOINTS.ACTIVITY, { credentials: "include" }),
-        fetch(API_ENDPOINTS.CONTENT_COUNT_POSITION, { credentials: "include" }),
+      const [logsData, countsData] = await Promise.all([
+        dedupeAsync("activity", async () => {
+          const res = await fetch(API_ENDPOINTS.ACTIVITY, {
+            credentials: "include",
+          });
+
+          if (!res.ok) {
+            throw new Error(`Failed to fetch activity: ${res.status}`);
+          }
+
+          return res.json();
+        }),
+        dedupeAsync("content:count-position", async () => {
+          const res = await fetch(API_ENDPOINTS.CONTENT_COUNT_POSITION, {
+            credentials: "include",
+          });
+
+          if (!res.ok) {
+            throw new Error(
+              `Failed to fetch content position counts: ${res.status}`,
+            );
+          }
+
+          return res.json();
+        }),
       ]);
-
-      // Check Logs
-      if (logsRes.headers.get("content-type")?.includes("application/json")) {
-        const logsData = await logsRes.json();
-        setRawLogs(logsData);
-      } else {
-        const text = await logsRes.text();
-        console.error("Logs endpoint returned non-JSON:", text.slice(0, 100));
-      }
-
-      // Check Analytics
-      if (countsRes.headers.get("content-type")?.includes("application/json")) {
-        const countsData = await countsRes.json();
-        setAnalytics(countsData);
-      } else {
-        const text = await countsRes.text();
-        console.error(
-          "Analytics endpoint returned non-JSON:",
-          text.slice(0, 100),
-        );
-      }
+      setRawLogs(Array.isArray(logsData) ? logsData : []);
+      setAnalytics(
+        countsData && typeof countsData === "object" ? countsData : {},
+      );
 
       setError(null);
     } catch (err: any) {

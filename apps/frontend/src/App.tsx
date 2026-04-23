@@ -5,6 +5,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar.tsx";
 import { AppThemeProvider } from "./Themecontext.tsx";
 import { AuthProvider, useAuth } from "./auth/AuthContext.tsx";
+import { ProfileProvider } from "./profile/ProfileContext.tsx";
 
 import Hero from "./pages/hero.tsx";
 import Dashboard from "./pages/dashboard.tsx";
@@ -175,9 +176,11 @@ function AppLayout() {
 function App() {
   return (
     <AuthProvider>
-      <AppThemeProvider>
-        <AppLayout />
-      </AppThemeProvider>
+      <ProfileProvider>
+        <AppThemeProvider>
+          <AppLayout />
+        </AppThemeProvider>
+      </ProfileProvider>
     </AuthProvider>
   );
 }

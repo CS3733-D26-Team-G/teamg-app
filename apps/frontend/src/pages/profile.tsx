@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import * as React from "react";
 import SearchBar from "./DashboardComponents/SearchBar";
 import Box from "@mui/material/Box";
@@ -7,16 +7,12 @@ import IconButton from "@mui/material/IconButton";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
-import { CircularProgress, Grid } from "@mui/material";
+import { Grid } from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
 import { getPositionLabel } from "../utils/positionDisplay.ts";
-import {
-  type Department,
-  type EmployeeRecord,
-  EmployeeRecordSchema,
-} from "../types/employee.ts";
-import { API_ENDPOINTS } from "../config.ts";
+import { type Department } from "../types/employee.ts";
+import { useProfile } from "../profile/ProfileContext.tsx";
 
 function Profile() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -43,39 +39,11 @@ function Profile() {
     setToggle2(event.target.checked);
   };
 
-  const [profile, setProfile] = React.useState<EmployeeRecord | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const { profile, isLoading } = useProfile();
 
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(API_ENDPOINTS.PROFILE, {
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data: unknown = await res.json();
-      console.log("Raw profile data:", data);
-
-      const parsed = EmployeeRecordSchema.safeParse(data);
-      if (!parsed.success) {
-        console.error("Profile failed schema validation:", parsed.error);
-        setProfile(null);
-        return;
-      }
-
-      setProfile(parsed.data);
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      setProfile(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadProfile();
-  }, []);
+  if (isLoading) {
+    return <Typography>Loading profile...</Typography>;
+  }
 
   if (!profile) {
     return <Typography>Failed to load profile.</Typography>;

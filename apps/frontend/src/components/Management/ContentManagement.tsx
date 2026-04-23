@@ -53,6 +53,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
+import { dedupeAsync } from "../../lib/async-cache";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -162,14 +163,16 @@ export default function ContentManagement({
 
   const fetchRows = useCallback(async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      const data = await dedupeAsync("content:list", async () => {
+        const res = await fetch(API_ENDPOINTS.CONTENT, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
 
-      const data: unknown = await res.json();
+        return res.json();
+      });
       const parsed = ContentRowsSchema.safeParse(data);
 
       if (!parsed.success) {
