@@ -269,6 +269,7 @@ export default function Sidebar() {
         open={open}
         slotProps={{
           list: { "aria-labelledby": "resources-menu" },
+          paper: { sx: { border: "1px solid", borderColor: "gray" } },
         }}
         onClose={handleClose}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
