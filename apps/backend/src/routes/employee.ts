@@ -1,5 +1,5 @@
 import express from "express";
-import { prisma, Prisma } from "@repo/db";
+import { prisma, Prisma, Position } from "@repo/db";
 import { Schemas } from "@repo/zod";
 import { logger } from "../logger.ts";
 import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
@@ -27,6 +27,39 @@ router.get("/", async (_req, res) => {
     return res.status(200).send(employees);
   } catch (e) {
     logger.error(`Failed to query Employee table for all records:\n${e}`);
+    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  }
+});
+
+router.get("/count", async (_req, res) => {
+  logger.verbose("Querying Employee table for employee counts by position");
+  try {
+    const positions = Object.values(Position);
+
+    const groupedCounts = await prisma.employee.groupBy({
+      by: ["position"],
+      _count: {
+        _all: true,
+      },
+    });
+
+    logger.verbose(
+      `Queried Employee table for employee counts by position: found ${groupedCounts.length} grouped record(s)`,
+    );
+
+    const stats = positions.reduce<Record<Position, number>>(
+      (acc, position) => {
+        acc[position] =
+          groupedCounts.find((group) => group.position === position)?._count
+            ._all ?? 0;
+        return acc;
+      },
+      {} as Record<Position, number>,
+    );
+
+    return res.status(200).json(stats);
+  } catch (e) {
+    logger.error(`Failed to retrieve employee stats:\n${e}`);
     return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });

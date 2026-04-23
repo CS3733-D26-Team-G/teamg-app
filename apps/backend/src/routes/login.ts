@@ -2,6 +2,7 @@ import express from "express";
 import { prisma } from "@repo/db";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
+import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { isProd, INTERNAL_ERROR_MESSAGE } from "../config.ts";
 import { logger } from "../logger.ts";
 
@@ -11,6 +12,42 @@ export const LoginSchema = z.object({
   username: z.string(),
   password: z.string(),
 });
+
+const PASSWORD_HASH_PREFIX = "scrypt";
+const SCRYPT_KEY_LENGTH = 64;
+
+function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const derivedKey = scryptSync(password, salt, SCRYPT_KEY_LENGTH).toString(
+    "hex",
+  );
+  return `${PASSWORD_HASH_PREFIX}$${salt}$${derivedKey}`;
+}
+
+function verifyPassword(password: string, storedPassword: string) {
+  const parts = storedPassword.split("$");
+  if (parts.length !== 3 || parts[0] !== PASSWORD_HASH_PREFIX) {
+    const providedBuffer = Buffer.from(password, "utf8");
+    const storedBuffer = Buffer.from(storedPassword, "utf8");
+    return (
+      providedBuffer.length === storedBuffer.length &&
+      timingSafeEqual(providedBuffer, storedBuffer)
+    );
+  }
+
+  const [, salt, expectedKey] = parts;
+  const derivedKey = scryptSync(password, salt, SCRYPT_KEY_LENGTH);
+  const expectedBuffer = Buffer.from(expectedKey, "hex");
+  return (
+    derivedKey.length === expectedBuffer.length &&
+    timingSafeEqual(derivedKey, expectedBuffer)
+  );
+}
+
+function isLegacyPlaintextPassword(storedPassword: string) {
+  const parts = storedPassword.split("$");
+  return parts.length !== 3 || parts[0] !== PASSWORD_HASH_PREFIX;
+}
 
 router.post("/", async (req, res) => {
   try {
@@ -28,15 +65,8 @@ router.post("/", async (req, res) => {
     const account = await prisma.account.findUnique({
       where: {
         username: body.data.username,
-        password: body.data.password,
       },
-      include: {
-        settings: {
-          where: {
-            accountUsername: body.data.username,
-          },
-        },
-      },
+      include: { settings: true },
     });
 
     if (!account) {
@@ -48,6 +78,36 @@ router.post("/", async (req, res) => {
     logger.verbose(
       `Queried Account table for username ${body.data.username} during login: record found`,
     );
+
+    const passwordMatches = verifyPassword(
+      body.data.password,
+      account.password,
+    );
+
+    if (!passwordMatches) {
+      logger.warn(
+        `Received login request with invalid credentials for username ${body.data.username}`,
+      );
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (isLegacyPlaintextPassword(account.password)) {
+      try {
+        await prisma.account.update({
+          where: { username: account.username },
+          data: {
+            password: hashPassword(body.data.password),
+          },
+        });
+        logger.info(
+          `Upgraded stored password hash for username ${account.username}`,
+        );
+      } catch (e) {
+        logger.error(
+          `Failed to upgrade stored password hash for username ${account.username}:\n${e}`,
+        );
+      }
+    }
 
     const payload = {
       uuid: account.employeeUuid,

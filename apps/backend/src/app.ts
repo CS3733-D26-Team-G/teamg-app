@@ -14,9 +14,6 @@ logger.info(`isProd: ${isProd}`);
 
 // Middleware
 app.use(express.json());
-app.use(morgan("dev"));
-app.use(cookieParser());
-
 const morganStream = {
   write: (message: string) => logger.http(message.trim()),
 };

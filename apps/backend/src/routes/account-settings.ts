@@ -35,15 +35,13 @@ router.get("/", async (req, res) => {
       return res.status(404).json({ message: "Account not found" });
     }
 
-    const settings = await prisma.accountSettings.upsert({
+    const settings = await prisma.accountSettings.findUnique({
       where: { accountUsername: account.username },
-      update: {},
-      create: { accountUsername: account.username },
     });
     const normalizedSettings = normalizeAccountSettings(settings);
 
     logger.verbose(
-      `Returned account settings for username ${account.username}: dark_mode=${settings.dark_mode}`,
+      `Returned account settings for username ${account.username}: dark_mode=${normalizedSettings.darkMode}`,
     );
     return res.status(200).json(normalizedSettings);
   } catch (e) {

@@ -39,6 +39,11 @@ const FavoriteContentSchema = z.object({
   isFavorite: z.boolean(),
 });
 
+const ExternalContentUrlSchema = z.url({
+  protocol: /^https?$/,
+  hostname: z.regexes.domain,
+});
+
 type UploadResult =
   | { ok: true; url: string; supabasePath?: string }
   | { ok: false; status: number; message: string };
@@ -52,6 +57,41 @@ function manageContent(
   forPosition: Position,
 ) {
   return auth.position === "ADMIN" || auth.position === forPosition;
+}
+
+function getVisibleContentWhere(
+  auth: NonNullable<Express.Request["auth"]>,
+): Prisma.ContentWhereInput | undefined {
+  if (auth.position === "ADMIN") {
+    return undefined;
+  }
+
+  return { for_position: auth.position };
+}
+
+function parseExternalContentUrl(url: string) {
+  const parsed = ExternalContentUrlSchema.safeParse(url);
+  if (!parsed.success) {
+    return null;
+  }
+
+  return new URL(parsed.data);
+}
+
+function validateProvidedUrl(url: string | undefined) {
+  if (!url) {
+    return { ok: true as const };
+  }
+
+  const parsedUrl = parseExternalContentUrl(url);
+  if (!parsedUrl) {
+    return {
+      ok: false as const,
+      message: "URL must be a valid HTTP or HTTPS URL",
+    };
+  }
+
+  return { ok: true as const, normalizedUrl: parsedUrl.toString() };
 }
 
 function serializeLock(lock: ActiveContentLock) {
@@ -117,6 +157,7 @@ async function resolveContentUrl({
   expirationTime,
   providedUrl,
   fallbackUrl,
+  fallbackSupabasePath,
   upsert,
 }: {
   file?: Express.Multer.File;
@@ -124,9 +165,46 @@ async function resolveContentUrl({
   expirationTime: Date;
   providedUrl?: string | null;
   fallbackUrl?: string | null;
+  fallbackSupabasePath?: string | null;
   upsert: boolean;
 }): Promise<UploadResult> {
   if (!file) {
+    if (providedUrl) {
+      return { ok: true, url: providedUrl };
+    }
+
+    if (fallbackSupabasePath) {
+      const expiresIn = getExpiresInSeconds(expirationTime);
+      if (expiresIn < 0) {
+        return {
+          ok: false,
+          status: 400,
+          message: "Expiration time must be in the future!",
+        };
+      }
+
+      const signedUrlResult = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(fallbackSupabasePath, expiresIn);
+
+      if (!signedUrlResult.data) {
+        logger.error(
+          `Failed to create signed URL for existing content ${uuid} at path ${fallbackSupabasePath}: ${signedUrlResult.error?.message}`,
+        );
+        return {
+          ok: false,
+          status: 500,
+          message: signedUrlResult.error?.message ?? INTERNAL_ERROR_MESSAGE,
+        };
+      }
+
+      return {
+        ok: true,
+        url: signedUrlResult.data.signedUrl,
+        supabasePath: fallbackSupabasePath,
+      };
+    }
+
     const url = providedUrl ?? fallbackUrl;
     if (!url) {
       return {
@@ -192,6 +270,7 @@ router.get("/", async (req, res) => {
   logger.verbose("Querying Content table for all records");
   try {
     const content = await prisma.content.findMany({
+      where: getVisibleContentWhere(auth),
       include: {
         favoritedBy: {
           where: { employeeUuid: auth.employeeUuid },
@@ -381,6 +460,11 @@ router.post("/create", upload.single("file"), async (req, res) => {
   }
 
   const input = parsed.data;
+  const validatedUrl = validateProvidedUrl(input.url);
+  if (!validatedUrl.ok) {
+    logger.warn(`Rejected Content create request with invalid URL`);
+    return res.status(400).json({ message: validatedUrl.message });
+  }
 
   if ((!input.url && !req.file) || (input.url && req.file)) {
     logger.warn(
@@ -404,7 +488,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
     file: req.file ?? undefined,
     uuid,
     expirationTime: input.expiration_time,
-    providedUrl: input.url,
+    providedUrl: validatedUrl.normalizedUrl,
     upsert: false,
   });
 
@@ -475,6 +559,22 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   }
 
   const input = parsed.data;
+  const validatedUrl = validateProvidedUrl(input.url);
+  if (!validatedUrl.ok) {
+    logger.warn(
+      `Rejected Content edit request for record ${uuid}: invalid URL`,
+    );
+    return res.status(400).json({ message: validatedUrl.message });
+  }
+
+  if (req.file && validatedUrl.normalizedUrl) {
+    logger.warn(
+      `Rejected Content edit request for record ${uuid}: both file and URL provided`,
+    );
+    return res.status(400).json({
+      message: "Provide either a file or a URL, not both",
+    });
+  }
 
   const targetPosition = input.for_position ?? existingContent.for_position;
   if (auth.position !== "ADMIN" && auth.position !== targetPosition) {
@@ -491,28 +591,14 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
       input.expiration_time
     : existingContent.expiration_time;
 
-  if (req.file && existingContent.supabasePath) {
-    const deleteResult = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .remove([existingContent.supabasePath]);
-
-    if (!deleteResult.data) {
-      logger.verbose(
-        `Failed to delete existing Supabase object for Content table record ${uuid} at path ${existingContent.supabasePath}: ${deleteResult.error?.message}`,
-      );
-    } else {
-      logger.verbose(
-        `Deleted existing Supabase object for Content table record ${uuid} at path ${existingContent.supabasePath}`,
-      );
-    }
-  }
-
   const urlResult = await resolveContentUrl({
     file: req.file ?? undefined,
     uuid,
     expirationTime,
-    providedUrl: input.url,
+    providedUrl: validatedUrl.normalizedUrl,
     fallbackUrl: existingContent.url,
+    fallbackSupabasePath:
+      validatedUrl.normalizedUrl ? null : existingContent.supabasePath,
     upsert: true,
   });
 
@@ -520,10 +606,20 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 
+  const nextSupabasePath =
+    req.file ? (urlResult.supabasePath ?? null)
+    : validatedUrl.normalizedUrl ? null
+    : existingContent.supabasePath;
+  const nextFileType =
+    req.file ? req.file.mimetype
+    : validatedUrl.normalizedUrl ? null
+    : existingContent.file_type;
+
   const data = {
     ...input,
     url: urlResult.url,
-    file_type: req.file?.mimetype ?? null,
+    supabasePath: nextSupabasePath,
+    file_type: nextFileType,
   };
 
   logger.verbose(`Updating Content table record ${uuid}`);
@@ -532,6 +628,27 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
       where: { uuid },
       data,
     });
+
+    const previousSupabasePath = existingContent.supabasePath;
+    const shouldDeleteOldSupabaseObject =
+      previousSupabasePath &&
+      previousSupabasePath !== updatedContent.supabasePath;
+    if (shouldDeleteOldSupabaseObject) {
+      const deleteResult = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove([previousSupabasePath]);
+
+      if (!deleteResult.data) {
+        logger.warn(
+          `Failed to delete superseded Supabase object for Content table record ${uuid} at path ${previousSupabasePath}: ${deleteResult.error?.message}`,
+        );
+      } else {
+        logger.verbose(
+          `Deleted superseded Supabase object for Content table record ${uuid} at path ${previousSupabasePath}`,
+        );
+      }
+    }
+
     // Creates a new row in Activity table, i.e. logs the action
     await prisma.activity.create({
       data: {
@@ -647,6 +764,25 @@ router.post("/favorite/:uuid", async (req, res) => {
   );
 
   try {
+    const content = await prisma.content.findUnique({
+      where: { uuid },
+      select: { uuid: true, for_position: true },
+    });
+
+    if (!content) {
+      logger.warn(
+        `Received Content favorite request for non-existent content ${uuid}`,
+      );
+      return res.status(404).json({ message: "Content not found" });
+    }
+
+    if (!manageContent(auth, content.for_position)) {
+      logger.warn(
+        `Rejected Content favorite request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
+      );
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     logger.verbose(
       `Querying FavoriteContent for employee ${auth.employeeUuid} and content ${uuid}`,
     );
@@ -743,10 +879,12 @@ router.post("/favorite/:uuid", async (req, res) => {
 });
 
 router.get("/count", async (req, res) => {
+  const auth = req.auth!;
   try {
     const positions = Object.values(Position);
 
     const groupedCounts = await prisma.content.groupBy({
+      where: getVisibleContentWhere(auth),
       by: ["for_position"],
       _count: {
         _all: true,
@@ -777,6 +915,7 @@ router.get("/file/:uuid", async (req, res) => {
   }
 
   const uuid = params.data.uuid;
+  const auth = req.auth!;
 
   try {
     const content = await prisma.content.findUnique({ where: { uuid } });
@@ -784,36 +923,23 @@ router.get("/file/:uuid", async (req, res) => {
       return res.status(404).json({ message: "Content not found" });
     }
 
-    logger.info(`Content URL: ${content.url}`);
-    logger.info(`Content supabasePath: ${content?.supabasePath}`);
+    if (!manageContent(auth, content.for_position)) {
+      logger.warn(
+        `Rejected Content file request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
+      );
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    logger.info(`Serving content file ${uuid}`);
+    logger.info(
+      `Content supabasePath present: ${Boolean(content.supabasePath)}`,
+    );
 
     if (!content.supabasePath) {
-      if (!content.url.includes("supabase.co/storage")) {
-        // External URL — just redirect
-        return res.redirect(content.url);
-      }
-
-      // Supabase signed URL — proxy it server-side
-      const response = await fetch(content.url);
-
-      if (!response.ok) {
-        logger.error(
-          `Failed to fetch signed URL for ${uuid}: ${response.status}`,
-        );
-        return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
-      }
-
-      const buffer = Buffer.from(await response.arrayBuffer());
-      const contentType =
-        response.headers.get("content-type") || "application/octet-stream";
-
-      res.setHeader("Content-Type", contentType);
-      res.setHeader(
-        "Content-Disposition",
-        `inline; filename="${content.title}"`,
-      );
-      res.setHeader("Content-Length", buffer.length);
-      return res.send(buffer);
+      return res.status(409).json({
+        message:
+          "This content references an external URL and cannot be downloaded through this endpoint",
+      });
     }
 
     // Download the file server-side
