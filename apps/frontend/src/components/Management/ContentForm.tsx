@@ -30,6 +30,16 @@ interface ContentFormProps {
   onDelete?: () => void;
 }
 
+function getInitialSourceType(
+  initialData?: ContentRecord | null,
+): "url" | "file" {
+  if (initialData?.supabasePath || initialData?.file_type) {
+    return "file";
+  }
+
+  return initialData?.url ? "url" : "file";
+}
+
 function coerceToDate(value: unknown): Date {
   if (value instanceof Date) return value;
   if (typeof value === "string" || typeof value === "number") {
@@ -70,8 +80,8 @@ export default function ContentForm({
       for_position: initialData?.for_position ?? session?.position,
     }),
   );
-  const [sourceType, setSourceType] = useState<"url" | "file">(
-    initialData?.url ? "url" : "file",
+  const [sourceType, setSourceType] = useState<"url" | "file">(() =>
+    getInitialSourceType(initialData),
   );
   const [file, setFile] = useState<File | null>(null);
 
@@ -82,7 +92,7 @@ export default function ContentForm({
         for_position: initialData?.for_position ?? session?.position,
       }),
     );
-    setSourceType(initialData?.url ? "url" : "file");
+    setSourceType(getInitialSourceType(initialData));
     setFile(null);
   }, [initialData, session?.position]);
 
@@ -144,11 +154,12 @@ export default function ContentForm({
     body.append("status", formData.status);
 
     if (sourceType === "file") {
-      if (!file) {
+      if (file) {
+        body.append("file", file);
+      } else if (!isEditing) {
         console.error("A file must be selected for file upload.");
         return;
       }
-      body.append("file", file);
     } else {
       body.append("url", formData.url);
     }
@@ -225,6 +236,15 @@ export default function ContentForm({
                     `Selected: ${file.name}`
                   : "Click to upload local file"}
                 </Typography>
+                {isEditing && !file && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    Leave this empty to keep the current uploaded file.
+                  </Typography>
+                )}
               </Box>
             }
 

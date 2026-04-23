@@ -1,7 +1,7 @@
 import express from "express";
 import { prisma } from "@repo/db";
 import { logger } from "../logger.ts";
-import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import { getAuth, isAdmin, sendInternalError } from "../lib/request.ts";
 
 const router = express.Router();
 
@@ -10,8 +10,8 @@ const router = express.Router();
  * Returns recent activity logs
  */
 router.get("/", async (req, res) => {
-  const auth = req.auth!;
-  if (auth.position !== "ADMIN") {
+  const auth = getAuth(req);
+  if (!isAdmin(auth)) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -41,8 +41,7 @@ router.get("/", async (req, res) => {
 
     return res.status(200).json(activities);
   } catch (e) {
-    logger.error(`Failed to query Activity table:\n${e}`);
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+    return sendInternalError(res, "Failed to query Activity table", e);
   }
 });
 

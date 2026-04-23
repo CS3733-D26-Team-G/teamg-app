@@ -3,7 +3,11 @@ import { prisma } from "@repo/db";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import { isProd, INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import {
+  AUTH_COOKIE_NAME,
+  authCookieOptionsWithExpiration,
+} from "../lib/request.ts";
 import { logger } from "../logger.ts";
 
 const router = express.Router();
@@ -118,14 +122,7 @@ router.post("/", async (req, res) => {
       expiresIn: "1h",
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? "none" : "lax",
-      maxAge: 1000 * 60 * 60,
-      partitioned: isProd,
-      path: "/",
-    });
+    res.cookie(AUTH_COOKIE_NAME, token, authCookieOptionsWithExpiration);
 
     logger.verbose(
       `Querying Employee table for record ${account.employeeUuid} during login`,

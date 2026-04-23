@@ -1,12 +1,12 @@
 import express from "express";
-import { logger } from "../logger.ts";
 import { prisma } from "@repo/db";
-import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import { getAuth, sendInternalError } from "../lib/request.ts";
+import { logger } from "../logger.ts";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  const auth = req.auth!;
+  const auth = getAuth(req);
 
   try {
     logger.verbose(
@@ -19,9 +19,11 @@ router.get("/", async (req, res) => {
 
     return res.status(200).json(profile);
   } catch (e) {
-    logger.error(`Failed to load profile for ${auth.employeeUuid}:\n${e}`);
-
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+    return sendInternalError(
+      res,
+      `Failed to load profile for ${auth.employeeUuid}`,
+      e,
+    );
   }
 });
 
