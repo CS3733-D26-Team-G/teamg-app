@@ -16,6 +16,11 @@ import {
   DialogContentText,
   DialogTitle,
   Tooltip,
+  Popover,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  Divider,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
@@ -730,159 +735,228 @@ export default function ContentManagement({
                 </Button>
               </Box>
 
-              {/*Filter Menu Pop-Up*/}
-              <Menu
-                id="filter-menu"
-                anchorEl={anchorElement}
+              {/*Filter Pop-up*/}
+              <Popover
                 open={Boolean(anchorElement)}
-                slotProps={{
-                  list: { "aria-labelledby": "filter-menu" },
-                }}
+                anchorEl={anchorElement}
                 onClose={handleClose}
-                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      border: "1px solid",
+                      borderColor: "gray",
+                    },
+                  },
+                }}
               >
                 {/*Position Item*/}
                 <MenuItem
-                  onMouseEnter={(event) => {
+                  onClick={(event) => {
                     setPositionAnchor(event.currentTarget);
                     setFileTypeAnchor(null);
                   }}
-                  onMouseLeave={(event) => {
-                    if (
-                      !event.relatedTarget ||
-                      !(event.relatedTarget as HTMLElement).closest?.(
-                        "#position-menu",
-                      )
-                    ) {
-                      setPositionAnchor(null);
-                    }
-                  }}
                 >
                   Position
-                  <ArrowRightIcon />
+                  <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
 
                 {/*File Type Item*/}
                 <MenuItem
-                  onMouseEnter={(event) => {
+                  onClick={(event) => {
                     setFileTypeAnchor(event.currentTarget);
                     setPositionAnchor(null);
                   }}
-                  onMouseLeave={(event) => {
-                    if (
-                      !event.relatedTarget ||
-                      !(event.relatedTarget as HTMLElement).closest?.(
-                        "#file-type-menu",
-                      )
-                    ) {
-                      setFileTypeAnchor(null);
-                    }
-                  }}
                 >
                   File Type
-                  <ArrowRightIcon />
+                  <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
-              </Menu>
+              </Popover>
 
-              {/*Position Submenu Pop-Up*/}
-              <Menu
-                id="position-menu"
-                anchorEl={positionAnchor}
+              {/*Position Sub-Pop-Up*/}
+              <Popover
                 open={Boolean(positionAnchor)}
+                anchorEl={positionAnchor}
                 onClose={() => setPositionAnchor(null)}
-                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
-                sx={{ mt: -3, ml: 2 }}
                 slotProps={{
-                  list: {
-                    "aria-labelledby": "position-menu",
-                    "onMouseLeave": () => setPositionAnchor(null),
+                  paper: {
+                    sx: {
+                      border: "1px solid",
+                      borderColor: "gray",
+                      ml: 1,
+                    },
                   },
                 }}
               >
-                <MenuItem onClick={() => togglePosition("UNDERWRITER")}>
-                  Underwriter
-                </MenuItem>
-                <MenuItem onClick={() => togglePosition("BUSINESS_ANALYST")}>
-                  Business Analyst
-                </MenuItem>
-                <MenuItem onClick={() => togglePosition("ACTUARIAL_ANALYST")}>
-                  Actuarial Analyst
-                </MenuItem>
-                <MenuItem onClick={() => togglePosition("EXL_OPERATIONS")}>
-                  EXL Operations
-                </MenuItem>
-                <MenuItem onClick={() => togglePosition("BUSINESS_OP_RATING")}>
-                  Business Ops Rating
-                </MenuItem>
-                <MenuItem onClick={() => togglePosition("ADMIN")}>
-                  Admin
-                </MenuItem>
-              </Menu>
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("UNDERWRITER")}
+                      />
+                    }
+                    checked={positionFilters.includes("UNDERWRITER")}
+                    label="Underwriter"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("BUSINESS_ANALYST")}
+                      />
+                    }
+                    checked={positionFilters.includes("BUSINESS_ANALYST")}
+                    label="Business Analysis"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("ACTUARIAL_ANALYST")}
+                      />
+                    }
+                    checked={positionFilters.includes("ACTUARIAL_ANALYST")}
+                    label="Actuarial Analyst"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("EXL_OPERATIONS")}
+                      />
+                    }
+                    checked={positionFilters.includes("EXL_OPERATIONS")}
+                    label="EXL Operations"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("BUSINESS_OP_RATING")}
+                      />
+                    }
+                    checked={positionFilters.includes("BUSINESS_OP_RATING")}
+                    label="Business Ops Rating"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => togglePosition("ADMIN")} />
+                    }
+                    checked={positionFilters.includes("ADMIN")}
+                    label="Admin"
+                  />
+                </FormGroup>
+              </Popover>
 
-              {/*File Type Submenu*/}
-              <Menu
-                id="file-type-menu"
-                anchorEl={fileTypeAnchor}
+              {/*File Type Sub-Pop-Up*/}
+              <Popover
                 open={Boolean(fileTypeAnchor)}
+                anchorEl={fileTypeAnchor}
                 onClose={() => setFileTypeAnchor(null)}
-                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
-                sx={{ mt: -3, ml: 2 }}
                 slotProps={{
-                  list: {
-                    "aria-labelledby": "position-menu",
-                    "onMouseLeave": () => setFileTypeAnchor(null),
+                  paper: {
+                    sx: {
+                      border: "1px solid",
+                      borderColor: "gray",
+                      ml: 1,
+                    },
                   },
                 }}
               >
-                <MenuItem onClick={() => toggleFileType("application/pdf")}>
-                  .PDF
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    toggleFileType(
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => toggleFileType("application/pdf")}
+                      />
+                    }
+                    checked={fileTypeFilters.includes("application/pdf")}
+                    label=".PDF"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() =>
+                          toggleFileType(
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                          )
+                        }
+                      />
+                    }
+                    checked={fileTypeFilters.includes(
                       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    )
-                  }
-                >
-                  .DOCX
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    toggleFileType(
+                    )}
+                    label=".DOCX"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() =>
+                          toggleFileType(
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                          )
+                        }
+                      />
+                    }
+                    checked={fileTypeFilters.includes(
                       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    )
-                  }
-                >
-                  XLSX
-                </MenuItem>
-                <MenuItem onClick={() => toggleFileType("image/png")}>
-                  .PNG
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    toggleFileType(
+                    )}
+                    label=".XLSX"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => toggleFileType("image/png")} />
+                    }
+                    checked={fileTypeFilters.includes("image/png")}
+                    label=".PNG"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() =>
+                          toggleFileType(
+                            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                          )
+                        }
+                      />
+                    }
+                    checked={fileTypeFilters.includes(
                       "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    )
-                  }
-                >
-                  .PPTX
-                </MenuItem>
-                <MenuItem onClick={() => toggleFileType("text/plain")}>
-                  .TXT
-                </MenuItem>
-                <MenuItem onClick={() => toggleFileType("text/csv")}>
-                  .CSV
-                </MenuItem>
-                <MenuItem onClick={() => toggleFileType("application/json")}>
-                  .JSON
-                </MenuItem>
-                <MenuItem onClick={() => toggleFileType("video/mp4")}>
-                  .MP4
-                </MenuItem>
-              </Menu>
+                    )}
+                    label=".PPTX"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => toggleFileType("text/plain")} />
+                    }
+                    checked={fileTypeFilters.includes("text/plain")}
+                    label=".TXT"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => toggleFileType("text/csv")} />
+                    }
+                    checked={fileTypeFilters.includes("text/csv")}
+                    label=".CSV"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => toggleFileType("application/json")}
+                      />
+                    }
+                    checked={fileTypeFilters.includes("application/json")}
+                    label=".JSON"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => toggleFileType("video/mp4")} />
+                    }
+                    checked={fileTypeFilters.includes("video/mp4")}
+                    label=".MP4"
+                  />
+                </FormGroup>
+              </Popover>
 
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
