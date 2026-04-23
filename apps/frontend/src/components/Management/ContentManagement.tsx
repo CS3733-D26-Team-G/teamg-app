@@ -519,7 +519,29 @@ export default function ContentManagement({
         </IconButton>
       ),
     },
-    { field: "title", headerName: "Title", flex: 1 },
+    {
+      field: "title",
+      headerName: "Title",
+      flex: 1,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation();
+              void toggleFavorite(params.row);
+            }}
+            disabled={favoritePending[params.row.uuid]}
+          >
+            <Heart
+              size={20}
+              fill={params.row.is_favorite ? "#e50000" : "none"}
+              color={params.row.is_favorite ? "#ff4d4f" : "#e50000"}
+            />
+          </IconButton>
+          {params.row.title}
+        </Box>
+      ),
+    },
     {
       field: "last_modified_time",
       headerName: "Last Modified",
@@ -1043,6 +1065,11 @@ export default function ContentManagement({
         initialState={{
           pagination: { paginationModel: { pageSize: 10 } },
           sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
+          columns: {
+            columnVisibilityModel: {
+              favorite: false,
+            },
+          },
         }}
         pageSizeOptions={[5, 10]}
       />
