@@ -49,6 +49,7 @@ model Content {
   file_type          String?
   editLock           ContentEditLock?
   favoritedBy        FavoriteContent[]
+  tagAssignments     ContentTagAssignment[]
 }
 
 model FavoriteContent {
@@ -68,6 +69,25 @@ model ContentEditLock {
   lockedAt        DateTime @default(now()) @db.Timestamp(6)
   content         Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
   lockedByEmp     Employee @relation(fields: [lockedByEmpUuid], references: [uuid], onDelete: Cascade)
+}
+
+model ContentTag {
+  uuid           String                 @id @default(uuid()) @db.Uuid
+  name           String
+  normalizedName String                 @unique
+  createdAt      DateTime               @default(now())
+  assignments    ContentTagAssignment[]
+}
+
+model ContentTagAssignment {
+  contentUuid String     @db.Uuid
+  tagUuid     String     @db.Uuid
+  createdAt   DateTime   @default(now())
+  content     Content    @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
+  tag         ContentTag @relation(fields: [tagUuid], references: [uuid], onDelete: Cascade)
+
+  @@id([contentUuid, tagUuid])
+  @@index([tagUuid])
 }
 
 model Account {

@@ -29,6 +29,15 @@ const ParamsSchema = Schemas.ContentWhereUniqueInputObjectZodSchema.extend({
   uuid: z.uuid(),
 });
 
+const TagParamsSchema = z.object({
+  uuid: z.uuid(),
+});
+
+const TagContentParamsSchema = z.object({
+  tagUuid: z.uuid(),
+  contentUuid: z.uuid(),
+});
+
 const CreateContentSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   url: z.string().optional(),
 });
@@ -43,6 +52,10 @@ const UpdateContentSchema = Schemas.ContentUpdateInputObjectZodSchema.omit({
 
 const FavoriteContentSchema = z.object({
   isFavorite: z.boolean(),
+});
+
+const CreateTagSchema = z.object({
+  name: z.string(),
 });
 
 const contentLockInclude = {
@@ -151,8 +164,46 @@ function parseContentUuid(
   return params.data.uuid;
 }
 
+function parseTagUuid(
+  req: express.Request,
+  res: express.Response,
+  invalidMessage: string,
+) {
+  const params = TagParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ message: invalidMessage });
+    return null;
+  }
+
+  return params.data.uuid;
+}
+
+function parseTagContentUuids(req: express.Request, res: express.Response) {
+  const params = TagContentParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ message: "Invalid tag or content UUID" });
+    return null;
+  }
+
+  return params.data;
+}
+
+function normalizeTagName(name: string) {
+  const trimmedName = name.trim();
+  return {
+    name: trimmedName,
+    normalizedName: trimmedName.toLowerCase(),
+  };
+}
+
 async function findContentByUuid(uuid: string) {
   return prisma.content.findUnique({
+    where: { uuid },
+  });
+}
+
+async function findTagByUuid(uuid: string) {
+  return prisma.contentTag.findUnique({
     where: { uuid },
   });
 }
@@ -371,6 +422,16 @@ router.get("/", async (req, res) => {
           where: { employeeUuid: auth.employeeUuid },
           select: { employeeUuid: true },
         },
+        tagAssignments: {
+          select: {
+            tag: {
+              select: {
+                uuid: true,
+                name: true,
+              },
+            },
+          },
+        },
         _count: {
           select: { favoritedBy: true },
         },
@@ -395,17 +456,222 @@ router.get("/", async (req, res) => {
       `Queried Content table for all records: found ${content.length} record(s)`,
     );
 
-    const response = content.map(({ favoritedBy, _count, ...item }) => ({
-      ...item,
-      is_favorite: favoritedBy.length > 0,
-      favorite_count: _count.favoritedBy,
-    }));
+    const response = content.map(
+      ({ favoritedBy, tagAssignments, _count, ...item }) => ({
+        ...item,
+        tags: tagAssignments.map(({ tag }) => tag),
+        is_favorite: favoritedBy.length > 0,
+        favorite_count: _count.favoritedBy,
+      }),
+    );
 
     return res.status(200).json(response);
   } catch (e) {
     return sendInternalError(
       res,
       "Failed to query Content table for all records",
+      e,
+    );
+  }
+});
+
+router.post("/tag/create", async (req, res) => {
+  const auth = getAuth(req);
+  if (!isAdmin(auth)) {
+    logger.warn(
+      `Rejected content tag create request from user with position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const parsed = CreateTagSchema.safeParse(req.body);
+  if (!parsed.success) {
+    logger.verbose(
+      `Failed to parse Content tag create request body:\n${parsed.error.issues}`,
+    );
+    return res.status(400).json({ message: parsed.error.issues });
+  }
+
+  const normalizedTag = normalizeTagName(parsed.data.name);
+  if (!normalizedTag.name) {
+    return res.status(400).json({ message: "Tag name cannot be blank" });
+  }
+
+  try {
+    const tag = await prisma.contentTag.create({
+      data: normalizedTag,
+    });
+
+    return res.status(201).json(tag);
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return res.status(409).json({ message: "Tag name already exists" });
+    }
+
+    return sendInternalError(res, "Failed to create content tag", e);
+  }
+});
+
+router.post("/tag/delete/:uuid", async (req, res) => {
+  const uuid = parseTagUuid(req, res, "Invalid tag UUID");
+  if (!uuid) {
+    return;
+  }
+
+  const auth = getAuth(req);
+  if (!isAdmin(auth)) {
+    logger.warn(
+      `Rejected content tag delete request from user with position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const tag = await prisma.contentTag.delete({
+      where: { uuid },
+    });
+
+    return res.status(200).json(tag);
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
+
+    return sendInternalError(res, `Failed to delete content tag ${uuid}`, e);
+  }
+});
+
+router.post("/tag/:tagUuid/content/:contentUuid", async (req, res) => {
+  const params = parseTagContentUuids(req, res);
+  if (!params) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  try {
+    const tag = await findTagByUuid(params.tagUuid);
+    if (!tag) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
+
+    const content = await loadAccessibleContent(params.contentUuid, auth, res, {
+      notFoundStatus: 404,
+      notFoundMessage: "Content not found",
+      unauthorizedStatus: 401,
+      logUnauthorized: true,
+    });
+    if (!content) {
+      return;
+    }
+
+    const existingAssignment = await prisma.contentTagAssignment.findUnique({
+      where: {
+        contentUuid_tagUuid: {
+          contentUuid: params.contentUuid,
+          tagUuid: params.tagUuid,
+        },
+      },
+    });
+
+    if (existingAssignment) {
+      return res.status(200).json({
+        tagUuid: params.tagUuid,
+        contentUuid: params.contentUuid,
+        attached: true,
+        changed: false,
+      });
+    }
+
+    await prisma.contentTagAssignment.create({
+      data: {
+        contentUuid: params.contentUuid,
+        tagUuid: params.tagUuid,
+      },
+    });
+
+    return res.status(200).json({
+      tagUuid: params.tagUuid,
+      contentUuid: params.contentUuid,
+      attached: true,
+      changed: true,
+    });
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to attach tag ${params.tagUuid} to content ${params.contentUuid}`,
+      e,
+    );
+  }
+});
+
+router.delete("/tag/:tagUuid/content/:contentUuid", async (req, res) => {
+  const params = parseTagContentUuids(req, res);
+  if (!params) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  try {
+    const tag = await findTagByUuid(params.tagUuid);
+    if (!tag) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
+
+    const content = await loadAccessibleContent(params.contentUuid, auth, res, {
+      notFoundStatus: 404,
+      notFoundMessage: "Content not found",
+      unauthorizedStatus: 401,
+      logUnauthorized: true,
+    });
+    if (!content) {
+      return;
+    }
+
+    const existingAssignment = await prisma.contentTagAssignment.findUnique({
+      where: {
+        contentUuid_tagUuid: {
+          contentUuid: params.contentUuid,
+          tagUuid: params.tagUuid,
+        },
+      },
+    });
+
+    if (!existingAssignment) {
+      return res.status(200).json({
+        tagUuid: params.tagUuid,
+        contentUuid: params.contentUuid,
+        attached: false,
+        changed: false,
+      });
+    }
+
+    await prisma.contentTagAssignment.delete({
+      where: {
+        contentUuid_tagUuid: {
+          contentUuid: params.contentUuid,
+          tagUuid: params.tagUuid,
+        },
+      },
+    });
+
+    return res.status(200).json({
+      tagUuid: params.tagUuid,
+      contentUuid: params.contentUuid,
+      attached: false,
+      changed: true,
+    });
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to remove tag ${params.tagUuid} from content ${params.contentUuid}`,
       e,
     );
   }
@@ -969,6 +1235,44 @@ router.get("/count/position", async (req, res) => {
     return res.status(200).json(stats);
   } catch (e) {
     return sendInternalError(res, "Failed to retrieve content stats", e);
+  }
+});
+
+router.get("/count/tags", async (req, res) => {
+  const auth = getAuth(req);
+  const visibleContentWhere = getVisibleContentWhere(auth);
+
+  try {
+    const tags = await prisma.contentTag.findMany({
+      select: {
+        uuid: true,
+        name: true,
+        assignments: {
+          where:
+            visibleContentWhere ?
+              {
+                content: visibleContentWhere,
+              }
+            : undefined,
+          select: {
+            contentUuid: true,
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    return res.status(200).json(
+      tags.map((tag) => ({
+        uuid: tag.uuid,
+        name: tag.name,
+        count: tag.assignments.length,
+      })),
+    );
+  } catch (e) {
+    return sendInternalError(res, "Failed to retrieve content tag stats", e);
   }
 });
 
