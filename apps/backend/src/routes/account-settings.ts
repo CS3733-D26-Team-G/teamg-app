@@ -1,12 +1,12 @@
 import express from "express";
 import { prisma } from "@repo/db";
-import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
 import {
   AccountSettingsSchema,
   AccountSettingsUpdateSchema,
   normalizeAccountSettings,
   serializeAccountSettingsUpdate,
 } from "../lib/account-settings.ts";
+import { getAuth, sendInternalError } from "../lib/request.ts";
 import { logger } from "../logger.ts";
 
 const router = express.Router();
@@ -23,7 +23,7 @@ async function findAccountUsername(employeeUuid: string) {
 }
 
 router.get("/", async (req, res) => {
-  const auth = req.auth!;
+  const auth = getAuth(req);
 
   try {
     const account = await findAccountUsername(auth.employeeUuid);
@@ -45,15 +45,16 @@ router.get("/", async (req, res) => {
     );
     return res.status(200).json(normalizedSettings);
   } catch (e) {
-    logger.error(
-      `Failed to read account settings for employee ${auth.employeeUuid}:\n${e}`,
+    return sendInternalError(
+      res,
+      `Failed to read account settings for employee ${auth.employeeUuid}`,
+      e,
     );
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
 
 router.put("/", async (req, res) => {
-  const auth = req.auth!;
+  const auth = getAuth(req);
   const body = AccountSettingsUpdateSchema.safeParse(req.body);
 
   if (!body.success) {
@@ -93,10 +94,11 @@ router.put("/", async (req, res) => {
     );
     return res.status(200).json(normalizedSettings);
   } catch (e) {
-    logger.error(
-      `Failed to update account settings for employee ${auth.employeeUuid}:\n${e}`,
+    return sendInternalError(
+      res,
+      `Failed to update account settings for employee ${auth.employeeUuid}`,
+      e,
     );
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
 

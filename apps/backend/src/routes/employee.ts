@@ -1,21 +1,13 @@
 import express from "express";
 import { prisma, Prisma, Position } from "@repo/db";
 import { Schemas } from "@repo/zod";
+import { requireAdmin, sendInternalError } from "../lib/request.ts";
 import { logger } from "../logger.ts";
 import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
 
 const router = express.Router();
 
-router.use(async (req, res, next) => {
-  const auth = req.auth!;
-  if (auth.position !== "ADMIN") {
-    logger.warn(
-      `Rejected Employee route request from user with position ${auth.position}`,
-    );
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  next();
-});
+router.use(requireAdmin("Employee route"));
 
 router.get("/", async (_req, res) => {
   logger.verbose("Querying Employee table for all records");
@@ -26,8 +18,11 @@ router.get("/", async (_req, res) => {
     );
     return res.status(200).send(employees);
   } catch (e) {
-    logger.error(`Failed to query Employee table for all records:\n${e}`);
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+    return sendInternalError(
+      res,
+      "Failed to query Employee table for all records",
+      e,
+    );
   }
 });
 
@@ -59,8 +54,7 @@ router.get("/count", async (_req, res) => {
 
     return res.status(200).json(stats);
   } catch (e) {
-    logger.error(`Failed to retrieve employee stats:\n${e}`);
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+    return sendInternalError(res, "Failed to retrieve employee stats", e);
   }
 });
 

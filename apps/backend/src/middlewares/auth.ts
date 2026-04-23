@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import { prisma } from "@repo/db";
 import type { Employee } from "@repo/db";
 import { authExclude } from "../config.ts";
+import { AUTH_COOKIE_NAME } from "../lib/request.ts";
 import { logger } from "../logger.ts";
 
 export type Auth = {
@@ -16,7 +17,7 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
     return next();
   }
 
-  const token = req.cookies.token;
+  const token = req.cookies[AUTH_COOKIE_NAME];
 
   if (!token) {
     logger.verbose(

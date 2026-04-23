@@ -1,14 +1,14 @@
 import express from "express";
 import { prisma } from "@repo/db";
-import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
 import { normalizeAccountSettings } from "../lib/account-settings.ts";
+import { getAuth, isAdmin, sendInternalError } from "../lib/request.ts";
 import { logger } from "../logger.ts";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  const auth = req.auth!;
-  const isAdmin = auth.position === "ADMIN";
+  const auth = getAuth(req);
+  const admin = isAdmin(auth);
 
   try {
     logger.verbose(
@@ -26,15 +26,16 @@ router.get("/", async (req, res) => {
       position: auth.position,
       settings: normalizeAccountSettings(account?.settings),
       permissions: {
-        canManageEmployees: isAdmin,
-        canManageAllContent: isAdmin,
+        canManageEmployees: admin,
+        canManageAllContent: admin,
       },
     });
   } catch (e) {
-    logger.error(
-      `Failed to build session payload for employee ${auth.employeeUuid}:\n${e}`,
+    return sendInternalError(
+      res,
+      `Failed to build session payload for employee ${auth.employeeUuid}`,
+      e,
     );
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
   }
 });
 

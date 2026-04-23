@@ -30,6 +30,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null); // Added for UI feedback
   const navigate = useNavigate();
   const { refreshSession } = useAuth();
@@ -37,6 +38,9 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
   if (!open) return null;
 
   const handleLogin = async () => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     setError(null);
     console.log("Attempting login...");
 
@@ -77,6 +81,8 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
     } catch (e) {
       setError(t("login.networkError"));
       console.error(e);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -185,9 +191,6 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
             />
 
             <TextField
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void handleLogin();
-              }}
               id="password"
               label={t("login.password")}
               sx={inputLook("10px", "-18px")}
@@ -244,6 +247,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
               variant="contained"
               fullWidth
               size="large"
+              disabled={isSubmitting}
               sx={{
                 "backgroundColor": "#4a7aab",
                 "borderRadius": 4,
