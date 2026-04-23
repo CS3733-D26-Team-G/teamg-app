@@ -8,7 +8,6 @@ interface Props {
   uri: string;
   fileName: string;
   readOnly?: boolean;
-  onSave?: (blob: Blob) => Promise<void>;
 }
 
 const mimeToExt: Record<string, string> = {
@@ -29,7 +28,6 @@ export default function DocumentEditorModal({
   uri,
   fileName,
   readOnly = false,
-  onSave,
 }: Props) {
   const viewerDivRef = useRef<HTMLDivElement | null>(null);
   const instanceRef = useRef<WebViewerInstance | null>(null);
@@ -123,17 +121,6 @@ export default function DocumentEditorModal({
     return () => abortController.abort();
   }, [open, uri, fileName]);
 
-  const handleSave = async () => {
-    if (!instanceRef.current || !onSave) return;
-    const { Core } = instanceRef.current;
-    const doc = Core.documentViewer.getDocument();
-    if (!doc) return;
-    const data = await doc.getFileData({ downloadType: "pdf" });
-    const blob = new Blob([data], { type: "application/octet-stream" });
-    await onSave(blob);
-    onClose();
-  };
-
   return (
     <Dialog
       open={open}
@@ -159,14 +146,6 @@ export default function DocumentEditorModal({
             direction="row"
             gap={1}
           >
-            {!readOnly && (
-              <Button
-                variant="contained"
-                onClick={handleSave}
-              >
-                Save
-              </Button>
-            )}
             <Button onClick={onClose}>Close</Button>
           </Stack>
         </Stack>

@@ -1083,17 +1083,6 @@ export default function ContentManagement({
           readOnly={
             !isSystemAdmin && userPosition !== selectedDoc?.for_position
           }
-          onSave={async (blob) => {
-            if (!selectedDoc) return;
-            const formData = new FormData();
-            formData.append("file", blob, selectedDoc.fileName);
-            await fetch(API_ENDPOINTS.CONTENT_EDIT(selectedDoc.uuid), {
-              method: "PUT",
-              credentials: "include",
-              body: formData,
-            });
-            await fetchRows();
-          }}
         />
       )}
       {confirmationDialogs}
