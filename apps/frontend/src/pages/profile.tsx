@@ -80,8 +80,8 @@ function Profile() {
     formData.append("avatar", file);
 
     try {
-      const res = await fetch(API_ENDPOINTS.EMPLOYEE, {
-        method: "Put",
+      const res = await fetch(API_ENDPOINTS.PROFILE_AVATAR, {
+        method: "PUT",
         credentials: "include",
         body: formData,
       });
