@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
   LOGOUT: `${API_BASE_URL}/logout`,
   SESSION: `${API_BASE_URL}/session`,
   PROFILE: `${API_BASE_URL}/profile`,
+  PROFILE_AVATAR: `${API_BASE_URL}/profile/avatar`,
   ACCOUNT_SETTINGS: `${API_BASE_URL}/account-settings`,
   EMPLOYEE: `${API_BASE_URL}/employee`,
   EMPLOYEE_CREATE: `${API_BASE_URL}/employee/create`,

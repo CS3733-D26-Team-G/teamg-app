@@ -1,4 +1,4 @@
-import type { Department, Employee, Position } from "@repo/db";
+import type { Department, Position } from "@repo/db";
 import { Schemas } from "@repo/zod";
 import { z } from "zod";
 
@@ -17,7 +17,8 @@ export const EmployeeRecordSchema =
   }).extend({
     uuid: z.string(),
     avatar: z.string().nullable(),
+    avatar_supabase_path: z.string().nullable().optional(),
   });
 
-export type EmployeeRecord = Employee;
+export type EmployeeRecord = z.infer<typeof EmployeeRecordSchema>;
 export const EmployeeRecordsSchema = z.array(EmployeeRecordSchema);

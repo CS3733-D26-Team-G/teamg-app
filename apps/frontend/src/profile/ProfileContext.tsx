@@ -14,10 +14,35 @@ interface ProfileContextValue {
   isLoading: boolean;
   profile: EmployeeRecord | null;
   refreshProfile: () => Promise<EmployeeRecord | null>;
+  setProfile: (profile: EmployeeRecord | null) => void;
   clearProfile: () => void;
 }
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
+
+function appendAvatarCacheBust(url: string, cacheBust: string) {
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set("t", cacheBust);
+    return parsed.toString();
+  } catch {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}t=${encodeURIComponent(cacheBust)}`;
+  }
+}
+
+function normalizeProfile(
+  profile: EmployeeRecord | null,
+): EmployeeRecord | null {
+  if (!profile?.avatar) {
+    return profile;
+  }
+
+  return {
+    ...profile,
+    avatar: appendAvatarCacheBust(profile.avatar, Date.now().toString()),
+  };
+}
 
 async function fetchProfile(): Promise<EmployeeRecord | null> {
   return dedupeAsync("profile", async () => {
@@ -33,23 +58,27 @@ async function fetchProfile(): Promise<EmployeeRecord | null> {
       throw new Error(`Failed to fetch profile: ${res.status}`);
     }
 
-    return EmployeeRecordSchema.parse(await res.json());
+    return normalizeProfile(EmployeeRecordSchema.parse(await res.json()));
   });
 }
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { isLoading: authLoading, session } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const [profile, setProfile] = useState<EmployeeRecord | null>(null);
+  const [profile, setRawProfile] = useState<EmployeeRecord | null>(null);
+
+  const setProfile = (nextProfile: EmployeeRecord | null) => {
+    setRawProfile(normalizeProfile(nextProfile));
+  };
 
   const refreshProfile = async () => {
     try {
       const nextProfile = await fetchProfile();
-      setProfile(nextProfile);
+      setRawProfile(nextProfile);
       return nextProfile;
     } catch (error) {
       console.error(error);
-      setProfile(null);
+      setRawProfile(null);
       return null;
     } finally {
       setIsLoading(false);
@@ -57,7 +86,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   };
 
   const clearProfile = () => {
-    setProfile(null);
+    setRawProfile(null);
     setIsLoading(false);
   };
 
@@ -80,6 +109,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         isLoading,
         profile,
         refreshProfile,
+        setProfile,
         clearProfile,
       }}
     >
