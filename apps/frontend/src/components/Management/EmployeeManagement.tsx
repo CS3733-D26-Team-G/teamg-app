@@ -38,6 +38,7 @@ import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import MenuItem from "@mui/material/MenuItem";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { dedupeAsync } from "../../lib/async-cache";
+import HelpPopup from "../../components/HelpPopup";
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   flexDirection: "column",
@@ -546,14 +547,17 @@ export default function EmployeeManagement() {
                     <HeaderSearchBar setSearchQuery={setSearchQuery} />
                   </Box>
                 </Box>
-                <Button
-                  onClick={() => setViewState("new")}
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  sx={{ whiteSpace: "nowrap" }}
-                >
-                  New Employee
-                </Button>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <HelpPopup description="The Employee Management page lets you view, add, edit, and delete employees. You can filter by position or department and search by name." />
+                  <Button
+                    onClick={() => setViewState("new")}
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    sx={{ whiteSpace: "nowrap" }}
+                  >
+                    New Employee
+                  </Button>
+                </Box>
               </Box>
             </StyledToolbar>
           </AppBar>

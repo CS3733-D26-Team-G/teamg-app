@@ -10,6 +10,7 @@ import { CardHeader, Divider } from "@mui/material";
 import { useAuth } from "../auth/AuthContext.tsx";
 import { API_ENDPOINTS } from "../config";
 import { dedupeAsync } from "../lib/async-cache";
+import HelpPopup from "../components/HelpPopup";
 
 export function useActivityData() {
   const [rawLogs, setRawLogs] = useState<any[]>([]);
@@ -92,6 +93,26 @@ export default function Dashboard() {
     return mapping[role] || role.replace(/\s+/g, "_").toUpperCase();
   };
 
+  // Role-based help descriptions
+  const helpDescriptions: Record<string, string> = {
+    UNDERWRITER:
+      "You are an UnderWriter, please give us time to give you help.",
+    BUSINESS_ANALYST:
+      "You are an Business Analyst, please give us time to give you help.",
+    ACTUARIAL_ANALYST:
+      "You are an Actuarial Analyst, please give us time to give you help.",
+    EXL_OPERATIONS:
+      "You are an EXL Operations, please give us time to give you help.",
+    BUSINESS_OP_RATING:
+      "You are an Business OP Rating, please give us time to give you help.",
+    ADMIN:
+      "The Dashboard gives you a full organizational overview including employee demographics, recent activity, and content counts by role.",
+  };
+
+  const helpText =
+    helpDescriptions[session?.position ?? ""] ??
+    "The Dashboard gives you an overview of your organization.";
+
   return (
     <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
       {/* Header Section */}
@@ -102,8 +123,11 @@ export default function Dashboard() {
         >
           Welcome Back {(session?.position ?? "employee").toLowerCase()}!
         </Typography>
-        <div className="w-80">
-          <SearchBar setSearchQuery={setSearchQuery} />
+        <div className="flex items-center gap-2">
+          <HelpPopup description={helpText} />
+          <div className="w-80">
+            <SearchBar setSearchQuery={setSearchQuery} />
+          </div>
         </div>
       </div>
 

@@ -54,6 +54,7 @@ import MenuItem from "@mui/material/MenuItem";
 import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
 import { dedupeAsync } from "../../lib/async-cache";
+import HelpPopup from "../../components/HelpPopup";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -988,14 +989,17 @@ export default function ContentManagement({
               </Box>
             </Box>
 
-            <Button
-              onClick={() => setViewState("new")}
-              variant="contained"
-              startIcon={<AddIcon />}
-              sx={{ whiteSpace: "nowrap" }}
-            >
-              New Content
-            </Button>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <HelpPopup description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly." />
+              <Button
+                onClick={() => setViewState("new")}
+                variant="contained"
+                startIcon={<AddIcon />}
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                New Content
+              </Button>
+            </Box>
           </Box>
 
           {lockMessage && (

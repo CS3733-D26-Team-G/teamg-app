@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import SearchBar from "./HeaderSearchBar";
 import { API_ENDPOINTS } from "../../config";
 import { dedupeAsync } from "../../lib/async-cache";
+import HelpPopup from "../HelpPopup.tsx";
 
 export default function ActivityComponent() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,7 +72,10 @@ export default function ActivityComponent() {
 
   return (
     <Box sx={{ width: "100%", justifySelf: "center" }}>
-      <SearchBar setSearchQuery={setSearchQuery} />
+      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+        <SearchBar setSearchQuery={setSearchQuery} />
+        <HelpPopup description="The Activity page shows a log of recent actions taken across the platform, including content views and updates." />
+      </Box>
 
       {loading ?
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
