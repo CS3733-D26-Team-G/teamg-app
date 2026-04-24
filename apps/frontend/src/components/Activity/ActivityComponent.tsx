@@ -43,25 +43,35 @@ export default function ActivityComponent() {
     const groups: { [key: string]: any[] } = {};
 
     rows.forEach((row) => {
-      const dateLabel = new Date(row.createdAt).toLocaleDateString(undefined, {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
+      // FIX: Use 'timestamp', not 'createdAt'
+      const dateObj = new Date(row.timestamp);
+      const isValid = row.timestamp && !isNaN(dateObj.getTime());
+
+      const dateLabel =
+        isValid ?
+          dateObj.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })
+        : "Unknown Date";
 
       if (!groups[dateLabel]) groups[dateLabel] = [];
 
       groups[dateLabel].push({
-        id: row.uuid ?? row.id ?? `temp-${Date.now()}-${Math.random()}`,
-        time: new Date(row.timestamp).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        id: row.uuid ?? row.id,
+        time:
+          isValid ?
+            dateObj.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "--:--",
         user:
           row.employee ?
             `${row.employee.first_name} ${row.employee.last_name}`
           : "System",
-        action: row.action,
+        action: row.action?.replace(/_/g, " "),
         resourceUuid: row.resourceUuid,
         resourceName: row.resourceName,
       });
