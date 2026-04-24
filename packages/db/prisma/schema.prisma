@@ -29,6 +29,7 @@ model Employee {
   corporate_email  String
   position         Position
   avatar           String?
+  avatar_supabase_path String?
   account          Account?
   activities       Activity[]
   contentLocks     ContentEditLock[]

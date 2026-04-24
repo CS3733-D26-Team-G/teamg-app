@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import * as React from "react";
+import { useState } from "react";
 import SearchBar from "./DashboardComponents/SearchBar";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -8,25 +8,18 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
 import {
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
-  ToggleButton,
-  ToggleButtonGroup,
 } from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
 import { getPositionLabel } from "../utils/positionDisplay.ts";
-import {
-  type Department,
-  type EmployeeRecord,
-  EmployeeRecordSchema,
-} from "../types/employee.ts";
+import { EmployeeRecordSchema, type Department } from "../types/employee.ts";
 import { API_ENDPOINTS } from "../config.ts";
-import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
+import { useProfile } from "../profile/ProfileContext.tsx";
 
 function Profile() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -44,8 +37,11 @@ function Profile() {
 
   const [toggle1, setToggle1] = React.useState(true);
   const [toggle2, setToggle2] = React.useState(true);
-
   const [avatarPopUpOpen, setAvatarPopUpOpen] = React.useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [avatarError, setAvatarError] = React.useState<string | null>(null);
+
+  const { profile, isLoading, setProfile } = useProfile();
 
   const handleToggle1 = (event: React.ChangeEvent<HTMLInputElement>) => {
     setToggle1(event.target.checked);
@@ -55,21 +51,14 @@ function Profile() {
     setToggle2(event.target.checked);
   };
 
-  const [file, setFile] = useState<File | null>(null);
-
-  const [profile, setProfile] = React.useState<EmployeeRecord | null>(null);
-  const [loading, setLoading] = React.useState(true);
-
-  const [profilePicture, setProfilePicture] = React.useState(
-    "/default-avatar.png",
-  );
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = e.target.files?.[0] ?? null;
     setFile(nextFile);
+    setAvatarError(null);
   };
 
   const handleProfilePicClick = () => {
+    setAvatarError(null);
     setAvatarPopUpOpen(true);
   };
 
@@ -86,46 +75,27 @@ function Profile() {
         body: formData,
       });
 
-      if (res.ok) {
-        await loadProfile();
-        setAvatarPopUpOpen(false);
-        setFile(null);
-      }
-    } catch (error) {
-      console.error("Failed to upload new avatar:", error);
-    }
-  };
-
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(API_ENDPOINTS.PROFILE, {
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data: unknown = await res.json();
-      console.log("Raw profile data:", data);
-
-      const parsed = EmployeeRecordSchema.safeParse(data);
-      if (!parsed.success) {
-        console.error("Profile failed schema validation:", parsed.error);
-        setProfile(null);
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setAvatarError(data?.message ?? "Failed to upload avatar");
         return;
       }
 
-      setProfile(parsed.data);
+      setProfile(EmployeeRecordSchema.parse(await res.json()));
+      setAvatarPopUpOpen(false);
+      setFile(null);
+      setAvatarError(null);
     } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      setProfile(null);
-    } finally {
-      setLoading(false);
+      console.error("Failed to upload new avatar:", error);
+      setAvatarError("Failed to upload avatar");
     }
   };
 
-  useEffect(() => {
-    void loadProfile();
-  }, []);
+  if (isLoading) {
+    return <Typography>Loading profile...</Typography>;
+  }
 
   if (!profile) {
     return <Typography>Failed to load profile.</Typography>;
@@ -595,6 +565,7 @@ function Profile() {
         <DialogContent
           sx={{
             display: "flex",
+            flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
           }}
@@ -616,6 +587,7 @@ function Profile() {
             <input
               type="file"
               hidden
+              accept="image/*"
               onChange={handleFileChange}
             />
             <Typography color="textSecondary">
@@ -631,9 +603,24 @@ function Profile() {
               </Typography>
             )}
           </Box>
+          {avatarError && (
+            <Typography
+              color="error"
+              sx={{ mt: 1 }}
+            >
+              {avatarError}
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAvatarPopUpOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setAvatarPopUpOpen(false);
+              setAvatarError(null);
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             variant="contained"
             disabled={!file}

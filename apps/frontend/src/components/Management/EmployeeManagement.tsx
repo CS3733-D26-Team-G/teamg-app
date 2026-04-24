@@ -37,6 +37,7 @@ import {
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import MenuItem from "@mui/material/MenuItem";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
+import { dedupeAsync } from "../../lib/async-cache";
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   flexDirection: "column",
@@ -102,11 +103,13 @@ export default function EmployeeManagement() {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const res = await fetch(API_ENDPOINTS.EMPLOYEE, {
-        credentials: "include",
+      const data = await dedupeAsync("employee:list", async () => {
+        const res = await fetch(API_ENDPOINTS.EMPLOYEE, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
       });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data: unknown = await res.json();
 
       const parsed = EmployeeRecordsSchema.safeParse(data);
       if (!parsed.success) {

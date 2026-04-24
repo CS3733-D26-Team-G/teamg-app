@@ -7,6 +7,7 @@ import {
 } from "react";
 import { API_ENDPOINTS } from "../config";
 import { SessionSchema, type Session } from "../types/auth";
+import { dedupeAsync } from "../lib/async-cache";
 
 interface AuthContextValue {
   isLoading: boolean;
@@ -18,19 +19,21 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function fetchSession(): Promise<Session | null> {
-  const res = await fetch(API_ENDPOINTS.SESSION, {
-    credentials: "include",
+  return dedupeAsync("session", async () => {
+    const res = await fetch(API_ENDPOINTS.SESSION, {
+      credentials: "include",
+    });
+
+    if (res.status === 401) {
+      return null;
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch session: ${res.status}`);
+    }
+
+    return SessionSchema.parse(await res.json());
   });
-
-  if (res.status === 401) {
-    return null;
-  }
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch session: ${res.status}`);
-  }
-
-  return SessionSchema.parse(await res.json());
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -4,6 +4,7 @@ import { type ActivityGroup } from "./activityData"; // Import the type, not the
 import { useState, useEffect } from "react";
 import SearchBar from "./HeaderSearchBar";
 import { API_ENDPOINTS } from "../../config";
+import { dedupeAsync } from "../../lib/async-cache";
 
 export default function ActivityComponent() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,17 +14,20 @@ export default function ActivityComponent() {
   useEffect(() => {
     const getActivity = async () => {
       try {
-        const res = await fetch(API_ENDPOINTS.ACTIVITY, {
-          method: "GET",
-          credentials: "include", // Required for Sam's Admin-only restriction
+        const rawRows = await dedupeAsync("activity", async () => {
+          const res = await fetch(API_ENDPOINTS.ACTIVITY, {
+            method: "GET",
+            credentials: "include",
+          });
+
+          if (!res.ok) {
+            throw new Error(`Failed to fetch activity: ${res.status}`);
+          }
+
+          return res.json();
         });
-
-        if (res.ok) {
-          const rawRows = await res.json();
-
-          const grouped = groupDataByDate(rawRows);
-          setData(grouped);
-        }
+        const grouped = groupDataByDate(rawRows);
+        setData(grouped);
       } catch (error) {
         console.error("Fetch error:", error);
       } finally {
