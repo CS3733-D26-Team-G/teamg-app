@@ -69,7 +69,7 @@ function Profile() {
     formData.append("avatar", file);
 
     try {
-      const res = await fetch(API_ENDPOINTS.PROFILE_AVATAR, {
+      const res = await fetch(API_ENDPOINTS.PROFILE.AVATAR, {
         method: "PUT",
         credentials: "include",
         body: formData,

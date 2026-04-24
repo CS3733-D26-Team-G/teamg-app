@@ -547,7 +547,7 @@ router.post("/tag/delete/:uuid", async (req, res) => {
   }
 });
 
-router.post("/tag/:tagUuid/content/:contentUuid", async (req, res) => {
+router.post("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
   const params = parseTagContentUuids(req, res);
   if (!params) {
     return;
@@ -611,7 +611,7 @@ router.post("/tag/:tagUuid/content/:contentUuid", async (req, res) => {
   }
 });
 
-router.delete("/tag/:tagUuid/content/:contentUuid", async (req, res) => {
+router.delete("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
   const params = parseTagContentUuids(req, res);
   if (!params) {
     return;
@@ -1206,73 +1206,6 @@ router.post("/favorite/:uuid", async (req, res) => {
       `Failed to update content ${uuid} favorite status for employee ${auth.employeeUuid}`,
       e,
     );
-  }
-});
-
-router.get("/count/position", async (req, res) => {
-  const auth = getAuth(req);
-
-  try {
-    const positions = Object.values(Position);
-    const groupedCounts = await prisma.content.groupBy({
-      where: getVisibleContentWhere(auth),
-      by: ["for_position"],
-      _count: {
-        _all: true,
-      },
-    });
-
-    const stats = positions.reduce<Record<Position, number>>(
-      (acc, position) => {
-        acc[position] =
-          groupedCounts.find((group) => group.for_position === position)?._count
-            ._all ?? 0;
-        return acc;
-      },
-      {} as Record<Position, number>,
-    );
-
-    return res.status(200).json(stats);
-  } catch (e) {
-    return sendInternalError(res, "Failed to retrieve content stats", e);
-  }
-});
-
-router.get("/count/tags", async (req, res) => {
-  const auth = getAuth(req);
-  const visibleContentWhere = getVisibleContentWhere(auth);
-
-  try {
-    const tags = await prisma.contentTag.findMany({
-      select: {
-        uuid: true,
-        name: true,
-        assignments: {
-          where:
-            visibleContentWhere ?
-              {
-                content: visibleContentWhere,
-              }
-            : undefined,
-          select: {
-            contentUuid: true,
-          },
-        },
-      },
-      orderBy: {
-        name: "asc",
-      },
-    });
-
-    return res.status(200).json(
-      tags.map((tag) => ({
-        uuid: tag.uuid,
-        name: tag.name,
-        count: tag.assignments.length,
-      })),
-    );
-  } catch (e) {
-    return sendInternalError(res, "Failed to retrieve content tag stats", e);
   }
 });
 
