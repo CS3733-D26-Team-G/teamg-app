@@ -17,7 +17,7 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
         variant="outlined"
         size="small"
         sx={{
-          width: "40%",
+          width: "100%",
           paddingLeft: "24px",
         }}
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
