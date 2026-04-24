@@ -7,7 +7,16 @@ import IconButton from "@mui/material/IconButton";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
-import { CircularProgress, Grid } from "@mui/material";
+import {
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
 import { getPositionLabel } from "../utils/positionDisplay.ts";
@@ -17,6 +26,7 @@ import {
   EmployeeRecordSchema,
 } from "../types/employee.ts";
 import { API_ENDPOINTS } from "../config.ts";
+import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
 
 function Profile() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -35,6 +45,8 @@ function Profile() {
   const [toggle1, setToggle1] = React.useState(true);
   const [toggle2, setToggle2] = React.useState(true);
 
+  const [avatarPopUpOpen, setAvatarPopUpOpen] = React.useState(false);
+
   const handleToggle1 = (event: React.ChangeEvent<HTMLInputElement>) => {
     setToggle1(event.target.checked);
   };
@@ -43,8 +55,46 @@ function Profile() {
     setToggle2(event.target.checked);
   };
 
+  const [file, setFile] = useState<File | null>(null);
+
   const [profile, setProfile] = React.useState<EmployeeRecord | null>(null);
   const [loading, setLoading] = React.useState(true);
+
+  const [profilePicture, setProfilePicture] = React.useState(
+    "/default-avatar.png",
+  );
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextFile = e.target.files?.[0] ?? null;
+    setFile(nextFile);
+  };
+
+  const handleProfilePicClick = () => {
+    setAvatarPopUpOpen(true);
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    try {
+      const res = await fetch(API_ENDPOINTS.EMPLOYEE, {
+        method: "Put",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (res.ok) {
+        await loadProfile();
+        setAvatarPopUpOpen(false);
+        setFile(null);
+      }
+    } catch (error) {
+      console.error("Failed to upload new avatar:", error);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -174,18 +224,21 @@ function Profile() {
               pl: 3,
             }}
           >
-            <Avatar
-              src={profile.avatar ?? undefined}
-              sx={{
-                width: 180,
-                height: 180,
-              }}
-            />
+            <IconButton onClick={handleProfilePicClick}>
+              <Avatar
+                src={profile.avatar ?? undefined}
+                sx={{
+                  width: 180,
+                  height: 180,
+                }}
+              />
+            </IconButton>
           </Box>
+
           <Stack>
             <Typography
               sx={{
-                fontSize: 48,
+                fontSize: 38,
                 fontWeight: 500,
                 lineHeight: 1.1,
                 ml: -0.8,
@@ -531,6 +584,67 @@ function Profile() {
           </Stack>
         </Box>
       </Stack>
+
+      <Dialog
+        open={avatarPopUpOpen}
+        onClose={() => setAvatarPopUpOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Update Profile Picture</DialogTitle>
+        <DialogContent
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Box
+            sx={{
+              "display": "block",
+              "border": "1px solid rgba(0, 0, 0, 0.23)",
+              "borderRadius": "5px",
+              "p": 3.5,
+              "px": 10,
+              "textAlign": "center",
+              "my": 1,
+              "cursor": "pointer",
+              "&:hover": { borderColor: "rgba(0, 0, 0, 0.87)" },
+            }}
+            component="label"
+          >
+            <input
+              type="file"
+              hidden
+              onChange={handleFileChange}
+            />
+            <Typography color="textSecondary">
+              {file ? `Selected: ${file.name}` : "Click to upload local file"}
+            </Typography>
+            {!file && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 1 }}
+              >
+                Leave this empty to keep the current uploaded file.
+              </Typography>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAvatarPopUpOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!file}
+            onClick={() => {
+              void handleSaveAvatar();
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
