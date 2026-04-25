@@ -403,7 +403,7 @@ export default function ContentManagement({
     setLockMessage(null);
 
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_LOCK(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT.LOCK(row.uuid), {
         method: "POST",
         credentials: "include",
       });
@@ -446,7 +446,7 @@ export default function ContentManagement({
 
   const handleOpenEditor = (row: ContentRow) => {
     setSelectedDoc({
-      uri: API_ENDPOINTS.CONTENT_FILE(row.uuid),
+      uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
       fileName: row.title,
       uuid: row.uuid,
       for_position: row.for_position,
@@ -1431,6 +1431,7 @@ export default function ContentManagement({
           onClose={() => setEditorOpen(false)}
           uri={selectedDoc.uri}
           fileName={selectedDoc.fileName}
+          uuid={selectedDoc.uuid}
           readOnly={false}
         />
       )}

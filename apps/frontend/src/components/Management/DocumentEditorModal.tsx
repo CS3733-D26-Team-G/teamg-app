@@ -1,11 +1,13 @@
 import { useRef, useEffect } from "react";
 import { Dialog, Box, Button, Stack, Typography } from "@mui/material";
 import WebViewer, { type WebViewerInstance } from "@pdftron/webviewer";
+import { API_ENDPOINTS } from "../../config.ts";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   uri: string;
+  uuid: string;
   fileName: string;
   readOnly?: boolean;
 }
@@ -27,6 +29,7 @@ export default function DocumentEditorModal({
   onClose,
   uri,
   fileName,
+  uuid,
   readOnly = false,
 }: Props) {
   const viewerDivRef = useRef<HTMLDivElement | null>(null);
@@ -146,6 +149,26 @@ export default function DocumentEditorModal({
             direction="row"
             gap={1}
           >
+            <Button
+              variant="contained"
+              onClick={async () => {
+                const instance = instanceRef.current;
+                if (!instance) return;
+                const doc = instance.Core.documentViewer.getDocument();
+                const data = await doc.getFileData({});
+                const blob = new Blob([data]);
+                const formData = new FormData();
+                formData.append("file", blob, fileName);
+                await fetch(API_ENDPOINTS.CONTENT.EDIT(uuid), {
+                  method: "PUT",
+                  credentials: "include",
+                  body: formData,
+                });
+                onClose();
+              }}
+            >
+              Save
+            </Button>
             <Button onClick={onClose}>Close</Button>
           </Stack>
         </Stack>
