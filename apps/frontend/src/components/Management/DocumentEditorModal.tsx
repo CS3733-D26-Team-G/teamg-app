@@ -19,6 +19,9 @@ const mimeToExt: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation":
     "pptx",
+  "application/vnd.ms-powerpoint": "ppt", // add
+  "application/vnd.ms-excel": "xls", // add
+  "application/msword": "doc", // add
   "image/png": "png",
   "image/jpeg": "jpg",
   "video/mp4": "mp4",
@@ -39,7 +42,7 @@ export default function DocumentEditorModal({
 
   // Initialize WebViewer once on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const frameId = requestAnimationFrame(() => {
       if (hasInitializedRef.current || !viewerDivRef.current) return;
       hasInitializedRef.current = true;
 
@@ -59,14 +62,15 @@ export default function DocumentEditorModal({
           !!pendingLoadRef.current,
         );
         if (readOnly) instance.UI.setToolMode("Pan");
+        window.dispatchEvent(new Event("resize"));
         if (pendingLoadRef.current) {
           pendingLoadRef.current();
           pendingLoadRef.current = null;
         }
       });
-    }, 500);
+    });
 
-    return () => clearTimeout(timer);
+    return () => cancelAnimationFrame(frameId);
   }, []);
 
   const currentUriRef = useRef<string>("");
@@ -137,7 +141,7 @@ export default function DocumentEditorModal({
           direction="row"
           justifyContent="space-between"
           alignItems="center"
-          sx={{ p: 1, gap: 1 }}
+          sx={{ p: 1, gap: 1, flexShrink: 0 }}
         >
           <Typography
             variant="subtitle2"
@@ -172,10 +176,19 @@ export default function DocumentEditorModal({
             <Button onClick={onClose}>Close</Button>
           </Stack>
         </Stack>
-        <Box
-          sx={{ flex: 1, overflow: "hidden", minHeight: 0 }}
-          ref={viewerDivRef}
-        />
+        <Box sx={{ flex: 1, minHeight: 0, position: "relative" }}>
+          <Box
+            ref={viewerDivRef}
+            sx={{
+              "position": "absolute",
+              "inset": 0,
+              "& iframe": {
+                width: "100% !important",
+                height: "100% !important",
+              },
+            }}
+          />
+        </Box>
       </Box>
     </Dialog>
   );

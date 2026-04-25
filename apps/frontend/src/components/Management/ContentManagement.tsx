@@ -7,6 +7,7 @@ import {
   AppBar,
   Toolbar,
   styled,
+  Stack,
   Typography,
   Link,
   Chip,
@@ -20,7 +21,6 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Divider,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
@@ -30,8 +30,6 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
-import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
-import "@cyntler/react-doc-viewer";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
@@ -50,7 +48,6 @@ import {
   getPositionChipColor,
   getPositionLabel,
 } from "../../utils/positionDisplay";
-import { param } from "framer-motion/m";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import mime from "mime-types";
@@ -78,18 +75,6 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 128,
 }));
 
-type PreviewRow = {
-  uuid: string;
-  isPreviewRow: true;
-  parentUuid: string;
-};
-
-type GridRow = ContentRow | PreviewRow;
-
-function isPreviewRow(row: GridRow): row is PreviewRow {
-  return "isPreviewRow" in row && row.isPreviewRow;
-}
-
 {
   /* Highlights new content based on what is different from start of session */
 }
@@ -98,7 +83,6 @@ function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
   const SESSION_KEY = `session_id_${userUuid}`;
 
-  // Generate a session ID for this tab using sessionStorage
   if (!sessionStorage.getItem(SESSION_KEY)) {
     sessionStorage.setItem(SESSION_KEY, crypto.randomUUID());
   }
@@ -138,7 +122,6 @@ export default function ContentManagement({
   const isDark = theme.palette.mode === "dark";
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
-  const [previewRowUuid, setPreviewRowUuid] = useState<string | null>(null);
 
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
@@ -148,7 +131,7 @@ export default function ContentManagement({
     null,
   );
 
-  const [searchParams, setSearchParams] = useSearchParams(); // Add this
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -158,6 +141,7 @@ export default function ContentManagement({
   >({});
   const { session } = useAuth();
 
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
@@ -187,7 +171,6 @@ export default function ContentManagement({
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-
         return res.json();
       });
       const parsed = ContentRowsSchema.safeParse(data);
@@ -230,13 +213,10 @@ export default function ContentManagement({
           const searchMatch = targetFields.some((field) =>
             field?.toLowerCase().includes(searchQuery.toLowerCase()),
           );
-
           if (!searchMatch) return false;
         }
 
-        //Filter Button Logic
-
-        //Position Filter
+        // Position Filter
         if (
           positionFilters.length > 0 &&
           !positionFilters.includes(row.for_position)
@@ -244,7 +224,7 @@ export default function ContentManagement({
           return false;
         }
 
-        //File Type Filter
+        // File Type Filter
         if (
           fileTypeFilters.length > 0 &&
           !fileTypeFilters.includes(row.file_type ?? "")
@@ -257,49 +237,19 @@ export default function ContentManagement({
     [rows, searchQuery, positionFilters, fileTypeFilters],
   );
 
-  const rowsWithPreview = useMemo(() => {
-    if (!previewRowUuid) {
-      return filteredRows;
-    }
-
-    const index = filteredRows.findIndex((row) => row.uuid === previewRowUuid);
-
-    if (index === -1) {
-      return filteredRows;
-    }
-
-    const previewRow: PreviewRow = {
-      uuid: `preview-${previewRowUuid}`,
-      isPreviewRow: true,
-      parentUuid: previewRowUuid,
-    };
-
-    const newRows: GridRow[] = [...filteredRows];
-    newRows.splice(index + 1, 0, previewRow);
-
-    return newRows;
-  }, [filteredRows, previewRowUuid]);
-
   const togglePosition = (position: string) => {
-    //update the position filters array
     setPositionFilters((currentPositionFilters) => {
-      //check if the current array already has the toggled position
       if (currentPositionFilters.includes(position)) {
-        //clear selected filter
         return currentPositionFilters.filter((pos) => pos !== position);
       } else {
-        //add selected position filter
         return currentPositionFilters.concat(position);
       }
     });
   };
 
   const toggleFileType = (fileType: string) => {
-    //update the file type filters array
     setFileTypeFilters((currentFileTypeFilters) => {
-      //check if the current array already has the toggled file type
       if (currentFileTypeFilters.includes(fileType)) {
-        //clear selected filter
         return currentFileTypeFilters.filter((type) => type !== fileType);
       } else {
         return currentFileTypeFilters.concat(fileType);
@@ -310,10 +260,9 @@ export default function ContentManagement({
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
   };
+
   const confirmDelete = async () => {
-    if (!pendingDelete) {
-      return;
-    }
+    if (!pendingDelete) return;
 
     const rowToDelete = pendingDelete;
     setPendingDelete(null);
@@ -336,69 +285,6 @@ export default function ContentManagement({
     }
   };
 
-  const handleEditStart = async (row: ContentRow) => {
-    setLockMessage(null);
-
-    try {
-      const res = await fetch(API_ENDPOINTS.CONTENT.LOCK(row.uuid), {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (res.status === 409) {
-        setRows((prev) =>
-          prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
-        );
-        return;
-      }
-
-      if (!res.ok) {
-        setLockMessage("Unable to lock content");
-        return;
-      }
-
-      setViewState(row);
-    } catch (error) {
-      console.error(error);
-      setLockMessage("Unable to lock content for editing.");
-    }
-  };
-
-  const [paginationModel, setPaginationModel] = useState({
-    pageSize: 10,
-    page: 0,
-  });
-
-  const paginatedRows = useMemo(() => {
-    const start = paginationModel.page * paginationModel.pageSize;
-    // Add 1 slot for the preview row if it falls within this page
-    const contentRows = rowsWithPreview.filter((r) => !isPreviewRow(r));
-    const pageContentRows = contentRows.slice(
-      start,
-      start + paginationModel.pageSize,
-    );
-
-    // Re-insert the preview row if its parent is on this page
-    if (previewRowUuid) {
-      const parentIndex = pageContentRows.findIndex(
-        (r) => r.uuid === previewRowUuid,
-      );
-      if (parentIndex !== -1) {
-        const result: GridRow[] = [...pageContentRows];
-        result.splice(parentIndex + 1, 0, {
-          uuid: `preview-${previewRowUuid}`,
-          isPreviewRow: true as const,
-          parentUuid: previewRowUuid,
-        });
-        return result;
-      }
-    }
-    return pageContentRows;
-  }, [rowsWithPreview, paginationModel, previewRowUuid]);
-
-  // Exclude preview rows from the real row count
-  const realRowCount = rowsWithPreview.filter((r) => !isPreviewRow(r)).length;
-
   const handleCheckout = async (row: ContentRow) => {
     setLockMessage(null);
 
@@ -409,7 +295,6 @@ export default function ContentManagement({
       });
 
       if (res.status === 409) {
-        // already locked by someone else
         setRows((prev) =>
           prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
         );
@@ -476,9 +361,7 @@ export default function ContentManagement({
   };
 
   const confirmSave = async () => {
-    if (!pendingSave) {
-      return;
-    }
+    if (!pendingSave) return;
 
     const payloadToSave = pendingSave;
     setPendingSave(null);
@@ -511,10 +394,7 @@ export default function ContentManagement({
   const toggleFavorite = async (row: ContentRow) => {
     const nextIsFavorite = !row.is_favorite;
 
-    setFavoritePending((prev) => ({
-      ...prev,
-      [row.uuid]: true,
-    }));
+    setFavoritePending((prev) => ({ ...prev, [row.uuid]: true }));
 
     try {
       const res = await fetch(API_ENDPOINTS.CONTENT.FAVORITE(row.uuid), {
@@ -547,10 +427,7 @@ export default function ContentManagement({
     } catch (error) {
       console.error(error);
     } finally {
-      setFavoritePending((prev) => ({
-        ...prev,
-        [row.uuid]: false,
-      }));
+      setFavoritePending((prev) => ({ ...prev, [row.uuid]: false }));
     }
   };
 
@@ -570,6 +447,7 @@ export default function ContentManagement({
       console.error("Download failed:", error);
     }
   };
+
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElement(event.currentTarget);
   };
@@ -634,13 +512,12 @@ export default function ContentManagement({
   );
 
   const getColumns = (
-    //onEdit: (row: ContentRow) => void,
     onPreview: (row: ContentRow) => void,
     onDownload: (row: ContentRow) => void,
     onCheckOut: (row: ContentRow) => void,
     onOpenEditor: (row: ContentRow) => void,
     onCheckIn: (uuid: string) => void,
-  ): GridColDef<GridRow>[] => [
+  ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
       headerName: "",
@@ -648,141 +525,53 @@ export default function ContentManagement({
       type: "number",
       sortable: false,
       filterable: false,
-      valueGetter: (_value, row) => {
-        if (isPreviewRow(row)) return 0;
-        return row.is_favorite ? 1 : 0;
-      },
-      renderCell: (params) => {
-        const row = params.row;
-        if (isPreviewRow(row)) return null;
-
-        return (
-          <IconButton
-            onClick={() => void toggleFavorite(row)}
-            disabled={favoritePending[row.uuid]}
-          >
-            <Heart
-              size={20}
-              fill={row.is_favorite ? "#e50000" : "none"}
-              color={row.is_favorite ? "#ff4d4f" : "#e50000"}
-            />
-          </IconButton>
-        );
-      },
+      valueGetter: (_value, row) => (row.is_favorite ? 1 : 0),
+      renderCell: (params) => (
+        <IconButton
+          onClick={() => void toggleFavorite(params.row)}
+          disabled={favoritePending[params.row.uuid]}
+        >
+          <Heart
+            size={20}
+            fill={params.row.is_favorite ? "#e50000" : "none"}
+            color={params.row.is_favorite ? "#ff4d4f" : "#e50000"}
+          />
+        </IconButton>
+      ),
     },
     {
       field: "title",
       headerName: "Title",
       flex: 1,
-      colSpan: (params) => {
-        if (!params?.row) return 1;
-        return isPreviewRow(params.row) ? 10 : 1;
-      },
-      renderCell: (params) => {
-        const row = params.row;
-        if (isPreviewRow(row)) {
-          return (
-            <Box
-              sx={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: 0,
-                bottom: 0,
-                p: 2,
-                width: "100%",
-                boxSizing: "border-box",
-                pointerEvents: "auto",
-                zIndex: 1,
-              }}
-            >
-              <Box
-                sx={{
-                  height: "100%",
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  overflow: "hidden",
-                  backgroundColor: "background.paper",
-                }}
-              >
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    backgroundColor: "action.hover",
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600 }}
-                  >
-                    {selectedDoc?.fileName}
-                  </Typography>
-
-                  <Button
-                    size="small"
-                    onClick={() => {
-                      setPreviewRowUuid(null);
-                      setSelectedDoc(null);
-                    }}
-                  >
-                    Close
-                  </Button>
-                </Box>
-
-                <Box sx={{ height: 430 }}>
-                  {selectedDoc && (
-                    <DocPreviewer
-                      key={selectedDoc.uuid}
-                      uri={selectedDoc.uri}
-                      fileName={selectedDoc.fileName}
-                    />
-                  )}
-                </Box>
-              </Box>
-            </Box>
-          );
-        }
-
-        return (
-          <Box sx={{ display: "flex", gap: 0.5 }}>
-            <IconButton
-              onClick={(e) => {
-                e.stopPropagation();
-                void toggleFavorite(row);
-              }}
-              disabled={favoritePending[row.uuid]}
-            >
-              <Heart
-                size={20}
-                fill={row.is_favorite ? "#e50000" : "none"}
-                color={row.is_favorite ? "#ff4d4f" : "#e50000"}
-              />
-            </IconButton>
-            {row.title}
-          </Box>
-        );
-      },
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation();
+              void toggleFavorite(params.row);
+            }}
+            disabled={favoritePending[params.row.uuid]}
+          >
+            <Heart
+              size={20}
+              fill={params.row.is_favorite ? "#e50000" : "none"}
+              color={params.row.is_favorite ? "#ff4d4f" : "#e50000"}
+            />
+          </IconButton>
+          {params.row.title}
+        </Box>
+      ),
     },
     {
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
       width: 130,
-      valueGetter: (_value, row) => {
-        if (isPreviewRow(row)) return null;
-        return row.last_modified_time ? new Date(row.last_modified_time) : null;
-      },
+      valueGetter: (_value, row) =>
+        row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
         const date = params.value as Date | null;
         const isNew = sessionNewIds.has(params.row.uuid);
-        if (isPreviewRow(params.row)) return null;
         return (
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             {isNew && (
@@ -808,18 +597,15 @@ export default function ContentManagement({
       field: "url",
       headerName: "URL",
       flex: 1,
-      renderCell: (params) => {
-        if (isPreviewRow(params.row)) return null;
-        return (
-          <Link
-            href={params.value}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {params.value}
-          </Link>
-        );
-      },
+      renderCell: (params) => (
+        <Link
+          href={params.value}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {params.value}
+        </Link>
+      ),
     },
     {
       field: "content_owner",
@@ -831,7 +617,6 @@ export default function ContentManagement({
       headerName: "Editor",
       width: 140,
       valueGetter: (_, row) => {
-        if (isPreviewRow(row)) return "";
         const employee = row.editLock?.lockedByEmp;
         return employee ? `${employee.first_name} ${employee.last_name}` : "";
       },
@@ -841,34 +626,28 @@ export default function ContentManagement({
       headerName: "Position",
       width: 160,
       align: "center",
-      renderCell: (params) => {
-        if (isPreviewRow(params.row)) return null;
-        return (
-          <Chip
-            label={getPositionLabel(params.value as Position)}
-            color={getPositionChipColor(params.value as Position)}
-            size="small"
-            variant="outlined"
-          />
-        );
-      },
+      renderCell: (params) => (
+        <Chip
+          label={getPositionLabel(params.value as Position)}
+          color={getPositionChipColor(params.value as Position)}
+          size="small"
+          variant="outlined"
+        />
+      ),
     },
     {
       field: "status",
       headerName: "Status",
       width: 120,
       align: "center",
-      renderCell: (params) => {
-        if (isPreviewRow(params.row)) return null;
-        return (
-          <Chip
-            label={statusLabels[params.value as ContentStatus]}
-            size="small"
-            variant="outlined"
-            sx={{ borderColor: "black" }}
-          />
-        );
-      },
+      renderCell: (params) => (
+        <Chip
+          label={statusLabels[params.value as ContentStatus]}
+          size="small"
+          variant="outlined"
+          sx={{ borderColor: "black" }}
+        />
+      ),
     },
     {
       field: "file_type",
@@ -877,7 +656,6 @@ export default function ContentManagement({
       align: "center",
       renderCell: (params) => {
         const ext = params.value ? mime.extension(params.value) : null;
-        if (isPreviewRow(params.row)) return null;
         return (
           <Chip
             label={ext ? `.${ext.toUpperCase()}` : "N/A"}
@@ -890,14 +668,14 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 190,
+      width: 220,
+      minWidth: 220,
       align: "center",
       resizable: false,
       sortable: false,
       filterable: false,
       renderCell: (params) => {
         const row = params.row;
-        if (isPreviewRow(row)) return null;
         const hasPermission =
           isSystemAdmin || userPosition === row.for_position;
         const lockedByUuid = row.editLock?.lockedByEmp?.uuid;
@@ -914,7 +692,7 @@ export default function ContentManagement({
               overflow: "hidden",
             }}
           >
-            {/* Preview - always visible and opens inline viewer*/}
+            {/* Preview */}
             <Tooltip title="Preview">
               <IconButton
                 color="primary"
@@ -924,6 +702,7 @@ export default function ContentManagement({
               </IconButton>
             </Tooltip>
 
+            {/* Download */}
             <Tooltip
               title={
                 !hasPermission ?
@@ -942,7 +721,7 @@ export default function ContentManagement({
               </span>
             </Tooltip>
 
-            {/* Only show checkout button on non-checked out files */}
+            {/* Check Out — only when not locked */}
             {!row.isLocked && (
               <Tooltip
                 title={
@@ -964,7 +743,7 @@ export default function ContentManagement({
               </Tooltip>
             )}
 
-            {/* Edit - only shows up when checked out by user */}
+            {/* Edit — only when checked out by current user */}
             {isCheckedOutByMe && (
               <Tooltip title="Open editor">
                 <IconButton
@@ -976,7 +755,7 @@ export default function ContentManagement({
               </Tooltip>
             )}
 
-            {/* Check In - release lock, shows up when checked out by user */}
+            {/* Check In — release lock, only when checked out by current user */}
             {isCheckedOutByMe && (
               <Tooltip title="Check In (release lock)">
                 <IconButton
@@ -991,7 +770,7 @@ export default function ContentManagement({
             {/* Locked by someone else */}
             {isCheckedOutByOther && (
               <Tooltip
-                title={` Check out by ${row.editLock?.lockedByEmp.first_name} ${row.editLock?.lockedByEmp.last_name}`}
+                title={`Checked out by ${row.editLock?.lockedByEmp.first_name} ${row.editLock?.lockedByEmp.last_name}`}
               >
                 <span>
                   <Button
@@ -999,7 +778,7 @@ export default function ContentManagement({
                     disabled
                     sx={{ border: "0.5px solid" }}
                   >
-                    CHECKED OUT
+                    LOCKED
                   </Button>
                 </span>
               </Tooltip>
@@ -1068,22 +847,16 @@ export default function ContentManagement({
                 </Button>
               </Box>
 
-              {/*Filter Pop-up*/}
+              {/* Filter Pop-up */}
               <Popover
                 open={Boolean(anchorElement)}
                 anchorEl={anchorElement}
                 onClose={handleClose}
                 anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
                 slotProps={{
-                  paper: {
-                    sx: {
-                      border: "1px solid",
-                      borderColor: "gray",
-                    },
-                  },
+                  paper: { sx: { border: "1px solid", borderColor: "gray" } },
                 }}
               >
-                {/*Position Item*/}
                 <MenuItem
                   onClick={(event) => {
                     setPositionAnchor(event.currentTarget);
@@ -1093,8 +866,6 @@ export default function ContentManagement({
                   Position
                   <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
-
-                {/*File Type Item*/}
                 <MenuItem
                   onClick={(event) => {
                     setFileTypeAnchor(event.currentTarget);
@@ -1106,7 +877,7 @@ export default function ContentManagement({
                 </MenuItem>
               </Popover>
 
-              {/*Position Sub-Pop-Up*/}
+              {/* Position Sub-Pop-Up */}
               <Popover
                 open={Boolean(positionAnchor)}
                 anchorEl={positionAnchor}
@@ -1115,11 +886,7 @@ export default function ContentManagement({
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
                 slotProps={{
                   paper: {
-                    sx: {
-                      border: "1px solid",
-                      borderColor: "gray",
-                      ml: 1,
-                    },
+                    sx: { border: "1px solid", borderColor: "gray", ml: 1 },
                   },
                 }}
               >
@@ -1179,7 +946,7 @@ export default function ContentManagement({
                 </FormGroup>
               </Popover>
 
-              {/*File Type Sub-Pop-Up*/}
+              {/* File Type Sub-Pop-Up */}
               <Popover
                 open={Boolean(fileTypeAnchor)}
                 anchorEl={fileTypeAnchor}
@@ -1188,11 +955,7 @@ export default function ContentManagement({
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
                 slotProps={{
                   paper: {
-                    sx: {
-                      border: "1px solid",
-                      borderColor: "gray",
-                      ml: 1,
-                    },
+                    sx: { border: "1px solid", borderColor: "gray", ml: 1 },
                   },
                 }}
               >
@@ -1318,47 +1081,30 @@ export default function ContentManagement({
       </AppBar>
 
       <DataGrid
-        rows={paginatedRows}
+        rows={filteredRows}
         getRowId={(row) => row.uuid}
-        paginationModel={paginationModel}
-        onPaginationModelChange={(model) => {
-          setPaginationModel(model);
-          setPreviewRowUuid(null);
-          setSelectedDoc(null);
-        }}
-        paginationMode="client"
         columns={getColumns(
           (row) => {
             const isExternalUrl =
               !row.supabasePath && !row.url.includes("supabase.co/storage");
-
             if (isExternalUrl) {
               window.open(row.url, "_blank");
               return;
             }
-
             setSelectedDoc({
               uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
               fileName: row.title,
               uuid: row.uuid,
               for_position: row.for_position,
             });
-
-            setPreviewRowUuid((current) =>
-              current === row.uuid ? null : row.uuid,
-            );
+            setPreviewOpen(true);
           },
           handleDownload,
           handleCheckout,
           handleOpenEditor,
           releaseLock,
         )}
-        getRowHeight={(params) => {
-          if ((params.model as any).isPreviewRow) return 520;
-          return null;
-        }}
         getRowClassName={(params) => {
-          if (isPreviewRow(params.row)) return "preview-row";
           const hasPermission =
             isSystemAdmin || userPosition === params.row.for_position;
           const isNew = sessionNewIds.has(params.row.uuid);
@@ -1369,8 +1115,7 @@ export default function ContentManagement({
         }}
         sx={{
           "height": 600,
-          "overflow": "hidden", // ← add this
-          "position": "relative", // ← add this
+          "overflow": "hidden",
           "& .row-locked": {
             backgroundColor:
               isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(245, 245, 245, 1)",
@@ -1396,24 +1141,9 @@ export default function ContentManagement({
                 `${theme.palette.primary.main}38`
               : `${theme.palette.primary.light}D9`,
           },
-          "& .MuiDataGrid-cell": {
-            overflow: "hidden",
-            maxWidth: "100%",
-          },
-          "& .MuiDataGrid-row": {
-            overflow: "hidden",
-          },
-          "& .MuiDataGrid-row:not(.preview-row)": {
-            pointerEvents: "auto",
-            position: "relative",
-            zIndex: 2,
-          },
-          "& .MuiDataGrid-cell--withRenderer iframe": {
-            width: "100% !important",
-            height: "100% !important",
-          },
         }}
         initialState={{
+          pagination: { paginationModel: { pageSize: 10 } },
           sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
           columns: {
             columnVisibilityModel: {
@@ -1424,7 +1154,53 @@ export default function ContentManagement({
         pageSizeOptions={[5, 10]}
       />
 
-      {/* DocumentEditorModal — opened via the Edit button when checked out */}
+      {/* Preview Dialog */}
+      <Dialog
+        open={previewOpen}
+        onClose={() => {
+          setPreviewOpen(false);
+          setSelectedDoc(null);
+        }}
+        maxWidth="lg"
+        fullWidth
+        keepMounted
+      >
+        <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ p: 1, gap: 1, flexShrink: 0 }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{ pl: 1, color: "text.secondary" }}
+              noWrap
+            >
+              {selectedDoc?.fileName ?? "Preview"}
+            </Typography>
+            <Button
+              onClick={() => {
+                setPreviewOpen(false);
+                setSelectedDoc(null);
+              }}
+            >
+              Close
+            </Button>
+          </Stack>
+          <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+            {selectedDoc && (
+              <DocPreviewer
+                key={selectedDoc.uuid}
+                uri={selectedDoc.uri}
+                fileName={selectedDoc.fileName}
+              />
+            )}
+          </Box>
+        </Box>
+      </Dialog>
+
+      {/* Document Editor Modal — opened via the Edit button when checked out */}
       {editorOpen && selectedDoc && (
         <DocumentEditorModal
           open={editorOpen}
@@ -1435,6 +1211,7 @@ export default function ContentManagement({
           readOnly={false}
         />
       )}
+
       {confirmationDialogs}
     </Box>
   );
