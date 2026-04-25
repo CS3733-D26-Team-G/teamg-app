@@ -61,6 +61,7 @@ import sessionRouter from "./routes/session.ts";
 import accountSettingsRouter from "./routes/account-settings.ts";
 import activityRouter from "./routes/activity.ts";
 import profileRouter from "./routes/profile.ts";
+import statsRouter from "./routes/stats.ts";
 
 const routeMap = {
   "account-settings": accountSettingsRouter,
@@ -71,6 +72,7 @@ const routeMap = {
   "logout": logoutRouter,
   "session": sessionRouter,
   "profile": profileRouter,
+  "stats": statsRouter,
 };
 for (const [path, router] of Object.entries(routeMap)) {
   logger.info(`Loaded /${path} route`);

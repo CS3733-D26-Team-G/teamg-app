@@ -46,7 +46,7 @@ function normalizeProfile(
 
 async function fetchProfile(): Promise<EmployeeRecord | null> {
   return dedupeAsync("profile", async () => {
-    const res = await fetch(API_ENDPOINTS.PROFILE, {
+    const res = await fetch(API_ENDPOINTS.PROFILE.ROOT, {
       credentials: "include",
     });
 
