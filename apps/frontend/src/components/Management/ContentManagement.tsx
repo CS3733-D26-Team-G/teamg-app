@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import InfoIcon from "@mui/icons-material/Info";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -55,6 +56,7 @@ import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
 import { dedupeAsync } from "../../lib/async-cache";
 import HelpPopup from "../../components/HelpPopup";
+import InfoPopup from "./ContentInfoPopup.tsx";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -543,6 +545,12 @@ export default function ContentManagement({
             />
           </IconButton>
           {params.row.title}
+          <InfoPopup
+            url={params.row.url}
+            author={params.row.content_owner}
+            position={getPositionLabel(params.row.for_position as Position)}
+            fileType={params.row.file_type}
+          />
         </Box>
       ),
     },
@@ -550,7 +558,7 @@ export default function ContentManagement({
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 130,
+      width: 170,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -574,6 +582,21 @@ export default function ContentManagement({
               : "—"}
             </span>
           </Box>
+        );
+      },
+    },
+    {
+      field: "expiration",
+      headerName: "Expiration",
+      width: 170,
+      renderCell: (params) => {
+        const ext = params.value ? mime.extension(params.value) : null;
+        return (
+          <Chip
+            label={ext ? `.${ext.toUpperCase()}` : "Test Value"}
+            size="small"
+            variant="outlined"
+          />
         );
       },
     },
@@ -622,14 +645,20 @@ export default function ContentManagement({
     {
       field: "status",
       headerName: "Status",
-      width: 120,
+      width: 170,
       align: "center",
       renderCell: (params) => (
         <Chip
           label={statusLabels[params.value as ContentStatus]}
           size="small"
-          variant="outlined"
-          sx={{ borderColor: "black" }}
+          variant="filled"
+          sx={{
+            fontSize: "14px",
+            borderRadius: "4px",
+            borderColor: "black",
+            px: 1,
+            height: "30px",
+          }}
         />
       ),
     },
@@ -652,8 +681,8 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 190,
-      align: "center",
+      width: 200,
+      align: "left",
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
@@ -1043,6 +1072,7 @@ export default function ContentManagement({
         }}
         sx={{
           "height": 600,
+          "border": "none",
           "& .row-locked": {
             backgroundColor:
               isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(245, 245, 245, 1)",
@@ -1074,7 +1104,12 @@ export default function ContentManagement({
           sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
           columns: {
             columnVisibilityModel: {
-              favorite: false,
+              "favorite": false,
+              "url": false,
+              "content_owner": false,
+              "edited-by": false,
+              "for_position": false,
+              "file_type": false,
             },
           },
         }}
