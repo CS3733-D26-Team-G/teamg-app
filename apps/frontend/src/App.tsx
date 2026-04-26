@@ -6,6 +6,9 @@ import Sidebar from "./components/Sidebar.tsx";
 import { AppThemeProvider } from "./Themecontext.tsx";
 import { AuthProvider, useAuth } from "./auth/AuthContext.tsx";
 import { ProfileProvider } from "./profile/ProfileContext.tsx";
+import { TutorialProvider } from "./components/Tutorial/TutorialContext.tsx";
+import TutorialOverlay from "./components/Tutorial/TutorialOverlay.tsx";
+import TutorialPrompt from "./components/Tutorial/TutorialPrompt.tsx";
 
 import Hero from "./pages/hero.tsx";
 import Dashboard from "./pages/dashboard.tsx";
@@ -169,6 +172,10 @@ function AppLayout() {
           />
         </Routes>
       </div>
+
+      {/* Tutorial system — rendered above everything else */}
+      <TutorialPrompt />
+      <TutorialOverlay />
     </div>
   );
 }
@@ -178,7 +185,9 @@ function App() {
     <AuthProvider>
       <ProfileProvider>
         <AppThemeProvider>
-          <AppLayout />
+          <TutorialProvider>
+            <AppLayout />
+          </TutorialProvider>
         </AppThemeProvider>
       </ProfileProvider>
     </AuthProvider>
