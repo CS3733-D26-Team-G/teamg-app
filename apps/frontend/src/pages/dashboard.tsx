@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivity";
 import SearchBar from "./DashboardComponents/SearchBar";
 import PieChart from "./DashboardComponents/PieChart";
-import BarChart from "./DashboardComponents/BarChart";
+//import BarChart from "./DashboardComponents/BarChart";
 import { Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -17,11 +17,13 @@ export function useActivityData() {
   const [analytics, setAnalytics] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>(
+    {},
+  );
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [logsData, countsData] = await Promise.all([
+      const [logsData, countsData, employeeCountsData] = await Promise.all([
         dedupeAsync("activity", async () => {
           const res = await fetch(API_ENDPOINTS.ACTIVITY, {
             credentials: "include",
@@ -46,12 +48,31 @@ export function useActivityData() {
 
           return res.json();
         }),
+        dedupeAsync("employee:count", async () => {
+          const res = await fetch(
+            `${API_ENDPOINTS.ACTIVITY.replace("/activity", "")}/stats/employee/count`,
+            {
+              credentials: "include",
+            },
+          );
+          if (res.status == 401) {
+            return null;
+          }
+          if (!res.ok) {
+            throw new Error(`Employee count fetch failed : ${res.status}`);
+          }
+          return res.json();
+        }),
       ]);
       setRawLogs(Array.isArray(logsData) ? logsData : []);
       setAnalytics(
         countsData && typeof countsData === "object" ? countsData : {},
       );
-
+      setEmployeeCounts(
+        employeeCountsData && typeof employeeCountsData === "object" ?
+          employeeCountsData
+        : {},
+      );
       setError(null);
     } catch (err: any) {
       setError(err.message);
@@ -65,14 +86,58 @@ export function useActivityData() {
     fetchData();
   }, []);
 
-  return { rawLogs, analytics, loading, error, refetch: fetchData };
+  return {
+    rawLogs,
+    analytics,
+    employeeCounts,
+    loading,
+    error,
+    refetch: fetchData,
+  };
 }
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
   const { session } = useAuth();
-  const { rawLogs, analytics } = useActivityData();
-
+  const { rawLogs, analytics, employeeCounts } = useActivityData();
+  const employeePieData = [
+    {
+      id: 0,
+      value: employeeCounts.BUSINESS_ANALYST ?? 0,
+      label: "Business Analyst",
+      color: "#bea5aa",
+    },
+    {
+      id: 1,
+      value: employeeCounts.BUSINESS_OP_RATING ?? 0,
+      label: "Business Ops Rating Team",
+      color: "#509edd",
+    },
+    {
+      id: 2,
+      value: employeeCounts.UNDERWRITER ?? 0,
+      label: "Underwriter",
+      color: "#395176",
+    },
+    {
+      id: 3,
+      value: employeeCounts.ACTUARIAL_ANALYST ?? 0,
+      label: "Actuarial Analyst",
+      color: "#ba667b",
+    },
+    {
+      id: 4,
+      value: employeeCounts.ADMIN ?? 0,
+      label: "Admin",
+      color: "#74414e",
+    },
+    {
+      id: 5,
+      value: employeeCounts.EXL_OPERATIONS ?? 0,
+      label: "EXL Operations",
+      color: "#721b31",
+    },
+  ];
   const roles = [
     "Business Analyst",
     "Underwriter",
@@ -154,14 +219,14 @@ export default function Dashboard() {
             />
             <Divider />
             <CardContent className="h-full flex items-center justify-center p-6">
-              <div className="w-[400px]">
-                <PieChart />
+              <div className="w-100">
+                <PieChart data={employeePieData} />
               </div>
             </CardContent>
           </Card>
 
           {/* Recent Activity: Grows to fill width and matches height */}
-          <div className="flex-1 min-w-[500px]">
+          <div className="flex-1 min-w-125">
             <DashboardRecentActivity rawLogs={rawLogs} />
           </div>
         </div>

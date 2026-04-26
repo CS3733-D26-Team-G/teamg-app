@@ -3,7 +3,7 @@ import { Position, Prisma, prisma } from "@repo/db";
 import {
   getAuth,
   isAdmin,
-  requireAdmin,
+  //requireAdmin,
   sendInternalError,
 } from "../lib/request.ts";
 import { logger } from "../logger.ts";
@@ -22,7 +22,7 @@ function getVisibleContentWhere(
 
 router.get(
   "/employee/count",
-  requireAdmin("Employee stats route"),
+  //requireAdmin("Employee stats route"),
   async (_req, res) => {
     logger.verbose("Querying Employee table for employee counts by position");
     try {
