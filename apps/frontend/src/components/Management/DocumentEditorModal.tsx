@@ -1,7 +1,10 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Dialog, Box, Button, Stack, Typography } from "@mui/material";
 import WebViewer, { type WebViewerInstance } from "@pdftron/webviewer";
 import { API_ENDPOINTS } from "../../config.ts";
+import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
+import type { ContentRow } from "../../types/content.ts";
+import { useTheme } from "@mui/material/styles";
 
 interface Props {
   open: boolean;
@@ -9,6 +12,7 @@ interface Props {
   uri: string;
   uuid: string;
   fileName: string;
+  contentRow: ContentRow;
   readOnly?: boolean;
 }
 
@@ -19,9 +23,9 @@ const mimeToExt: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation":
     "pptx",
-  "application/vnd.ms-powerpoint": "ppt", // add
-  "application/vnd.ms-excel": "xls", // add
-  "application/msword": "doc", // add
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.ms-excel": "xls",
+  "application/msword": "doc",
   "image/png": "png",
   "image/jpeg": "jpg",
   "video/mp4": "mp4",
@@ -33,12 +37,15 @@ export default function DocumentEditorModal({
   uri,
   fileName,
   uuid,
+  contentRow,
   readOnly = false,
 }: Props) {
   const viewerDivRef = useRef<HTMLDivElement | null>(null);
   const instanceRef = useRef<WebViewerInstance | null>(null);
   const pendingLoadRef = useRef<(() => void) | null>(null);
   const hasInitializedRef = useRef(false);
+  const theme = useTheme();
+  const [viewerReady, setViewerReady] = useState(false);
 
   // Initialize WebViewer once on mount
   useEffect(() => {
@@ -61,6 +68,11 @@ export default function DocumentEditorModal({
           "WebViewer initialized, pending load:",
           !!pendingLoadRef.current,
         );
+        setViewerReady(true);
+        instance.UI.setTheme(
+          theme.palette.mode === "dark" ? "dark" : "default",
+        );
+
         if (readOnly) instance.UI.setToolMode("Pan");
         window.dispatchEvent(new Event("resize"));
         if (pendingLoadRef.current) {
@@ -98,7 +110,7 @@ export default function DocumentEditorModal({
         const extFromName =
           fileName.includes(".") ? fileName.split(".").pop() : undefined;
         const ext = extFromName ?? extFromMime;
-        if (abortController.signal.aborted) return; // Another file was selected
+        if (abortController.signal.aborted) return;
 
         const objectUrl = URL.createObjectURL(blob);
 
@@ -118,7 +130,7 @@ export default function DocumentEditorModal({
           pendingLoadRef.current = doLoad;
         }
       } catch (err) {
-        if ((err as Error).name === "AbortError") return; // Expected, ignore
+        if ((err as Error).name === "AbortError") return;
         console.error("Failed to load document:", err);
       }
     };
@@ -128,15 +140,23 @@ export default function DocumentEditorModal({
     return () => abortController.abort();
   }, [open, uri, fileName]);
 
+  useEffect(() => {
+    if (!viewerReady || !instanceRef.current) return;
+    instanceRef.current.UI.setTheme(
+      theme.palette.mode === "dark" ? "dark" : "default",
+    );
+  }, [theme.palette.mode, viewerReady]);
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="lg"
+      maxWidth="xl"
       fullWidth
       keepMounted
     >
       <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
+        {/* Top bar */}
         <Stack
           direction="row"
           justifyContent="space-between"
@@ -176,17 +196,28 @@ export default function DocumentEditorModal({
             <Button onClick={onClose}>Close</Button>
           </Stack>
         </Stack>
-        <Box sx={{ flex: 1, minHeight: 0, position: "relative" }}>
-          <Box
-            ref={viewerDivRef}
-            sx={{
-              "position": "absolute",
-              "inset": 0,
-              "& iframe": {
-                width: "100% !important",
-                height: "100% !important",
-              },
-            }}
+
+        {/* Body: viewer + history panel side by side */}
+        <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+          {/* WebViewer */}
+          <Box sx={{ flex: 1, minHeight: 0, position: "relative" }}>
+            <Box
+              ref={viewerDivRef}
+              sx={{
+                "position": "absolute",
+                "inset": 0,
+                "& iframe": {
+                  width: "100% !important",
+                  height: "100% !important",
+                },
+              }}
+            />
+          </Box>
+
+          {/* Version history sidebar */}
+          <VersionHistoryPanel
+            contentUuid={uuid}
+            contentRow={contentRow}
           />
         </Box>
       </Box>

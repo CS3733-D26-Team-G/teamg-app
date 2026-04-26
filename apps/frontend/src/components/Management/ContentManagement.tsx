@@ -55,6 +55,7 @@ import DocumentEditorModal from "./DocumentEditorModal.tsx";
 import { dedupeAsync } from "../../lib/async-cache";
 import HelpPopup from "../../components/HelpPopup";
 import DocPreviewer from "./DocPreviewer.tsx";
+import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -1161,7 +1162,7 @@ export default function ContentManagement({
           setPreviewOpen(false);
           setSelectedDoc(null);
         }}
-        maxWidth="lg"
+        maxWidth="xl"
         fullWidth
         keepMounted
       >
@@ -1196,21 +1197,34 @@ export default function ContentManagement({
                 fileName={selectedDoc.fileName}
               />
             )}
+            {selectedDoc && rows.find((r) => r.uuid === selectedDoc.uuid) && (
+              <VersionHistoryPanel
+                contentUuid={selectedDoc.uuid}
+                contentRow={rows.find((r) => r.uuid === selectedDoc.uuid)!}
+              />
+            )}
           </Box>
         </Box>
       </Dialog>
 
       {/* Document Editor Modal — opened via the Edit button when checked out */}
-      {editorOpen && selectedDoc && (
-        <DocumentEditorModal
-          open={editorOpen}
-          onClose={() => setEditorOpen(false)}
-          uri={selectedDoc.uri}
-          fileName={selectedDoc.fileName}
-          uuid={selectedDoc.uuid}
-          readOnly={false}
-        />
-      )}
+      {editorOpen &&
+        selectedDoc &&
+        (() => {
+          const editorRow = rows.find((r) => r.uuid === selectedDoc.uuid);
+          if (!editorRow) return null;
+          return (
+            <DocumentEditorModal
+              open={editorOpen}
+              onClose={() => setEditorOpen(false)}
+              uri={selectedDoc.uri}
+              fileName={selectedDoc.fileName}
+              uuid={selectedDoc.uuid}
+              contentRow={editorRow}
+              readOnly={false}
+            />
+          );
+        })()}
 
       {confirmationDialogs}
     </Box>

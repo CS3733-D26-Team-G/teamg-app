@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import WebViewer, { type WebViewerInstance } from "@pdftron/webviewer";
+import { useTheme } from "@mui/material/styles";
 
 const TEXT_TYPES = new Set([
   "application/json",
@@ -53,6 +54,9 @@ export default function DocPreviewer({ uri, fileName }: DocPreviewerProps) {
   const hasInitializedRef = useRef(false);
   const pendingLoadRef = useRef<(() => void) | null>(null);
 
+  const theme = useTheme();
+  const [viewerReady, setViewerReady] = useState(false);
+
   const [textContent, setTextContent] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +65,13 @@ export default function DocPreviewer({ uri, fileName }: DocPreviewerProps) {
     fileName.includes(".") ?
       fileName.split(".").pop()?.toLowerCase()
     : undefined;
+
+  useEffect(() => {
+    if (!viewerReady || !instanceRef.current) return;
+    instanceRef.current.UI.setTheme(
+      theme.palette.mode === "dark" ? "dark" : "default",
+    );
+  }, [theme.palette.mode, viewerReady]);
 
   // Initialize WebViewer once on mount — same pattern as DocumentEditorModal
   useEffect(() => {
@@ -92,6 +103,10 @@ export default function DocPreviewer({ uri, fileName }: DocPreviewerProps) {
         viewerDivRef.current,
       ).then((instance) => {
         instanceRef.current = instance;
+        setViewerReady(true);
+        instance.UI.setTheme(
+          theme.palette.mode === "dark" ? "dark" : "default",
+        );
         instance.UI.setToolMode("Pan");
         instance.UI.disableFeatures([
           instance.UI.Feature.Ribbons,
