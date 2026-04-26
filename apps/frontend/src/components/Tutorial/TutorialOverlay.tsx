@@ -55,7 +55,6 @@ function TooltipCard({
   if (isCentered || !highlightRect) {
     tooltipStyle.top = "50%";
     tooltipStyle.left = "50%";
-    tooltipStyle.transform = "translate(-50%, -50%)";
   } else {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -113,9 +112,24 @@ function TooltipCard({
     <Box
       component={motion.div}
       key={stepIndex}
-      initial={{ opacity: 0, scale: 0.9, y: 12 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9, y: -8 }}
+      initial={{
+        opacity: 0,
+        scale: 0.9,
+        x: isCentered ? "-40%" : 0,
+        y: isCentered ? "-40%" : 12,
+      }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        x: isCentered ? "-2g0%" : 0,
+        y: isCentered ? "-50%" : 0,
+      }}
+      exit={{
+        opacity: 0,
+        scale: 0.9,
+        x: isCentered ? "-40%" : 0,
+        y: isCentered ? "-60%" : -8,
+      }}
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
       sx={{
         position: "fixed",
