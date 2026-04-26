@@ -1,12 +1,17 @@
 import express from "express";
-import { INTERNAL_ERROR_MESSAGE, isProd } from "../config.ts";
+import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import {
+  AUTH_COOKIE_NAME,
+  authCookieOptions,
+  getAuth,
+} from "../lib/request.ts";
 import { logger } from "../logger.ts";
 import { prisma } from "@repo/db";
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
-  const auth = req.auth!;
+  const auth = getAuth(req);
 
   logger.verbose("Processing logout request: clearing authentication cookie");
 
@@ -19,12 +24,7 @@ router.post("/", async (req, res) => {
       },
     });
 
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? "none" : "lax",
-      path: "/",
-    });
+    res.clearCookie(AUTH_COOKIE_NAME, authCookieOptions);
 
     logger.verbose("Processed logout request: authentication cookie cleared");
     return res.status(200).json({ message: "Successfully logged out!" });

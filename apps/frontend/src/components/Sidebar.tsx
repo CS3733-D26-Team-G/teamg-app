@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import "./Sidebar.css";
 import {
   IconButton,
@@ -27,11 +27,8 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { API_ENDPOINTS } from "../config.ts";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.tsx";
-import {
-  type EmployeeRecord,
-  EmployeeRecordSchema,
-} from "../types/employee.ts";
 import Typography from "@mui/material/Typography";
+import { useProfile } from "../profile/ProfileContext.tsx";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -41,6 +38,7 @@ export default function Sidebar() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { clearSession, session } = useAuth();
+  const { profile, isLoading: isProfileLoading } = useProfile();
   const isAdmin = session?.permissions.canManageEmployees ?? false;
 
   const handleToggle = (
@@ -79,41 +77,7 @@ export default function Sidebar() {
     }
   };
 
-  const [profile, setProfile] = React.useState<EmployeeRecord | null>(null);
-  const [loading, setLoading] = React.useState(true);
-
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(API_ENDPOINTS.PROFILE, {
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data: unknown = await res.json();
-      console.log("Raw profile data:", data);
-
-      const parsed = EmployeeRecordSchema.safeParse(data);
-      if (!parsed.success) {
-        console.error("Profile failed schema validation:", parsed.error);
-        setProfile(null);
-        return;
-      }
-
-      setProfile(parsed.data);
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      setProfile(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadProfile();
-  }, []);
-
-  if (!profile) {
+  if (isProfileLoading || !profile) {
     return;
   }
 
@@ -254,7 +218,10 @@ export default function Sidebar() {
           aria-expanded={open ? "true" : undefined}
         >
           <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
-            <Avatar sx={{ width: 32, height: 32 }} />
+            <Avatar
+              src={profile.avatar ?? undefined}
+              sx={{ width: 32, height: 32 }}
+            />
           </ListItemIcon>
           {isOpen && <ListItemText primary={profile.first_name ?? ""} />}
           {isOpen && <KeyboardArrowUpIcon />}
@@ -266,6 +233,7 @@ export default function Sidebar() {
         open={open}
         slotProps={{
           list: { "aria-labelledby": "resources-menu" },
+          paper: { sx: { border: "1px solid", borderColor: "gray" } },
         }}
         onClose={handleClose}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}

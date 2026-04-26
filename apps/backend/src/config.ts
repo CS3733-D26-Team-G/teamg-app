@@ -10,7 +10,7 @@ export const allowedOriginsMap = {
   development: [
     "http://localhost:5147",
     "http://localhost:9999",
-    "http://localhost:10000",
+    "http://localhost:9999",
   ],
 };
 

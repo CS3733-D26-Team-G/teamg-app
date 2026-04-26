@@ -1,6 +1,10 @@
 import { Box, Stack, Typography, Link as MuiLink } from "@mui/material";
+import { LanguageToggle } from "./LanguageToggle.tsx";
+import { useTranslation } from "react-i18next";
+import { footer } from "framer-motion/m";
 
 export default function Footer() {
+  const { t } = useTranslation();
   return (
     <Box
       sx={{
@@ -35,14 +39,14 @@ export default function Footer() {
               fontSize: "1.5rem",
             }}
           >
-            <b>Browser</b>
+            <b>{t("footer.browser")}</b>
           </Typography>
           <Typography variant="body2">
             <MuiLink
               href="http://localhost:9999"
               color="inherit"
             >
-              Home
+              {t("footer.home")}
             </MuiLink>
           </Typography>
           <Typography variant="body2">
@@ -50,7 +54,7 @@ export default function Footer() {
               href="http://localhost:9999/AboutUs"
               color="inherit"
             >
-              About Us
+              {t("footer.aboutUs")}
             </MuiLink>
           </Typography>
           <Typography variant="body2">
@@ -58,7 +62,7 @@ export default function Footer() {
               href="http://localhost:9999/GuideTour"
               color="inherit"
             >
-              Guide Tour
+              {t("footer.guideTour")}
             </MuiLink>
           </Typography>
         </Stack>
@@ -74,14 +78,14 @@ export default function Footer() {
               fontSize: "1.5rem",
             }}
           >
-            <b>Employee Access</b>
+            <b>{t("footer.employeeAccess")}</b>
           </Typography>
           <Typography variant="body2">
             <MuiLink
               href="http://localhost:9999/EmployeePortal"
               color="inherit"
             >
-              Employee Portal
+              {t("footer.employeePortal")}
             </MuiLink>
           </Typography>
           <Typography variant="body2">
@@ -89,7 +93,7 @@ export default function Footer() {
               href="http://localhost:9999/EmployeePortal/HR-Self-Service"
               color="inherit"
             >
-              HR-Self Service
+              {t("footer.hrSelfService")}
             </MuiLink>
           </Typography>
           <Typography variant="body2">
@@ -97,7 +101,7 @@ export default function Footer() {
               href="http://localhost:9999/EmployeePortal/News-&-Updates"
               color="inherit"
             >
-              News & Updates
+              {t("footer.newsUpdates")}
             </MuiLink>
           </Typography>
         </Stack>
@@ -113,14 +117,14 @@ export default function Footer() {
               fontSize: "1.5rem",
             }}
           >
-            <b>Support</b>
+            <b>{t("footer.support")}</b>
           </Typography>
           <Typography variant="body2">
             <MuiLink
               href="http://localhost:9999/FAQ"
               color="inherit"
             >
-              FAQ
+              {t("footer.faq")}
             </MuiLink>
           </Typography>
           <Typography variant="body2">
@@ -128,7 +132,7 @@ export default function Footer() {
               href="http://localhost:9999/ITSupport"
               color="inherit"
             >
-              IT Support
+              {t("footer.itSupport")}
             </MuiLink>
           </Typography>
         </Stack>
@@ -144,14 +148,14 @@ export default function Footer() {
               fontSize: "1.5rem",
             }}
           >
-            <b>Legal & Security</b>
+            <b>{t("footer.legalSecurity")}</b>
           </Typography>
           <Typography variant="body2">
             <MuiLink
               href="http://localhost:9999/PrivacyPolicy"
               color="inherit"
             >
-              Privacy Policy
+              {t("footer.privacyPolicy")}
             </MuiLink>
           </Typography>
           <Typography variant="body2">
@@ -159,7 +163,7 @@ export default function Footer() {
               href="http://localhost:9999/TermsOfUse"
               color="inherit"
             >
-              Terms of Use
+              {t("footer.termsOfUse")}
             </MuiLink>
           </Typography>
           <Typography variant="body2">
@@ -167,7 +171,7 @@ export default function Footer() {
               href="http://localhost:9999/CookiePolicy"
               color="inherit"
             >
-              Cookie Policy
+              {t("footer.cookiePolicy")}
             </MuiLink>
           </Typography>
           <Typography variant="body2">
@@ -175,7 +179,7 @@ export default function Footer() {
               href="http://localhost:9999/Accessibility"
               color="inherit"
             >
-              Accessibility
+              {t("footer.accessibility")}
             </MuiLink>
           </Typography>
         </Stack>
@@ -193,7 +197,7 @@ export default function Footer() {
               fontSize: "2rem",
             }}
           >
-            <b>Contact Us</b>
+            <b>{t("footer.contactUs")}</b>
           </Typography>
           <Stack
             className="email-stack"
@@ -293,7 +297,6 @@ export default function Footer() {
             }}
           />
         </Stack>
-
         <Typography
           variant="body2"
           sx={{
@@ -303,10 +306,16 @@ export default function Footer() {
           }}
           align="center"
         >
-          © 2026 The Hangover Insurance Group, Team G Prototype Inc. All rights
-          reserved.
+          {t("footer.copyright")}
         </Typography>
       </Stack>
+      <Box
+        sx={{
+          marginLeft: "75rem",
+        }}
+      >
+        <LanguageToggle />
+      </Box>
     </Box>
   );
 }

@@ -56,19 +56,24 @@ export type ContentRecord = Content & {
   favorite_count: number;
 };
 export const ContentRecordsSchema = z.array(ContentRecordSchema);
-
 /**
  * UI row schema for ContentManagement/DataGrid
  *
  * This extends the API record with frontend-only state.
  */
 export const ContentRowSchema = ContentRecordSchema.extend({
+  editLock: z
+    .object({
+      lockedByEmp: z.object({
+        uuid: z.string(),
+        first_name: z.string(),
+        last_name: z.string(),
+      }),
+    })
+    .nullable(),
   isLocked: z.boolean().optional(),
-}).strip();
-
-export type ContentRow = ContentRecord & {
-  isLocked?: boolean;
-};
+});
+export type ContentRow = z.infer<typeof ContentRowSchema>;
 export const ContentRowsSchema = z.array(ContentRowSchema);
 
 /**

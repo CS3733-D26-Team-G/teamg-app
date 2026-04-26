@@ -13,9 +13,7 @@ const port = process.env.PORT!;
 logger.info(`isProd: ${isProd}`);
 
 // Middleware
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
+app.use(express.json());
 const morganStream = {
   write: (message: string) => logger.http(message.trim()),
 };
@@ -63,6 +61,7 @@ import sessionRouter from "./routes/session.ts";
 import accountSettingsRouter from "./routes/account-settings.ts";
 import activityRouter from "./routes/activity.ts";
 import profileRouter from "./routes/profile.ts";
+import statsRouter from "./routes/stats.ts";
 
 const routeMap = {
   "account-settings": accountSettingsRouter,
@@ -73,6 +72,7 @@ const routeMap = {
   "logout": logoutRouter,
   "session": sessionRouter,
   "profile": profileRouter,
+  "stats": statsRouter,
 };
 for (const [path, router] of Object.entries(routeMap)) {
   logger.info(`Loaded /${path} route`);

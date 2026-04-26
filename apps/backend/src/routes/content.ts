@@ -1,6 +1,5 @@
 import express from "express";
-import { prisma, Prisma } from "@repo/db";
-import type { Position } from "@repo/db";
+import { Position, prisma, Prisma } from "@repo/db";
 import multer from "multer";
 import { supabase } from "../lib/supabase.ts";
 import { Schemas } from "@repo/zod";
@@ -9,6 +8,12 @@ import mime from "mime-types";
 import { z } from "zod";
 import { logger } from "../logger.ts";
 import { STORAGE_BUCKET, INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import {
+  canManagePosition,
+  getAuth,
+  isAdmin,
+  sendInternalError,
+} from "../lib/request.ts";
 
 const router = express.Router();
 
@@ -22,6 +27,15 @@ const upload = multer({
 
 const ParamsSchema = Schemas.ContentWhereUniqueInputObjectZodSchema.extend({
   uuid: z.uuid(),
+});
+
+const TagParamsSchema = z.object({
+  uuid: z.uuid(),
+});
+
+const TagContentParamsSchema = z.object({
+  tagUuid: z.uuid(),
+  contentUuid: z.uuid(),
 });
 
 const CreateContentSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
@@ -40,6 +54,21 @@ const FavoriteContentSchema = z.object({
   isFavorite: z.boolean(),
 });
 
+const CreateTagSchema = z.object({
+  name: z.string(),
+});
+
+const contentLockInclude = {
+  lockedByEmp: {
+    select: {
+      uuid: true,
+      first_name: true,
+      last_name: true,
+      corporate_email: true,
+    },
+  },
+} satisfies Prisma.ContentEditLockInclude;
+
 type UploadResult =
   | { ok: true; url: string; supabasePath?: string }
   | { ok: false; status: number; message: string };
@@ -48,11 +77,63 @@ function getExpiresInSeconds(expirationTime: Date): number {
   return Math.floor((expirationTime.getTime() - Date.now()) / 1000);
 }
 
-function manageContent(
+function getVisibleContentWhere(
   auth: NonNullable<Express.Request["auth"]>,
-  forPosition: Position,
-) {
-  return auth.position === "ADMIN" || auth.position === forPosition;
+): Prisma.ContentWhereInput | undefined {
+  if (isAdmin(auth)) {
+    return undefined;
+  }
+
+  return { for_position: auth.position };
+}
+
+function parseExternalContentUrl(url: string) {
+  const parsed = z
+    .url({
+      protocol: /^https?$/,
+      hostname: z.regexes.domain,
+    })
+    .safeParse(url);
+
+  if (!parsed.success) {
+    return null;
+  }
+
+  return new URL(parsed.data);
+}
+
+function validateProvidedUrl(url: string | undefined) {
+  if (!url) {
+    return { ok: true as const };
+  }
+
+  const parsedUrl = parseExternalContentUrl(url);
+  if (!parsedUrl) {
+    return {
+      ok: false as const,
+      message: "URL must be a valid HTTP or HTTPS URL",
+    };
+  }
+
+  return { ok: true as const, normalizedUrl: parsedUrl.toString() };
+}
+
+function resolvePositionValue(
+  position:
+    | Position
+    | Prisma.EnumPositionFieldUpdateOperationsInput
+    | undefined
+    | null,
+): Position | null {
+  if (!position) {
+    return null;
+  }
+
+  if (typeof position === "string") {
+    return position;
+  }
+
+  return position.set ?? null;
 }
 
 function serializeLock(lock: ActiveContentLock) {
@@ -69,55 +150,158 @@ function serializeLock(lock: ActiveContentLock) {
   };
 }
 
-async function getcurrContent(uuid: string) {
+function parseContentUuid(
+  req: express.Request,
+  res: express.Response,
+  invalidMessage: string,
+) {
+  const params = ParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ message: invalidMessage });
+    return null;
+  }
+
+  return params.data.uuid;
+}
+
+function parseTagUuid(
+  req: express.Request,
+  res: express.Response,
+  invalidMessage: string,
+) {
+  const params = TagParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ message: invalidMessage });
+    return null;
+  }
+
+  return params.data.uuid;
+}
+
+function parseTagContentUuids(req: express.Request, res: express.Response) {
+  const params = TagContentParamsSchema.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ message: "Invalid tag or content UUID" });
+    return null;
+  }
+
+  return params.data;
+}
+
+function normalizeTagName(name: string) {
+  const trimmedName = name.trim();
+  return {
+    name: trimmedName,
+    normalizedName: trimmedName.toLowerCase(),
+  };
+}
+
+async function findContentByUuid(uuid: string) {
   return prisma.content.findUnique({
     where: { uuid },
   });
 }
 
-async function getactiveLock(uuid: string) {
-  return prisma.contentEditLock.findUnique({
-    where: { contentUuid: uuid },
-    include: {
-      lockedByEmp: {
-        select: {
-          uuid: true,
-          first_name: true,
-          last_name: true,
-          corporate_email: true,
-        },
-      },
-    },
+async function findTagByUuid(uuid: string) {
+  return prisma.contentTag.findUnique({
+    where: { uuid },
   });
 }
 
-type ActiveContentLock = NonNullable<Awaited<ReturnType<typeof getactiveLock>>>;
+async function findActiveLock(uuid: string) {
+  return prisma.contentEditLock.findUnique({
+    where: { contentUuid: uuid },
+    include: contentLockInclude,
+  });
+}
 
-async function rejectifLocked(
+type ActiveContentLock = NonNullable<
+  Awaited<ReturnType<typeof findActiveLock>>
+>;
+
+async function loadAccessibleContent(
+  uuid: string,
+  auth: NonNullable<Express.Request["auth"]>,
+  res: express.Response,
+  options?: {
+    notFoundStatus?: number;
+    notFoundMessage?: string;
+    unauthorizedStatus?: number;
+    logUnauthorized?: boolean;
+  },
+) {
+  const content = await findContentByUuid(uuid);
+  if (!content) {
+    res
+      .status(options?.notFoundStatus ?? 400)
+      .json({ message: options?.notFoundMessage ?? "Invalid content UUID" });
+    return null;
+  }
+
+  if (!canManagePosition(auth, content.for_position)) {
+    if (options?.logUnauthorized) {
+      logger.warn(
+        `Rejected Content request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
+      );
+    }
+    res
+      .status(options?.unauthorizedStatus ?? 401)
+      .json({ message: "Unauthorized" });
+    return null;
+  }
+
+  return content;
+}
+
+async function rejectIfLockedByAnotherUser(
   uuid: string,
   auth: NonNullable<Express.Request["auth"]>,
   res: express.Response,
 ) {
-  const lock = await getactiveLock(uuid);
-  if (
-    !lock ||
-    lock.lockedByEmpUuid === auth.employeeUuid ||
-    auth.position === "ADMIN"
-  ) {
+  const lock = await findActiveLock(uuid);
+  if (!lock || lock.lockedByEmpUuid === auth.employeeUuid || isAdmin(auth)) {
     return false;
   }
+
   res.status(409).json({
     message: "Content is currently locked by another user",
     lock: serializeLock(lock),
   });
   return true;
 }
+
+async function createOrRefreshLock(
+  uuid: string,
+  auth: NonNullable<Express.Request["auth"]>,
+  existingLock: ActiveContentLock | null,
+) {
+  if (!existingLock) {
+    return prisma.contentEditLock.create({
+      data: {
+        contentUuid: uuid,
+        lockedByEmpUuid: auth.employeeUuid,
+      },
+      include: contentLockInclude,
+    });
+  }
+
+  return prisma.contentEditLock.update({
+    where: { contentUuid: uuid },
+    data: {
+      lockedByEmpUuid: auth.employeeUuid,
+      lockedAt: new Date(),
+    },
+    include: contentLockInclude,
+  });
+}
+
 async function resolveContentUrl({
   file,
   uuid,
   expirationTime,
   providedUrl,
   fallbackUrl,
+  fallbackSupabasePath,
   upsert,
 }: {
   file?: Express.Multer.File;
@@ -125,9 +309,46 @@ async function resolveContentUrl({
   expirationTime: Date;
   providedUrl?: string | null;
   fallbackUrl?: string | null;
+  fallbackSupabasePath?: string | null;
   upsert: boolean;
 }): Promise<UploadResult> {
   if (!file) {
+    if (providedUrl) {
+      return { ok: true, url: providedUrl };
+    }
+
+    if (fallbackSupabasePath) {
+      const expiresIn = getExpiresInSeconds(expirationTime);
+      if (expiresIn < 0) {
+        return {
+          ok: false,
+          status: 400,
+          message: "Expiration time must be in the future!",
+        };
+      }
+
+      const signedUrlResult = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(fallbackSupabasePath, expiresIn);
+
+      if (!signedUrlResult.data) {
+        logger.error(
+          `Failed to create signed URL for existing content ${uuid} at path ${fallbackSupabasePath}: ${signedUrlResult.error?.message}`,
+        );
+        return {
+          ok: false,
+          status: 500,
+          message: signedUrlResult.error?.message ?? INTERNAL_ERROR_MESSAGE,
+        };
+      }
+
+      return {
+        ok: true,
+        url: signedUrlResult.data.signedUrl,
+        supabasePath: fallbackSupabasePath,
+      };
+    }
+
     const url = providedUrl ?? fallbackUrl;
     if (!url) {
       return {
@@ -136,6 +357,7 @@ async function resolveContentUrl({
         message: INTERNAL_ERROR_MESSAGE,
       };
     }
+
     return { ok: true, url };
   }
 
@@ -189,105 +411,300 @@ async function resolveContentUrl({
 }
 
 router.get("/", async (req, res) => {
-  const auth = req.auth!;
+  const auth = getAuth(req);
   logger.verbose("Querying Content table for all records");
+
   try {
     const content = await prisma.content.findMany({
+      where: getVisibleContentWhere(auth),
       include: {
         favoritedBy: {
           where: { employeeUuid: auth.employeeUuid },
           select: { employeeUuid: true },
         },
+        tagAssignments: {
+          select: {
+            tag: {
+              select: {
+                uuid: true,
+                name: true,
+              },
+            },
+          },
+        },
         _count: {
           select: { favoritedBy: true },
+        },
+        editLock: {
+          include: {
+            lockedByEmp: {
+              select: {
+                uuid: true,
+                first_name: true,
+                last_name: true,
+              },
+            },
+          },
         },
       },
       orderBy: {
         last_modified_time: "desc",
       },
     });
+
     logger.verbose(
       `Queried Content table for all records: found ${content.length} record(s)`,
     );
-    const response = content.map(({ favoritedBy, _count, ...item }) => ({
-      ...item,
-      is_favorite: favoritedBy.length > 0,
-      favorite_count: _count.favoritedBy,
-    }));
+
+    const response = content.map(
+      ({ favoritedBy, tagAssignments, _count, ...item }) => ({
+        ...item,
+        tags: tagAssignments.map(({ tag }) => tag),
+        is_favorite: favoritedBy.length > 0,
+        favorite_count: _count.favoritedBy,
+      }),
+    );
+
     return res.status(200).json(response);
   } catch (e) {
-    logger.error(`Failed to query Content table for all records:\n${e}`);
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+    return sendInternalError(
+      res,
+      "Failed to query Content table for all records",
+      e,
+    );
+  }
+});
+
+router.post("/tag/create", async (req, res) => {
+  const auth = getAuth(req);
+  if (!isAdmin(auth)) {
+    logger.warn(
+      `Rejected content tag create request from user with position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const parsed = CreateTagSchema.safeParse(req.body);
+  if (!parsed.success) {
+    logger.verbose(
+      `Failed to parse Content tag create request body:\n${parsed.error.issues}`,
+    );
+    return res.status(400).json({ message: parsed.error.issues });
+  }
+
+  const normalizedTag = normalizeTagName(parsed.data.name);
+  if (!normalizedTag.name) {
+    return res.status(400).json({ message: "Tag name cannot be blank" });
+  }
+
+  try {
+    const tag = await prisma.contentTag.create({
+      data: normalizedTag,
+    });
+
+    return res.status(201).json(tag);
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return res.status(409).json({ message: "Tag name already exists" });
+    }
+
+    return sendInternalError(res, "Failed to create content tag", e);
+  }
+});
+
+router.post("/tag/delete/:uuid", async (req, res) => {
+  const uuid = parseTagUuid(req, res, "Invalid tag UUID");
+  if (!uuid) {
+    return;
+  }
+
+  const auth = getAuth(req);
+  if (!isAdmin(auth)) {
+    logger.warn(
+      `Rejected content tag delete request from user with position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const tag = await prisma.contentTag.delete({
+      where: { uuid },
+    });
+
+    return res.status(200).json(tag);
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
+
+    return sendInternalError(res, `Failed to delete content tag ${uuid}`, e);
+  }
+});
+
+router.post("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
+  const params = parseTagContentUuids(req, res);
+  if (!params) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  try {
+    const tag = await findTagByUuid(params.tagUuid);
+    if (!tag) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
+
+    const content = await loadAccessibleContent(params.contentUuid, auth, res, {
+      notFoundStatus: 404,
+      notFoundMessage: "Content not found",
+      unauthorizedStatus: 401,
+      logUnauthorized: true,
+    });
+    if (!content) {
+      return;
+    }
+
+    const existingAssignment = await prisma.contentTagAssignment.findUnique({
+      where: {
+        contentUuid_tagUuid: {
+          contentUuid: params.contentUuid,
+          tagUuid: params.tagUuid,
+        },
+      },
+    });
+
+    if (existingAssignment) {
+      return res.status(200).json({
+        tagUuid: params.tagUuid,
+        contentUuid: params.contentUuid,
+        attached: true,
+        changed: false,
+      });
+    }
+
+    await prisma.contentTagAssignment.create({
+      data: {
+        contentUuid: params.contentUuid,
+        tagUuid: params.tagUuid,
+      },
+    });
+
+    return res.status(200).json({
+      tagUuid: params.tagUuid,
+      contentUuid: params.contentUuid,
+      attached: true,
+      changed: true,
+    });
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to attach tag ${params.tagUuid} to content ${params.contentUuid}`,
+      e,
+    );
+  }
+});
+
+router.delete("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
+  const params = parseTagContentUuids(req, res);
+  if (!params) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  try {
+    const tag = await findTagByUuid(params.tagUuid);
+    if (!tag) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
+
+    const content = await loadAccessibleContent(params.contentUuid, auth, res, {
+      notFoundStatus: 404,
+      notFoundMessage: "Content not found",
+      unauthorizedStatus: 401,
+      logUnauthorized: true,
+    });
+    if (!content) {
+      return;
+    }
+
+    const existingAssignment = await prisma.contentTagAssignment.findUnique({
+      where: {
+        contentUuid_tagUuid: {
+          contentUuid: params.contentUuid,
+          tagUuid: params.tagUuid,
+        },
+      },
+    });
+
+    if (!existingAssignment) {
+      return res.status(200).json({
+        tagUuid: params.tagUuid,
+        contentUuid: params.contentUuid,
+        attached: false,
+        changed: false,
+      });
+    }
+
+    await prisma.contentTagAssignment.delete({
+      where: {
+        contentUuid_tagUuid: {
+          contentUuid: params.contentUuid,
+          tagUuid: params.tagUuid,
+        },
+      },
+    });
+
+    return res.status(200).json({
+      tagUuid: params.tagUuid,
+      contentUuid: params.contentUuid,
+      attached: false,
+      changed: true,
+    });
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to remove tag ${params.tagUuid} from content ${params.contentUuid}`,
+      e,
+    );
   }
 });
 
 router.post("/lock/:uuid", async (req, res) => {
-  const params = ParamsSchema.safeParse(req.params);
-  if (!params.success) {
-    return res.status(400).json({ message: "Invalid content UUID" });
+  const uuid = parseContentUuid(req, res, "Invalid content UUID");
+  if (!uuid) {
+    return;
   }
-  const uuid = params.data.uuid;
-  const auth = req.auth!;
-  try {
-    const content = await getcurrContent(uuid);
-    if (!content) {
-      return res.status(400).json({ message: "Invalid content UUID" });
-    }
-    if (!manageContent(auth, content.for_position)) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const existingLock = await getactiveLock(uuid);
 
+  const auth = getAuth(req);
+
+  try {
+    const content = await loadAccessibleContent(uuid, auth, res);
+    if (!content) {
+      return;
+    }
+
+    const existingLock = await findActiveLock(uuid);
     if (
       existingLock &&
       existingLock.lockedByEmpUuid !== auth.employeeUuid &&
-      auth.position !== "ADMIN"
+      !isAdmin(auth)
     ) {
       return res.status(409).json({
         message: "Content is currently locked by another user",
         lock: serializeLock(existingLock),
       });
     }
-    //check if there is no lock yet
-    let lock: ActiveContentLock;
 
-    if (!existingLock) {
-      lock = await prisma.contentEditLock.create({
-        data: {
-          contentUuid: uuid,
-          lockedByEmpUuid: auth.employeeUuid,
-        },
-        include: {
-          lockedByEmp: {
-            select: {
-              uuid: true,
-              first_name: true,
-              last_name: true,
-              corporate_email: true,
-            },
-          },
-        },
-      });
-    } else {
-      //update the lock if there is an existing one
-      lock = await prisma.contentEditLock.update({
-        where: { contentUuid: uuid },
-        data: {
-          lockedByEmpUuid: auth.employeeUuid, //original emp
-          lockedAt: new Date(), //refresh time
-        },
-        include: {
-          lockedByEmp: {
-            select: {
-              uuid: true,
-              first_name: true,
-              last_name: true,
-              corporate_email: true,
-            },
-          },
-        },
-      });
-    }
+    const lock = await createOrRefreshLock(uuid, auth, existingLock);
+
     await prisma.activity.create({
       data: {
         employeeUuid: auth.employeeUuid,
@@ -297,47 +714,45 @@ router.post("/lock/:uuid", async (req, res) => {
         resourceName: content.title,
       },
     });
+
     return res.status(200).json({
       locked: true,
       lock: serializeLock(lock),
     });
-  } catch {
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  } catch (e) {
+    return sendInternalError(res, `Failed to lock content ${uuid}`, e);
   }
 });
 
-//deleting lock row if curr user owns lowk/ is admin
 router.delete("/lock/:uuid", async (req, res) => {
-  const params = ParamsSchema.safeParse(req.params);
-  if (!params.success) {
-    return res.status(400).json({ message: "invalid content uuid" });
+  const uuid = parseContentUuid(req, res, "invalid content uuid");
+  if (!uuid) {
+    return;
   }
-  const uuid = params.data.uuid;
-  const auth = req.auth!;
+
+  const auth = getAuth(req);
+
   try {
-    const content = await getcurrContent(uuid);
+    const content = await loadAccessibleContent(uuid, auth, res);
     if (!content) {
-      return res.status(400).json({ message: "Invalid content UUID" });
+      return;
     }
-    if (!manageContent(auth, content.for_position)) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const existingLock = await getactiveLock(uuid);
+
+    const existingLock = await findActiveLock(uuid);
     if (!existingLock) {
       return res.status(200).json({
         locked: false,
         lock: null,
       });
     }
-    if (
-      existingLock.lockedByEmpUuid !== auth.employeeUuid &&
-      auth.position !== "ADMIN"
-    ) {
+
+    if (existingLock.lockedByEmpUuid !== auth.employeeUuid && !isAdmin(auth)) {
       return res.status(403).json({
         message: "Only the lock owner or admin can unlock this content",
         lock: serializeLock(existingLock),
       });
     }
+
     await prisma.contentEditLock.delete({
       where: { contentUuid: uuid },
     });
@@ -356,13 +771,13 @@ router.delete("/lock/:uuid", async (req, res) => {
       locked: false,
       lock: null,
     });
-  } catch {
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  } catch (e) {
+    return sendInternalError(res, `Failed to unlock content ${uuid}`, e);
   }
 });
 
 router.post("/create", upload.single("file"), async (req, res) => {
-  const auth = req.auth!;
+  const auth = getAuth(req);
   const parsed = CreateContentSchema.safeParse(req.body);
 
   if (!parsed.success) {
@@ -373,6 +788,11 @@ router.post("/create", upload.single("file"), async (req, res) => {
   }
 
   const input = parsed.data;
+  const validatedUrl = validateProvidedUrl(input.url);
+  if (!validatedUrl.ok) {
+    logger.warn(`Rejected Content create request with invalid URL`);
+    return res.status(400).json({ message: validatedUrl.message });
+  }
 
   if ((!input.url && !req.file) || (input.url && req.file)) {
     logger.warn(
@@ -383,7 +803,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
     });
   }
 
-  if (auth.position !== "ADMIN" && auth.position !== input.for_position) {
+  if (!canManagePosition(auth, input.for_position)) {
     logger.warn(
       `Rejected Content create request for position ${input.for_position} from user with position ${auth.position}`,
     );
@@ -391,12 +811,11 @@ router.post("/create", upload.single("file"), async (req, res) => {
   }
 
   const uuid = randomUUID();
-
   const urlResult = await resolveContentUrl({
     file: req.file ?? undefined,
     uuid,
     expirationTime: input.expiration_time,
-    providedUrl: input.url,
+    providedUrl: validatedUrl.normalizedUrl,
     upsert: false,
   });
 
@@ -413,9 +832,10 @@ router.post("/create", upload.single("file"), async (req, res) => {
   };
 
   logger.verbose(`Inserting Content table record ${uuid}`);
+
   try {
     const content = await prisma.content.create({ data });
-    //Creates a new row in Activity table, i.e. logs the action
+
     await prisma.activity.create({
       data: {
         employeeUuid: auth.employeeUuid,
@@ -425,6 +845,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
         resourceName: content.title,
       },
     });
+
     logger.verbose(`Inserted Content table record ${uuid}`);
     return res.status(201).json(content);
   } catch (e) {
@@ -437,16 +858,12 @@ router.post("/create", upload.single("file"), async (req, res) => {
 });
 
 router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
-  const params = ParamsSchema.safeParse(req.params);
-  if (!params.success) {
-    logger.warn(
-      `Received Content edit request with invalid UUID: ${req.params.uuid}`,
-    );
-    return res.status(400).json({ message: "Invalid content UUID" });
+  const uuid = parseContentUuid(req, res, "Invalid content UUID");
+  if (!uuid) {
+    return;
   }
 
-  const uuid = params.data.uuid;
-  const auth = req.auth!;
+  const auth = getAuth(req);
 
   logger.verbose(`Querying Content table for record ${uuid}`);
   const existingContent = await prisma.content.findUnique({ where: { uuid } });
@@ -467,44 +884,57 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   }
 
   const input = parsed.data;
+  const validatedUrl = validateProvidedUrl(input.url);
+  if (!validatedUrl.ok) {
+    logger.warn(
+      `Rejected Content edit request for record ${uuid}: invalid URL`,
+    );
+    return res.status(400).json({ message: validatedUrl.message });
+  }
 
-  const targetPosition = input.for_position ?? existingContent.for_position;
-  if (auth.position !== "ADMIN" && auth.position !== targetPosition) {
+  const isExistingUploadedFileUrl =
+    !req.file &&
+    !!validatedUrl.normalizedUrl &&
+    !!existingContent.supabasePath &&
+    validatedUrl.normalizedUrl === existingContent.url;
+  const effectiveProvidedUrl =
+    isExistingUploadedFileUrl ? undefined : validatedUrl.normalizedUrl;
+
+  if (req.file && effectiveProvidedUrl) {
+    logger.warn(
+      `Rejected Content edit request for record ${uuid}: both file and URL provided`,
+    );
+    return res.status(400).json({
+      message: "Provide either a file or a URL, not both",
+    });
+  }
+
+  const targetPosition =
+    resolvePositionValue(input.for_position) ?? existingContent.for_position;
+  if (!canManagePosition(auth, targetPosition)) {
     logger.warn(
       `Rejected Content edit request for record ${uuid}: target position ${targetPosition}, user position ${auth.position}`,
     );
     return res.status(401).json({ message: "Unauthorized" });
   }
-  if (await rejectifLocked(uuid, auth, res)) {
+
+  if (await rejectIfLockedByAnotherUser(uuid, auth, res)) {
     return;
   }
+
   const expirationTime =
     input.expiration_time instanceof Date ?
       input.expiration_time
     : existingContent.expiration_time;
 
-  if (req.file && existingContent.supabasePath) {
-    const deleteResult = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .remove([existingContent.supabasePath]);
-
-    if (!deleteResult.data) {
-      logger.verbose(
-        `Failed to delete existing Supabase object for Content table record ${uuid} at path ${existingContent.supabasePath}: ${deleteResult.error?.message}`,
-      );
-    } else {
-      logger.verbose(
-        `Deleted existing Supabase object for Content table record ${uuid} at path ${existingContent.supabasePath}`,
-      );
-    }
-  }
-
   const urlResult = await resolveContentUrl({
     file: req.file ?? undefined,
     uuid,
     expirationTime,
-    providedUrl: input.url,
+    providedUrl: effectiveProvidedUrl,
     fallbackUrl: existingContent.url,
+    fallbackSupabasePath:
+      effectiveProvidedUrl ? null : existingContent.supabasePath,
     upsert: true,
   });
 
@@ -512,19 +942,51 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 
+  const nextSupabasePath =
+    req.file ? (urlResult.supabasePath ?? null)
+    : effectiveProvidedUrl ? null
+    : existingContent.supabasePath;
+  const nextFileType =
+    req.file ? req.file.mimetype
+    : effectiveProvidedUrl ? null
+    : existingContent.file_type;
+
   const data = {
     ...input,
     url: urlResult.url,
-    file_type: req.file?.mimetype ?? null,
+    supabasePath: nextSupabasePath,
+    file_type: nextFileType,
   };
 
   logger.verbose(`Updating Content table record ${uuid}`);
+
   try {
     const updatedContent = await prisma.content.update({
       where: { uuid },
       data,
     });
-    // Creates a new row in Activity table, i.e. logs the action
+
+    const previousSupabasePath = existingContent.supabasePath;
+    const shouldDeleteOldSupabaseObject =
+      previousSupabasePath &&
+      previousSupabasePath !== updatedContent.supabasePath;
+
+    if (shouldDeleteOldSupabaseObject) {
+      const deleteResult = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove([previousSupabasePath]);
+
+      if (!deleteResult.data) {
+        logger.warn(
+          `Failed to delete superseded Supabase object for Content table record ${uuid} at path ${previousSupabasePath}: ${deleteResult.error?.message}`,
+        );
+      } else {
+        logger.verbose(
+          `Deleted superseded Supabase object for Content table record ${uuid} at path ${previousSupabasePath}`,
+        );
+      }
+    }
+
     await prisma.activity.create({
       data: {
         employeeUuid: auth.employeeUuid,
@@ -538,30 +1000,25 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     logger.verbose(`Updated Content table record ${uuid}`);
     return res.status(200).json(updatedContent);
   } catch (e) {
-    logger.error(`Failed to update Content table record ${uuid}:\n${e}`);
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+    return sendInternalError(
+      res,
+      `Failed to update Content table record ${uuid}`,
+      e,
+    );
   }
 });
 
 router.post("/delete/:uuid", async (req, res) => {
-  const params = ParamsSchema.safeParse(req.params);
-  if (!params.success) {
-    logger.warn(
-      `Received Content delete request with invalid UUID: ${req.params.uuid}`,
-    );
-    return res.status(400).json({
-      message: "Invalid content UUID",
-    });
+  const uuid = parseContentUuid(req, res, "Invalid content UUID");
+  if (!uuid) {
+    return;
   }
 
-  const uuid = params.data.uuid;
-  const auth = req.auth!;
+  const auth = getAuth(req);
 
   try {
     logger.verbose(`Querying Content table for record ${uuid} before delete`);
-    const content = await prisma.content.findUnique({
-      where: { uuid },
-    });
+    const content = await findContentByUuid(uuid);
 
     if (!content) {
       logger.warn(
@@ -573,18 +1030,19 @@ router.post("/delete/:uuid", async (req, res) => {
       `Queried Content table for record ${uuid} before delete: record found`,
     );
 
-    if (auth.position !== "ADMIN" && auth.position !== content.for_position) {
+    if (!canManagePosition(auth, content.for_position)) {
       logger.warn(
         `Rejected Content delete request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
       );
       return res.status(401).json({ message: "Unauthorized" });
     }
-    if (await rejectifLocked(uuid, auth, res)) {
+
+    if (await rejectIfLockedByAnotherUser(uuid, auth, res)) {
       return;
     }
+
     logger.verbose(`Deleting Content table record ${uuid}`);
     await prisma.$transaction(async (tx) => {
-      // Creates a new row in Activity table, i.e. logs the action
       await tx.activity.create({
         data: {
           employeeUuid: auth.employeeUuid,
@@ -604,22 +1062,21 @@ router.post("/delete/:uuid", async (req, res) => {
 
     return res.status(200).json(content);
   } catch (e) {
-    logger.error(`Failed to delete Content table record ${uuid}:\n${e}`);
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+    return sendInternalError(
+      res,
+      `Failed to delete Content table record ${uuid}`,
+      e,
+    );
   }
 });
 
 router.post("/favorite/:uuid", async (req, res) => {
-  const params = ParamsSchema.safeParse(req.params);
-  if (!params.success) {
-    logger.warn(
-      `Received Content favorite request with invalid UUID: ${req.params.uuid}`,
-    );
-    return res.status(400).json({ message: "Invalid content UUID" });
+  const uuid = parseContentUuid(req, res, "Invalid content UUID");
+  if (!uuid) {
+    return;
   }
 
-  const uuid = params.data.uuid;
-  const auth = req.auth!;
+  const auth = getAuth(req);
 
   logger.verbose(
     `Received Content favorite request for content ${uuid} from employee ${auth.employeeUuid}`,
@@ -639,6 +1096,25 @@ router.post("/favorite/:uuid", async (req, res) => {
   );
 
   try {
+    const content = await prisma.content.findUnique({
+      where: { uuid },
+      select: { uuid: true, for_position: true },
+    });
+
+    if (!content) {
+      logger.warn(
+        `Received Content favorite request for non-existent content ${uuid}`,
+      );
+      return res.status(404).json({ message: "Content not found" });
+    }
+
+    if (!canManagePosition(auth, content.for_position)) {
+      logger.warn(
+        `Rejected Content favorite request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
+      );
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     logger.verbose(
       `Querying FavoriteContent for employee ${auth.employeeUuid} and content ${uuid}`,
     );
@@ -727,10 +1203,67 @@ router.post("/favorite/:uuid", async (req, res) => {
       message: "Content favorited successfully",
     });
   } catch (e) {
-    logger.error(
-      `Failed to update content ${uuid} favorite status for employee ${auth.employeeUuid}:\n${e}`,
+    return sendInternalError(
+      res,
+      `Failed to update content ${uuid} favorite status for employee ${auth.employeeUuid}`,
+      e,
     );
-    return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+  }
+});
+
+router.get("/file/:uuid", async (req, res) => {
+  const uuid = parseContentUuid(req, res, "Invalid content UUID");
+  if (!uuid) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  try {
+    const content = await loadAccessibleContent(uuid, auth, res, {
+      notFoundStatus: 404,
+      notFoundMessage: "Content not found",
+      unauthorizedStatus: 401,
+      logUnauthorized: true,
+    });
+    if (!content) {
+      return;
+    }
+
+    logger.info(`Serving content file ${uuid}`);
+    logger.info(
+      `Content supabasePath present: ${Boolean(content.supabasePath)}`,
+    );
+
+    if (!content.supabasePath) {
+      return res.status(409).json({
+        message:
+          "This content references an external URL and cannot be downloaded through this endpoint",
+      });
+    }
+
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .download(content.supabasePath);
+
+    if (error || !data) {
+      logger.error(`Failed to download file for ${uuid}: ${error?.message}`);
+      return res.status(500).json({ message: INTERNAL_ERROR_MESSAGE });
+    }
+
+    const buffer = Buffer.from(await data.arrayBuffer());
+    const mimeType = data.type || "application/octet-stream";
+
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Disposition", `inline; filename="${content.title}"`);
+    res.setHeader("Content-Length", buffer.length);
+    return res.send(buffer);
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to serve file for content ${uuid}`,
+      e,
+    );
   }
 });
 

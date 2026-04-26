@@ -16,13 +16,18 @@ import {
   DialogContentText,
   DialogTitle,
   Tooltip,
+  Popover,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  Divider,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import DownloadIcon from "@mui/icons-material/Download";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
@@ -38,6 +43,7 @@ import {
   ContentRowsSchema,
   type ContentRow,
 } from "../../types/content";
+import { useSearchParams } from "react-router-dom";
 import {
   getPositionChipColor,
   getPositionLabel,
@@ -46,6 +52,9 @@ import { param } from "framer-motion/m";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import mime from "mime-types";
+import DocumentEditorModal from "./DocumentEditorModal.tsx";
+import { dedupeAsync } from "../../lib/async-cache";
+import HelpPopup from "../../components/HelpPopup";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -69,40 +78,40 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
 {
   /* Highlights new content based on what is different from start of session */
 }
-const NEW_THRESHOLD_DAYS = 5;
+function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
+  const KEY = `new_content_ids_${userUuid}`;
+  const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
+  const SESSION_KEY = `session_id_${userUuid}`;
 
-function isNewContent(lastModified: Date | string | null | undefined): boolean {
-  if (!lastModified) return false;
-  const diff = Date.now() - new Date(lastModified).getTime();
-  return diff < NEW_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
-}
+  // Generate a session ID for this tab using sessionStorage
+  if (!sessionStorage.getItem(SESSION_KEY)) {
+    sessionStorage.setItem(SESSION_KEY, crypto.randomUUID());
+  }
+  const sessionId = sessionStorage.getItem(SESSION_KEY)!;
 
-function getSessionNewIds(rows: ContentRow[]): Set<string> {
-  const KEY = "new_content_ids";
-  const SESSION_START_KEY = "session_start_time";
+  const fullInitialKey = `${INITIAL_IDS_KEY}_${sessionId}`;
+  const fullNewKey = `${KEY}_${sessionId}`;
 
-  if (!sessionStorage.getItem(SESSION_START_KEY)) {
-    sessionStorage.setItem(SESSION_START_KEY, Date.now().toString());
-    sessionStorage.removeItem(KEY);
+  if (!localStorage.getItem(fullInitialKey)) {
+    const initialIds = rows.map((r) => r.uuid);
+    localStorage.setItem(fullInitialKey, JSON.stringify(initialIds));
+    return new Set();
   }
 
-  const sessionStart = parseInt(sessionStorage.getItem(SESSION_START_KEY)!);
-  const existing = sessionStorage.getItem(KEY);
-  const storedIds: string[] =
-    existing ? (JSON.parse(existing) as string[]) : [];
+  const initialIds = new Set(
+    JSON.parse(localStorage.getItem(fullInitialKey)!) as string[],
+  );
 
   const newIds = rows
-    .filter((row) => {
-      if (!row.last_modified_time) return false;
-      return new Date(row.last_modified_time).getTime() > sessionStart;
-    })
+    .filter((row) => !initialIds.has(row.uuid))
     .map((row) => row.uuid);
 
-  const mergedSet = new Set(storedIds);
-  newIds.forEach((id) => mergedSet.add(id));
-  const merged = Array.from(mergedSet);
+  const existing = localStorage.getItem(fullNewKey);
+  const storedIds: string[] =
+    existing ? (JSON.parse(existing) as string[]) : [];
+  const mergedSet = new Set([...storedIds, ...newIds]);
+  localStorage.setItem(fullNewKey, JSON.stringify(Array.from(mergedSet)));
 
-  sessionStorage.setItem(KEY, JSON.stringify(merged));
   return mergedSet;
 }
 
@@ -123,6 +132,8 @@ export default function ContentManagement({
     null,
   );
 
+  const [searchParams, setSearchParams] = useSearchParams(); // Add this
+
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [lockMessage, setLockMessage] = useState<string | null>(null);
@@ -135,6 +146,8 @@ export default function ContentManagement({
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
     fileName: string;
+    uuid: string;
+    for_position: Position;
   } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
   const [pendingSave, setPendingSave] = useState<FormData | null>(null);
@@ -142,16 +155,25 @@ export default function ContentManagement({
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
 
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    if (filterParam) {
+      setSearchQuery(filterParam);
+    }
+  }, [searchParams]);
+
   const fetchRows = useCallback(async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      const data = await dedupeAsync("content:list", async () => {
+        const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
 
-      const data: unknown = await res.json();
+        return res.json();
+      });
       const parsed = ContentRowsSchema.safeParse(data);
 
       if (!parsed.success) {
@@ -252,13 +274,18 @@ export default function ContentManagement({
     const rowToDelete = pendingDelete;
     setPendingDelete(null);
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(rowToDelete.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT.DELETE(rowToDelete.uuid), {
         method: "POST",
         credentials: "include",
       });
 
       if (res.ok) {
         setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
+        setViewState((current) =>
+          current !== "new" && current?.uuid === rowToDelete.uuid ?
+            null
+          : current,
+        );
       }
     } catch (error) {
       console.error(error);
@@ -269,7 +296,7 @@ export default function ContentManagement({
     setLockMessage(null);
 
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_LOCK(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT.LOCK(row.uuid), {
         method: "POST",
         credentials: "include",
       });
@@ -295,7 +322,7 @@ export default function ContentManagement({
 
   const releaseLock = async (uuid: string) => {
     try {
-      await fetch(API_ENDPOINTS.CONTENT_LOCK(uuid), {
+      await fetch(API_ENDPOINTS.CONTENT.LOCK(uuid), {
         method: "DELETE",
         credentials: "include",
       });
@@ -323,8 +350,8 @@ export default function ContentManagement({
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
     const url =
       isExisting ?
-        API_ENDPOINTS.CONTENT_EDIT(uuid)
-      : API_ENDPOINTS.CONTENT_CREATE;
+        API_ENDPOINTS.CONTENT.EDIT(uuid)
+      : API_ENDPOINTS.CONTENT.CREATE;
 
     try {
       const res = await fetch(url, {
@@ -354,7 +381,7 @@ export default function ContentManagement({
     }));
 
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_FAVORITE(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT.FAVORITE(row.uuid), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -391,6 +418,22 @@ export default function ContentManagement({
     }
   };
 
+  const handleDownload = async (row: ContentRow) => {
+    try {
+      const response = await fetch(row.url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = row.title;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElement(event.currentTarget);
   };
@@ -402,10 +445,10 @@ export default function ContentManagement({
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (rows.length > 0) {
-      setSessionNewIds(getSessionNewIds(rows));
+    if (rows.length > 0 && session?.employeeUuid) {
+      setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
     }
-  }, [rows]);
+  }, [rows, session?.employeeUuid]);
 
   const confirmationDialogs = (
     <>
@@ -456,8 +499,8 @@ export default function ContentManagement({
 
   const getColumns = (
     onEdit: (row: ContentRow) => void,
-    onDelete: (row: ContentRow) => void,
     onPreview: (row: ContentRow) => void,
+    onDownload: (row: ContentRow) => void,
   ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
@@ -465,6 +508,7 @@ export default function ContentManagement({
       width: 70,
       type: "number",
       sortable: false,
+      filterable: false,
       valueGetter: (_value, row) => (row.is_favorite ? 1 : 0),
       renderCell: (params) => (
         <IconButton
@@ -479,12 +523,34 @@ export default function ContentManagement({
         </IconButton>
       ),
     },
-    { field: "title", headerName: "Title", flex: 1 },
+    {
+      field: "title",
+      headerName: "Title",
+      flex: 1,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation();
+              void toggleFavorite(params.row);
+            }}
+            disabled={favoritePending[params.row.uuid]}
+          >
+            <Heart
+              size={20}
+              fill={params.row.is_favorite ? "#e50000" : "none"}
+              color={params.row.is_favorite ? "#ff4d4f" : "#e50000"}
+            />
+          </IconButton>
+          {params.row.title}
+        </Box>
+      ),
+    },
     {
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 150,
+      width: 130,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -511,24 +577,33 @@ export default function ContentManagement({
         );
       },
     },
-    // {
-    //   field: "url",
-    //   headerName: "URL",
-    //   flex: 1,
-    //   renderCell: (params) => (
-    //     <Link
-    //       href={params.value}
-    //       target="_blank"
-    //       rel="noopener noreferrer"
-    //     >
-    //       {params.value}
-    //     </Link>
-    //   ),
-    // },
+    {
+      field: "url",
+      headerName: "URL",
+      flex: 1,
+      renderCell: (params) => (
+        <Link
+          href={params.value}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {params.value}
+        </Link>
+      ),
+    },
     {
       field: "content_owner",
       headerName: "Author",
-      width: 150,
+      width: 140,
+    },
+    {
+      field: "edited-by",
+      headerName: "Editor",
+      width: 140,
+      valueGetter: (_, row) => {
+        const employee = row.editLock?.lockedByEmp;
+        return employee ? `${employee.first_name} ${employee.last_name}` : "";
+      },
     },
     {
       field: "for_position",
@@ -561,7 +636,7 @@ export default function ContentManagement({
     {
       field: "file_type",
       headerName: "File Type",
-      width: 120,
+      width: 110,
       align: "center",
       renderCell: (params) => {
         const ext = params.value ? mime.extension(params.value) : null;
@@ -577,7 +652,8 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 200,
+      width: 190,
+      align: "center",
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
@@ -591,6 +667,23 @@ export default function ContentManagement({
             >
               <VisibilityIcon />
             </IconButton>
+            <Tooltip
+              title={
+                !hasPermission ?
+                  "You don't have access to download this file"
+                : ""
+              }
+            >
+              <span>
+                <IconButton
+                  color="primary"
+                  onClick={() => void onDownload(params.row)}
+                  disabled={!hasPermission}
+                >
+                  <DownloadIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
             <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
               <span>
                 <Button
@@ -604,14 +697,6 @@ export default function ContentManagement({
                 </Button>
               </span>
             </Tooltip>
-            <IconButton
-              onClick={() => onDelete(params.row)}
-              disabled={!hasPermission || isCheckedOut}
-            >
-              <DeleteIcon
-                color={hasPermission && !isCheckedOut ? "error" : "disabled"}
-              />
-            </IconButton>
           </>
         );
       },
@@ -630,6 +715,9 @@ export default function ContentManagement({
             }
             setViewState(null);
           }}
+          onDelete={
+            viewState !== "new" ? () => handleDelete(viewState) : undefined
+          }
         />
         {confirmationDialogs}
       </Box>
@@ -673,152 +761,245 @@ export default function ContentManagement({
                 </Button>
               </Box>
 
-              {/*Filter Menu Pop-Up*/}
-              <Menu
-                id="filter-menu"
-                anchorEl={anchorElement}
+              {/*Filter Pop-up*/}
+              <Popover
                 open={Boolean(anchorElement)}
-                slotProps={{
-                  list: { "aria-labelledby": "filter-menu" },
-                }}
+                anchorEl={anchorElement}
                 onClose={handleClose}
-                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      border: "1px solid",
+                      borderColor: "gray",
+                    },
+                  },
+                }}
               >
                 {/*Position Item*/}
                 <MenuItem
-                  onMouseEnter={(event) => {
+                  onClick={(event) => {
                     setPositionAnchor(event.currentTarget);
                     setFileTypeAnchor(null);
                   }}
-                  onMouseLeave={(event) => {
-                    if (
-                      !event.relatedTarget ||
-                      !(event.relatedTarget as HTMLElement).closest?.(
-                        "#position-menu",
-                      )
-                    ) {
-                      setPositionAnchor(null);
-                    }
-                  }}
                 >
                   Position
-                  <ArrowRightIcon />
+                  <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
 
                 {/*File Type Item*/}
                 <MenuItem
-                  onMouseEnter={(event) => {
+                  onClick={(event) => {
                     setFileTypeAnchor(event.currentTarget);
                     setPositionAnchor(null);
                   }}
-                  onMouseLeave={(event) => {
-                    if (
-                      !event.relatedTarget ||
-                      !(event.relatedTarget as HTMLElement).closest?.(
-                        "#file-type-menu",
-                      )
-                    ) {
-                      setFileTypeAnchor(null);
-                    }
-                  }}
                 >
                   File Type
-                  <ArrowRightIcon />
+                  <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
-              </Menu>
+              </Popover>
 
-              {/*Position Submenu Pop-Up*/}
-              <Menu
-                id="position-menu"
-                anchorEl={positionAnchor}
+              {/*Position Sub-Pop-Up*/}
+              <Popover
                 open={Boolean(positionAnchor)}
+                anchorEl={positionAnchor}
                 onClose={() => setPositionAnchor(null)}
-                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
-                sx={{ mt: -3, ml: 2 }}
                 slotProps={{
-                  list: {
-                    "aria-labelledby": "position-menu",
-                    "onMouseLeave": () => setPositionAnchor(null),
+                  paper: {
+                    sx: {
+                      border: "1px solid",
+                      borderColor: "gray",
+                      ml: 1,
+                    },
                   },
                 }}
               >
-                <MenuItem onClick={() => togglePosition("UNDERWRITER")}>
-                  Underwriter
-                </MenuItem>
-                <MenuItem onClick={() => togglePosition("BUSINESS_ANALYST")}>
-                  Business Analyst
-                </MenuItem>
-                <MenuItem onClick={() => togglePosition("ADMIN")}>
-                  Admin
-                </MenuItem>
-              </Menu>
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("UNDERWRITER")}
+                      />
+                    }
+                    checked={positionFilters.includes("UNDERWRITER")}
+                    label="Underwriter"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("BUSINESS_ANALYST")}
+                      />
+                    }
+                    checked={positionFilters.includes("BUSINESS_ANALYST")}
+                    label="Business Analysis"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("ACTUARIAL_ANALYST")}
+                      />
+                    }
+                    checked={positionFilters.includes("ACTUARIAL_ANALYST")}
+                    label="Actuarial Analyst"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("EXL_OPERATIONS")}
+                      />
+                    }
+                    checked={positionFilters.includes("EXL_OPERATIONS")}
+                    label="EXL Operations"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => togglePosition("BUSINESS_OP_RATING")}
+                      />
+                    }
+                    checked={positionFilters.includes("BUSINESS_OP_RATING")}
+                    label="Business Ops Rating"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => togglePosition("ADMIN")} />
+                    }
+                    checked={positionFilters.includes("ADMIN")}
+                    label="Admin"
+                  />
+                </FormGroup>
+              </Popover>
 
-              {/*File Type Submenu*/}
-              <Menu
-                id="file-type-menu"
-                anchorEl={fileTypeAnchor}
+              {/*File Type Sub-Pop-Up*/}
+              <Popover
                 open={Boolean(fileTypeAnchor)}
+                anchorEl={fileTypeAnchor}
                 onClose={() => setFileTypeAnchor(null)}
-                anchorOrigin={{ vertical: "center", horizontal: "right" }}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
-                sx={{ mt: -3, ml: 2 }}
                 slotProps={{
-                  list: {
-                    "aria-labelledby": "position-menu",
-                    "onMouseLeave": () => setFileTypeAnchor(null),
+                  paper: {
+                    sx: {
+                      border: "1px solid",
+                      borderColor: "gray",
+                      ml: 1,
+                    },
                   },
                 }}
               >
-                <MenuItem onClick={() => toggleFileType("application/pdf")}>
-                  .PDF
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    toggleFileType(
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => toggleFileType("application/pdf")}
+                      />
+                    }
+                    checked={fileTypeFilters.includes("application/pdf")}
+                    label=".PDF"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() =>
+                          toggleFileType(
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                          )
+                        }
+                      />
+                    }
+                    checked={fileTypeFilters.includes(
                       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    )
-                  }
-                >
-                  .DOCX
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    toggleFileType(
+                    )}
+                    label=".DOCX"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() =>
+                          toggleFileType(
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                          )
+                        }
+                      />
+                    }
+                    checked={fileTypeFilters.includes(
                       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    )
-                  }
-                >
-                  XLSX
-                </MenuItem>
-                <MenuItem onClick={() => toggleFileType("image/png")}>
-                  .PNG
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    toggleFileType(
+                    )}
+                    label=".XLSX"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => toggleFileType("image/png")} />
+                    }
+                    checked={fileTypeFilters.includes("image/png")}
+                    label=".PNG"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() =>
+                          toggleFileType(
+                            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                          )
+                        }
+                      />
+                    }
+                    checked={fileTypeFilters.includes(
                       "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    )
-                  }
-                >
-                  .PPTX
-                </MenuItem>
-              </Menu>
+                    )}
+                    label=".PPTX"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => toggleFileType("text/plain")} />
+                    }
+                    checked={fileTypeFilters.includes("text/plain")}
+                    label=".TXT"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => toggleFileType("text/csv")} />
+                    }
+                    checked={fileTypeFilters.includes("text/csv")}
+                    label=".CSV"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        onChange={() => toggleFileType("application/json")}
+                      />
+                    }
+                    checked={fileTypeFilters.includes("application/json")}
+                    label=".JSON"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox onChange={() => toggleFileType("video/mp4")} />
+                    }
+                    checked={fileTypeFilters.includes("video/mp4")}
+                    label=".MP4"
+                  />
+                </FormGroup>
+              </Popover>
 
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
             </Box>
 
-            <Button
-              onClick={() => setViewState("new")}
-              variant="contained"
-              startIcon={<AddIcon />}
-              sx={{ whiteSpace: "nowrap" }}
-            >
-              New Content
-            </Button>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <HelpPopup description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly." />
+              <Button
+                onClick={() => setViewState("new")}
+                variant="contained"
+                startIcon={<AddIcon />}
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                New Content
+              </Button>
+            </Box>
           </Box>
 
           {lockMessage && (
@@ -832,10 +1013,25 @@ export default function ContentManagement({
       <DataGrid
         rows={filteredRows}
         getRowId={(row) => row.uuid}
-        columns={getColumns(handleEditStart, handleDelete, (row) => {
-          setSelectedDoc({ uri: row.url, fileName: row.title });
-          setPreviewOpen(true);
-        })}
+        columns={getColumns(
+          handleEditStart,
+          (row) => {
+            const isExternalUrl =
+              !row.supabasePath && !row.url.includes("supabase.co/storage");
+            if (isExternalUrl) {
+              window.open(row.url, "_blank");
+              return;
+            }
+            setSelectedDoc({
+              uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+              fileName: row.title,
+              uuid: row.uuid,
+              for_position: row.for_position,
+            });
+            setPreviewOpen(true);
+          },
+          handleDownload,
+        )}
         getRowClassName={(params) => {
           const hasPermission =
             isSystemAdmin || userPosition === params.row.for_position;
@@ -876,53 +1072,26 @@ export default function ContentManagement({
         initialState={{
           pagination: { paginationModel: { pageSize: 10 } },
           sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
+          columns: {
+            columnVisibilityModel: {
+              favorite: false,
+            },
+          },
         }}
         pageSizeOptions={[5, 10]}
       />
 
-      <Dialog
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <Box
-          sx={{
-            p: 1,
-            height: "80vh",
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
-          }}
-        >
-          <Button
-            onClick={() => setPreviewOpen(false)}
-            sx={{ alignSelf: "flex-end" }}
-          >
-            Close
-          </Button>
-
-          {selectedDoc && (
-            <Box
-              sx={{
-                flex: 1,
-                minHeight: 0,
-                display: "flex",
-              }}
-            >
-              <DocViewer
-                className="content-preview-viewer"
-                documents={[selectedDoc]}
-                pluginRenderers={DocViewerRenderers}
-                config={{
-                  header: { disableHeader: false, disableFileName: false },
-                }}
-                style={{ width: "100%", height: "100%" }}
-              />
-            </Box>
-          )}
-        </Box>
-      </Dialog>
+      {previewOpen && (
+        <DocumentEditorModal
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          uri={selectedDoc?.uri ?? ""}
+          fileName={selectedDoc?.fileName ?? ""}
+          readOnly={
+            !isSystemAdmin && userPosition !== selectedDoc?.for_position
+          }
+        />
+      )}
       {confirmationDialogs}
     </Box>
   );

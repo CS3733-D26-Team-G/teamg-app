@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivity";
 import SearchBar from "./DashboardComponents/SearchBar";
 import PieChart from "./DashboardComponents/PieChart";
@@ -6,74 +6,205 @@ import BarChart from "./DashboardComponents/BarChart";
 import { Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import { CardHeader, Divider } from "@mui/material";
 import { useAuth } from "../auth/AuthContext.tsx";
+import { API_ENDPOINTS } from "../config";
+import { dedupeAsync } from "../lib/async-cache";
+import HelpPopup from "../components/HelpPopup";
+
+export function useActivityData() {
+  const [rawLogs, setRawLogs] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [logsData, countsData] = await Promise.all([
+        dedupeAsync("activity", async () => {
+          const res = await fetch(API_ENDPOINTS.ACTIVITY, {
+            credentials: "include",
+          });
+
+          if (!res.ok) {
+            throw new Error(`Failed to fetch activity: ${res.status}`);
+          }
+
+          return res.json();
+        }),
+        dedupeAsync("content:count-position", async () => {
+          const res = await fetch(API_ENDPOINTS.CONTENT.COUNT_POSITION, {
+            credentials: "include",
+          });
+
+          if (!res.ok) {
+            throw new Error(
+              `Failed to fetch content position counts: ${res.status}`,
+            );
+          }
+
+          return res.json();
+        }),
+      ]);
+      setRawLogs(Array.isArray(logsData) ? logsData : []);
+      setAnalytics(
+        countsData && typeof countsData === "object" ? countsData : {},
+      );
+
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+      console.error("Fetch failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  return { rawLogs, analytics, loading, error, refetch: fetchData };
+}
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
   const { session } = useAuth();
+  const { rawLogs, analytics } = useActivityData();
+
+  const roles = [
+    "Business Analyst",
+    "Underwriter",
+    "Actuarial Analyst",
+    "EXL Operations",
+    "Business Ops Team",
+  ];
+
+  const getAnalyticsKey = (role: string) => {
+    const mapping: Record<string, string> = {
+      "Business Analyst": "BUSINESS_ANALYST",
+      "Underwriter": "UNDERWRITER",
+      "Actuarial Analyst": "ACTUARIAL_ANALYST",
+      "EXL Operations": "EXL_OPERATIONS",
+      "Business Ops Team": "BUSINESS_OP_RATING", // Matches your console log!
+    };
+
+    return mapping[role] || role.replace(/\s+/g, "_").toUpperCase();
+  };
+
+  // Role-based help descriptions
+  const helpDescriptions: Record<string, string> = {
+    UNDERWRITER:
+      "You are an UnderWriter, please give us time to give you help.",
+    BUSINESS_ANALYST:
+      "You are an Business Analyst, please give us time to give you help.",
+    ACTUARIAL_ANALYST:
+      "You are an Actuarial Analyst, please give us time to give you help.",
+    EXL_OPERATIONS:
+      "You are an EXL Operations, please give us time to give you help.",
+    BUSINESS_OP_RATING:
+      "You are an Business OP Rating, please give us time to give you help.",
+    ADMIN:
+      "The Dashboard gives you a full organizational overview including employee demographics, recent activity, and content counts by role.",
+  };
+
+  const helpText =
+    helpDescriptions[session?.position ?? ""] ??
+    "The Dashboard gives you an overview of your organization.";
 
   return (
     <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
-      <div
-        className="flex justify-between items-center -mt-2 px-6 pb-4 -ml-8
-      drop-shadow-lg"
-      >
+      {/* Header Section */}
+      <div className="flex justify-between items-center px-8 py-6 border-b border-gray-200">
         <Typography
           variant="h2"
-          component="h2"
+          sx={{ fontWeight: "bold" }}
         >
           Welcome Back {(session?.position ?? "employee").toLowerCase()}!
         </Typography>
-        <div className="w-70 -mr-8">
-          {" "}
-          <SearchBar setSearchQuery={setSearchQuery} />
+        <div className="flex items-center gap-2">
+          <HelpPopup description={helpText} />
+          <div className="w-80">
+            <SearchBar setSearchQuery={setSearchQuery} />
+          </div>
         </div>
       </div>
-      <CardContent className="flex-1 -mr-8 -ml-8 -mt-7">
-        <div className="flex justify-between gap-2 h-full items-start">
-          <Card>
-            <CardContent className="h-full">
-              <div className="flex items-center justify-center h-full">
+
+      <CardContent className="flex flex-col gap-8 p-8">
+        {/* Row Container: items-stretch forces children to equal height */}
+        <div className="flex flex-row gap-8 items-stretch">
+          {/* Pie Chart: The "Height Driver" */}
+          <Card
+            className="flex-none w-fit outline-1 outline-gray-200"
+            sx={{
+              margin: 0,
+            }}
+          >
+            <CardHeader
+              sx={{ py: 1.5, px: 2 }}
+              title={
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+                >
+                  Employee Demographics
+                </Typography>
+              }
+            />
+            <Divider />
+            <CardContent className="h-full flex items-center justify-center p-6">
+              <div className="w-[400px]">
                 <PieChart />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="flex-1 h-1/3 outline-1 drop-shadow-lg">
-            <CardContent className="h-full place-items-center mr-5">
-              <BarChart />
-            </CardContent>
-          </Card>
+          {/* Recent Activity: Grows to fill width and matches height */}
+          <div className="flex-1 min-w-[500px]">
+            <DashboardRecentActivity rawLogs={rawLogs} />
+          </div>
         </div>
-        <div className="h-1/3">
-          <DashboardRecentActivity />
+
+        {/* Second Row for Bar Chart */}
+        <div className="w-full flex flex-row gap-6">
+          {roles.map((role) => {
+            const key = getAnalyticsKey(role);
+            const count = analytics[key] ?? 0;
+
+            return (
+              <Card
+                key={role}
+                className="flex-1 drop-shadow-md outline-1 outline-gray-200"
+                onClick={() => console.log(analytics)}
+              >
+                <CardContent className="p-4">
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
+                    {role}
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: "bold", fontSize: "2rem" }}
+                  >
+                    {count}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="primary.main"
+                    sx={{ fontWeight: "bold" }}
+                  >
+                    Total Items
+                  </Typography>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
   );
 }
-// <Card className="h-[70%] min-h-[200px]">
-//   <CardContent className="relative flex flex-col h-90%">
-//     <div className="flex justify-between items-start gap-4">
-//       <div className="flex-1">
-//         <SearchBar setSearchQuery={setSearchQuery} />
-//       </div>
-//       <div className="bg-white">
-//         <DashboardRecentActivity />
-//       </div>
-//     </div>
-//
-//     <div className="flex justify-center p-0">
-//       <Card className="h-30vh">
-//         <div>
-//           <PieChart />
-//         </div>
-//       </Card>
-//       <Card className="h-30vh">
-//         <div>
-//           <BarChart />
-//         </div>
-//       </Card>
-//     </div>
-//   </CardContent>
-// </Card>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import {
   AppBar,
@@ -10,6 +10,10 @@ import {
   Typography,
   styled,
   Avatar,
+  Popover,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -30,6 +34,11 @@ import {
   getPositionChipColor,
   getPositionLabel,
 } from "../../utils/positionDisplay";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import MenuItem from "@mui/material/MenuItem";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
+import { dedupeAsync } from "../../lib/async-cache";
+import HelpPopup from "../../components/HelpPopup";
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   flexDirection: "column",
@@ -47,14 +56,61 @@ export default function EmployeeManagement() {
   );
   const [loading, setLoading] = useState(true);
 
+  const [positionFilters, setPositionFilters] = useState<string[]>([]);
+  const [deptFilters, setDeptFilters] = useState<string[]>([]);
+
+  const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
+  const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
+    null,
+  );
+  const [deptAnchor, setDeptAnchor] = useState<null | HTMLElement>(null);
+
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElement(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorElement(null);
+  };
+
+  const togglePosition = (position: string) => {
+    //update the position filters array
+    setPositionFilters((currentPositionFilters) => {
+      //check if the current array already has the toggled position
+      if (currentPositionFilters.includes(position)) {
+        //clear selected filter
+        return currentPositionFilters.filter((pos) => pos !== position);
+      } else {
+        //add selected position filter
+        return currentPositionFilters.concat(position);
+      }
+    });
+  };
+
+  const toggleDepartment = (department: string) => {
+    //update the department filters array
+    setDeptFilters((currentDeptFilters) => {
+      //check if the current array already has the toggled department
+      if (currentDeptFilters.includes(department)) {
+        //clear selected filter
+        return currentDeptFilters.filter((dept) => dept !== department);
+      } else {
+        //add selected department filter
+        return currentDeptFilters.concat(department);
+      }
+    });
+  };
+
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const res = await fetch(API_ENDPOINTS.EMPLOYEE, {
-        credentials: "include",
+      const data = await dedupeAsync("employee:list", async () => {
+        const res = await fetch(API_ENDPOINTS.EMPLOYEE.ROOT, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
       });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data: unknown = await res.json();
 
       const parsed = EmployeeRecordsSchema.safeParse(data);
       if (!parsed.success) {
@@ -76,20 +132,41 @@ export default function EmployeeManagement() {
     void loadEmployees();
   }, []);
 
-  const filteredRows = useMemo(() => {
-    if (!searchQuery.trim()) return rows;
+  const filteredRows = useMemo(
+    () =>
+      rows.filter((row) => {
+        // Search Bar Filter Logic
+        if (searchQuery.trim()) {
+          const targetFields = [row.position, row.department];
+          const searchMatch = targetFields.some((field) =>
+            field?.toLowerCase().includes(searchQuery.toLowerCase()),
+          );
 
-    const searchStr = searchQuery.toLowerCase();
-    return rows.filter((row) => {
-      return (
-        row.first_name.toLowerCase().includes(searchStr) ||
-        row.last_name.toLowerCase().includes(searchStr) ||
-        row.position.toLowerCase().includes(searchStr) ||
-        row.department.toLowerCase().includes(searchStr) ||
-        row.corporate_email.toLowerCase().includes(searchStr)
-      );
-    });
-  }, [rows, searchQuery]);
+          if (!searchMatch) return false;
+        }
+
+        //Filter Button Logic
+
+        //Position Filter
+        if (
+          positionFilters.length > 0 &&
+          !positionFilters.includes(row.position)
+        ) {
+          return false;
+        }
+
+        //File Type Filter
+        if (
+          deptFilters.length > 0 &&
+          !deptFilters.includes(row.department ?? "")
+        ) {
+          return false;
+        }
+
+        return true;
+      }),
+    [rows, searchQuery, positionFilters, deptFilters],
+  );
 
   const handleDelete = async (row: EmployeeRecord) => {
     if (
@@ -99,7 +176,7 @@ export default function EmployeeManagement() {
     }
 
     try {
-      const res = await fetch(API_ENDPOINTS.EMPLOYEE_DELETE(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.EMPLOYEE.DELETE(row.uuid), {
         method: "POST",
         credentials: "include",
       });
@@ -134,8 +211,8 @@ export default function EmployeeManagement() {
 
     const url =
       isExisting ?
-        API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
-      : API_ENDPOINTS.EMPLOYEE_CREATE;
+        API_ENDPOINTS.EMPLOYEE.UPDATE(uuid as string)
+      : API_ENDPOINTS.EMPLOYEE.CREATE;
 
     try {
       const res = await fetch(url, {
@@ -211,6 +288,7 @@ export default function EmployeeManagement() {
         field: "position",
         headerName: "Position",
         width: 160,
+        align: "center",
         renderCell: (params) => {
           const role = params.value as EmployeeRecord["position"];
           return (
@@ -270,7 +348,7 @@ export default function EmployeeManagement() {
           onSave={handleSave}
           onCancel={() => setViewState(null)}
         />
-      : <Box sx={{}}>
+      : <Box>
           <AppBar
             position="static"
             sx={{
@@ -292,21 +370,194 @@ export default function EmployeeManagement() {
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 2,
+                  justifyContent: "space-between",
                   width: "100%",
                 }}
               >
-                <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-                  <HeaderSearchBar setSearchQuery={setSearchQuery} />
+                <Box sx={{ display: "flex", gap: 4 }}>
+                  <Box>
+                    <Button
+                      onClick={handleFilterClick}
+                      aria-controls={anchorElement ? "filter-menu" : undefined}
+                      aria-haspopup="true"
+                      aria-expanded={anchorElement ? "true" : undefined}
+                      variant="outlined"
+                      startIcon={<FilterAltIcon />}
+                      sx={{ border: "2px solid" }}
+                    >
+                      Filter
+                    </Button>
+                  </Box>
+
+                  {/*Filter Pop-up*/}
+                  <Popover
+                    open={Boolean(anchorElement)}
+                    anchorEl={anchorElement}
+                    onClose={handleClose}
+                    anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          border: "1px solid",
+                          borderColor: "gray",
+                        },
+                      },
+                    }}
+                  >
+                    {/*Position Item*/}
+                    <MenuItem
+                      onClick={(event) => {
+                        setPositionAnchor(event.currentTarget);
+                        setDeptAnchor(null);
+                      }}
+                    >
+                      Position
+                      <ArrowRightIcon sx={{ ml: "auto" }} />
+                    </MenuItem>
+
+                    {/*Department Item*/}
+                    <MenuItem
+                      onClick={(event) => {
+                        setDeptAnchor(event.currentTarget);
+                        setPositionAnchor(null);
+                      }}
+                    >
+                      Department
+                      <ArrowRightIcon sx={{ ml: "auto" }} />
+                    </MenuItem>
+                  </Popover>
+
+                  {/*Position Sub-Pop-Up*/}
+                  <Popover
+                    open={Boolean(positionAnchor)}
+                    anchorEl={positionAnchor}
+                    onClose={() => setPositionAnchor(null)}
+                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                    transformOrigin={{ vertical: "top", horizontal: "left" }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          border: "1px solid",
+                          borderColor: "gray",
+                          ml: 1,
+                        },
+                      },
+                    }}
+                  >
+                    <FormGroup>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            onChange={() => togglePosition("UNDERWRITER")}
+                          />
+                        }
+                        checked={positionFilters.includes("UNDERWRITER")}
+                        label="Underwriter"
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            onChange={() => togglePosition("BUSINESS_ANALYST")}
+                          />
+                        }
+                        checked={positionFilters.includes("BUSINESS_ANALYST")}
+                        label="Business Analysis"
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            onChange={() => togglePosition("ACTUARIAL_ANALYST")}
+                          />
+                        }
+                        checked={positionFilters.includes("ACTUARIAL_ANALYST")}
+                        label="Actuarial Analyst"
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            onChange={() => togglePosition("EXL_OPERATIONS")}
+                          />
+                        }
+                        checked={positionFilters.includes("EXL_OPERATIONS")}
+                        label="EXL Operations"
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            onChange={() =>
+                              togglePosition("BUSINESS_OP_RATING")
+                            }
+                          />
+                        }
+                        checked={positionFilters.includes("BUSINESS_OP_RATING")}
+                        label="Business Ops Rating"
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox onChange={() => togglePosition("ADMIN")} />
+                        }
+                        checked={positionFilters.includes("ADMIN")}
+                        label="Admin"
+                      />
+                    </FormGroup>
+                  </Popover>
+
+                  {/*Department Sub-Pop-Up*/}
+                  <Popover
+                    open={Boolean(deptAnchor)}
+                    anchorEl={deptAnchor}
+                    onClose={() => setDeptAnchor(null)}
+                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                    transformOrigin={{ vertical: "top", horizontal: "left" }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          border: "1px solid",
+                          borderColor: "gray",
+                          ml: 1,
+                        },
+                      },
+                    }}
+                  >
+                    <FormGroup>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            onChange={() =>
+                              toggleDepartment("OPERATION_TECHNOLOGY")
+                            }
+                          />
+                        }
+                        checked={deptFilters.includes("OPERATION_TECHNOLOGY")}
+                        label="Operation Technology"
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            onChange={() => toggleDepartment("ACCOUNTING")}
+                          />
+                        }
+                        checked={deptFilters.includes("ACCOUNTING")}
+                        label="Accounting"
+                      />
+                    </FormGroup>
+                  </Popover>
+
+                  <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+                    <HeaderSearchBar setSearchQuery={setSearchQuery} />
+                  </Box>
                 </Box>
-                <Button
-                  onClick={() => setViewState("new")}
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  sx={{ whiteSpace: "nowrap" }}
-                >
-                  New Employee
-                </Button>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <HelpPopup description="The Employee Management page lets you view, add, edit, and delete employees. You can filter by position or department and search by name." />
+                  <Button
+                    onClick={() => setViewState("new")}
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    sx={{ whiteSpace: "nowrap" }}
+                  >
+                    New Employee
+                  </Button>
+                </Box>
               </Box>
             </StyledToolbar>
           </AppBar>
