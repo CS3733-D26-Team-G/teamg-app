@@ -7,7 +7,6 @@ import {
   AppBar,
   Toolbar,
   styled,
-  Stack,
   Typography,
   Link,
   Chip,
@@ -21,16 +20,18 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
+  Divider,
+  Slide,
 } from "@mui/material";
+import type { TransitionProps } from "@mui/material/transitions";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DownloadIcon from "@mui/icons-material/Download";
-import EditIcon from "@mui/icons-material/Edit";
-import LockOpenIcon from "@mui/icons-material/LockOpen";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
+import CloseIcon from "@mui/icons-material/Close";
 import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
@@ -54,7 +55,6 @@ import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
 import { dedupeAsync } from "../../lib/async-cache";
 import HelpPopup from "../../components/HelpPopup";
-import DocPreviewer from "./DocPreviewer.tsx";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -75,9 +75,6 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 128,
 }));
 
-{
-  /* Highlights new content based on what is different from start of session */
-}
 function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const KEY = `new_content_ids_${userUuid}`;
   const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
@@ -131,7 +128,7 @@ export default function ContentManagement({
     null,
   );
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -142,7 +139,6 @@ export default function ContentManagement({
   const { session } = useAuth();
 
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
     fileName: string;
@@ -154,6 +150,8 @@ export default function ContentManagement({
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
+
+  const formOpen = viewState !== null;
 
   useEffect(() => {
     const filterParam = searchParams.get("filter");
@@ -168,25 +166,16 @@ export default function ContentManagement({
         const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
           credentials: "include",
         });
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       });
       const parsed = ContentRowsSchema.safeParse(data);
-
       if (!parsed.success) {
         console.error(parsed.error);
         setRows([]);
         return;
       }
-
-      setRows(
-        parsed.data.map((r) => ({
-          ...r,
-          isLocked: r.editLock != null,
-        })),
-      );
+      setRows(parsed.data);
     } catch (error) {
       console.error(error);
       setRows([]);
@@ -200,7 +189,6 @@ export default function ContentManagement({
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        // Search Bar Filter Logic
         if (searchQuery.trim()) {
           const targetFields = [
             row.title,
@@ -215,55 +203,41 @@ export default function ContentManagement({
           );
           if (!searchMatch) return false;
         }
-
-        // Position Filter
         if (
           positionFilters.length > 0 &&
           !positionFilters.includes(row.for_position)
-        ) {
+        )
           return false;
-        }
-
-        // File Type Filter
         if (
           fileTypeFilters.length > 0 &&
           !fileTypeFilters.includes(row.file_type ?? "")
-        ) {
+        )
           return false;
-        }
-
         return true;
       }),
     [rows, searchQuery, positionFilters, fileTypeFilters],
   );
 
   const togglePosition = (position: string) => {
-    setPositionFilters((currentPositionFilters) => {
-      if (currentPositionFilters.includes(position)) {
-        return currentPositionFilters.filter((pos) => pos !== position);
-      } else {
-        return currentPositionFilters.concat(position);
-      }
-    });
+    setPositionFilters((cur) =>
+      cur.includes(position) ?
+        cur.filter((p) => p !== position)
+      : [...cur, position],
+    );
   };
 
   const toggleFileType = (fileType: string) => {
-    setFileTypeFilters((currentFileTypeFilters) => {
-      if (currentFileTypeFilters.includes(fileType)) {
-        return currentFileTypeFilters.filter((type) => type !== fileType);
-      } else {
-        return currentFileTypeFilters.concat(fileType);
-      }
-    });
+    setFileTypeFilters((cur) =>
+      cur.includes(fileType) ?
+        cur.filter((t) => t !== fileType)
+      : [...cur, fileType],
+    );
   };
 
-  const handleDelete = (row: ContentRow) => {
-    setPendingDelete(row);
-  };
+  const handleDelete = (row: ContentRow) => setPendingDelete(row);
 
   const confirmDelete = async () => {
     if (!pendingDelete) return;
-
     const rowToDelete = pendingDelete;
     setPendingDelete(null);
     try {
@@ -271,7 +245,6 @@ export default function ContentManagement({
         method: "POST",
         credentials: "include",
       });
-
       if (res.ok) {
         setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
         setViewState((current) =>
@@ -285,58 +258,28 @@ export default function ContentManagement({
     }
   };
 
-  const handleCheckout = async (row: ContentRow) => {
+  const handleEditStart = async (row: ContentRow) => {
     setLockMessage(null);
-
     try {
       const res = await fetch(API_ENDPOINTS.CONTENT.LOCK(row.uuid), {
         method: "POST",
         credentials: "include",
       });
-
       if (res.status === 409) {
         setRows((prev) =>
           prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
         );
         return;
       }
-
       if (!res.ok) {
-        setLockMessage("Unable to checkout content");
+        setLockMessage("Unable to lock content");
         return;
       }
-
-      setRows((prev) =>
-        prev.map((r) =>
-          r.uuid === row.uuid ?
-            {
-              ...r,
-              isLocked: true,
-              editLock: {
-                lockedByEmp: {
-                  uuid: session?.employeeUuid ?? "",
-                  first_name: "",
-                  last_name: "",
-                },
-              },
-            }
-          : r,
-        ),
-      );
+      setViewState(row);
     } catch (error) {
       console.error(error);
-      setLockMessage("Unable to checkout content for editing.");
+      setLockMessage("Unable to lock content for editing.");
     }
-  };
-
-  const handleOpenEditor = (row: ContentRow) => {
-    setSelectedDoc({
-      uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
-      fileName: row.title,
-      uuid: row.uuid,
-      for_position: row.for_position,
-    });
-    setEditorOpen(true);
   };
 
   const releaseLock = async (uuid: string) => {
@@ -345,24 +288,18 @@ export default function ContentManagement({
         method: "DELETE",
         credentials: "include",
       });
-
       setRows((prev) =>
-        prev.map((r) =>
-          r.uuid === uuid ? { ...r, isLocked: false, editLock: null } : r,
-        ),
+        prev.map((r) => (r.uuid === uuid ? { ...r, isLocked: false } : r)),
       );
     } catch (error) {
       console.error(error);
     }
   };
 
-  const handleSave = (payload: FormData) => {
-    setPendingSave(payload);
-  };
+  const handleSave = (payload: FormData) => setPendingSave(payload);
 
   const confirmSave = async () => {
     if (!pendingSave) return;
-
     const payloadToSave = pendingSave;
     setPendingSave(null);
     const isExisting = viewState !== "new" && viewState !== null;
@@ -371,18 +308,14 @@ export default function ContentManagement({
       isExisting ?
         API_ENDPOINTS.CONTENT.EDIT(uuid)
       : API_ENDPOINTS.CONTENT.CREATE;
-
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
         credentials: "include",
         body: payloadToSave,
       });
-
       if (res.ok) {
-        if (isExisting) {
-          await releaseLock(uuid);
-        }
+        if (isExisting) await releaseLock(uuid);
         await fetchRows();
         setViewState(null);
       }
@@ -391,11 +324,16 @@ export default function ContentManagement({
     }
   };
 
+  const handleCloseModal = async () => {
+    if (viewState !== null && viewState !== "new") {
+      await releaseLock(viewState.uuid);
+    }
+    setViewState(null);
+  };
+
   const toggleFavorite = async (row: ContentRow) => {
     const nextIsFavorite = !row.is_favorite;
-
     setFavoritePending((prev) => ({ ...prev, [row.uuid]: true }));
-
     try {
       const res = await fetch(API_ENDPOINTS.CONTENT.FAVORITE(row.uuid), {
         method: "POST",
@@ -403,20 +341,14 @@ export default function ContentManagement({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isFavorite: nextIsFavorite }),
       });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data: unknown = await res.json();
       const parsed = ContentFavoriteResponseSchema.safeParse(data);
-
       if (!parsed.success) {
         console.error(parsed.error);
         await fetchRows();
         return;
       }
-
       setRows((prevRows) =>
         prevRows.map((r) =>
           r.uuid === parsed.data.contentUuid ?
@@ -448,13 +380,9 @@ export default function ContentManagement({
     }
   };
 
-  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) =>
     setAnchorElement(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorElement(null);
-  };
+  const handleClose = () => setAnchorElement(null);
 
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
 
@@ -512,11 +440,9 @@ export default function ContentManagement({
   );
 
   const getColumns = (
+    onEdit: (row: ContentRow) => void,
     onPreview: (row: ContentRow) => void,
     onDownload: (row: ContentRow) => void,
-    onCheckOut: (row: ContentRow) => void,
-    onOpenEditor: (row: ContentRow) => void,
-    onCheckIn: (uuid: string) => void,
   ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
@@ -607,11 +533,7 @@ export default function ContentManagement({
         </Link>
       ),
     },
-    {
-      field: "content_owner",
-      headerName: "Author",
-      width: 140,
-    },
+    { field: "content_owner", headerName: "Author", width: 140 },
     {
       field: "edited-by",
       headerName: "Editor",
@@ -668,41 +590,20 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 220,
-      minWidth: 220,
+      width: 190,
       align: "center",
-      resizable: false,
-      sortable: false,
-      filterable: false,
       renderCell: (params) => {
-        const row = params.row;
         const hasPermission =
-          isSystemAdmin || userPosition === row.for_position;
-        const lockedByUuid = row.editLock?.lockedByEmp?.uuid;
-        const isCheckedOutByMe =
-          row.isLocked && lockedByUuid === session?.employeeUuid;
-        const isCheckedOutByOther = row.isLocked && !isCheckedOutByMe;
-
+          isSystemAdmin || userPosition === params.row.for_position;
+        const isCheckedOut = params.row.isLocked;
         return (
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              width: "100%",
-              overflow: "hidden",
-            }}
-          >
-            {/* Preview */}
-            <Tooltip title="Preview">
-              <IconButton
-                color="primary"
-                onClick={() => onPreview(row)}
-              >
-                <VisibilityIcon />
-              </IconButton>
-            </Tooltip>
-
-            {/* Download */}
+          <>
+            <IconButton
+              color="primary"
+              onClick={() => onPreview(params.row)}
+            >
+              <VisibilityIcon />
+            </IconButton>
             <Tooltip
               title={
                 !hasPermission ?
@@ -713,105 +614,34 @@ export default function ContentManagement({
               <span>
                 <IconButton
                   color="primary"
-                  onClick={() => void onDownload(row)}
+                  onClick={() => void onDownload(params.row)}
                   disabled={!hasPermission}
                 >
                   <DownloadIcon />
                 </IconButton>
               </span>
             </Tooltip>
-
-            {/* Check Out — only when not locked */}
-            {!row.isLocked && (
-              <Tooltip
-                title={
-                  !hasPermission ?
-                    "Content is checked out"
-                  : "Check Out to edit"
-                }
-              >
-                <span>
-                  <Button
-                    size="small"
-                    onClick={() => onCheckOut(row)}
-                    disabled={!hasPermission}
-                    sx={{ border: "0.5px solid" }}
-                  >
-                    CHECK OUT
-                  </Button>
-                </span>
-              </Tooltip>
-            )}
-
-            {/* Edit — only when checked out by current user */}
-            {isCheckedOutByMe && (
-              <Tooltip title="Open editor">
-                <IconButton
-                  color="primary"
-                  onClick={() => onOpenEditor(row)}
+            <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
+              <span>
+                <Button
+                  size="small"
+                  onClick={() => onEdit(params.row)}
+                  disabled={!hasPermission || isCheckedOut}
+                  sx={{ border: "0.5px solid" }}
                 >
-                  <EditIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-
-            {/* Check In — release lock, only when checked out by current user */}
-            {isCheckedOutByMe && (
-              <Tooltip title="Check In (release lock)">
-                <IconButton
-                  color="primary"
-                  onClick={() => void onCheckIn(row.uuid)}
-                >
-                  <LockOpenIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-
-            {/* Locked by someone else */}
-            {isCheckedOutByOther && (
-              <Tooltip
-                title={`Checked out by ${row.editLock?.lockedByEmp.first_name} ${row.editLock?.lockedByEmp.last_name}`}
-              >
-                <span>
-                  <Button
-                    size="small"
-                    disabled
-                    sx={{ border: "0.5px solid" }}
-                  >
-                    LOCKED
-                  </Button>
-                </span>
-              </Tooltip>
-            )}
-          </Box>
+                  CHECK OUT
+                </Button>
+              </span>
+            </Tooltip>
+          </>
         );
       },
     },
   ];
 
-  if (viewState) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <ContentForm
-          initialData={viewState === "new" ? null : viewState}
-          onSave={handleSave}
-          onCancel={async () => {
-            if (viewState !== "new") {
-              await releaseLock(viewState.uuid);
-            }
-            setViewState(null);
-          }}
-          onDelete={
-            viewState !== "new" ? () => handleDelete(viewState) : undefined
-          }
-        />
-        {confirmationDialogs}
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ height: "auto", width: "100%" }}>
+      {/* ── Toolbar / header ──────────────────────────────────────────────── */}
       <AppBar
         position="static"
         sx={{ backgroundColor: "background.paper", boxShadow: "none" }}
@@ -833,6 +663,7 @@ export default function ContentManagement({
             }}
           >
             <Box sx={{ display: "flex", gap: 4 }}>
+              {/* Filter button */}
               <Box>
                 <Button
                   onClick={handleFilterClick}
@@ -847,7 +678,7 @@ export default function ContentManagement({
                 </Button>
               </Box>
 
-              {/* Filter Pop-up */}
+              {/* Filter pop-up */}
               <Popover
                 open={Boolean(anchorElement)}
                 anchorEl={anchorElement}
@@ -858,26 +689,24 @@ export default function ContentManagement({
                 }}
               >
                 <MenuItem
-                  onClick={(event) => {
-                    setPositionAnchor(event.currentTarget);
+                  onClick={(e) => {
+                    setPositionAnchor(e.currentTarget);
                     setFileTypeAnchor(null);
                   }}
                 >
-                  Position
-                  <ArrowRightIcon sx={{ ml: "auto" }} />
+                  Position <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
                 <MenuItem
-                  onClick={(event) => {
-                    setFileTypeAnchor(event.currentTarget);
+                  onClick={(e) => {
+                    setFileTypeAnchor(e.currentTarget);
                     setPositionAnchor(null);
                   }}
                 >
-                  File Type
-                  <ArrowRightIcon sx={{ ml: "auto" }} />
+                  File Type <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
               </Popover>
 
-              {/* Position Sub-Pop-Up */}
+              {/* Position sub-pop-up */}
               <Popover
                 open={Boolean(positionAnchor)}
                 anchorEl={positionAnchor}
@@ -891,62 +720,27 @@ export default function ContentManagement({
                 }}
               >
                 <FormGroup>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("UNDERWRITER")}
-                      />
-                    }
-                    checked={positionFilters.includes("UNDERWRITER")}
-                    label="Underwriter"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("BUSINESS_ANALYST")}
-                      />
-                    }
-                    checked={positionFilters.includes("BUSINESS_ANALYST")}
-                    label="Business Analysis"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("ACTUARIAL_ANALYST")}
-                      />
-                    }
-                    checked={positionFilters.includes("ACTUARIAL_ANALYST")}
-                    label="Actuarial Analyst"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("EXL_OPERATIONS")}
-                      />
-                    }
-                    checked={positionFilters.includes("EXL_OPERATIONS")}
-                    label="EXL Operations"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("BUSINESS_OP_RATING")}
-                      />
-                    }
-                    checked={positionFilters.includes("BUSINESS_OP_RATING")}
-                    label="Business Ops Rating"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox onChange={() => togglePosition("ADMIN")} />
-                    }
-                    checked={positionFilters.includes("ADMIN")}
-                    label="Admin"
-                  />
+                  {[
+                    ["UNDERWRITER", "Underwriter"],
+                    ["BUSINESS_ANALYST", "Business Analysis"],
+                    ["ACTUARIAL_ANALYST", "Actuarial Analyst"],
+                    ["EXL_OPERATIONS", "EXL Operations"],
+                    ["BUSINESS_OP_RATING", "Business Ops Rating"],
+                    ["ADMIN", "Admin"],
+                  ].map(([value, label]) => (
+                    <FormControlLabel
+                      key={value}
+                      control={
+                        <Checkbox onChange={() => togglePosition(value)} />
+                      }
+                      checked={positionFilters.includes(value)}
+                      label={label}
+                    />
+                  ))}
                 </FormGroup>
               </Popover>
 
-              {/* File Type Sub-Pop-Up */}
+              {/* File type sub-pop-up */}
               <Popover
                 open={Boolean(fileTypeAnchor)}
                 anchorEl={fileTypeAnchor}
@@ -960,97 +754,35 @@ export default function ContentManagement({
                 }}
               >
                 <FormGroup>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => toggleFileType("application/pdf")}
-                      />
-                    }
-                    checked={fileTypeFilters.includes("application/pdf")}
-                    label=".PDF"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() =>
-                          toggleFileType(
-                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                          )
-                        }
-                      />
-                    }
-                    checked={fileTypeFilters.includes(
+                  {[
+                    ["application/pdf", ".PDF"],
+                    [
                       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    )}
-                    label=".DOCX"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() =>
-                          toggleFileType(
-                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                          )
-                        }
-                      />
-                    }
-                    checked={fileTypeFilters.includes(
+                      ".DOCX",
+                    ],
+                    [
                       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    )}
-                    label=".XLSX"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox onChange={() => toggleFileType("image/png")} />
-                    }
-                    checked={fileTypeFilters.includes("image/png")}
-                    label=".PNG"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() =>
-                          toggleFileType(
-                            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                          )
-                        }
-                      />
-                    }
-                    checked={fileTypeFilters.includes(
+                      ".XLSX",
+                    ],
+                    ["image/png", ".PNG"],
+                    [
                       "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    )}
-                    label=".PPTX"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox onChange={() => toggleFileType("text/plain")} />
-                    }
-                    checked={fileTypeFilters.includes("text/plain")}
-                    label=".TXT"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox onChange={() => toggleFileType("text/csv")} />
-                    }
-                    checked={fileTypeFilters.includes("text/csv")}
-                    label=".CSV"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => toggleFileType("application/json")}
-                      />
-                    }
-                    checked={fileTypeFilters.includes("application/json")}
-                    label=".JSON"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox onChange={() => toggleFileType("video/mp4")} />
-                    }
-                    checked={fileTypeFilters.includes("video/mp4")}
-                    label=".MP4"
-                  />
+                      ".PPTX",
+                    ],
+                    ["text/plain", ".TXT"],
+                    ["text/csv", ".CSV"],
+                    ["application/json", ".JSON"],
+                    ["video/mp4", ".MP4"],
+                  ].map(([value, label]) => (
+                    <FormControlLabel
+                      key={value}
+                      control={
+                        <Checkbox onChange={() => toggleFileType(value)} />
+                      }
+                      checked={fileTypeFilters.includes(value)}
+                      label={label}
+                    />
+                  ))}
                 </FormGroup>
               </Popover>
 
@@ -1080,10 +812,12 @@ export default function ContentManagement({
         </StyledToolbar>
       </AppBar>
 
+      {/* ── Data grid ─────────────────────────────────────────────────────── */}
       <DataGrid
         rows={filteredRows}
         getRowId={(row) => row.uuid}
         columns={getColumns(
+          handleEditStart,
           (row) => {
             const isExternalUrl =
               !row.supabasePath && !row.url.includes("supabase.co/storage");
@@ -1100,9 +834,6 @@ export default function ContentManagement({
             setPreviewOpen(true);
           },
           handleDownload,
-          handleCheckout,
-          handleOpenEditor,
-          releaseLock,
         )}
         getRowClassName={(params) => {
           const hasPermission =
@@ -1115,10 +846,9 @@ export default function ContentManagement({
         }}
         sx={{
           "height": 600,
-          "overflow": "hidden",
           "& .row-locked": {
             backgroundColor:
-              isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(245, 245, 245, 1)",
+              isDark ? "rgba(255,255,255,0.12)" : "rgba(245,245,245,1)",
             color: "text.disabled",
             cursor: "not-allowed",
           },
@@ -1145,70 +875,97 @@ export default function ContentManagement({
         initialState={{
           pagination: { paginationModel: { pageSize: 10 } },
           sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
-          columns: {
-            columnVisibilityModel: {
-              favorite: false,
-            },
-          },
+          columns: { columnVisibilityModel: { favorite: false } },
         }}
         pageSizeOptions={[5, 10]}
       />
 
-      {/* Preview Dialog */}
       <Dialog
-        open={previewOpen}
-        onClose={() => {
-          setPreviewOpen(false);
-          setSelectedDoc(null);
-        }}
-        maxWidth="lg"
+        open={formOpen}
+        onClose={() => void handleCloseModal()}
+        maxWidth="sm"
         fullWidth
-        keepMounted
+        PaperProps={{
+          sx: {
+            borderRadius: "16px",
+            overflow: "hidden",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.25)",
+          },
+        }}
       >
-        <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ p: 1, gap: 1, flexShrink: 0 }}
+        {/* Modal header */}
+        <Box
+          sx={{
+            background: "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
+            px: 3,
+            py: 2.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Typography
+            sx={{
+              color: "white",
+              fontWeight: 700,
+              fontSize: "1.15rem",
+              fontFamily: "Rubik, sans-serif",
+            }}
           >
-            <Typography
-              variant="subtitle2"
-              sx={{ pl: 1, color: "text.secondary" }}
-              noWrap
-            >
-              {selectedDoc?.fileName ?? "Preview"}
-            </Typography>
-            <Button
-              onClick={() => {
-                setPreviewOpen(false);
-                setSelectedDoc(null);
-              }}
-            >
-              Close
-            </Button>
-          </Stack>
-          <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
-            {selectedDoc && (
-              <DocPreviewer
-                key={selectedDoc.uuid}
-                uri={selectedDoc.uri}
-                fileName={selectedDoc.fileName}
-              />
-            )}
-          </Box>
+            {viewState === "new" ? "Submit New Content" : "Edit Content"}
+          </Typography>
+          <IconButton
+            onClick={() => void handleCloseModal()}
+            size="small"
+            sx={{
+              "color": "rgba(255,255,255,0.8)",
+              "backgroundColor": "rgba(255,255,255,0.1)",
+              "borderRadius": "8px",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.2)",
+                color: "white",
+              },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </Box>
+
+        {/* Scrollable form body */}
+        <DialogContent
+          sx={{
+            "p": 0,
+            "&::-webkit-scrollbar": { width: 6 },
+            "&::-webkit-scrollbar-thumb": {
+              borderRadius: 3,
+              backgroundColor: "divider",
+            },
+          }}
+        >
+          <ContentForm
+            initialData={viewState === "new" ? null : viewState}
+            onSave={handleSave}
+            onCancel={() => void handleCloseModal()}
+            onDelete={
+              viewState !== null && viewState !== "new" ?
+                () => handleDelete(viewState)
+              : undefined
+            }
+          />
+        </DialogContent>
       </Dialog>
 
-      {/* Document Editor Modal — opened via the Edit button when checked out */}
-      {editorOpen && selectedDoc && (
+      {previewOpen && selectedDoc && (
         <DocumentEditorModal
-          open={editorOpen}
-          onClose={() => setEditorOpen(false)}
+          open={previewOpen}
+          onClose={() => {
+            setPreviewOpen(false);
+            setSelectedDoc(null);
+          }}
           uri={selectedDoc.uri}
           fileName={selectedDoc.fileName}
           uuid={selectedDoc.uuid}
-          readOnly={false}
+          readOnly={!isSystemAdmin && userPosition !== selectedDoc.for_position}
         />
       )}
 
