@@ -53,6 +53,7 @@ export default function DocPreviewer({ uri, fileName }: DocPreviewerProps) {
   const instanceRef = useRef<WebViewerInstance | null>(null);
   const hasInitializedRef = useRef(false);
   const pendingLoadRef = useRef<(() => void) | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const theme = useTheme();
   const [viewerReady, setViewerReady] = useState(false);
@@ -72,6 +73,12 @@ export default function DocPreviewer({ uri, fileName }: DocPreviewerProps) {
       theme.palette.mode === "dark" ? "dark" : "default",
     );
   }, [theme.palette.mode, viewerReady]);
+
+  useEffect(() => {
+    return () => {
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+    };
+  }, [videoUrl]);
 
   // Initialize WebViewer once on mount — same pattern as DocumentEditorModal
   useEffect(() => {
@@ -171,6 +178,16 @@ export default function DocPreviewer({ uri, fileName }: DocPreviewerProps) {
           return;
         }
 
+        const isVideo = type.startsWith("video/") || ext === "mp4";
+
+        if (isVideo) {
+          const objectUrl = URL.createObjectURL(blob);
+          // render a <video> tag instead of loading into WebViewer
+          setVideoUrl(objectUrl);
+          setLoading(false);
+          return;
+        }
+
         const objectUrl = URL.createObjectURL(blob);
 
         const doLoad = () => {
@@ -233,6 +250,26 @@ export default function DocPreviewer({ uri, fileName }: DocPreviewerProps) {
         >
           {display}
         </Box>
+      </Box>
+    );
+  }
+
+  if (videoUrl) {
+    return (
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "black",
+        }}
+      >
+        <video
+          src={videoUrl}
+          controls
+          style={{ maxWidth: "100%", maxHeight: "100%" }}
+        />
       </Box>
     );
   }

@@ -746,13 +746,22 @@ export default function ContentManagement({
 
             {/* Edit — only when checked out by current user */}
             {isCheckedOutByMe && (
-              <Tooltip title="Open editor">
-                <IconButton
-                  color="primary"
-                  onClick={() => onOpenEditor(row)}
-                >
-                  <EditIcon />
-                </IconButton>
+              <Tooltip
+                title={
+                  row.file_type?.startsWith("video/") ?
+                    "Video files cannot be edited"
+                  : "Open editor"
+                }
+              >
+                <span>
+                  <IconButton
+                    color="primary"
+                    onClick={() => onOpenEditor(row)}
+                    disabled={row.file_type?.startsWith("video/")}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                </span>
               </Tooltip>
             )}
 
@@ -1221,6 +1230,7 @@ export default function ContentManagement({
               fileName={selectedDoc.fileName}
               uuid={selectedDoc.uuid}
               contentRow={editorRow}
+              onSaved={() => void fetchRows()}
               readOnly={false}
             />
           );

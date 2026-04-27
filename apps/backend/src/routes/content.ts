@@ -958,6 +958,7 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     url: urlResult.url,
     supabasePath: nextSupabasePath,
     file_type: nextFileType,
+    last_modified_time: new Date(),
   };
 
   logger.verbose(`Updating Content table record ${uuid}`);
@@ -1075,6 +1076,7 @@ router.post("/regenerate-link/:uuid", async (req, res) => {
       data: {
         url: urlResult.url,
         expiration_time: parsed.data.expiration_time,
+        last_modified_time: new Date(),
       },
     });
 

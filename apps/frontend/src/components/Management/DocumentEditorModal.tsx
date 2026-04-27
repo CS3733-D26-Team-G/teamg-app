@@ -14,6 +14,7 @@ interface Props {
   fileName: string;
   contentRow: ContentRow;
   readOnly?: boolean;
+  onSaved?: () => void;
 }
 
 const mimeToExt: Record<string, string> = {
@@ -39,6 +40,7 @@ export default function DocumentEditorModal({
   uuid,
   contentRow,
   readOnly = false,
+  onSaved,
 }: Props) {
   const viewerDivRef = useRef<HTMLDivElement | null>(null);
   const instanceRef = useRef<WebViewerInstance | null>(null);
@@ -150,7 +152,10 @@ export default function DocumentEditorModal({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={() => {
+        currentUriRef.current = "";
+        onClose();
+      }}
       maxWidth="xl"
       fullWidth
       keepMounted
@@ -179,15 +184,37 @@ export default function DocumentEditorModal({
                 const instance = instanceRef.current;
                 if (!instance) return;
                 const doc = instance.Core.documentViewer.getDocument();
+
+                const extFromName =
+                  fileName.includes(".") ?
+                    (fileName.split(".").pop()?.toLowerCase() ?? "pdf")
+                  : "pdf";
+
+                const extToMime: Record<string, string> = {
+                  pdf: "application/pdf",
+                  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                  ppt: "application/vnd.ms-powerpoint",
+                  png: "image/png",
+                  jpg: "image/jpeg",
+                  jpeg: "image/jpeg",
+                };
+
+                const mimeType = extToMime[extFromName] ?? "application/pdf";
+
                 const data = await doc.getFileData({});
-                const blob = new Blob([data]);
+                const blob = new Blob([data], { type: mimeType });
                 const formData = new FormData();
                 formData.append("file", blob, fileName);
+
                 await fetch(API_ENDPOINTS.CONTENT.EDIT(uuid), {
                   method: "PUT",
                   credentials: "include",
                   body: formData,
                 });
+                currentUriRef.current = "";
+                onSaved?.();
                 onClose();
               }}
             >
