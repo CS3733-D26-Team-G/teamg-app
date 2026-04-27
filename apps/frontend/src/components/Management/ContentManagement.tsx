@@ -21,6 +21,7 @@ import {
   FormControlLabel,
   Checkbox,
   Divider,
+  Stack,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
@@ -1090,17 +1091,64 @@ export default function ContentManagement({
         pageSizeOptions={[5, 10]}
       />
 
-      {previewOpen && (
+      {/* Preview Dialog */}
+      <Dialog
+        open={previewOpen}
+        onClose={() => {
+          setPreviewOpen(false);
+          setSelectedDoc(null);
+        }}
+        maxWidth="lg"
+        fullWidth
+        keepMounted
+      >
+        <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ p: 1, gap: 1, flexShrink: 0 }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{ pl: 1, color: "text.secondary" }}
+              noWrap
+            >
+              {selectedDoc?.fileName ?? "Preview"}
+            </Typography>
+            <Button
+              onClick={() => {
+                setPreviewOpen(false);
+                setSelectedDoc(null);
+              }}
+            >
+              Close
+            </Button>
+          </Stack>
+          <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+            {selectedDoc && (
+              <DocPreviewer
+                key={selectedDoc.uuid}
+                uri={selectedDoc.uri}
+                fileName={selectedDoc.fileName}
+              />
+            )}
+          </Box>
+        </Box>
+      </Dialog>
+
+      {/* Document Editor Modal — opened via the Edit button when checked out */}
+      {editorOpen && selectedDoc && (
         <DocumentEditorModal
-          open={previewOpen}
-          onClose={() => setPreviewOpen(false)}
-          uri={selectedDoc?.uri ?? ""}
-          fileName={selectedDoc?.fileName ?? ""}
-          readOnly={
-            !isSystemAdmin && userPosition !== selectedDoc?.for_position
-          }
+          open={editorOpen}
+          onClose={() => setEditorOpen(false)}
+          uri={selectedDoc.uri}
+          fileName={selectedDoc.fileName}
+          uuid={selectedDoc.uuid}
+          readOnly={false}
         />
       )}
+
       {confirmationDialogs}
     </Box>
   );
