@@ -168,7 +168,7 @@ export default function ContentManagement({
   const fetchRows = useCallback(async () => {
     try {
       const data = await dedupeAsync("content:list", async () => {
-        const res = await fetch(API_ENDPOINTS.CONTENT, {
+        const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
           credentials: "include",
         });
         if (!res.ok) {
@@ -277,7 +277,7 @@ export default function ContentManagement({
     const rowToDelete = pendingDelete;
     setPendingDelete(null);
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_DELETE(rowToDelete.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT.DELETE(rowToDelete.uuid), {
         method: "POST",
         credentials: "include",
       });
@@ -299,7 +299,7 @@ export default function ContentManagement({
     setLockMessage(null);
 
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_LOCK(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT.LOCK(row.uuid), {
         method: "POST",
         credentials: "include",
       });
@@ -325,7 +325,7 @@ export default function ContentManagement({
 
   const releaseLock = async (uuid: string) => {
     try {
-      await fetch(API_ENDPOINTS.CONTENT_LOCK(uuid), {
+      await fetch(API_ENDPOINTS.CONTENT.LOCK(uuid), {
         method: "DELETE",
         credentials: "include",
       });
@@ -353,8 +353,8 @@ export default function ContentManagement({
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
     const url =
       isExisting ?
-        API_ENDPOINTS.CONTENT_EDIT(uuid)
-      : API_ENDPOINTS.CONTENT_CREATE;
+        API_ENDPOINTS.CONTENT.EDIT(uuid)
+      : API_ENDPOINTS.CONTENT.CREATE;
 
     try {
       const res = await fetch(url, {
@@ -384,7 +384,7 @@ export default function ContentManagement({
     }));
 
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_FAVORITE(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT.FAVORITE(row.uuid), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -1030,7 +1030,7 @@ export default function ContentManagement({
               return;
             }
             setSelectedDoc({
-              uri: API_ENDPOINTS.CONTENT_FILE(row.uuid),
+              uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
               fileName: row.title,
               uuid: row.uuid,
               for_position: row.for_position,
