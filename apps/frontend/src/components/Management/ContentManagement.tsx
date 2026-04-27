@@ -1006,7 +1006,12 @@ export default function ContentManagement({
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <HelpPopup description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly." />
-              {isSystemAdmin && <TagManagerPopup />}
+              {isSystemAdmin && (
+                <TagManagerPopup
+                  rows={rows}
+                  onTagsChanged={fetchRows}
+                />
+              )}
               <Button
                 onClick={() => setViewState("new")}
                 variant="contained"

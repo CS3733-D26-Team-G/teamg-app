@@ -1,6 +1,5 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  Modal,
   Typography,
   Box,
   DialogTitle,
@@ -9,31 +8,34 @@ import {
   Dialog,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
   Divider,
   TextField,
 } from "@mui/material";
 import Button from "@mui/material/Button";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import { API_ENDPOINTS } from "../../config.ts";
 import IconButton from "@mui/material/IconButton";
-import { Delete } from "@mui/icons-material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import type { ContentRow } from "../../types/content.ts";
 
 interface Tag {
   uuid: string;
   name: string;
-  count: number;
 }
 
-export default function TagManagerPopup() {
+interface TagManagerPopupProps {
+  rows: ContentRow[];
+  onTagsChanged: () => Promise<void>;
+}
+
+export default function TagManagerPopup({
+  rows,
+  onTagsChanged,
+}: TagManagerPopupProps) {
   const [open, setOpen] = useState(false);
-  const [tags, setTags] = useState<Tag[]>([]);
   const [newTag, setNewTag] = useState("");
-  const [loading, setLoading] = useState(false);
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
 
   const handleOpen = () => {
@@ -44,29 +46,17 @@ export default function TagManagerPopup() {
     setOpen(false);
   };
 
-  const loadTags = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(API_ENDPOINTS.CONTENT.ROOT + "/count/tags", {
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch tags");
+  const tags = useMemo(() => {
+    const tagMap = new Map<string, Tag>();
+    for (const row of rows) {
+      for (const tag of row.tags) {
+        if (!tagMap.has(tag.uuid)) {
+          tagMap.set(tag.uuid, tag);
+        }
       }
-
-      const data = (await res.json()) as Tag[];
-      setTags(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (open) void loadTags();
-  }, [open]);
+    return Array.from(tagMap.values());
+  }, [rows]);
 
   const handleCreateTag = async () => {
     if (!newTag.trim()) {
@@ -90,7 +80,7 @@ export default function TagManagerPopup() {
       }
 
       setNewTag("");
-      await loadTags();
+      await onTagsChanged();
     } catch (e) {
       console.error(e);
     }
@@ -107,7 +97,7 @@ export default function TagManagerPopup() {
         throw new Error("Failed to delete tag");
       }
       setPendingDeleteTag(null);
-      await loadTags();
+      await onTagsChanged();
     } catch (e) {
       console.error(e);
     }
@@ -199,18 +189,7 @@ export default function TagManagerPopup() {
                       </IconButton>
                   }
                 >
-                  <ListItemText
-                    primary={tag.name}
-                    secondary={tag.count}
-                    sx={{
-                      display: "flex",
-                      flexDirection: "row-reverse",
-                      alignItems: "center",
-                      justifyContent: "flex-end",
-                      gap: 1.2,
-                      p: 0.5,
-                    }}
-                  />
+                  <ListItemText primary={tag.name} />
                 </ListItem>
                 {index < tags.length - 1 && <Divider />}
               </Box>
