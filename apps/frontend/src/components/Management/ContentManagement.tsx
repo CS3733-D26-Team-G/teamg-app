@@ -75,19 +75,6 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 128,
 }));
 
-const SlideUpTransition = React.forwardRef(function SlideUpTransition(
-  props: TransitionProps & { children: React.ReactElement },
-  ref: React.Ref<unknown>,
-) {
-  return (
-    <Slide
-      direction="up"
-      ref={ref}
-      {...props}
-    />
-  );
-});
-
 function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const KEY = `new_content_ids_${userUuid}`;
   const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
@@ -893,11 +880,9 @@ export default function ContentManagement({
         pageSizeOptions={[5, 10]}
       />
 
-      {/* ── Content Form Modal ────────────────────────────────────────────── */}
       <Dialog
         open={formOpen}
         onClose={() => void handleCloseModal()}
-        TransitionComponent={SlideUpTransition}
         maxWidth="sm"
         fullWidth
         PaperProps={{

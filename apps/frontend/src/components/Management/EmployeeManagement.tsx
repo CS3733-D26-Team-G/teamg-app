@@ -52,19 +52,6 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 128,
 }));
 
-const SlideUpTransition = React.forwardRef(function SlideUpTransition(
-  props: TransitionProps & { children: React.ReactElement },
-  ref: React.Ref<unknown>,
-) {
-  return (
-    <Slide
-      direction="up"
-      ref={ref}
-      {...props}
-    />
-  );
-});
-
 export default function EmployeeManagement() {
   const [rows, setRows] = useState<EmployeeRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -496,7 +483,6 @@ export default function EmployeeManagement() {
       <Dialog
         open={formOpen}
         onClose={() => setViewState(null)}
-        TransitionComponent={SlideUpTransition}
         maxWidth="sm"
         fullWidth
         PaperProps={{
