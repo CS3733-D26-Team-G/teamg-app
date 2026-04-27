@@ -54,6 +54,10 @@ const FavoriteContentSchema = z.object({
   isFavorite: z.boolean(),
 });
 
+const RegenerateContentLinkSchema = z.object({
+  expiration_time: z.coerce.date(),
+});
+
 const CreateTagSchema = z.object({
   name: z.string(),
 });
@@ -1001,6 +1005,95 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     return sendInternalError(
       res,
       `Failed to update Content table record ${uuid}`,
+      e,
+    );
+  }
+});
+
+router.post("/regenerate-link/:uuid", async (req, res) => {
+  const uuid = parseContentUuid(req, res, "Invalid content UUID");
+  if (!uuid) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  logger.verbose(`Querying Content table for record ${uuid}`);
+  const existingContent = await prisma.content.findUnique({ where: { uuid } });
+  if (!existingContent) {
+    logger.warn(
+      `Received regenerate link request for Content table record ${uuid} that does not exist`,
+    );
+    return res.status(400).json({ message: "Invalid content UUID" });
+  }
+  logger.verbose(`Queried Content table for record ${uuid}: record found`);
+
+  const parsed = RegenerateContentLinkSchema.safeParse(req.body);
+  if (!parsed.success) {
+    logger.verbose(
+      `Failed to parse Content regenerate link request body for record ${uuid}:\n${parsed.error.issues}`,
+    );
+    return res.status(400).json({ message: parsed.error.issues });
+  }
+
+  if (!canManagePosition(auth, existingContent.for_position)) {
+    logger.warn(
+      `Rejected Content regenerate link request for record ${uuid}: target position ${existingContent.for_position}, user position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  if (await rejectIfLockedByAnotherUser(uuid, auth, res)) {
+    return;
+  }
+
+  if (!existingContent.supabasePath) {
+    logger.warn(
+      `Rejected Content regenerate link request for external URL record ${uuid}`,
+    );
+    return res.status(400).json({
+      message: "Only Supabase-backed content links can be regenerated",
+    });
+  }
+
+  const urlResult = await resolveContentUrl({
+    uuid,
+    expirationTime: parsed.data.expiration_time,
+    fallbackSupabasePath: existingContent.supabasePath,
+    upsert: true,
+  });
+
+  if (!urlResult.ok) {
+    return res.status(urlResult.status).json({ message: urlResult.message });
+  }
+
+  logger.verbose(`Updating Content table record ${uuid} with regenerated link`);
+
+  try {
+    const updatedContent = await prisma.content.update({
+      where: { uuid },
+      data: {
+        url: urlResult.url,
+        expiration_time: parsed.data.expiration_time,
+      },
+    });
+
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "EDIT_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: updatedContent.uuid,
+        resourceName: updatedContent.title,
+      },
+    });
+
+    logger.verbose(`Regenerated Content link for record ${uuid}`);
+    return res.status(200).json(updatedContent);
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to regenerate Content link for record ${uuid}`,
       e,
     );
   }

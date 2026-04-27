@@ -134,6 +134,7 @@ export default function Sidebar() {
         {isAdmin ?
           <>
             <ListItemButton
+              id="tutorial-management-menu"
               onClick={() => handleToggle(setAdminOpen, adminOpen)}
               sx={{ px: 2 }}
             >
