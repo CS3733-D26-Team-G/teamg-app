@@ -34,7 +34,7 @@ export function useActivityData() {
           return res.json();
         }),
         dedupeAsync("content:count-position", async () => {
-          const res = await fetch(API_ENDPOINTS.CONTENT_COUNT_POSITION, {
+          const res = await fetch(API_ENDPOINTS.CONTENT.COUNT_POSITION, {
             credentials: "include",
           });
 

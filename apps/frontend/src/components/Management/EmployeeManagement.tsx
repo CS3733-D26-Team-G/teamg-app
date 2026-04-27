@@ -105,7 +105,7 @@ export default function EmployeeManagement() {
     try {
       setLoading(true);
       const data = await dedupeAsync("employee:list", async () => {
-        const res = await fetch(API_ENDPOINTS.EMPLOYEE, {
+        const res = await fetch(API_ENDPOINTS.EMPLOYEE.ROOT, {
           credentials: "include",
         });
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -176,7 +176,7 @@ export default function EmployeeManagement() {
     }
 
     try {
-      const res = await fetch(API_ENDPOINTS.EMPLOYEE_DELETE(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.EMPLOYEE.DELETE(row.uuid), {
         method: "POST",
         credentials: "include",
       });
@@ -211,8 +211,8 @@ export default function EmployeeManagement() {
 
     const url =
       isExisting ?
-        API_ENDPOINTS.EMPLOYEE_UPDATE(uuid as string)
-      : API_ENDPOINTS.EMPLOYEE_CREATE;
+        API_ENDPOINTS.EMPLOYEE.UPDATE(uuid as string)
+      : API_ENDPOINTS.EMPLOYEE.CREATE;
 
     try {
       const res = await fetch(url, {

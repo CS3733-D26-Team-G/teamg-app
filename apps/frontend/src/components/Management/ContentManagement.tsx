@@ -24,7 +24,6 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
-import InfoIcon from "@mui/icons-material/Info";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -56,6 +55,7 @@ import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
 import { dedupeAsync } from "../../lib/async-cache";
 import HelpPopup from "../../components/HelpPopup";
+import DocPreviewer from "./DocPreviewer.tsx";
 import InfoPopup from "./ContentInfoPopup.tsx";
 import TagManagerPopup from "./TagManagerPopup.tsx";
 
@@ -546,12 +546,6 @@ export default function ContentManagement({
             />
           </IconButton>
           {params.row.title}
-          <InfoPopup
-            url={params.row.url}
-            author={params.row.content_owner}
-            position={getPositionLabel(params.row.for_position as Position)}
-            fileType={params.row.file_type}
-          />
         </Box>
       ),
     },
@@ -559,7 +553,7 @@ export default function ContentManagement({
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 170,
+      width: 130,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -583,21 +577,6 @@ export default function ContentManagement({
               : "—"}
             </span>
           </Box>
-        );
-      },
-    },
-    {
-      field: "expiration",
-      headerName: "Expiration",
-      width: 170,
-      renderCell: (params) => {
-        const ext = params.value ? mime.extension(params.value) : null;
-        return (
-          <Chip
-            label={ext ? `.${ext.toUpperCase()}` : "Test Value"}
-            size="small"
-            variant="outlined"
-          />
         );
       },
     },
@@ -646,20 +625,14 @@ export default function ContentManagement({
     {
       field: "status",
       headerName: "Status",
-      width: 170,
+      width: 120,
       align: "center",
       renderCell: (params) => (
         <Chip
           label={statusLabels[params.value as ContentStatus]}
           size="small"
-          variant="filled"
-          sx={{
-            fontSize: "14px",
-            borderRadius: "4px",
-            borderColor: "black",
-            px: 1,
-            height: "30px",
-          }}
+          variant="outlined"
+          sx={{ borderColor: "black" }}
         />
       ),
     },
@@ -682,8 +655,12 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 200,
-      align: "left",
+      width: 220,
+      minWidth: 220,
+      align: "center",
+      resizable: false,
+      sortable: false,
+      filterable: false,
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
@@ -1021,7 +998,6 @@ export default function ContentManagement({
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <HelpPopup description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly." />
-              {isSystemAdmin && <TagManagerPopup />}
               <Button
                 onClick={() => setViewState("new")}
                 variant="contained"
@@ -1074,6 +1050,7 @@ export default function ContentManagement({
         }}
         sx={{
           "height": 600,
+          "overflow": "hidden",
           "border": "none",
           "& .row-locked": {
             backgroundColor:
@@ -1106,12 +1083,7 @@ export default function ContentManagement({
           sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
           columns: {
             columnVisibilityModel: {
-              "favorite": false,
-              "url": false,
-              "content_owner": false,
-              "edited-by": false,
-              "for_position": false,
-              "file_type": false,
+              favorite: false,
             },
           },
         }}

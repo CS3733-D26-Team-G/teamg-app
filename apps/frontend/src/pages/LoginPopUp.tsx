@@ -16,6 +16,7 @@ import { Visibility, VisibilityOff, Close } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "../config.ts";
 import { useAuth } from "../auth/AuthContext.tsx";
+import { useTutorial } from "../components/Tutorial/TutorialContext.tsx";
 import HanoverLoginPic from "../assets/hannoverBuilding.jpg";
 import HanoverLogo from "../assets/HanoverLogo.png";
 
@@ -34,6 +35,7 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
   const [error, setError] = useState<string | null>(null); // Added for UI feedback
   const navigate = useNavigate();
   const { refreshSession } = useAuth();
+  const { triggerPrompt } = useTutorial();
 
   if (!open) return null;
 
@@ -67,14 +69,15 @@ function LoginPopUp({ open, onClose }: LoginPopUpProps) {
         return;
       }
 
-      // Most refreshSession implementations return the user object
       const userData = await refreshSession();
 
       onClose();
 
-      // Adjust "ADMIN" to match whatever string your backend sends (e.g., "admin", 1, etc.)
       if (userData?.position === "ADMIN") {
         navigate("/dashboard");
+        setTimeout(() => {
+          triggerPrompt();
+        }, 600);
       } else {
         navigate("/library");
       }

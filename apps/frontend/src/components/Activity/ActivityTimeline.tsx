@@ -30,7 +30,9 @@ export default function ActivityTimeline({ data }: ActivityTimelineProps) {
                 sx={{ mx: 2, fontWeight: "bold", whiteSpace: "nowrap" }}
                 onClick={() => console.log(group.date)}
               >
-                {group.date}
+                {group.date === "Invalid Date" ?
+                  "DATE PARSING ERROR"
+                : group.date}
               </Typography>
               <Divider
                 sx={{

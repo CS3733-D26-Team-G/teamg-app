@@ -6,6 +6,9 @@ import Sidebar from "./components/Sidebar.tsx";
 import { AppThemeProvider } from "./Themecontext.tsx";
 import { AuthProvider, useAuth } from "./auth/AuthContext.tsx";
 import { ProfileProvider } from "./profile/ProfileContext.tsx";
+import { TutorialProvider } from "./components/Tutorial/TutorialContext.tsx";
+import TutorialOverlay from "./components/Tutorial/TutorialOverlay.tsx";
+import TutorialPrompt from "./components/Tutorial/TutorialPrompt.tsx";
 
 import Hero from "./pages/hero.tsx";
 import Dashboard from "./pages/dashboard.tsx";
@@ -15,6 +18,7 @@ import Activity from "./pages/activity.tsx";
 import Settings from "./pages/settings.tsx";
 import Profile from "./pages/profile.tsx";
 import LoginPopUp from "./pages/LoginPopUp.tsx";
+import Credits from "./pages/Credits.tsx";
 
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
@@ -167,8 +171,17 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/credits"
+            element={<Credits />}
+          />
         </Routes>
       </div>
+
+      {/* Tutorial system — rendered above everything else */}
+      <TutorialPrompt />
+      <TutorialOverlay />
     </div>
   );
 }
@@ -178,7 +191,9 @@ function App() {
     <AuthProvider>
       <ProfileProvider>
         <AppThemeProvider>
-          <AppLayout />
+          <TutorialProvider>
+            <AppLayout />
+          </TutorialProvider>
         </AppThemeProvider>
       </ProfileProvider>
     </AuthProvider>

@@ -18,7 +18,7 @@ export default function EmployeeFormPage() {
     try {
       setSaving(true);
 
-      const res = await fetch(API_ENDPOINTS.EMPLOYEE_CREATE, {
+      const res = await fetch(API_ENDPOINTS.EMPLOYEE.CREATE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
