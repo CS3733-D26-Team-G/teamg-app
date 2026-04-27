@@ -35,7 +35,7 @@ export const API_ENDPOINTS = {
   CONTENT_DELETE: (uuid: string) => `${API_BASE_URL}/content/delete/${uuid}`,
   CONTENT_LOCK: (uuid: string) => `${API_BASE_URL}/content/lock/${uuid}`,
   CONTENT_FILE: (uuid: string) => `${API_BASE_URL}/content/file/${uuid}`,
-  CONTENT_TAGS: `${API_BASE_URL}/content/counts/tags`,
+  CONTENT_TAGS: `${API_BASE_URL}/content/count/tags`,
   CONTENT_TAG_CREATE: `${API_BASE_URL}/content/tag/create`,
   CONTENT_TAG_DELETE: (uuid: string) =>
     `${API_BASE_URL}/content/tag/delete/${uuid}`,

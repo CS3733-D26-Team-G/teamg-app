@@ -132,7 +132,13 @@ export default function TagManagerPopup() {
         fullWidth
       >
         <DialogTitle>Manage Content Tags</DialogTitle>
-        <DialogContent dividers>
+        <DialogContent
+          dividers
+          sx={{
+            border: "1px solid black",
+            borderRadius: 1,
+          }}
+        >
           {/*List of tags structure*/}
           <List
             disablePadding
@@ -141,7 +147,11 @@ export default function TagManagerPopup() {
               overflowY: "auto",
             }}
           >
-            {tags.length === 0 && <Typography>There are no tags</Typography>}
+            {tags.length === 0 && (
+              <Typography sx={{ display: "flex", justifyContent: "center" }}>
+                No Tags in the System
+              </Typography>
+            )}
             {tags.map((tag, index) => (
               <Box key={tag.uuid}>
                 <ListItem
@@ -182,28 +192,52 @@ export default function TagManagerPopup() {
                           setPendingDeleteTag(tag.uuid);
                         }}
                       >
-                        <DeleteIcon fontSize="small" />
+                        <DeleteIcon
+                          fontSize="small"
+                          sx={{ color: "#ef5350" }}
+                        />
                       </IconButton>
                   }
                 >
                   <ListItemText
                     primary={tag.name}
                     secondary={tag.count}
+                    sx={{
+                      display: "flex",
+                      flexDirection: "row-reverse",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                      gap: 1.2,
+                      p: 0.5,
+                    }}
                   />
                 </ListItem>
                 {index < tags.length - 1 && <Divider />}
               </Box>
             ))}
           </List>
-
+        </DialogContent>
+        <DialogActions
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            pt: 3,
+          }}
+        >
           {/*New Content Tag*/}
-          <Box>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              width: 600,
+            }}
+          >
             <TextField
               size="small"
-              fullWidth
               placeholder="Enter new tag name..."
               value={newTag}
               onChange={(event) => setNewTag(event.target.value)}
+              fullWidth
             />
             <Button
               variant="contained"
@@ -212,16 +246,18 @@ export default function TagManagerPopup() {
                 void handleCreateTag();
               }}
               disabled={!newTag.trim()}
+              sx={{ width: 145 }}
             >
               Add Tag
             </Button>
           </Box>
-        </DialogContent>
-        <DialogActions>
           <Button
             onClick={() => {
               {
                 handleClose();
+                {
+                  setNewTag("");
+                }
               }
             }}
           >
