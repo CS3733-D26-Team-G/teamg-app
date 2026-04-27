@@ -29,6 +29,10 @@ export function useActivityData() {
             credentials: "include",
           });
 
+          if (res.status === 401) {
+            return [];
+          }
+
           if (!res.ok) {
             throw new Error(`Failed to fetch activity: ${res.status}`);
           }
