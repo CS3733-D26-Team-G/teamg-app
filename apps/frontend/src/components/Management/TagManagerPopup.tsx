@@ -37,16 +37,9 @@ export default function TagManagerPopup({
   const [open, setOpen] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
+  const [localTags, setLocalTags] = useState<Tag[]>([]);
 
   const handleOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  const tags = useMemo(() => {
     const tagMap = new Map<string, Tag>();
     for (const row of rows) {
       for (const tag of row.tags) {
@@ -55,8 +48,13 @@ export default function TagManagerPopup({
         }
       }
     }
-    return Array.from(tagMap.values());
-  }, [rows]);
+    setLocalTags(Array.from(tagMap.values()));
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
 
   const handleCreateTag = async () => {
     if (!newTag.trim()) {
@@ -79,6 +77,8 @@ export default function TagManagerPopup({
         throw new Error("Failed to create tag");
       }
 
+      const createdTag: Tag = await res.json();
+      setLocalTags((prev) => [...prev, createdTag]);
       setNewTag("");
       await onTagsChanged();
     } catch (e) {
@@ -96,6 +96,8 @@ export default function TagManagerPopup({
       if (!res.ok) {
         throw new Error("Failed to delete tag");
       }
+
+      setLocalTags((prev) => prev.filter((tag) => tag.uuid !== uuid));
       setPendingDeleteTag(null);
       await onTagsChanged();
     } catch (e) {
@@ -137,12 +139,12 @@ export default function TagManagerPopup({
               overflowY: "auto",
             }}
           >
-            {tags.length === 0 && (
+            {localTags.length === 0 && (
               <Typography sx={{ display: "flex", justifyContent: "center" }}>
                 No Tags in the System
               </Typography>
             )}
-            {tags.map((tag, index) => (
+            {localTags.map((tag, index) => (
               <Box key={tag.uuid}>
                 <ListItem
                   disablePadding
@@ -191,7 +193,7 @@ export default function TagManagerPopup({
                 >
                   <ListItemText primary={tag.name} />
                 </ListItem>
-                {index < tags.length - 1 && <Divider />}
+                {index < localTags.length - 1 && <Divider />}
               </Box>
             ))}
           </List>
