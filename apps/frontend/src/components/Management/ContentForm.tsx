@@ -22,6 +22,7 @@ import { useAuth } from "../../auth/AuthContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 
 import type { ContentFormData, ContentRecord } from "../../types/content";
+import { useProfile } from "../../profile/ProfileContext.tsx";
 
 interface ContentFormProps {
   initialData?: ContentRecord | null;
@@ -72,12 +73,18 @@ export default function ContentForm({
 }: ContentFormProps) {
   const isEditing = !!initialData;
   const { session } = useAuth();
+  const { profile } = useProfile();
   const isAdmin = session?.permissions.canManageAllContent ?? false;
 
   const [formData, setFormData] = useState<ContentFormData>(() =>
     buildDefaultFormData({
       ...(initialData ?? undefined),
       for_position: initialData?.for_position ?? session?.position,
+      content_owner:
+        initialData?.content_owner ??
+        (profile?.first_name && profile?.last_name ?
+          `${profile.first_name} ${profile.last_name}`
+        : ""),
     }),
   );
   const [sourceType, setSourceType] = useState<"url" | "file">(() =>
@@ -90,11 +97,16 @@ export default function ContentForm({
       buildDefaultFormData({
         ...(initialData ?? undefined),
         for_position: initialData?.for_position ?? session?.position,
+        content_owner:
+          initialData?.content_owner ??
+          (profile?.first_name && profile?.last_name ?
+            `${profile.first_name} ${profile.last_name}`
+          : ""),
       }),
     );
     setSourceType(getInitialSourceType(initialData));
     setFile(null);
-  }, [initialData, session?.position]);
+  }, [initialData, session?.position, profile?.first_name, profile?.last_name]);
 
   const positionOptions = useMemo(
     () =>
@@ -255,6 +267,7 @@ export default function ContentForm({
               onChange={(e) => handleChange("content_owner", e.target.value)}
               variant="outlined"
               margin="normal"
+              disabled={!isAdmin}
             />
 
             <FormControl
