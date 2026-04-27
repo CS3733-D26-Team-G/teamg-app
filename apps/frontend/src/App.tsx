@@ -18,6 +18,7 @@ import Activity from "./pages/activity.tsx";
 import Settings from "./pages/settings.tsx";
 import Profile from "./pages/profile.tsx";
 import LoginPopUp from "./pages/LoginPopUp.tsx";
+import Credits from "./pages/Credits.tsx";
 
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
@@ -169,6 +170,11 @@ function AppLayout() {
                 <MyForms />
               </ProtectedRoute>
             }
+          />
+
+          <Route
+            path="/credits"
+            element={<Credits />}
           />
         </Routes>
       </div>

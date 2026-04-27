@@ -65,6 +65,14 @@ export default function Footer() {
               {t("footer.guideTour")}
             </MuiLink>
           </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="/credits"
+              color="inherit"
+            >
+              {t("Credits")}
+            </MuiLink>
+          </Typography>
         </Stack>
         <Stack
           className="employee-access-stack"
