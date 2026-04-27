@@ -1,3 +1,27 @@
+/**
+ * DocumentEditorModal.tsx
+ *
+ * A full-screen dialog for editing documents using Apryse WebViewer.
+ * Displays the document in an editable WebViewer instance alongside a
+ * VersionHistoryPanel showing the document's audit trail.
+ *
+ * Supported editing:
+ * - PDF files: full annotation and content editing, saved back to the server.
+ * - Non-PDF files (docx, pptx, etc.): displayed via Apryse's internal PDF
+ *   conversion. Note: the Apryse demo licence does not support saving non-PDF
+ *   formats back as their original type — editing should be restricted to PDFs.
+ *
+ * Save behaviour:
+ * - Reads the document bytes via getFileData(), wraps them in a Blob with the
+ *   correct MIME type derived from the fileName extension, and PUTs to the
+ *   backend edit endpoint.
+ * - Resets the URI cache after saving so the next open re-fetches fresh content.
+ * - Calls onSaved() to trigger a data refresh in the parent (e.g. fetchRows()).
+ *
+ * Dark mode:
+ * - WebViewer theme is synced with the MUI theme on init and on every toggle.
+ */
+
 import { useRef, useEffect, useState } from "react";
 import { Dialog, Box, Button, Stack, Typography } from "@mui/material";
 import WebViewer, { type WebViewerInstance } from "@pdftron/webviewer";
@@ -6,17 +30,33 @@ import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
 import type { ContentRow } from "../../types/content.ts";
 import { useTheme } from "@mui/material/styles";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface Props {
+  /** Whether the dialog is open. */
   open: boolean;
+  /** Called when the dialog should close (Close button or backdrop click). */
   onClose: () => void;
+  /** Authenticated endpoint URL to fetch the document binary from. */
   uri: string;
+  /** UUID of the content record, used for save and history endpoints. */
   uuid: string;
+  /** Original file name including extension, used for MIME detection. */
   fileName: string;
+  /** Full content row, passed to VersionHistoryPanel for expiration display. */
   contentRow: ContentRow;
+  /** If true, disables editing toolbar elements in WebViewer. */
   readOnly?: boolean;
+  /** Called after a successful save so the parent can refresh its data. */
   onSaved?: () => void;
 }
 
+// ─── MIME lookup ──────────────────────────────────────────────────────────────
+
+/**
+ * Maps MIME type → file extension.
+ * Used when resolving the extension from a fetched blob's Content-Type header.
+ */
 const mimeToExt: Record<string, string> = {
   "application/pdf": "pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
@@ -32,6 +72,13 @@ const mimeToExt: Record<string, string> = {
   "video/mp4": "mp4",
 };
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
+/**
+ * Modal dialog containing an Apryse WebViewer editor and a VersionHistoryPanel.
+ * WebViewer is initialized once on mount and kept alive via keepMounted,
+ * so reopening the modal is fast and does not re-initialize the iframe.
+ */
 export default function DocumentEditorModal({
   open,
   onClose,
@@ -42,14 +89,41 @@ export default function DocumentEditorModal({
   readOnly = false,
   onSaved,
 }: Props) {
+  // ─── Refs ──────────────────────────────────────────────────────────────────
+
+  /** DOM node that WebViewer mounts its iframe into. */
   const viewerDivRef = useRef<HTMLDivElement | null>(null);
+
+  /** Holds the WebViewer instance once initialized. */
   const instanceRef = useRef<WebViewerInstance | null>(null);
+
+  /** Stores a load callback to run once WebViewer finishes initializing. */
   const pendingLoadRef = useRef<(() => void) | null>(null);
+
+  /** Guards against double-initialization in React Strict Mode. */
   const hasInitializedRef = useRef(false);
+
+  /**
+   * Tracks the URI of the last successfully loaded document.
+   * Prevents redundant re-fetches when the modal reopens for the same file.
+   * Reset to "" after save or close so the next open always re-fetches.
+   */
+  const currentUriRef = useRef<string>("");
+
+  // ─── State ─────────────────────────────────────────────────────────────────
+
   const theme = useTheme();
+
+  /** True once WebViewer's .then() resolves; used to gate theme sync effects. */
   const [viewerReady, setViewerReady] = useState(false);
 
-  // Initialize WebViewer once on mount
+  // ─── Effects ───────────────────────────────────────────────────────────────
+
+  /**
+   * Initializes the Apryse WebViewer instance once on mount.
+   * Uses requestAnimationFrame to ensure the DOM node is painted before
+   * WebViewer attempts to mount its iframe into it.
+   */
   useEffect(() => {
     const frameId = requestAnimationFrame(() => {
       if (hasInitializedRef.current || !viewerDivRef.current) return;
@@ -60,6 +134,7 @@ export default function DocumentEditorModal({
           path: "/webviewer/lib",
           licenseKey:
             "demo:1776714799946:6325df920300000000de6805a4f71c4346d6e510d1c42048e35ab36d86",
+          // Only disable toolbar elements when in read-only mode
           disabledElements:
             readOnly ? ["toolsHeader", "ribbons", "toggleNotesButton"] : [],
         },
@@ -71,12 +146,15 @@ export default function DocumentEditorModal({
           !!pendingLoadRef.current,
         );
         setViewerReady(true);
-        instance.UI.setTheme(
-          theme.palette.mode === "dark" ? "dark" : "default",
-        );
+
+        // Apply current MUI theme immediately on init
+        instance.UI.setTheme(theme.palette.mode === "dark" ? "dark" : "light");
 
         if (readOnly) instance.UI.setToolMode("Pan");
         window.dispatchEvent(new Event("resize"));
+
+        // If a document was requested before WebViewer finished initializing,
+        // run the deferred load now
         if (pendingLoadRef.current) {
           pendingLoadRef.current();
           pendingLoadRef.current = null;
@@ -87,12 +165,16 @@ export default function DocumentEditorModal({
     return () => cancelAnimationFrame(frameId);
   }, []);
 
-  const currentUriRef = useRef<string>("");
-
-  // Fetch and load document when modal opens
+  /**
+   * Fetches and loads the document into WebViewer whenever the modal opens
+   * or the URI changes. Skips the fetch if the same URI is already loaded.
+   * Uses AbortController to cancel in-flight requests on cleanup.
+   */
   useEffect(() => {
     if (!open || !uri) return;
     if (!uri.includes("/content/file/")) return;
+
+    // Skip re-fetch if this URI is already loaded in the viewer
     if (uri === currentUriRef.current && instanceRef.current) return;
     currentUriRef.current = uri;
 
@@ -108,6 +190,8 @@ export default function DocumentEditorModal({
           throw new Error(`Failed to fetch document: ${response.status}`);
 
         const blob = await response.blob();
+
+        // Resolve extension: prefer fileName extension, fall back to MIME lookup
         const extFromMime = mimeToExt[blob.type] ?? undefined;
         const extFromName =
           fileName.includes(".") ? fileName.split(".").pop() : undefined;
@@ -123,12 +207,14 @@ export default function DocumentEditorModal({
             filename: fileName,
             extension: ext,
           });
+          // Revoke the blob URL after WebViewer has had time to read it
           setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
         };
 
         if (instanceRef.current) {
           doLoad();
         } else {
+          // WebViewer not ready yet — defer until initialization completes
           pendingLoadRef.current = doLoad;
         }
       } catch (err) {
@@ -142,26 +228,33 @@ export default function DocumentEditorModal({
     return () => abortController.abort();
   }, [open, uri, fileName]);
 
+  /**
+   * Syncs the Apryse WebViewer theme with the MUI theme mode.
+   * Runs whenever the user toggles dark/light mode after WebViewer is ready.
+   */
   useEffect(() => {
     if (!viewerReady || !instanceRef.current) return;
     instanceRef.current.UI.setTheme(
-      theme.palette.mode === "dark" ? "dark" : "default",
+      theme.palette.mode === "dark" ? "dark" : "light",
     );
   }, [theme.palette.mode, viewerReady]);
+
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <Dialog
       open={open}
       onClose={() => {
+        // Reset URI cache so the next open always re-fetches fresh content
         currentUriRef.current = "";
         onClose();
       }}
       maxWidth="xl"
       fullWidth
-      keepMounted
+      keepMounted // Keep WebViewer alive between opens to avoid re-initialization
     >
       <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
-        {/* Top bar */}
+        {/* ── Top bar: file name + Save/Close actions ── */}
         <Stack
           direction="row"
           justifyContent="space-between"
@@ -185,6 +278,9 @@ export default function DocumentEditorModal({
                 if (!instance) return;
                 const doc = instance.Core.documentViewer.getDocument();
 
+                // Derive MIME type from the file extension so the server stores
+                // the correct Content-Type. Avoids the mime-types Node.js library
+                // which cannot run in the browser (path.extname is not available).
                 const extFromName =
                   fileName.includes(".") ?
                     (fileName.split(".").pop()?.toLowerCase() ?? "pdf")
@@ -203,6 +299,9 @@ export default function DocumentEditorModal({
 
                 const mimeType = extToMime[extFromName] ?? "application/pdf";
 
+                // getFileData({}) returns the document bytes as an ArrayBuffer.
+                // Note: on the Apryse demo licence, non-PDF formats are converted
+                // to PDF internally, so only PDF round-trips are fully reliable.
                 const data = await doc.getFileData({});
                 const blob = new Blob([data], { type: mimeType });
                 const formData = new FormData();
@@ -213,6 +312,8 @@ export default function DocumentEditorModal({
                   credentials: "include",
                   body: formData,
                 });
+
+                // Reset URI cache so the next open re-fetches the updated file
                 currentUriRef.current = "";
                 onSaved?.();
                 onClose();
@@ -224,9 +325,9 @@ export default function DocumentEditorModal({
           </Stack>
         </Stack>
 
-        {/* Body: viewer + history panel side by side */}
+        {/* ── Body: WebViewer + Version History side by side ── */}
         <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
-          {/* WebViewer */}
+          {/* WebViewer editor — fills all remaining horizontal space */}
           <Box sx={{ flex: 1, minHeight: 0, position: "relative" }}>
             <Box
               ref={viewerDivRef}
@@ -241,7 +342,7 @@ export default function DocumentEditorModal({
             />
           </Box>
 
-          {/* Version history sidebar */}
+          {/* Version history sidebar — fixed 220px width, scrollable */}
           <VersionHistoryPanel
             contentUuid={uuid}
             contentRow={contentRow}

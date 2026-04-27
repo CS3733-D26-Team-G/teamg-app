@@ -76,45 +76,6 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 128,
 }));
 
-{
-  /* Highlights new content based on what is different from start of session */
-}
-function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
-  const KEY = `new_content_ids_${userUuid}`;
-  const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
-  const SESSION_KEY = `session_id_${userUuid}`;
-
-  if (!sessionStorage.getItem(SESSION_KEY)) {
-    sessionStorage.setItem(SESSION_KEY, crypto.randomUUID());
-  }
-  const sessionId = sessionStorage.getItem(SESSION_KEY)!;
-
-  const fullInitialKey = `${INITIAL_IDS_KEY}_${sessionId}`;
-  const fullNewKey = `${KEY}_${sessionId}`;
-
-  if (!localStorage.getItem(fullInitialKey)) {
-    const initialIds = rows.map((r) => r.uuid);
-    localStorage.setItem(fullInitialKey, JSON.stringify(initialIds));
-    return new Set();
-  }
-
-  const initialIds = new Set(
-    JSON.parse(localStorage.getItem(fullInitialKey)!) as string[],
-  );
-
-  const newIds = rows
-    .filter((row) => !initialIds.has(row.uuid))
-    .map((row) => row.uuid);
-
-  const existing = localStorage.getItem(fullNewKey);
-  const storedIds: string[] =
-    existing ? (JSON.parse(existing) as string[]) : [];
-  const mergedSet = new Set([...storedIds, ...newIds]);
-  localStorage.setItem(fullNewKey, JSON.stringify(Array.from(mergedSet)));
-
-  return mergedSet;
-}
-
 export default function ContentManagement({
   viewState,
   setViewState,
@@ -383,6 +344,9 @@ export default function ContentManagement({
       if (res.ok) {
         if (isExisting) {
           await releaseLock(uuid);
+        } else {
+          const data = (await res.json()) as { uuid: string };
+          setSessionNewIds((prev) => new Set([...prev, data.uuid]));
         }
         await fetchRows();
         setViewState(null);
@@ -458,12 +422,6 @@ export default function ContentManagement({
   };
 
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (rows.length > 0 && session?.employeeUuid) {
-      setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
-    }
-  }, [rows, session?.employeeUuid]);
 
   const confirmationDialogs = (
     <>

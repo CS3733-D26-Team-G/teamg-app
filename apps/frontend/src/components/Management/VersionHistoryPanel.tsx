@@ -1,3 +1,21 @@
+/**
+ * VersionHistoryPanel.tsx
+ *
+ * A sidebar panel that displays the version history and expiration status
+ * of a content document. Rendered alongside DocPreviewer and DocumentEditorModal.
+ *
+ * Features:
+ * - Fetches activity records from GET /content/history/:uuid on mount.
+ * - Renders a vertical timeline of events (created, checked out, checked in,
+ *   modified) with color-coded icons per event type.
+ * - Shows an expiration status badge at the top with color coding:
+ *     Green:  > 14 days remaining
+ *     Yellow: <= 14 days remaining
+ *     Red:    already expired
+ * - Adapts to MUI dark/light mode via the useTheme hook.
+ * - Each timeline event shows a full date-time tooltip on hover.
+ */
+
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -17,10 +35,14 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { API_BASE_URL } from "../../config";
 import type { ContentRow } from "../../types/content";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+/** Raw activity record returned by GET /content/history/:uuid. */
 interface HistoryActivity {
   uuid: string;
   timestamp: string;
   action: string;
+  /** Optional JSON string containing structured metadata about the edit. */
   details?: string | null;
   employee: {
     uuid: string;
@@ -29,16 +51,51 @@ interface HistoryActivity {
   } | null;
 }
 
+/**
+ * Parsed structure of the activity `details` JSON field.
+ * Set on EDIT_CONTENT actions to distinguish the type of change made.
+ */
 interface ParsedDetails {
+  /** The kind of edit: file_update | expiration_only | file_and_expiration | metadata_update */
   type?: string;
+  /** ISO date string of the new expiration date, if it was changed. */
   new_expiration?: string;
 }
 
 interface VersionHistoryPanelProps {
+  /** UUID of the content record to fetch history for. */
   contentUuid: string;
+  /** Full content row; used to display the current expiration status. */
   contentRow: ContentRow;
 }
 
+/**
+ * All possible event kinds derived from activity action + details.type.
+ * Used to select the correct label, icon, and color for each timeline entry.
+ */
+type EventKind =
+  | "created"
+  | "file_update"
+  | "expiration_only"
+  | "file_and_expiration"
+  | "metadata_update"
+  | "checkout"
+  | "checkin";
+
+/** Display configuration for a single timeline event. */
+interface EventConfig {
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Safely parses the activity `details` JSON string.
+ * Returns null if the string is absent or not valid JSON.
+ */
 function parseDetails(raw?: string | null): ParsedDetails | null {
   if (!raw) return null;
   try {
@@ -48,6 +105,7 @@ function parseDetails(raw?: string | null): ParsedDetails | null {
   }
 }
 
+/** Formats an ISO date string as "Mon DD, YYYY" for display in the timeline. */
 function formatDate(iso: string) {
   const d = new Date(iso);
   return d.toLocaleDateString("en-US", {
@@ -57,6 +115,7 @@ function formatDate(iso: string) {
   });
 }
 
+/** Formats an ISO date string as a full locale date+time string for tooltips. */
 function formatDateTime(iso: string) {
   const d = new Date(iso);
   return d.toLocaleString("en-US", {
@@ -68,6 +127,10 @@ function formatDateTime(iso: string) {
   });
 }
 
+/**
+ * Returns the display name of the employee who performed an action.
+ * Falls back to the provided fallback string if employee data is missing.
+ */
 function employeeName(
   emp: HistoryActivity["employee"],
   fallback = "System",
@@ -76,22 +139,13 @@ function employeeName(
   return `${emp.first_name} ${emp.last_name}`.trim() || fallback;
 }
 
-type EventKind =
-  | "created"
-  | "file_update"
-  | "expiration_only"
-  | "file_and_expiration"
-  | "metadata_update"
-  | "checkout"
-  | "checkin";
+// ─── Event config ─────────────────────────────────────────────────────────────
 
-interface EventConfig {
-  label: string;
-  icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-}
-
+/**
+ * Maps an activity action + optional details to a display configuration.
+ * EDIT_CONTENT is further subdivided by details.type to distinguish
+ * file replacements, expiration updates, and combined changes.
+ */
 function getEventConfig(
   action: string,
   details: ParsedDetails | null,
@@ -122,7 +176,7 @@ function getEventConfig(
     };
   }
 
-  // EDIT_CONTENT — branch on details.type
+  // EDIT_CONTENT — branch on details.type to show the specific change made
   const kind: EventKind = (details?.type as EventKind) ?? "metadata_update";
   switch (kind) {
     case "file_update":
@@ -156,6 +210,14 @@ function getEventConfig(
   }
 }
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/**
+ * Renders a single event in the vertical timeline.
+ * Shows a colored icon bubble, event label, author name, optional expiration
+ * badge, and a date stamp with a full date-time tooltip on hover.
+ * Draws a connector line down to the next event unless it is the last item.
+ */
 function TimelineEvent({
   activity,
   isLast,
@@ -171,7 +233,7 @@ function TimelineEvent({
 
   return (
     <Box sx={{ display: "flex", gap: 1.5, position: "relative" }}>
-      {/* Connector line */}
+      {/* Vertical connector line between timeline events */}
       {!isLast && (
         <Box
           sx={{
@@ -186,7 +248,7 @@ function TimelineEvent({
         />
       )}
 
-      {/* Icon bubble */}
+      {/* Colored icon bubble indicating the event type */}
       <Box
         sx={{
           flexShrink: 0,
@@ -206,7 +268,7 @@ function TimelineEvent({
         {cfg.icon}
       </Box>
 
-      {/* Content */}
+      {/* Event content: label, author, optional expiration badge, date */}
       <Box sx={{ flex: 1, pb: isLast ? 0 : 2 }}>
         <Typography
           variant="body2"
@@ -232,7 +294,7 @@ function TimelineEvent({
           {by}
         </Typography>
 
-        {/* Expiration detail badge */}
+        {/* Expiration badge — only shown on events that changed the expiration date */}
         {details?.new_expiration && (
           <Chip
             label={`Expires ${formatDate(details.new_expiration)}`}
@@ -250,6 +312,7 @@ function TimelineEvent({
           />
         )}
 
+        {/* Date stamp — hover to see full date-time */}
         <Tooltip
           title={formatDateTime(activity.timestamp)}
           placement="right"
@@ -272,6 +335,13 @@ function TimelineEvent({
   );
 }
 
+/**
+ * Displays a color-coded badge summarizing the document's expiration status.
+ * Color thresholds based on days remaining until expiration:
+ *   Green:  > 14 days
+ *   Yellow: 1–14 days (isSoon)
+ *   Red:    already expired
+ */
 function ExpirationStatus({
   expirationTime,
   isDark,
@@ -287,6 +357,8 @@ function ExpirationStatus({
   const daysUntil = Math.ceil(
     (expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
   );
+
+  // isSoon controls whether the warning icon is shown vs the calendar icon
   const soonThreshold = 14;
   const isSoon = !isExpired && daysUntil <= soonThreshold;
 
@@ -328,6 +400,7 @@ function ExpirationStatus({
         gap: 0.75,
       }}
     >
+      {/* Warning icon for expired/soon, calendar icon when healthy */}
       {isExpired || isSoon ?
         <WarningAmberIcon sx={{ fontSize: 14, color, flexShrink: 0 }} />
       : <EventAvailableIcon sx={{ fontSize: 14, color, flexShrink: 0 }} />}
@@ -338,6 +411,12 @@ function ExpirationStatus({
   );
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
+/**
+ * Sidebar panel showing a document's expiration status and full activity timeline.
+ * Fetches history from the backend on mount and re-fetches if contentUuid changes.
+ */
 export default function VersionHistoryPanel({
   contentUuid,
   contentRow,
@@ -349,6 +428,10 @@ export default function VersionHistoryPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  /**
+   * Fetches the activity history for this content UUID from the backend.
+   * Activities are ordered ascending by timestamp (oldest first) by the API.
+   */
   useEffect(() => {
     if (!contentUuid) return;
     setLoading(true);
@@ -383,7 +466,7 @@ export default function VersionHistoryPanel({
           isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.015)",
       }}
     >
-      {/* Header */}
+      {/* Panel header */}
       <Box
         sx={{
           px: 2,
@@ -406,15 +489,16 @@ export default function VersionHistoryPanel({
         </Typography>
       </Box>
 
-      {/* Scrollable body */}
+      {/* Scrollable timeline body */}
       <Box sx={{ flex: 1, overflowY: "auto", px: 1.5, pt: 1.5, pb: 2 }}>
-        {/* Expiration status */}
+        {/* Expiration status badge at the top of the panel */}
         <ExpirationStatus
           expirationTime={contentRow.expiration_time}
           isDark={isDark}
         />
 
         <Box sx={{ mt: 2 }}>
+          {/* Loading spinner while fetching history */}
           {loading && (
             <Box
               sx={{
@@ -427,6 +511,7 @@ export default function VersionHistoryPanel({
             </Box>
           )}
 
+          {/* Error state */}
           {!loading && error && (
             <Typography
               variant="caption"
@@ -436,6 +521,7 @@ export default function VersionHistoryPanel({
             </Typography>
           )}
 
+          {/* Empty state */}
           {!loading && !error && activities.length === 0 && (
             <Typography
               variant="caption"
@@ -445,6 +531,7 @@ export default function VersionHistoryPanel({
             </Typography>
           )}
 
+          {/* Timeline events — rendered oldest to newest */}
           {!loading &&
             !error &&
             activities.map((activity, i) => (
