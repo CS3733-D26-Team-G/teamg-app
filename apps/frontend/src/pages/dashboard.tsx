@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivity";
 import SearchBar from "./DashboardComponents/SearchBar";
 import PieChart from "./DashboardComponents/PieChart";
-//import BarChart from "./DashboardComponents/BarChart";
+import TypeBarChart from "./DashboardComponents/BarChart";
 import { Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -20,54 +20,67 @@ export function useActivityData() {
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>(
     {},
   );
+  const [fileTypeCount, setfileTypeCount] = useState<
+    { type: string; count: number }[]
+  >([]);
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [logsData, countsData, employeeCountsData] = await Promise.all([
-        dedupeAsync("activity", async () => {
-          const res = await fetch(API_ENDPOINTS.ACTIVITY, {
-            credentials: "include",
-          });
-
-          if (res.status === 401) {
-            return [];
-          }
-
-          if (!res.ok) {
-            throw new Error(`Failed to fetch activity: ${res.status}`);
-          }
-
-          return res.json();
-        }),
-        dedupeAsync("content:count-position", async () => {
-          const res = await fetch(API_ENDPOINTS.CONTENT.COUNT_POSITION, {
-            credentials: "include",
-          });
-
-          if (!res.ok) {
-            throw new Error(
-              `Failed to fetch content position counts: ${res.status}`,
-            );
-          }
-
-          return res.json();
-        }),
-        dedupeAsync("employee:count", async () => {
-          const res = await fetch(
-            `${API_ENDPOINTS.ACTIVITY.replace("/activity", "")}/stats/employee/count`,
-            {
+      const [logsData, countsData, employeeCountsData, fileTypeCountData] =
+        await Promise.all([
+          dedupeAsync("activity", async () => {
+            const res = await fetch(API_ENDPOINTS.ACTIVITY, {
               credentials: "include",
-            },
-          );
-          if (res.status == 401) {
-            return null;
-          }
-          if (!res.ok) {
-            throw new Error(`Employee count fetch failed : ${res.status}`);
-          }
-          return res.json();
-        }),
-      ]);
+            });
+
+            if (res.status === 401) {
+              return [];
+            }
+
+            if (!res.ok) {
+              throw new Error(`Failed to fetch activity: ${res.status}`);
+            }
+
+            return res.json();
+          }),
+          dedupeAsync("content:count-position", async () => {
+            const res = await fetch(API_ENDPOINTS.CONTENT.COUNT_POSITION, {
+              credentials: "include",
+            });
+
+            if (!res.ok) {
+              throw new Error(
+                `Failed to fetch content position counts: ${res.status}`,
+              );
+            }
+
+            return res.json();
+          }),
+          dedupeAsync("employee:count", async () => {
+            const res = await fetch(
+              `${API_ENDPOINTS.ACTIVITY.replace("/activity", "")}/stats/employee/count`,
+              {
+                credentials: "include",
+              },
+            );
+            if (res.status == 401) {
+              return null;
+            }
+            if (!res.ok) {
+              throw new Error(`Employee count fetch failed : ${res.status}`);
+            }
+            return res.json();
+          }),
+          dedupeAsync("content:count-file-type", async () => {
+            const res = await fetch(API_ENDPOINTS.CONTENT.COUNT_FILE_TYPE, {
+              credentials: "include",
+            });
+            if (!res.ok) {
+              throw new Error(`FILE type count fetch failed : ${res.status}`);
+            }
+            return res.json();
+          }),
+        ]);
       setRawLogs(Array.isArray(logsData) ? logsData : []);
       setAnalytics(
         countsData && typeof countsData === "object" ? countsData : {},
@@ -76,6 +89,9 @@ export function useActivityData() {
         employeeCountsData && typeof employeeCountsData === "object" ?
           employeeCountsData
         : {},
+      );
+      setfileTypeCount(
+        Array.isArray(fileTypeCountData) ? fileTypeCountData : [],
       );
       setError(null);
     } catch (err: any) {
@@ -94,6 +110,7 @@ export function useActivityData() {
     rawLogs,
     analytics,
     employeeCounts,
+    fileTypeCount,
     loading,
     error,
     refetch: fetchData,
@@ -103,7 +120,8 @@ export function useActivityData() {
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
   const { session } = useAuth();
-  const { rawLogs, analytics, employeeCounts } = useActivityData();
+  const { rawLogs, analytics, employeeCounts, fileTypeCount } =
+    useActivityData();
   const employeePieData = [
     {
       id: 0,
@@ -226,6 +244,25 @@ export default function Dashboard() {
               <div className="w-100">
                 <PieChart data={employeePieData} />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="outline-1 outline-gray-200">
+            <CardHeader
+              sx={{ py: 1.5, px: 2 }}
+              title={
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+                >
+                  {" "}
+                  File Types
+                </Typography>
+              }
+            />
+            <Divider />
+            <CardContent className="p-6">
+              <TypeBarChart data={fileTypeCount} />
             </CardContent>
           </Card>
 

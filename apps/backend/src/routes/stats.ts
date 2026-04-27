@@ -84,6 +84,29 @@ router.get("/content/count/position", async (req, res) => {
     return sendInternalError(res, "Failed to retrieve content stats", e);
   }
 });
+//file type router
+router.get("/content/count/file-type", async (req, res) => {
+  const auth = getAuth(req);
+  try {
+    const groupedCounts = await prisma.content.groupBy({
+      where: getVisibleContentWhere(auth),
+      by: ["file_type"],
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        file_type: "asc",
+      },
+    });
+    const stats = groupedCounts.map((group) => ({
+      type: group.file_type?.trim() || "N/A",
+      count: group._count._all ?? 0,
+    }));
+    return res.status(200).json(stats);
+  } catch (e) {
+    return sendInternalError(res, "Failes to retrieve file", e);
+  }
+});
 
 router.get("/content/count/tags", async (req, res) => {
   const auth = getAuth(req);
