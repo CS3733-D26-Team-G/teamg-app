@@ -47,7 +47,7 @@ export default function TagManagerPopup() {
   const loadTags = async () => {
     setLoading(true);
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_TAGS, {
+      const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
         credentials: "include",
       });
 
@@ -74,7 +74,7 @@ export default function TagManagerPopup() {
     }
 
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_TAG_CREATE, {
+      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.CREATE, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -98,7 +98,7 @@ export default function TagManagerPopup() {
 
   const handleDeleteTag = async (uuid: string) => {
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT_TAG_DELETE(uuid), {
+      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.DELETE(uuid), {
         method: "POST",
         credentials: "include",
       });
