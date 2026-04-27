@@ -11,14 +11,13 @@ import {
   Typography,
   ToggleButton,
   ToggleButtonGroup,
-  Stack,
-  Divider,
   type SelectChangeEvent,
 } from "@mui/material";
 import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
 import type { ContentStatus, ContentType, Position } from "@repo/db";
 import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
+import "./ContentForm.css";
 import { useAuth } from "../../auth/AuthContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 
@@ -34,7 +33,10 @@ interface ContentFormProps {
 function getInitialSourceType(
   initialData?: ContentRecord | null,
 ): "url" | "file" {
-  if (initialData?.supabasePath || initialData?.file_type) return "file";
+  if (initialData?.supabasePath || initialData?.file_type) {
+    return "file";
+  }
+
   return initialData?.url ? "url" : "file";
 }
 
@@ -114,7 +116,10 @@ export default function ContentForm({
     field: K,
     value: ContentFormData[K],
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleSelectChange =
@@ -126,13 +131,17 @@ export default function ContentForm({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = e.target.files?.[0] ?? null;
     setFile(nextFile);
-    if (nextFile && !formData.title) handleChange("title", nextFile.name);
+
+    if (nextFile && !formData.title) {
+      handleChange("title", nextFile.name);
+    }
   };
 
   const handleInternalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const body = new FormData();
+
     body.append("title", formData.title);
     body.append("content_owner", formData.content_owner);
     body.append("for_position", formData.for_position);
@@ -159,237 +168,208 @@ export default function ContentForm({
   };
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleInternalSubmit}
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 0,
-        px: 3,
-        py: 3,
-      }}
-    >
-      {/* Source type toggle */}
-      <ToggleButtonGroup
-        value={sourceType}
-        exclusive
-        onChange={(_, val) => {
-          if (val) setSourceType(val);
-        }}
-        fullWidth
-        sx={{ mb: 2 }}
-      >
-        <ToggleButton value="url">
-          <LinkIcon sx={{ mr: 1 }} /> External URL
-        </ToggleButton>
-        <ToggleButton value="file">
-          <CloudUpload sx={{ mr: 1 }} /> Local Upload
-        </ToggleButton>
-      </ToggleButtonGroup>
-
-      <TextField
-        label="Name of Document"
-        fullWidth
-        value={formData.title}
-        onChange={(e) => handleChange("title", e.target.value)}
-        variant="outlined"
-        margin="normal"
-      />
-
-      {sourceType === "url" ?
-        <TextField
-          label="URL of Link"
-          fullWidth
-          value={formData.url}
-          onChange={(e) => handleChange("url", e.target.value)}
-          variant="outlined"
-          margin="normal"
-        />
-      : <Box
-          sx={{
-            "border": "1px dashed",
-            "borderColor": "divider",
-            "borderRadius": "8px",
-            "p": 2.5,
-            "textAlign": "center",
-            "my": 1.5,
-            "cursor": "pointer",
-            "transition": "border-color 0.2s, background-color 0.2s",
-            "&:hover": {
-              borderColor: "primary.main",
-              backgroundColor: "action.hover",
-            },
-          }}
-          component="label"
-        >
-          <input
-            type="file"
-            hidden
-            onChange={handleFileChange}
-          />
-          <CloudUpload
-            sx={{ fontSize: 28, color: "text.secondary", mb: 0.5 }}
-          />
-          <Typography
-            color="textSecondary"
-            variant="body2"
+    <section className="main-content-form">
+      <div className="MuiPaper-root">
+        <div>
+          <Box
+            component="form"
+            className="form"
+            onSubmit={handleInternalSubmit}
           >
-            {file ? `Selected: ${file.name}` : "Click to upload a local file"}
-          </Typography>
-          {isEditing && !file && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mt: 0.5, display: "block" }}
+            <h1>{isEditing ? "Edit Document" : "Submit a New File"}</h1>
+
+            <ToggleButtonGroup
+              value={sourceType}
+              exclusive
+              onChange={(_, val) => {
+                if (!val) return;
+                setSourceType(val);
+              }}
+              fullWidth
+              sx={{ mb: 2 }}
             >
-              Leave empty to keep the current file.
-            </Typography>
-          )}
-        </Box>
-      }
+              <ToggleButton value="url">
+                <LinkIcon sx={{ mr: 1 }} /> External URL
+              </ToggleButton>
+              <ToggleButton value="file">
+                <CloudUpload sx={{ mr: 1 }} /> Local Upload
+              </ToggleButton>
+            </ToggleButtonGroup>
 
-      <TextField
-        label="Content Owner"
-        fullWidth
-        value={formData.content_owner}
-        onChange={(e) => handleChange("content_owner", e.target.value)}
-        variant="outlined"
-        margin="normal"
-      />
+            <TextField
+              label="Name of Document"
+              fullWidth
+              value={formData.title}
+              onChange={(e) => handleChange("title", e.target.value)}
+              variant="outlined"
+              margin="normal"
+            />
 
-      <FormControl
-        fullWidth
-        margin="normal"
-      >
-        <InputLabel id="recipient-label">Intended Recipient</InputLabel>
-        <Select
-          labelId="recipient-label"
-          label="Intended Recipient"
-          value={formData.for_position}
-          onChange={handleSelectChange("for_position")}
-          disabled={!isAdmin}
-        >
-          {positionOptions.map((position) => (
-            <MenuItem
-              key={position}
-              value={position}
+            {sourceType === "url" ?
+              <TextField
+                label="URL of Link"
+                fullWidth
+                value={formData.url}
+                onChange={(e) => handleChange("url", e.target.value)}
+                variant="outlined"
+                margin="normal"
+              />
+            : <Box
+                sx={{
+                  "border": "1px solid rgba(0, 0, 0, 0.23)",
+                  "borderRadius": "4px",
+                  "p": 2,
+                  "textAlign": "center",
+                  "my": 2,
+                  "cursor": "pointer",
+                  "&:hover": { borderColor: "rgba(0, 0, 0, 0.87)" },
+                }}
+                component="label"
+              >
+                <input
+                  type="file"
+                  hidden
+                  onChange={handleFileChange}
+                />
+                <Typography color="textSecondary">
+                  {file ?
+                    `Selected: ${file.name}`
+                  : "Click to upload local file"}
+                </Typography>
+                {isEditing && !file && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    Leave this empty to keep the current uploaded file.
+                  </Typography>
+                )}
+              </Box>
+            }
+
+            <TextField
+              label="Content Owner"
+              fullWidth
+              value={formData.content_owner}
+              onChange={(e) => handleChange("content_owner", e.target.value)}
+              variant="outlined"
+              margin="normal"
+            />
+
+            <FormControl
+              fullWidth
+              margin="normal"
             >
-              {getPositionLabel(position)}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+              <InputLabel id="recipient-label">Intended Recipient</InputLabel>
+              <Select
+                labelId="recipient-label"
+                label="Intended Recipient"
+                value={formData.for_position}
+                onChange={handleSelectChange("for_position")}
+                disabled={!isAdmin}
+              >
+                {positionOptions.map((position) => (
+                  <MenuItem
+                    key={position}
+                    value={position}
+                  >
+                    {getPositionLabel(position)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-      <CalendarInput
-        label="Last Modified Date"
-        value={formData.last_modified_time}
-        onChange={(newDate) => handleChange("last_modified_time", newDate)}
-      />
+            <CalendarInput
+              label="Last Modified Date"
+              value={formData.last_modified_time}
+              onChange={(newDate) =>
+                handleChange("last_modified_time", newDate)
+              }
+            />
 
-      <CalendarInput
-        label="Link Expiration Date"
-        value={formData.expiration_time}
-        onChange={(newDate) => handleChange("expiration_time", newDate)}
-      />
+            <CalendarInput
+              label="Link Expiration Date"
+              value={formData.expiration_time}
+              onChange={(newDate) => handleChange("expiration_time", newDate)}
+            />
 
-      <FormControl
-        fullWidth
-        margin="normal"
-      >
-        <InputLabel id="content-type-label">Type of Content</InputLabel>
-        <Select
-          labelId="content-type-label"
-          label="Type of Content"
-          value={formData.content_type}
-          onChange={handleSelectChange("content_type")}
-        >
-          {contentTypeOptions.map((contentType) => (
-            <MenuItem
-              key={contentType}
-              value={contentType}
+            <FormControl
+              fullWidth
+              margin="normal"
             >
-              {contentType}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+              <InputLabel id="content-type-label">Type of Content</InputLabel>
+              <Select
+                labelId="content-type-label"
+                label="Type of Content"
+                value={formData.content_type}
+                onChange={handleSelectChange("content_type")}
+              >
+                {contentTypeOptions.map((contentType) => (
+                  <MenuItem
+                    key={contentType}
+                    value={contentType}
+                  >
+                    {contentType}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-      <FormControl
-        fullWidth
-        margin="normal"
-      >
-        <InputLabel id="status-label">Document Status</InputLabel>
-        <Select
-          labelId="status-label"
-          label="Document Status"
-          value={formData.status}
-          onChange={handleSelectChange("status")}
-        >
-          {statusOptions.map((status) => (
-            <MenuItem
-              key={status}
-              value={status}
+            <FormControl
+              fullWidth
+              margin="normal"
             >
-              {status}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+              <InputLabel id="status-label">Document Status</InputLabel>
+              <Select
+                labelId="status-label"
+                label="Document Status"
+                value={formData.status}
+                onChange={handleSelectChange("status")}
+              >
+                {statusOptions.map((status) => (
+                  <MenuItem
+                    key={status}
+                    value={status}
+                  >
+                    {status}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-      <Divider sx={{ my: 2 }} />
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              color="primary"
+              sx={{ mt: 2 }}
+            >
+              {isEditing ? "Update Changes" : "Create Content"}
+            </Button>
+            {isEditing && onDelete && (
+              <Button
+                variant="contained"
+                fullWidth
+                color="error"
+                onClick={onDelete}
+                sx={{ mt: 1 }}
+              >
+                Delete
+              </Button>
+            )}
 
-      {/* Action buttons */}
-      <Stack spacing={1.5}>
-        <Button
-          type="submit"
-          variant="contained"
-          fullWidth
-          color="primary"
-          size="large"
-          sx={{
-            borderRadius: "10px",
-            fontWeight: 700,
-            py: 1.3,
-            fontFamily: "Rubik, sans-serif",
-            textTransform: "none",
-            fontSize: "1rem",
-          }}
-        >
-          {isEditing ? "Save Changes" : "Create Content"}
-        </Button>
-
-        {isEditing && onDelete && (
-          <Button
-            variant="outlined"
-            fullWidth
-            color="error"
-            onClick={onDelete}
-            sx={{
-              borderRadius: "10px",
-              fontWeight: 600,
-              textTransform: "none",
-              fontFamily: "Rubik, sans-serif",
-            }}
-          >
-            Delete Content
-          </Button>
-        )}
-
-        <Button
-          variant="text"
-          fullWidth
-          onClick={onCancel}
-          sx={{
-            borderRadius: "10px",
-            color: "text.secondary",
-            textTransform: "none",
-            fontFamily: "Rubik, sans-serif",
-          }}
-        >
-          Cancel
-        </Button>
-      </Stack>
-    </Box>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={onCancel}
+              sx={{ mt: 1 }}
+            >
+              Cancel
+            </Button>
+          </Box>
+        </div>
+      </div>
+    </section>
   );
 }
