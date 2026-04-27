@@ -167,10 +167,6 @@ const dependencies = [
   },
 ];
 
-function getInitials(name: string) {
-  return name.slice(0, 2).toUpperCase();
-}
-
 export default function Credits() {
   const navigate = useNavigate();
 
@@ -287,9 +283,7 @@ export default function Credits() {
                       flexShrink: 0,
                       fontFamily: "'Rubik', sans-serif",
                     }}
-                  >
-                    {getInitials(dep.name)}
-                  </Box>
+                  ></Box>
                 }
                 <Box>
                   <Typography

@@ -73,6 +73,14 @@ export default function Footer() {
               {t("Credits")}
             </MuiLink>
           </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="/aboutus"
+              color="inherit"
+            >
+              {t("About Us")}
+            </MuiLink>
+          </Typography>
         </Stack>
         <Stack
           className="employee-access-stack"
