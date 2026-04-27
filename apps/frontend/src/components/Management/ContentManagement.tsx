@@ -147,6 +147,7 @@ export default function ContentManagement({
   const { session } = useAuth();
 
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
     fileName: string;
@@ -547,6 +548,12 @@ export default function ContentManagement({
             />
           </IconButton>
           {params.row.title}
+          <InfoPopup
+            url={params.row.url}
+            author={params.row.content_owner}
+            position={params.row.for_position}
+            fileType={params.row.file_type}
+          />
         </Box>
       ),
     },
@@ -999,6 +1006,7 @@ export default function ContentManagement({
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <HelpPopup description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly." />
+              {isSystemAdmin && <TagManagerPopup />}
               <Button
                 onClick={() => setViewState("new")}
                 variant="contained"
@@ -1084,7 +1092,12 @@ export default function ContentManagement({
           sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
           columns: {
             columnVisibilityModel: {
-              favorite: false,
+              "favorite": false,
+              "url": false,
+              "author": false,
+              "edited-by": false,
+              "for_position": false,
+              "file_type": false,
             },
           },
         }}

@@ -47,7 +47,7 @@ export default function TagManagerPopup() {
   const loadTags = async () => {
     setLoading(true);
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
+      const res = await fetch(API_ENDPOINTS.CONTENT.ROOT + "/count/tags", {
         credentials: "include",
       });
 
