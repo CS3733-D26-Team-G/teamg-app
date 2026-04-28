@@ -13,16 +13,27 @@ import {
   ToggleButtonGroup,
   Stack,
   Divider,
+  Paper,
   type SelectChangeEvent,
 } from "@mui/material";
 import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
+import RateReviewIcon from "@mui/icons-material/RateReview";
+import SendIcon from "@mui/icons-material/Send";
+import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import type { ContentStatus, ContentType, Position } from "@repo/db";
 import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
 import { useAuth } from "../../auth/AuthContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
-
 import type { ContentFormData, ContentRecord } from "../../types/content";
+
+// Positions that are considered "agents" — neither underwriter nor admin.
+const AGENT_POSITIONS: Position[] = [
+  "BUSINESS_ANALYST",
+  "ACTUARIAL_ANALYST",
+  "EXL_OPERATIONS",
+  "BUSINESS_OP_RATING",
+];
 
 interface ContentFormProps {
   initialData?: ContentRecord | null;
@@ -71,6 +82,11 @@ export default function ContentForm({
   const isEditing = !!initialData;
   const { session } = useAuth();
   const isAdmin = session?.permissions.canManageAllContent ?? false;
+  const userPosition = session?.position as Position | undefined;
+
+  // Derived role flags
+  const isUnderwriter = userPosition === "UNDERWRITER";
+  const isAgent = !!userPosition && AGENT_POSITIONS.includes(userPosition);
 
   const [formData, setFormData] = useState<ContentFormData>(() =>
     buildDefaultFormData({
@@ -83,6 +99,9 @@ export default function ContentForm({
   );
   const [file, setFile] = useState<File | null>(null);
 
+  // Underwriter-only risk assessment comment
+  const [riskAssessment, setRiskAssessment] = useState("");
+
   useEffect(() => {
     setFormData(
       buildDefaultFormData({
@@ -92,6 +111,7 @@ export default function ContentForm({
     );
     setSourceType(getInitialSourceType(initialData));
     setFile(null);
+    setRiskAssessment("");
   }, [initialData, session?.position]);
 
   const positionOptions = useMemo(
@@ -129,9 +149,8 @@ export default function ContentForm({
     if (nextFile && !formData.title) handleChange("title", nextFile.name);
   };
 
-  const handleInternalSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
+  /** Shared FormData builder — called by all submit paths. */
+  const buildBody = (extra?: Record<string, string>): FormData => {
     const body = new FormData();
     body.append("title", formData.title);
     body.append("content_owner", formData.content_owner);
@@ -145,32 +164,68 @@ export default function ContentForm({
     body.append("status", formData.status);
 
     if (sourceType === "file") {
-      if (file) {
-        body.append("file", file);
-      } else if (!isEditing) {
-        console.error("A file must be selected for file upload.");
-        return;
-      }
+      if (file) body.append("file", file);
+      // If editing with no new file selected, the server keeps the existing file.
     } else {
       body.append("url", formData.url);
     }
 
-    onSave(body);
+    if (extra) {
+      Object.entries(extra).forEach(([k, v]) => body.append(k, v));
+    }
+
+    return body;
   };
+
+  /** Standard save / create. */
+  const handleInternalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (sourceType === "file" && !file && !isEditing) {
+      console.error("A file must be selected for file upload.");
+      return;
+    }
+    onSave(buildBody());
+  };
+
+  /** Agent: "Submit for Review" — flags the document as pending review. */
+  const handleSubmitForReview = () => {
+    if (sourceType === "file" && !file && !isEditing) {
+      console.error("A file must be selected for file upload.");
+      return;
+    }
+    onSave(buildBody({ workflow_action: "SUBMIT_FOR_REVIEW" }));
+  };
+
+  /** Underwriter: "Submit for Approval" — attaches the risk assessment comment. */
+  const handleSubmitForApproval = () => {
+    if (sourceType === "file" && !file && !isEditing) {
+      console.error("A file must be selected for file upload.");
+      return;
+    }
+    onSave(
+      buildBody({
+        workflow_action: "SUBMIT_FOR_APPROVAL",
+        risk_assessment: riskAssessment,
+      }),
+    );
+  };
+
+  const sharedButtonSx = {
+    borderRadius: "10px",
+    fontWeight: 700,
+    py: 1.3,
+    fontFamily: "Rubik, sans-serif",
+    textTransform: "none",
+    fontSize: "1rem",
+  } as const;
 
   return (
     <Box
       component="form"
       onSubmit={handleInternalSubmit}
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 0,
-        px: 3,
-        py: 3,
-      }}
+      sx={{ display: "flex", flexDirection: "column", gap: 0, px: 3, py: 3 }}
     >
-      {/* Source type toggle */}
+      {/* ── Source type toggle ─────────────────────────────────────────── */}
       <ToggleButtonGroup
         value={sourceType}
         exclusive
@@ -188,6 +243,7 @@ export default function ContentForm({
         </ToggleButton>
       </ToggleButtonGroup>
 
+      {/* ── Document name ──────────────────────────────────────────────── */}
       <TextField
         label="Name of Document"
         fullWidth
@@ -197,6 +253,7 @@ export default function ContentForm({
         margin="normal"
       />
 
+      {/* ── URL or file upload ─────────────────────────────────────────── */}
       {sourceType === "url" ?
         <TextField
           label="URL of Link"
@@ -249,6 +306,7 @@ export default function ContentForm({
         </Box>
       }
 
+      {/* ── Standard fields ────────────────────────────────────────────── */}
       <TextField
         label="Content Owner"
         fullWidth
@@ -337,28 +395,140 @@ export default function ContentForm({
         </Select>
       </FormControl>
 
+      {/* ── Underwriter: Risk Assessment ───────────────────────────────── */}
+      {isUnderwriter && (
+        <>
+          <Divider sx={{ mt: 2, mb: 1 }} />
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              mt: 1,
+              mb: 0.5,
+              borderWidth: "1.5px",
+              borderRadius: "10px",
+              // backgroundColor: (t) =>
+              //   t.palette.mode === "dark"
+              //     ? "rgba(237,168,50,0.06)"
+              //     : "rgba(255,244,218,0.6)",
+            }}
+          >
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ mb: 1.25 }}
+            >
+              <RateReviewIcon fontSize="small" />
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 700,
+                  fontFamily: "Rubik, sans-serif",
+                  fontSize: "0.8rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                Risk Assessment
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: "text.secondary", ml: "auto !important" }}
+              >
+                Underwriter only
+              </Typography>
+            </Stack>
+            <TextField
+              label="Risk assessment comments"
+              placeholder="Summarise your risk evaluation, flag any concerns, and note any conditions or exceptions that apply to this document…"
+              fullWidth
+              multiline
+              minRows={8}
+              maxRows={12}
+              value={riskAssessment}
+              onChange={(e) => setRiskAssessment(e.target.value)}
+              variant="outlined"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  fontSize: "0.9rem",
+                },
+              }}
+            />
+          </Paper>
+        </>
+      )}
+
       <Divider sx={{ my: 2 }} />
 
-      {/* Action buttons */}
+      {/* ── Action buttons ─────────────────────────────────────────────── */}
       <Stack spacing={1.5}>
+        {/* Underwriter only: Submit for Approval */}
+        {isUnderwriter && (
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            startIcon={<TaskAltIcon />}
+            onClick={handleSubmitForApproval}
+            sx={{
+              ...sharedButtonSx,
+              "background": "linear-gradient(135deg, #1b5e20, #2e7d32)",
+              "color": "white",
+              "boxShadow": "0 4px 14px rgba(46,125,50,0.35)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #14471a, #245c27)",
+                boxShadow: "0 6px 18px rgba(46,125,50,0.5)",
+              },
+            }}
+          >
+            Submit for Approval
+          </Button>
+        )}
+        {/* Primary save — visible to everyone */}
         <Button
           type="submit"
           variant="contained"
           fullWidth
           color="primary"
           size="large"
-          sx={{
-            borderRadius: "10px",
-            fontWeight: 700,
-            py: 1.3,
-            fontFamily: "Rubik, sans-serif",
-            textTransform: "none",
-            fontSize: "1rem",
-          }}
+          sx={sharedButtonSx}
         >
           {isEditing ? "Save Changes" : "Create Content"}
         </Button>
 
+        {/* Agent only: Submit for Review */}
+        {isAgent && (
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            color="secondary"
+            startIcon={<SendIcon />}
+            onClick={handleSubmitForReview}
+            sx={{
+              ...sharedButtonSx,
+              "background": (t) =>
+                t.palette.mode === "dark" ?
+                  "linear-gradient(135deg, #4B1A26, #74414e)"
+                : "linear-gradient(135deg, #74414e, #9a5d6a)",
+              "color": "white",
+              "boxShadow": "0 4px 14px rgba(116,65,78,0.35)",
+              "&:hover": {
+                background: (t) =>
+                  t.palette.mode === "dark" ?
+                    "linear-gradient(135deg, #3a1320, #5c3340)"
+                  : "linear-gradient(135deg, #5c3340, #7a4555)",
+                boxShadow: "0 6px 18px rgba(116,65,78,0.5)",
+              },
+            }}
+          >
+            Submit for Review
+          </Button>
+        )}
+
+        {/* Delete — only when editing and the callback is provided */}
         {isEditing && onDelete && (
           <Button
             variant="outlined"
