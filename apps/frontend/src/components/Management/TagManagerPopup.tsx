@@ -39,16 +39,18 @@ export default function TagManagerPopup({
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
   const [localTags, setLocalTags] = useState<Tag[]>([]);
 
-  const handleOpen = () => {
-    const tagMap = new Map<string, Tag>();
-    for (const row of rows) {
-      for (const tag of row.tags) {
-        if (!tagMap.has(tag.uuid)) {
-          tagMap.set(tag.uuid, tag);
-        }
+  const handleOpen = async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data: Tag[] = await res.json();
+        setLocalTags(data);
       }
+    } catch (error) {
+      console.error(error);
     }
-    setLocalTags(Array.from(tagMap.values()));
     setOpen(true);
   };
 
@@ -129,6 +131,7 @@ export default function TagManagerPopup({
           sx={{
             border: "1px solid black",
             borderRadius: 1,
+            margin: 1.5,
           }}
         >
           {/*List of tags structure*/}
@@ -202,7 +205,7 @@ export default function TagManagerPopup({
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            pt: 3,
+            pt: 1,
           }}
         >
           {/*New Content Tag*/}
@@ -210,7 +213,7 @@ export default function TagManagerPopup({
             sx={{
               display: "flex",
               gap: 1,
-              width: 600,
+              width: 400,
             }}
           >
             <TextField
@@ -227,7 +230,7 @@ export default function TagManagerPopup({
                 void handleCreateTag();
               }}
               disabled={!newTag.trim()}
-              sx={{ width: 145 }}
+              sx={{ width: 160 }}
             >
               Add Tag
             </Button>

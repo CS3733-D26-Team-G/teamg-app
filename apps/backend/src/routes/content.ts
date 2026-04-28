@@ -900,6 +900,7 @@ router.post("/lock/:uuid", async (req, res) => {
         action: "CHECK_OUT_CONTENT",
         resource: "CONTENT",
         resourceUuid: uuid,
+        resourceName: content.title,
       },
     });
 
@@ -951,6 +952,7 @@ router.delete("/lock/:uuid", async (req, res) => {
         action: "CHECK_IN_CONTENT",
         resource: "CONTENT",
         resourceUuid: uuid,
+        resourceName: content.title,
       },
     });
 
