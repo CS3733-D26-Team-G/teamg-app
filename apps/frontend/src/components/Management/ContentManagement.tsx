@@ -579,7 +579,7 @@ export default function ContentManagement({
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 130,
+      width: 160,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -651,7 +651,7 @@ export default function ContentManagement({
     {
       field: "status",
       headerName: "Status",
-      width: 120,
+      width: 160,
       align: "center",
       renderCell: (params) => (
         <Chip
@@ -661,7 +661,7 @@ export default function ContentManagement({
           sx={{
             width: 100,
             borderColor: "black",
-            borderRadius: 2,
+            borderRadius: 1,
           }}
         />
       ),
@@ -841,7 +841,7 @@ export default function ContentManagement({
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -910,7 +910,7 @@ export default function ContentManagement({
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -1121,7 +1121,7 @@ export default function ContentManagement({
             columnVisibilityModel: {
               "favorite": false,
               "url": false,
-              "author": false,
+              "content_owner": false,
               "edited-by": false,
               "for_position": false,
               "file_type": false,

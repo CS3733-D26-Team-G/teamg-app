@@ -131,6 +131,7 @@ export default function TagManagerPopup({
           sx={{
             border: "1px solid black",
             borderRadius: 1,
+            margin: 1.5,
           }}
         >
           {/*List of tags structure*/}
@@ -204,7 +205,7 @@ export default function TagManagerPopup({
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            pt: 3,
+            pt: 1,
           }}
         >
           {/*New Content Tag*/}
@@ -212,7 +213,7 @@ export default function TagManagerPopup({
             sx={{
               display: "flex",
               gap: 1,
-              width: 600,
+              width: 400,
             }}
           >
             <TextField
@@ -229,7 +230,7 @@ export default function TagManagerPopup({
                 void handleCreateTag();
               }}
               disabled={!newTag.trim()}
-              sx={{ width: 145 }}
+              sx={{ width: 160 }}
             >
               Add Tag
             </Button>
