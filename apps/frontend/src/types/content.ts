@@ -62,6 +62,12 @@ export const ContentRecordsSchema = z.array(ContentRecordSchema);
  * This extends the API record with frontend-only state.
  */
 export const ContentRowSchema = ContentRecordSchema.extend({
+  tags: z.array(
+    z.object({
+      uuid: z.string(),
+      name: z.string(),
+    }),
+  ),
   editLock: z
     .object({
       lockedByEmp: z.object({

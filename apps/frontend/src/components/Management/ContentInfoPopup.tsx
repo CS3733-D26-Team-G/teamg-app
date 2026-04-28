@@ -12,6 +12,10 @@ interface InfoButtonProps {
   author: string;
   position: string;
   fileType: string | null;
+  tags: {
+    uuid: string;
+    name: string;
+  }[];
 }
 
 function formatFileType(mime: string | null): string {
@@ -43,6 +47,7 @@ export default function InfoPopup({
   author,
   position,
   fileType,
+  tags,
 }: InfoButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [copied, setCopied] = useState(false);
@@ -123,7 +128,10 @@ export default function InfoPopup({
             <b>File Type:</b> {formatFileType(fileType)}
           </Typography>
           <Typography>
-            <b>Tags:</b>{" "}
+            <b>Tags: </b>
+            {tags.length > 0 ?
+              tags.map((tag) => tag.name).join(", ")
+            : "No Tags"}
           </Typography>
         </Box>
       </Popover>
