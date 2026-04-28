@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
     CREATE: `${API_BASE_URL}/content/create`,
     COUNT_POSITION: `${API_BASE_URL}/stats/content/count/position`,
     COUNT_FILE_TYPE: `${API_BASE_URL}/stats/content/count/file-type`,
+    COUNT_EDIT_HITS_BY_ROLE: `${API_BASE_URL}/stats/content/edit-hits-by-role`,
     FAVORITE: (uuid: string) => `${API_BASE_URL}/content/favorite/${uuid}`,
     EDIT: (uuid: string) => `${API_BASE_URL}/content/edit/${uuid}`,
     DELETE: (uuid: string) => `${API_BASE_URL}/content/delete/${uuid}`,
