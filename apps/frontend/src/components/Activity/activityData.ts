@@ -60,8 +60,8 @@ export function transformBackendData(rawData: any): ActivityGroup[] {
         row.employee ?
           `${row.employee.first_name} ${row.employee.last_name}`
         : "System",
-      action: row.action?.replace(/_/g, " ") || "Action",
-      resourceName: row.resourceName || "System Resource",
+      action: row.action || "Action",
+      resourceName: row.resourceName || undefined,
       resourceUuid: row.resourceUuid,
     });
   });
