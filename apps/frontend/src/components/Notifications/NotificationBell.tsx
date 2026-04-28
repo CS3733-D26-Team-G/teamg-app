@@ -39,19 +39,6 @@ interface ExpirationCounts {
   total: number;
 }
 
-function formatTimeRemaining(seconds: number): string {
-  if (seconds <= 0) return "Expired";
-
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m`;
-  return `${seconds}s`;
-}
-
 function getNotificationMessage(title: string, expirationTime: string): string {
   const seconds = getExpiresInSeconds(expirationTime);
   const minutes = Math.floor(seconds / 60);
@@ -118,7 +105,7 @@ function useContentInfo() {
         critical: critical.length,
         expiring: expiring.filter((c) => {
           const seconds = getExpiresInSeconds(c.expiration_time);
-          return seconds <= 86400 && seconds > 0;
+          return seconds <= 432000 && seconds > 3600;
         }).length,
         expired: expired.length,
         total: expiring.length + expired.length,
@@ -132,7 +119,7 @@ function useContentInfo() {
 
   useEffect(() => {
     fetchContent();
-    const interval = setInterval(fetchContent, 30000);
+    const interval = setInterval(fetchContent, 3600000);
     return () => clearInterval(interval);
   }, [fetchContent]);
 
@@ -189,9 +176,9 @@ export default function NotificationsBell() {
           badgeContent={totalAlerts}
           color={counts.critical > 0 ? "error" : "warning"}
         >
-          {totalAlerts > 0 ?
-            <NotificationsActive />
-          : <NotificationsIcon />}
+          {totalAlerts <= 0 ?
+            <NotificationsIcon />
+          : <NotificationsActive />}
         </Badge>
       </IconButton>
 

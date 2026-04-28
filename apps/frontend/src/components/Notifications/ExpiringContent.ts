@@ -21,7 +21,7 @@ export function getExpiringContent(content: any[]) {
     .filter((item) => {
       if (!item.expiration_time) return false;
       const expiresInSeconds = getExpiresInSeconds(item.expiration_time);
-      return expiresInSeconds <= 432000;
+      return expiresInSeconds <= 432000 && expiresInSeconds > 0;
     })
     .map((item) => ({
       ...item,
