@@ -72,6 +72,14 @@ export const ContentRowSchema = ContentRecordSchema.extend({
     })
     .nullable(),
   isLocked: z.boolean().optional(),
+  tags: z
+    .array(
+      z.object({
+        uuid: z.string(),
+        name: z.string(),
+      }),
+    )
+    .default([]),
 });
 export type ContentRow = z.infer<typeof ContentRowSchema>;
 export const ContentRowsSchema = z.array(ContentRowSchema);
