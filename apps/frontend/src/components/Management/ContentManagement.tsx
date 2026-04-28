@@ -1005,7 +1005,10 @@ export default function ContentManagement({
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <HelpPopup description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly." />
+              <HelpPopup
+                description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
+                infoOrHelp={true}
+              />
               {isSystemAdmin && (
                 <TagManagerPopup
                   rows={rows}

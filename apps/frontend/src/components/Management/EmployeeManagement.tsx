@@ -548,7 +548,10 @@ export default function EmployeeManagement() {
                   </Box>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <HelpPopup description="The Employee Management page lets you view, add, edit, and delete employees. You can filter by position or department and search by name." />
+                  <HelpPopup
+                    description="The Employee Management page lets you view, add, edit, and delete employees. You can filter by position or department and search by name."
+                    infoOrHelp={true}
+                  />
                   <Button
                     onClick={() => setViewState("new")}
                     variant="contained"

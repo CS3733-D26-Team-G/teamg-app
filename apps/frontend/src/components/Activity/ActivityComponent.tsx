@@ -84,7 +84,10 @@ export default function ActivityComponent() {
     <Box sx={{ width: "100%", justifySelf: "center" }}>
       <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
         <SearchBar setSearchQuery={setSearchQuery} />
-        <HelpPopup description="The Activity page shows a log of recent actions taken across the platform, including content views and updates." />
+        <HelpPopup
+          description="The Activity page shows a log of recent actions taken across the platform, including content views and updates."
+          infoOrHelp={true}
+        />
       </Box>
 
       {loading ?
