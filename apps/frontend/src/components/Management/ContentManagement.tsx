@@ -30,6 +30,8 @@ import AddIcon from "@mui/icons-material/Add";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DownloadIcon from "@mui/icons-material/Download";
+import EditIcon from "@mui/icons-material/Edit";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
 import CloseIcon from "@mui/icons-material/Close";
 import type { ContentStatus, Position } from "@repo/db";
@@ -49,12 +51,14 @@ import {
   getPositionChipColor,
   getPositionLabel,
 } from "../../utils/positionDisplay";
+import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
 import { dedupeAsync } from "../../lib/async-cache";
 import HelpPopup from "../../components/HelpPopup";
 import DocPreviewer from "./DocPreviewer.tsx";
+import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
 import InfoPopup from "./ContentInfoPopup.tsx";
 import TagManagerPopup from "./TagManagerPopup.tsx";
 
@@ -107,8 +111,9 @@ const SlideUpTransition = React.forwardRef(function SlideUpTransition(
     />
   );
 });
-
-/* Highlights new content based on what is different from start of session */
+{
+  /* Highlights new content based on what is different from start of session */
+}
 function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const KEY = `new_content_ids_${userUuid}`;
   const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
@@ -237,7 +242,12 @@ export default function ContentManagement({
         return;
       }
 
-      setRows(parsed.data);
+      setRows(
+        parsed.data.map((r) => ({
+          ...r,
+          isLocked: r.editLock != null,
+        })),
+      );
     } catch (error) {
       console.error(error);
       setRows([]);
@@ -251,6 +261,7 @@ export default function ContentManagement({
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
+        // Search Bar Filter Logic
         if (searchQuery.trim()) {
           const targetFields = [
             row.title,
@@ -266,6 +277,7 @@ export default function ContentManagement({
           if (!searchMatch) return false;
         }
 
+        // Position Filter
         if (
           positionFilters.length > 0 &&
           !positionFilters.includes(row.for_position)
@@ -273,6 +285,7 @@ export default function ContentManagement({
           return false;
         }
 
+        // File Type Filter
         if (
           fileTypeFilters.length > 0 &&
           !fileTypeFilters.includes(row.file_type ?? "")
@@ -329,7 +342,7 @@ export default function ContentManagement({
     }
   };
 
-  const handleEditStart = async (row: ContentRow) => {
+  const handleCheckout = async (row: ContentRow) => {
     setLockMessage(null);
 
     try {
@@ -346,15 +359,41 @@ export default function ContentManagement({
       }
 
       if (!res.ok) {
-        setLockMessage("Unable to lock content");
+        setLockMessage("Unable to checkout content");
         return;
       }
 
-      setViewState(row);
+      setRows((prev) =>
+        prev.map((r) =>
+          r.uuid === row.uuid ?
+            {
+              ...r,
+              isLocked: true,
+              editLock: {
+                lockedByEmp: {
+                  uuid: session?.employeeUuid ?? "",
+                  first_name: "",
+                  last_name: "",
+                },
+              },
+            }
+          : r,
+        ),
+      );
     } catch (error) {
       console.error(error);
-      setLockMessage("Unable to lock content for editing.");
+      setLockMessage("Unable to checkout content for editing.");
     }
+  };
+
+  const handleOpenEditor = (row: ContentRow) => {
+    setSelectedDoc({
+      uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+      fileName: row.title,
+      uuid: row.uuid,
+      for_position: row.for_position,
+    });
+    setEditorOpen(true);
   };
 
   const releaseLock = async (uuid: string) => {
@@ -365,7 +404,9 @@ export default function ContentManagement({
       });
 
       setRows((prev) =>
-        prev.map((r) => (r.uuid === uuid ? { ...r, isLocked: false } : r)),
+        prev.map((r) =>
+          r.uuid === uuid ? { ...r, isLocked: false, editLock: null } : r,
+        ),
       );
     } catch (error) {
       console.error(error);
@@ -398,6 +439,9 @@ export default function ContentManagement({
       if (res.ok) {
         if (isExisting) {
           await releaseLock(uuid);
+        } else {
+          const data = (await res.json()) as { uuid: string };
+          setSessionNewIds((prev) => new Set([...prev, data.uuid]));
         }
         await fetchRows();
         setViewState(null);
@@ -537,9 +581,11 @@ export default function ContentManagement({
 
   // ── Column definitions ─────────────────────────────────────────────────────
   const getColumns = (
-    onEdit: (row: ContentRow) => void,
     onPreview: (row: ContentRow) => void,
     onDownload: (row: ContentRow) => void,
+    onCheckOut: (row: ContentRow) => void,
+    onOpenEditor: (row: ContentRow) => void,
+    onCheckIn: (uuid: string) => void,
   ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
@@ -708,18 +754,32 @@ export default function ContentManagement({
       sortable: false,
       filterable: false,
       renderCell: (params) => {
+        const row = params.row;
         const hasPermission =
-          isSystemAdmin || userPosition === params.row.for_position;
-        const isCheckedOut = params.row.isLocked;
+          isSystemAdmin || userPosition === row.for_position;
+        const lockedByUuid = row.editLock?.lockedByEmp?.uuid;
+        const isCheckedOutByMe =
+          row.isLocked && lockedByUuid === session?.employeeUuid;
+        const isCheckedOutByOther = row.isLocked && !isCheckedOutByMe;
 
         return (
-          <>
-            <IconButton
-              color="primary"
-              onClick={() => onPreview(params.row)}
-            >
-              <VisibilityIcon />
-            </IconButton>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+              overflow: "hidden",
+            }}
+          >
+            {/* Preview */}
+            <Tooltip title="Preview">
+              <IconButton
+                color="primary"
+                onClick={() => onPreview(row)}
+              >
+                <VisibilityIcon />
+              </IconButton>
+            </Tooltip>
             <Tooltip
               title={
                 !hasPermission ?
@@ -737,25 +797,105 @@ export default function ContentManagement({
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
-              <span>
-                <Button
-                  size="small"
-                  onClick={() => onEdit(params.row)}
-                  disabled={!hasPermission || isCheckedOut}
-                  sx={{ border: "0.5px solid" }}
+
+            {/* Check Out — only when not locked */}
+            {!row.isLocked && (
+              <Tooltip
+                title={
+                  !hasPermission ?
+                    "Content is checked out"
+                  : "Check Out to edit"
+                }
+              >
+                <span>
+                  <Button
+                    size="small"
+                    onClick={() => onCheckOut(row)}
+                    disabled={!hasPermission}
+                    sx={{ border: "0.5px solid" }}
+                  >
+                    CHECK OUT
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
+
+            {/* Edit — only when checked out by current user */}
+            {isCheckedOutByMe && (
+              <Tooltip
+                title={
+                  row.file_type?.startsWith("video/") ?
+                    "Video files cannot be edited"
+                  : "Open editor"
+                }
+              >
+                <span>
+                  <IconButton
+                    color="primary"
+                    onClick={() => onOpenEditor(row)}
+                    disabled={row.file_type?.startsWith("video/")}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+
+            {/* Check In — release lock, only when checked out by current user */}
+            {isCheckedOutByMe && (
+              <Tooltip title="Check In (release lock)">
+                <IconButton
+                  color="primary"
+                  onClick={() => void onCheckIn(row.uuid)}
                 >
-                  CHECK OUT
-                </Button>
-              </span>
-            </Tooltip>
-          </>
+                  <LockOpenIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+
+            {/* Locked by someone else */}
+            {isCheckedOutByOther && (
+              <Tooltip
+                title={`Checked out by ${row.editLock?.lockedByEmp.first_name} ${row.editLock?.lockedByEmp.last_name}`}
+              >
+                <span>
+                  <Button
+                    size="small"
+                    disabled
+                    sx={{ border: "0.5px solid" }}
+                  >
+                    LOCKED
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
+          </Box>
         );
       },
     },
   ];
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  if (viewState) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <ContentForm
+          initialData={viewState === "new" ? null : viewState}
+          onSave={handleSave}
+          onCancel={async () => {
+            if (viewState !== "new") {
+              await releaseLock(viewState.uuid);
+            }
+            setViewState(null);
+          }}
+          onDelete={
+            viewState !== "new" ? () => handleDelete(viewState) : undefined
+          }
+        />
+        {confirmationDialogs}
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ height: "auto", width: "100%" }}>
       {/* ── Toolbar / header ────────────────────────────────────────────── */}
@@ -815,7 +955,6 @@ export default function ContentManagement({
                 >
                   Filter
                 </Button>
-
                 {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
                   <Button
                     size="small"
@@ -1078,7 +1217,6 @@ export default function ContentManagement({
               ))}
             </Box>
           )}
-
           {lockMessage && (
             <Typography sx={{ pt: 1, color: "warning.main" }}>
               {lockMessage}
@@ -1092,7 +1230,6 @@ export default function ContentManagement({
         rows={filteredRows}
         getRowId={(row) => row.uuid}
         columns={getColumns(
-          handleEditStart,
           (row) => {
             const isExternalUrl =
               !row.supabasePath && !row.url.includes("supabase.co/storage");
@@ -1109,6 +1246,9 @@ export default function ContentManagement({
             setPreviewOpen(true);
           },
           handleDownload,
+          handleCheckout,
+          handleOpenEditor,
+          releaseLock,
         )}
         getRowClassName={(params) => {
           const hasPermission =
@@ -1285,21 +1425,35 @@ export default function ContentManagement({
                 fileName={selectedDoc.fileName}
               />
             )}
+            {selectedDoc && rows.find((r) => r.uuid === selectedDoc.uuid) && (
+              <VersionHistoryPanel
+                contentUuid={selectedDoc.uuid}
+                contentRow={rows.find((r) => r.uuid === selectedDoc.uuid)!}
+              />
+            )}
           </Box>
         </Box>
       </Dialog>
 
-      {/* ── Document Editor Modal (full WebViewer, opened after checkout) ── */}
-      {editorOpen && selectedDoc && (
-        <DocumentEditorModal
-          open={editorOpen}
-          onClose={() => setEditorOpen(false)}
-          uri={selectedDoc.uri}
-          fileName={selectedDoc.fileName}
-          uuid={selectedDoc.uuid}
-          readOnly={false}
-        />
-      )}
+      {/* Document Editor Modal — opened via the Edit button when checked out */}
+      {editorOpen &&
+        selectedDoc &&
+        (() => {
+          const editorRow = rows.find((r) => r.uuid === selectedDoc.uuid);
+          if (!editorRow) return null;
+          return (
+            <DocumentEditorModal
+              open={editorOpen}
+              onClose={() => setEditorOpen(false)}
+              uri={selectedDoc.uri}
+              fileName={selectedDoc.fileName}
+              uuid={selectedDoc.uuid}
+              contentRow={editorRow}
+              onSaved={() => void fetchRows()}
+              readOnly={false}
+            />
+          );
+        })()}
 
       {confirmationDialogs}
     </Box>
