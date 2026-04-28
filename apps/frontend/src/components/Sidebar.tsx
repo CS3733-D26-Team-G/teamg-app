@@ -29,6 +29,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.tsx";
 import Typography from "@mui/material/Typography";
 import { useProfile } from "../profile/ProfileContext.tsx";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -173,6 +174,17 @@ export default function Sidebar() {
                     <LibraryBooksIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText primary="Content" />
+                </ListItemButton>
+
+                <ListItemButton
+                  component={Link}
+                  to="/calendar"
+                  sx={{ pl: 4 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
+                    <CalendarMonthIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary="Calendar" />
                 </ListItemButton>
               </List>
             </Collapse>

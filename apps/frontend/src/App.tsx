@@ -20,6 +20,7 @@ import Profile from "./pages/profile.tsx";
 import LoginPopUp from "./pages/LoginPopUp.tsx";
 import Credits from "./pages/Credits.tsx";
 import AboutUs from "./pages/About.tsx";
+import CalendarPage from "./pages/Calendar.tsx";
 
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
@@ -181,6 +182,11 @@ function AppLayout() {
           <Route
             path="/aboutus"
             element={<AboutUs />}
+          />
+
+          <Route
+            path="/calendar"
+            element={<CalendarPage />}
           />
         </Routes>
       </div>
