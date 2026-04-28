@@ -45,12 +45,12 @@ export function getExpirationStatus(
 
 export function getCriticalContent(content: any[]) {
   const now = new Date();
-  const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
 
   return content.filter((item) => {
     if (!item.expiration_time) return false;
     const expiresAt = new Date(item.expiration_time);
-    return expiresAt > now && expiresAt <= oneDayLater;
+    return expiresAt > now && expiresAt <= oneHourLater;
   });
 }
 
