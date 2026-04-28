@@ -122,6 +122,9 @@ export default function InfoPopup({
           <Typography>
             <b>File Type:</b> {formatFileType(fileType)}
           </Typography>
+          <Typography>
+            <b>Tags:</b>{" "}
+          </Typography>
         </Box>
       </Popover>
     </>
