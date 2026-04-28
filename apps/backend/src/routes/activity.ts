@@ -21,12 +21,19 @@ router.get("/", async (req, res) => {
     "CHECK_IN_CONTENT",
   ];
   const authActions = ["LOG_IN", "LOG_OUT"];
+  const verboseContentActions = ["OWNERSHIP_CHANGE", "EDIT_CONTENT"];
 
   let where = {};
   switch (category) {
     case "content":
       where = {
         action: { in: contentActions },
+      };
+      break;
+
+    case "verbose":
+      where = {
+        action: { in: verboseContentActions },
       };
       break;
 

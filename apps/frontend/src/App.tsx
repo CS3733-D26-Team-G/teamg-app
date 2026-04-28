@@ -22,6 +22,7 @@ import Credits from "./pages/Credits.tsx";
 
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
+import NotificationPage from "./components/Notifications/NotificationPage.tsx";
 
 function ProtectedRoute({ children }: { children: ReactElement }) {
   const { isLoading, session } = useAuth();
@@ -175,6 +176,10 @@ function AppLayout() {
           <Route
             path="/credits"
             element={<Credits />}
+          />
+          <Route
+            path="/NotificationPage"
+            element={<NotificationPage />}
           />
         </Routes>
       </div>

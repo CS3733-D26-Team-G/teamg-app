@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "../../config.ts";
+import { useAuth } from "../../auth/AuthContext.tsx";
 
 export async function getAllContent() {
   const response = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
@@ -62,4 +63,33 @@ export function getExpiredContent(content: any[]) {
     const expiresAt = new Date(item.expiration_time);
     return expiresAt <= now;
   });
+}
+
+export async function getVerboseNotifications() {
+  try {
+    const response = await fetch(`${API_ENDPOINTS.ACTIVITY}?category=verbose`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch notifications: ${response.status}`);
+    }
+
+    const activities = await response.json();
+
+    return activities;
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    return [];
+  }
+}
+
+export async function getOwnershipChanges() {
+  const activities = await getVerboseNotifications();
+  return activities.filter((item: any) => item.action === "OWNERSHIP_CHANGE");
+}
+
+export async function getContentEdits() {
+  const activities = await getVerboseNotifications();
+  return activities.filter((item: any) => item.action === "EDIT_CONTENT");
 }
