@@ -551,7 +551,7 @@ export default function ContentManagement({
           <InfoPopup
             url={params.row.url}
             author={params.row.content_owner}
-            position={params.row.for_position}
+            position={getPositionLabel(params.row.for_position) as Position}
             fileType={params.row.file_type}
           />
         </Box>
@@ -638,9 +638,13 @@ export default function ContentManagement({
       renderCell: (params) => (
         <Chip
           label={statusLabels[params.value as ContentStatus]}
-          size="small"
-          variant="outlined"
-          sx={{ borderColor: "black" }}
+          size="medium"
+          variant="filled"
+          sx={{
+            width: 100,
+            borderColor: "black",
+            borderRadius: 2,
+          }}
         />
       ),
     },
@@ -761,7 +765,10 @@ export default function ContentManagement({
               width: "100%",
             }}
           >
-            <Box sx={{ display: "flex", gap: 4 }}>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+                <HeaderSearchBar setSearchQuery={setSearchQuery} />
+              </Box>
               <Box>
                 <Button
                   onClick={handleFilterClick}
@@ -998,10 +1005,6 @@ export default function ContentManagement({
                   />
                 </FormGroup>
               </Popover>
-
-              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-                <HeaderSearchBar setSearchQuery={setSearchQuery} />
-              </Box>
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

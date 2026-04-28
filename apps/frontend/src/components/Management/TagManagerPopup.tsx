@@ -39,16 +39,18 @@ export default function TagManagerPopup({
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
   const [localTags, setLocalTags] = useState<Tag[]>([]);
 
-  const handleOpen = () => {
-    const tagMap = new Map<string, Tag>();
-    for (const row of rows) {
-      for (const tag of row.tags) {
-        if (!tagMap.has(tag.uuid)) {
-          tagMap.set(tag.uuid, tag);
-        }
+  const handleOpen = async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data: Tag[] = await res.json();
+        setLocalTags(data);
       }
+    } catch (error) {
+      console.error(error);
     }
-    setLocalTags(Array.from(tagMap.values()));
     setOpen(true);
   };
 
