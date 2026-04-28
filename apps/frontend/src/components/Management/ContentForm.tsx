@@ -11,17 +11,29 @@ import {
   Typography,
   ToggleButton,
   ToggleButtonGroup,
+  Stack,
+  Divider,
+  Paper,
   type SelectChangeEvent,
 } from "@mui/material";
 import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
+import RateReviewIcon from "@mui/icons-material/RateReview";
+import SendIcon from "@mui/icons-material/Send";
+import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import type { ContentStatus, ContentType, Position } from "@repo/db";
 import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
-import "./ContentForm.css";
 import { useAuth } from "../../auth/AuthContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
-
 import type { ContentFormData, ContentRecord } from "../../types/content";
+
+// Positions that are considered "agents" — neither underwriter nor admin.
+const AGENT_POSITIONS: Position[] = [
+  "BUSINESS_ANALYST",
+  "ACTUARIAL_ANALYST",
+  "EXL_OPERATIONS",
+  "BUSINESS_OP_RATING",
+];
 
 interface ContentFormProps {
   initialData?: ContentRecord | null;
@@ -33,10 +45,7 @@ interface ContentFormProps {
 function getInitialSourceType(
   initialData?: ContentRecord | null,
 ): "url" | "file" {
-  if (initialData?.supabasePath || initialData?.file_type) {
-    return "file";
-  }
-
+  if (initialData?.supabasePath || initialData?.file_type) return "file";
   return initialData?.url ? "url" : "file";
 }
 
@@ -73,6 +82,11 @@ export default function ContentForm({
   const isEditing = !!initialData;
   const { session } = useAuth();
   const isAdmin = session?.permissions.canManageAllContent ?? false;
+  const userPosition = session?.position as Position | undefined;
+
+  // Derived role flags
+  const isUnderwriter = userPosition === "UNDERWRITER";
+  const isAgent = !!userPosition && AGENT_POSITIONS.includes(userPosition);
 
   const [formData, setFormData] = useState<ContentFormData>(() =>
     buildDefaultFormData({
@@ -85,6 +99,9 @@ export default function ContentForm({
   );
   const [file, setFile] = useState<File | null>(null);
 
+  // Underwriter-only risk assessment comment
+  const [riskAssessment, setRiskAssessment] = useState("");
+
   useEffect(() => {
     setFormData(
       buildDefaultFormData({
@@ -94,6 +111,7 @@ export default function ContentForm({
     );
     setSourceType(getInitialSourceType(initialData));
     setFile(null);
+    setRiskAssessment("");
   }, [initialData, session?.position]);
 
   const positionOptions = useMemo(
@@ -116,10 +134,7 @@ export default function ContentForm({
     field: K,
     value: ContentFormData[K],
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSelectChange =
@@ -131,17 +146,12 @@ export default function ContentForm({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = e.target.files?.[0] ?? null;
     setFile(nextFile);
-
-    if (nextFile && !formData.title) {
-      handleChange("title", nextFile.name);
-    }
+    if (nextFile && !formData.title) handleChange("title", nextFile.name);
   };
 
-  const handleInternalSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
+  /** Shared FormData builder — called by all submit paths. */
+  const buildBody = (extra?: Record<string, string>): FormData => {
     const body = new FormData();
-
     body.append("title", formData.title);
     body.append("content_owner", formData.content_owner);
     body.append("for_position", formData.for_position);
@@ -154,222 +164,403 @@ export default function ContentForm({
     body.append("status", formData.status);
 
     if (sourceType === "file") {
-      if (file) {
-        body.append("file", file);
-      } else if (!isEditing) {
-        console.error("A file must be selected for file upload.");
-        return;
-      }
+      if (file) body.append("file", file);
+      // If editing with no new file selected, the server keeps the existing file.
     } else {
       body.append("url", formData.url);
     }
 
-    onSave(body);
+    if (extra) {
+      Object.entries(extra).forEach(([k, v]) => body.append(k, v));
+    }
+
+    return body;
   };
 
+  /** Standard save / create. */
+  const handleInternalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (sourceType === "file" && !file && !isEditing) {
+      console.error("A file must be selected for file upload.");
+      return;
+    }
+    onSave(buildBody());
+  };
+
+  /** Agent: "Submit for Review" — flags the document as pending review. */
+  const handleSubmitForReview = () => {
+    if (sourceType === "file" && !file && !isEditing) {
+      console.error("A file must be selected for file upload.");
+      return;
+    }
+    onSave(buildBody({ workflow_action: "SUBMIT_FOR_REVIEW" }));
+  };
+
+  /** Underwriter: "Submit for Approval" — attaches the risk assessment comment. */
+  const handleSubmitForApproval = () => {
+    if (sourceType === "file" && !file && !isEditing) {
+      console.error("A file must be selected for file upload.");
+      return;
+    }
+    onSave(
+      buildBody({
+        workflow_action: "SUBMIT_FOR_APPROVAL",
+        risk_assessment: riskAssessment,
+      }),
+    );
+  };
+
+  const sharedButtonSx = {
+    borderRadius: "10px",
+    fontWeight: 700,
+    py: 1.3,
+    fontFamily: "Rubik, sans-serif",
+    textTransform: "none",
+    fontSize: "1rem",
+  } as const;
+
   return (
-    <section className="main-content-form">
-      <div className="MuiPaper-root">
-        <div>
-          <Box
-            component="form"
-            className="form"
-            onSubmit={handleInternalSubmit}
+    <Box
+      component="form"
+      onSubmit={handleInternalSubmit}
+      sx={{ display: "flex", flexDirection: "column", gap: 0, px: 3, py: 3 }}
+    >
+      {/* ── Source type toggle ─────────────────────────────────────────── */}
+      <ToggleButtonGroup
+        value={sourceType}
+        exclusive
+        onChange={(_, val) => {
+          if (val) setSourceType(val);
+        }}
+        fullWidth
+        sx={{ mb: 2 }}
+      >
+        <ToggleButton value="url">
+          <LinkIcon sx={{ mr: 1 }} /> External URL
+        </ToggleButton>
+        <ToggleButton value="file">
+          <CloudUpload sx={{ mr: 1 }} /> Local Upload
+        </ToggleButton>
+      </ToggleButtonGroup>
+
+      {/* ── Document name ──────────────────────────────────────────────── */}
+      <TextField
+        label="Name of Document"
+        fullWidth
+        value={formData.title}
+        onChange={(e) => handleChange("title", e.target.value)}
+        variant="outlined"
+        margin="normal"
+      />
+
+      {/* ── URL or file upload ─────────────────────────────────────────── */}
+      {sourceType === "url" ?
+        <TextField
+          label="URL of Link"
+          fullWidth
+          value={formData.url}
+          onChange={(e) => handleChange("url", e.target.value)}
+          variant="outlined"
+          margin="normal"
+        />
+      : <Box
+          sx={{
+            "border": "1px dashed",
+            "borderColor": "divider",
+            "borderRadius": "8px",
+            "p": 2.5,
+            "textAlign": "center",
+            "my": 1.5,
+            "cursor": "pointer",
+            "transition": "border-color 0.2s, background-color 0.2s",
+            "&:hover": {
+              borderColor: "primary.main",
+              backgroundColor: "action.hover",
+            },
+          }}
+          component="label"
+        >
+          <input
+            type="file"
+            hidden
+            onChange={handleFileChange}
+          />
+          <CloudUpload
+            sx={{ fontSize: 28, color: "text.secondary", mb: 0.5 }}
+          />
+          <Typography
+            color="textSecondary"
+            variant="body2"
           >
-            <h1>{isEditing ? "Edit Document" : "Submit a New File"}</h1>
-
-            <ToggleButtonGroup
-              value={sourceType}
-              exclusive
-              onChange={(_, val) => {
-                if (!val) return;
-                setSourceType(val);
-              }}
-              fullWidth
-              sx={{ mb: 2 }}
+            {file ? `Selected: ${file.name}` : "Click to upload a local file"}
+          </Typography>
+          {isEditing && !file && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 0.5, display: "block" }}
             >
-              <ToggleButton value="url">
-                <LinkIcon sx={{ mr: 1 }} /> External URL
-              </ToggleButton>
-              <ToggleButton value="file">
-                <CloudUpload sx={{ mr: 1 }} /> Local Upload
-              </ToggleButton>
-            </ToggleButtonGroup>
+              Leave empty to keep the current file.
+            </Typography>
+          )}
+        </Box>
+      }
 
-            <TextField
-              label="Name of Document"
-              fullWidth
-              value={formData.title}
-              onChange={(e) => handleChange("title", e.target.value)}
-              variant="outlined"
-              margin="normal"
-            />
+      {/* ── Standard fields ────────────────────────────────────────────── */}
+      <TextField
+        label="Content Owner"
+        fullWidth
+        value={formData.content_owner}
+        onChange={(e) => handleChange("content_owner", e.target.value)}
+        variant="outlined"
+        margin="normal"
+      />
 
-            {sourceType === "url" ?
-              <TextField
-                label="URL of Link"
-                fullWidth
-                value={formData.url}
-                onChange={(e) => handleChange("url", e.target.value)}
-                variant="outlined"
-                margin="normal"
-              />
-            : <Box
+      <FormControl
+        fullWidth
+        margin="normal"
+      >
+        <InputLabel id="recipient-label">Intended Recipient</InputLabel>
+        <Select
+          labelId="recipient-label"
+          label="Intended Recipient"
+          value={formData.for_position}
+          onChange={handleSelectChange("for_position")}
+          disabled={!isAdmin}
+        >
+          {positionOptions.map((position) => (
+            <MenuItem
+              key={position}
+              value={position}
+            >
+              {getPositionLabel(position)}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <CalendarInput
+        label="Last Modified Date"
+        value={formData.last_modified_time}
+        onChange={(newDate) => handleChange("last_modified_time", newDate)}
+      />
+
+      <CalendarInput
+        label="Link Expiration Date"
+        value={formData.expiration_time}
+        onChange={(newDate) => handleChange("expiration_time", newDate)}
+      />
+
+      <FormControl
+        fullWidth
+        margin="normal"
+      >
+        <InputLabel id="content-type-label">Type of Content</InputLabel>
+        <Select
+          labelId="content-type-label"
+          label="Type of Content"
+          value={formData.content_type}
+          onChange={handleSelectChange("content_type")}
+        >
+          {contentTypeOptions.map((contentType) => (
+            <MenuItem
+              key={contentType}
+              value={contentType}
+            >
+              {contentType}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <FormControl
+        fullWidth
+        margin="normal"
+      >
+        <InputLabel id="status-label">Document Status</InputLabel>
+        <Select
+          labelId="status-label"
+          label="Document Status"
+          value={formData.status}
+          onChange={handleSelectChange("status")}
+        >
+          {statusOptions.map((status) => (
+            <MenuItem
+              key={status}
+              value={status}
+            >
+              {status}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      {/* ── Underwriter: Risk Assessment ───────────────────────────────── */}
+      {isUnderwriter && (
+        <>
+          <Divider sx={{ mt: 2, mb: 1 }} />
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              mt: 1,
+              mb: 0.5,
+              borderWidth: "1.5px",
+              borderRadius: "10px",
+              // backgroundColor: (t) =>
+              //   t.palette.mode === "dark"
+              //     ? "rgba(237,168,50,0.06)"
+              //     : "rgba(255,244,218,0.6)",
+            }}
+          >
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ mb: 1.25 }}
+            >
+              <RateReviewIcon fontSize="small" />
+              <Typography
+                variant="subtitle2"
                 sx={{
-                  "border": "1px solid rgba(0, 0, 0, 0.23)",
-                  "borderRadius": "4px",
-                  "p": 2,
-                  "textAlign": "center",
-                  "my": 2,
-                  "cursor": "pointer",
-                  "&:hover": { borderColor: "rgba(0, 0, 0, 0.87)" },
+                  fontWeight: 700,
+                  fontFamily: "Rubik, sans-serif",
+                  fontSize: "0.8rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
                 }}
-                component="label"
               >
-                <input
-                  type="file"
-                  hidden
-                  onChange={handleFileChange}
-                />
-                <Typography color="textSecondary">
-                  {file ?
-                    `Selected: ${file.name}`
-                  : "Click to upload local file"}
-                </Typography>
-                {isEditing && !file && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 1 }}
-                  >
-                    Leave this empty to keep the current uploaded file.
-                  </Typography>
-                )}
-              </Box>
-            }
-
+                Risk Assessment
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: "text.secondary", ml: "auto !important" }}
+              >
+                Underwriter only
+              </Typography>
+            </Stack>
             <TextField
-              label="Content Owner"
+              label="Risk assessment comments"
+              placeholder="Summarise your risk evaluation, flag any concerns, and note any conditions or exceptions that apply to this document…"
               fullWidth
-              value={formData.content_owner}
-              onChange={(e) => handleChange("content_owner", e.target.value)}
+              multiline
+              minRows={8}
+              maxRows={12}
+              value={riskAssessment}
+              onChange={(e) => setRiskAssessment(e.target.value)}
               variant="outlined"
-              margin="normal"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  fontSize: "0.9rem",
+                },
+              }}
             />
+          </Paper>
+        </>
+      )}
 
-            <FormControl
-              fullWidth
-              margin="normal"
-            >
-              <InputLabel id="recipient-label">Intended Recipient</InputLabel>
-              <Select
-                labelId="recipient-label"
-                label="Intended Recipient"
-                value={formData.for_position}
-                onChange={handleSelectChange("for_position")}
-                disabled={!isAdmin}
-              >
-                {positionOptions.map((position) => (
-                  <MenuItem
-                    key={position}
-                    value={position}
-                  >
-                    {getPositionLabel(position)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+      <Divider sx={{ my: 2 }} />
 
-            <CalendarInput
-              label="Last Modified Date"
-              value={formData.last_modified_time}
-              onChange={(newDate) =>
-                handleChange("last_modified_time", newDate)
-              }
-            />
+      {/* ── Action buttons ─────────────────────────────────────────────── */}
+      <Stack spacing={1.5}>
+        {/* Underwriter only: Submit for Approval */}
+        {isUnderwriter && (
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            startIcon={<TaskAltIcon />}
+            onClick={handleSubmitForApproval}
+            sx={{
+              ...sharedButtonSx,
+              "background": "linear-gradient(135deg, #1b5e20, #2e7d32)",
+              "color": "white",
+              "boxShadow": "0 4px 14px rgba(46,125,50,0.35)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #14471a, #245c27)",
+                boxShadow: "0 6px 18px rgba(46,125,50,0.5)",
+              },
+            }}
+          >
+            Submit for Approval
+          </Button>
+        )}
 
-            <CalendarInput
-              label="Link Expiration Date"
-              value={formData.expiration_time}
-              onChange={(newDate) => handleChange("expiration_time", newDate)}
-            />
+        {/* Agent only: Submit for Review */}
+        {isAgent && (
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            color="secondary"
+            startIcon={<SendIcon />}
+            onClick={handleSubmitForReview}
+            sx={{
+              ...sharedButtonSx,
+              "background": (t) =>
+                t.palette.mode === "dark" ?
+                  "linear-gradient(135deg, #4B1A26, #74414e)"
+                : "linear-gradient(135deg, #74414e, #9a5d6a)",
+              "color": "white",
+              "boxShadow": "0 4px 14px rgba(116,65,78,0.35)",
+              "&:hover": {
+                background: (t) =>
+                  t.palette.mode === "dark" ?
+                    "linear-gradient(135deg, #3a1320, #5c3340)"
+                  : "linear-gradient(135deg, #5c3340, #7a4555)",
+                boxShadow: "0 6px 18px rgba(116,65,78,0.5)",
+              },
+            }}
+          >
+            Submit for Review
+          </Button>
+        )}
 
-            <FormControl
-              fullWidth
-              margin="normal"
-            >
-              <InputLabel id="content-type-label">Type of Content</InputLabel>
-              <Select
-                labelId="content-type-label"
-                label="Type of Content"
-                value={formData.content_type}
-                onChange={handleSelectChange("content_type")}
-              >
-                {contentTypeOptions.map((contentType) => (
-                  <MenuItem
-                    key={contentType}
-                    value={contentType}
-                  >
-                    {contentType}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+        {/* Primary save — visible to everyone */}
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          color="primary"
+          size="large"
+          sx={sharedButtonSx}
+        >
+          {isEditing ? "Save Changes" : "Create Content"}
+        </Button>
 
-            <FormControl
-              fullWidth
-              margin="normal"
-            >
-              <InputLabel id="status-label">Document Status</InputLabel>
-              <Select
-                labelId="status-label"
-                label="Document Status"
-                value={formData.status}
-                onChange={handleSelectChange("status")}
-              >
-                {statusOptions.map((status) => (
-                  <MenuItem
-                    key={status}
-                    value={status}
-                  >
-                    {status}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+        {/* Delete — only when editing and the callback is provided */}
+        {isEditing && onDelete && (
+          <Button
+            variant="outlined"
+            fullWidth
+            color="error"
+            onClick={onDelete}
+            sx={{
+              borderRadius: "10px",
+              fontWeight: 600,
+              textTransform: "none",
+              fontFamily: "Rubik, sans-serif",
+            }}
+          >
+            Delete Content
+          </Button>
+        )}
 
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              color="primary"
-              sx={{ mt: 2 }}
-            >
-              {isEditing ? "Update Changes" : "Create Content"}
-            </Button>
-            {isEditing && onDelete && (
-              <Button
-                variant="contained"
-                fullWidth
-                color="error"
-                onClick={onDelete}
-                sx={{ mt: 1 }}
-              >
-                Delete
-              </Button>
-            )}
-
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={onCancel}
-              sx={{ mt: 1 }}
-            >
-              Cancel
-            </Button>
-          </Box>
-        </div>
-      </div>
-    </section>
+        <Button
+          variant="text"
+          fullWidth
+          onClick={onCancel}
+          sx={{
+            borderRadius: "10px",
+            color: "text.secondary",
+            textTransform: "none",
+            fontFamily: "Rubik, sans-serif",
+          }}
+        >
+          Cancel
+        </Button>
+      </Stack>
+    </Box>
   );
 }

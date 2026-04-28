@@ -7,9 +7,9 @@ import { supabase } from "../lib/supabase.ts";
 import { STORAGE_BUCKET } from "../config.ts";
 
 const FOLDER_PATH =
-  "/Users/myer/WPI/CS3733 Software Engineering/teamg-app/apps/backend/src/temp/Underwriter";
+  "/Users/justingauthier/WebstormProjects/teamg-app/apps/backend/src/samples";
 
-const position: Position = Position.UNDERWRITER;
+const position: Position = Position.BUSINESS_OP_RATING;
 
 const EXPIRATION_TIME = new Date("2026-06-14T00:00:00Z");
 
