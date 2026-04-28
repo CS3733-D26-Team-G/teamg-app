@@ -16,13 +16,19 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
-import type { ContentStatus, ContentType, Position } from "@repo/db";
+import type {
+  ContentStatus,
+  ContentType,
+  Position,
+  ContentTag,
+} from "@repo/db";
 import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
 import { useAuth } from "../../auth/AuthContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 
 import type { ContentFormData, ContentRecord } from "../../types/content";
+import { API_ENDPOINTS } from "../../config.ts";
 
 interface ContentFormProps {
   initialData?: ContentRecord | null;
@@ -83,6 +89,24 @@ export default function ContentForm({
   );
   const [file, setFile] = useState<File | null>(null);
 
+  const [availableTags, setAvailableTags] = useState<ContentTag[]>([]);
+  const [selectedTagUuids, setSelectedTagUuids] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+          credentials: "include",
+        });
+        const data: ContentTag[] = await res.json();
+        setAvailableTags(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchTags();
+  }, []);
+
   useEffect(() => {
     setFormData(
       buildDefaultFormData({
@@ -92,6 +116,7 @@ export default function ContentForm({
     );
     setSourceType(getInitialSourceType(initialData));
     setFile(null);
+    setSelectedTagUuids([]);
   }, [initialData, session?.position]);
 
   const positionOptions = useMemo(
@@ -143,6 +168,8 @@ export default function ContentForm({
     body.append("expiration_time", formData.expiration_time.toISOString());
     body.append("content_type", formData.content_type);
     body.append("status", formData.status);
+
+    selectedTagUuids.forEach((uuid) => body.append("tagUuids", uuid));
 
     if (sourceType === "file") {
       if (file) {

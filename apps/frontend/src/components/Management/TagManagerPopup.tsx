@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Typography,
   Box,
@@ -18,26 +18,24 @@ import AddIcon from "@mui/icons-material/Add";
 import { API_ENDPOINTS } from "../../config.ts";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
-import type { ContentRow } from "../../types/content.ts";
+import type { ContentTag } from "@repo/db";
 
-interface Tag {
-  uuid: string;
-  name: string;
-}
+// interface Tag {
+//   uuid: string;
+//   name: string;
+// }
 
 interface TagManagerPopupProps {
-  rows: ContentRow[];
   onTagsChanged: () => Promise<void>;
 }
 
 export default function TagManagerPopup({
-  rows,
   onTagsChanged,
 }: TagManagerPopupProps) {
   const [open, setOpen] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
-  const [localTags, setLocalTags] = useState<Tag[]>([]);
+  const [localTags, setLocalTags] = useState<ContentTag[]>([]);
 
   const handleOpen = async () => {
     try {
@@ -45,7 +43,7 @@ export default function TagManagerPopup({
         credentials: "include",
       });
       if (res.ok) {
-        const data: Tag[] = await res.json();
+        const data: ContentTag[] = await res.json();
         setLocalTags(data);
       }
     } catch (error) {
@@ -79,7 +77,7 @@ export default function TagManagerPopup({
         throw new Error("Failed to create tag");
       }
 
-      const createdTag: Tag = await res.json();
+      const createdTag: ContentTag = await res.json();
       setLocalTags((prev) => [...prev, createdTag]);
       setNewTag("");
       await onTagsChanged();
