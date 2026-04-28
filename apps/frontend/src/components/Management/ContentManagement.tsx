@@ -20,9 +20,10 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Divider,
+  Slide,
   Stack,
 } from "@mui/material";
+import type { TransitionProps } from "@mui/material/transitions";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import AddIcon from "@mui/icons-material/Add";
@@ -30,12 +31,11 @@ import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DownloadIcon from "@mui/icons-material/Download";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
+import CloseIcon from "@mui/icons-material/Close";
 import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
-import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
-import "@cyntler/react-doc-viewer";
 import { API_ENDPOINTS } from "../../config";
 import { useAuth } from "../../auth/AuthContext";
 import "./ContentManagement.css";
@@ -49,8 +49,6 @@ import {
   getPositionChipColor,
   getPositionLabel,
 } from "../../utils/positionDisplay";
-import { param } from "framer-motion/m";
-import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
@@ -97,15 +95,25 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 128,
 }));
 
-{
-  /* Highlights new content based on what is different from start of session */
-}
+const SlideUpTransition = React.forwardRef(function SlideUpTransition(
+  props: TransitionProps & { children: React.ReactElement },
+  ref: React.Ref<unknown>,
+) {
+  return (
+    <Slide
+      direction="up"
+      ref={ref}
+      {...props}
+    />
+  );
+});
+
+/* Highlights new content based on what is different from start of session */
 function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const KEY = `new_content_ids_${userUuid}`;
   const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
   const SESSION_KEY = `session_id_${userUuid}`;
 
-  // Generate a session ID for this tab using sessionStorage
   if (!sessionStorage.getItem(SESSION_KEY)) {
     sessionStorage.setItem(SESSION_KEY, crypto.randomUUID());
   }
@@ -157,7 +165,7 @@ export default function ContentManagement({
     null,
   );
 
-  const [searchParams, setSearchParams] = useSearchParams(); // Add this
+  const [searchParams] = useSearchParams();
 
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -167,7 +175,9 @@ export default function ContentManagement({
   >({});
   const { session } = useAuth();
 
+  // Preview dialog (DocPreviewer — read-only viewer)
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Editor modal (DocumentEditorModal — full WebViewer, opened after checkout)
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
@@ -175,11 +185,15 @@ export default function ContentManagement({
     uuid: string;
     for_position: Position;
   } | null>(null);
+
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
   const [pendingSave, setPendingSave] = useState<FormData | null>(null);
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
+
+  // Form modal open state — derived from viewState
+  const formOpen = viewState !== null;
 
   useEffect(() => {
     const filterParam = searchParams.get("filter");
@@ -197,7 +211,6 @@ export default function ContentManagement({
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-
         return res.json();
       });
       const parsed = ContentRowsSchema.safeParse(data);
@@ -222,7 +235,6 @@ export default function ContentManagement({
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        // Search Bar Filter Logic
         if (searchQuery.trim()) {
           const targetFields = [
             row.title,
@@ -235,13 +247,9 @@ export default function ContentManagement({
           const searchMatch = targetFields.some((field) =>
             field?.toLowerCase().includes(searchQuery.toLowerCase()),
           );
-
           if (!searchMatch) return false;
         }
 
-        //Filter Button Logic
-
-        //Position Filter
         if (
           positionFilters.length > 0 &&
           !positionFilters.includes(row.for_position)
@@ -249,7 +257,6 @@ export default function ContentManagement({
           return false;
         }
 
-        //File Type Filter
         if (
           fileTypeFilters.length > 0 &&
           !fileTypeFilters.includes(row.file_type ?? "")
@@ -263,39 +270,27 @@ export default function ContentManagement({
   );
 
   const togglePosition = (position: string) => {
-    //update the position filters array
-    setPositionFilters((currentPositionFilters) => {
-      //check if the current array already has the toggled position
-      if (currentPositionFilters.includes(position)) {
-        //clear selected filter
-        return currentPositionFilters.filter((pos) => pos !== position);
-      } else {
-        //add selected position filter
-        return currentPositionFilters.concat(position);
-      }
-    });
+    setPositionFilters((cur) =>
+      cur.includes(position) ?
+        cur.filter((pos) => pos !== position)
+      : cur.concat(position),
+    );
   };
 
   const toggleFileType = (fileType: string) => {
-    //update the file type filters array
-    setFileTypeFilters((currentFileTypeFilters) => {
-      //check if the current array already has the toggled file type
-      if (currentFileTypeFilters.includes(fileType)) {
-        //clear selected filter
-        return currentFileTypeFilters.filter((type) => type !== fileType);
-      } else {
-        return currentFileTypeFilters.concat(fileType);
-      }
-    });
+    setFileTypeFilters((cur) =>
+      cur.includes(fileType) ?
+        cur.filter((type) => type !== fileType)
+      : cur.concat(fileType),
+    );
   };
 
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
   };
+
   const confirmDelete = async () => {
-    if (!pendingDelete) {
-      return;
-    }
+    if (!pendingDelete) return;
 
     const rowToDelete = pendingDelete;
     setPendingDelete(null);
@@ -366,9 +361,7 @@ export default function ContentManagement({
   };
 
   const confirmSave = async () => {
-    if (!pendingSave) {
-      return;
-    }
+    if (!pendingSave) return;
 
     const payloadToSave = pendingSave;
     setPendingSave(null);
@@ -398,13 +391,17 @@ export default function ContentManagement({
     }
   };
 
+  const handleCloseFormModal = async () => {
+    if (viewState !== null && viewState !== "new") {
+      await releaseLock(viewState.uuid);
+    }
+    setViewState(null);
+  };
+
   const toggleFavorite = async (row: ContentRow) => {
     const nextIsFavorite = !row.is_favorite;
 
-    setFavoritePending((prev) => ({
-      ...prev,
-      [row.uuid]: true,
-    }));
+    setFavoritePending((prev) => ({ ...prev, [row.uuid]: true }));
 
     try {
       const res = await fetch(API_ENDPOINTS.CONTENT.FAVORITE(row.uuid), {
@@ -437,10 +434,7 @@ export default function ContentManagement({
     } catch (error) {
       console.error(error);
     } finally {
-      setFavoritePending((prev) => ({
-        ...prev,
-        [row.uuid]: false,
-      }));
+      setFavoritePending((prev) => ({ ...prev, [row.uuid]: false }));
     }
   };
 
@@ -460,6 +454,7 @@ export default function ContentManagement({
       console.error("Download failed:", error);
     }
   };
+
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElement(event.currentTarget);
   };
@@ -476,6 +471,7 @@ export default function ContentManagement({
     }
   }, [rows, session?.employeeUuid]);
 
+  // ── Confirmation dialogs ───────────────────────────────────────────────────
   const confirmationDialogs = (
     <>
       <Dialog
@@ -523,6 +519,7 @@ export default function ContentManagement({
     </>
   );
 
+  // ── Column definitions ─────────────────────────────────────────────────────
   const getColumns = (
     onEdit: (row: ContentRow) => void,
     onPreview: (row: ContentRow) => void,
@@ -554,7 +551,7 @@ export default function ContentManagement({
       headerName: "Title",
       flex: 1,
       renderCell: (params) => (
-        <Box sx={{ display: "flex", gap: 0.5 }}>
+        <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
@@ -732,7 +729,6 @@ export default function ContentManagement({
                   disabled={!hasPermission || isCheckedOut}
                   sx={{ border: "0.5px solid" }}
                 >
-                  {" "}
                   CHECK OUT
                 </Button>
               </span>
@@ -743,29 +739,10 @@ export default function ContentManagement({
     },
   ];
 
-  if (viewState) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <ContentForm
-          initialData={viewState === "new" ? null : viewState}
-          onSave={handleSave}
-          onCancel={async () => {
-            if (viewState !== "new") {
-              await releaseLock(viewState.uuid);
-            }
-            setViewState(null);
-          }}
-          onDelete={
-            viewState !== "new" ? () => handleDelete(viewState) : undefined
-          }
-        />
-        {confirmationDialogs}
-      </Box>
-    );
-  }
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <Box sx={{ height: "auto", width: "100%" }}>
+      {/* ── Toolbar / header ────────────────────────────────────────────── */}
       <AppBar
         position="static"
         sx={{ backgroundColor: "background.paper", boxShadow: "none" }}
@@ -791,6 +768,7 @@ export default function ContentManagement({
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                {/* Filter button */}
                 <Button
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
@@ -818,7 +796,7 @@ export default function ContentManagement({
                 )}
               </Box>
 
-              {/*Filter Pop-up*/}
+              {/* Filter pop-up */}
               <Popover
                 open={Boolean(anchorElement)}
                 anchorEl={anchorElement}
@@ -826,14 +804,10 @@ export default function ContentManagement({
                 anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
                 slotProps={{
                   paper: {
-                    sx: {
-                      border: "1px solid",
-                      borderColor: "gray",
-                    },
+                    sx: { border: "1px solid", borderColor: "gray" },
                   },
                 }}
               >
-                {/*Position Item*/}
                 <MenuItem
                   onClick={(event) => {
                     setPositionAnchor(event.currentTarget);
@@ -843,8 +817,6 @@ export default function ContentManagement({
                   Position
                   <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
-
-                {/*File Type Item*/}
                 <MenuItem
                   onClick={(event) => {
                     setFileTypeAnchor(event.currentTarget);
@@ -856,7 +828,7 @@ export default function ContentManagement({
                 </MenuItem>
               </Popover>
 
-              {/*Position Sub-Pop-Up*/}
+              {/* Position sub-pop-up */}
               <Popover
                 open={Boolean(positionAnchor)}
                 anchorEl={positionAnchor}
@@ -865,11 +837,7 @@ export default function ContentManagement({
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
                 slotProps={{
                   paper: {
-                    sx: {
-                      border: "1px solid",
-                      borderColor: "gray",
-                      ml: 1,
-                    },
+                    sx: { border: "1px solid", borderColor: "gray", ml: 1 },
                   },
                 }}
               >
@@ -929,7 +897,7 @@ export default function ContentManagement({
                 </FormGroup>
               </Popover>
 
-              {/*File Type Sub-Pop-Up*/}
+              {/* File type sub-pop-up */}
               <Popover
                 open={Boolean(fileTypeAnchor)}
                 anchorEl={fileTypeAnchor}
@@ -938,11 +906,7 @@ export default function ContentManagement({
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
                 slotProps={{
                   paper: {
-                    sx: {
-                      border: "1px solid",
-                      borderColor: "gray",
-                      ml: 1,
-                    },
+                    sx: { border: "1px solid", borderColor: "gray", ml: 1 },
                   },
                 }}
               >
@@ -1088,6 +1052,7 @@ export default function ContentManagement({
         </StyledToolbar>
       </AppBar>
 
+      {/* ── Data grid ───────────────────────────────────────────────────── */}
       <DataGrid
         rows={filteredRows}
         getRowId={(row) => row.uuid}
@@ -1166,7 +1131,84 @@ export default function ContentManagement({
         pageSizeOptions={[5, 10]}
       />
 
-      {/* Preview Dialog */}
+      {/* ── Content Form Modal ───────────────────────────────────────────── */}
+      <Dialog
+        open={formOpen}
+        onClose={() => void handleCloseFormModal()}
+        TransitionComponent={SlideUpTransition}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "16px",
+            overflow: "hidden",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.25)",
+          },
+        }}
+      >
+        {/* Modal header */}
+        <Box
+          sx={{
+            background: "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
+            px: 3,
+            py: 2.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Typography
+            sx={{
+              color: "white",
+              fontWeight: 700,
+              fontSize: "1.15rem",
+              fontFamily: "Rubik, sans-serif",
+            }}
+          >
+            {viewState === "new" ? "Submit New Content" : "Edit Content"}
+          </Typography>
+          <IconButton
+            onClick={() => void handleCloseFormModal()}
+            size="small"
+            sx={{
+              "color": "rgba(255,255,255,0.8)",
+              "backgroundColor": "rgba(255,255,255,0.1)",
+              "borderRadius": "8px",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.2)",
+                color: "white",
+              },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        {/* Scrollable form body */}
+        <DialogContent
+          sx={{
+            "p": 0,
+            "&::-webkit-scrollbar": { width: 6 },
+            "&::-webkit-scrollbar-thumb": {
+              borderRadius: 3,
+              backgroundColor: "divider",
+            },
+          }}
+        >
+          <ContentForm
+            initialData={viewState === "new" ? null : viewState}
+            onSave={handleSave}
+            onCancel={() => void handleCloseFormModal()}
+            onDelete={
+              viewState !== null && viewState !== "new" ?
+                () => handleDelete(viewState)
+              : undefined
+            }
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Preview Dialog (DocPreviewer — read-only viewer) ────────────── */}
       <Dialog
         open={previewOpen}
         onClose={() => {
@@ -1212,7 +1254,7 @@ export default function ContentManagement({
         </Box>
       </Dialog>
 
-      {/* Document Editor Modal — opened via the Edit button when checked out */}
+      {/* ── Document Editor Modal (full WebViewer, opened after checkout) ── */}
       {editorOpen && selectedDoc && (
         <DocumentEditorModal
           open={editorOpen}
