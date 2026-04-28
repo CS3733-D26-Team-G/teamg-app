@@ -4,6 +4,9 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import { useState } from "react";
+import { API_ENDPOINTS } from "../config";
+import { useAuth } from "../auth/AuthContext";
+import { ContentRowsSchema, type ContentRow } from "../types/content"; // will all be used when linking a calendar to a profile... I think...
 
 interface CalendarEvent {
   id: string;
