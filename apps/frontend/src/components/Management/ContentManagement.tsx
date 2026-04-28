@@ -199,8 +199,24 @@ export default function ContentManagement({
     const filterParam = searchParams.get("filter");
     if (filterParam) {
       setSearchQuery(filterParam);
+
+      // Auto-open the matched content row
+      const matched = rows.find(
+        (r) => r.title.toLowerCase() === filterParam.toLowerCase(),
+      );
+      if (matched) {
+        setSelectedDoc({
+          uri: API_ENDPOINTS.CONTENT.FILE(matched.uuid),
+          fileName: matched.title,
+          uuid: matched.uuid,
+          for_position: matched.for_position,
+        });
+        setPreviewOpen(true);
+      }
+    } else {
+      setSearchQuery("");
     }
-  }, [searchParams]);
+  }, [searchParams, rows]);
 
   const fetchRows = useCallback(async () => {
     try {
