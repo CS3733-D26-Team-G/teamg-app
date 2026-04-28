@@ -14,8 +14,10 @@ import {
   Stack,
   Divider,
   type SelectChangeEvent,
+  Autocomplete,
+  Chip,
 } from "@mui/material";
-import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
+import { Autorenew, CloudUpload, Link as LinkIcon } from "@mui/icons-material";
 import type {
   ContentStatus,
   ContentType,
@@ -340,6 +342,41 @@ export default function ContentForm({
             </MenuItem>
           ))}
         </Select>
+      </FormControl>
+
+      <FormControl
+        fullWidth
+        margin="normal"
+      >
+        <Autocomplete
+          multiple
+          options={availableTags}
+          getOptionLabel={(tag) => tag.name}
+          value={availableTags.filter((tag) =>
+            selectedTagUuids.includes(tag.uuid),
+          )}
+          onChange={(_, selectedTags) =>
+            setSelectedTagUuids(selectedTags.map((tag) => tag.uuid))
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Tags"
+              margin="normal"
+              placeholder={selectedTagUuids.length ? "" : "Select tags..."}
+            />
+          )}
+          renderTags={(selected, getTagProps) =>
+            selected.map((tag, index) => (
+              <Chip
+                label={tag.name}
+                size="small"
+                {...getTagProps({ index })}
+                key={tag.uuid}
+              />
+            ))
+          }
+        />
       </FormControl>
 
       <FormControl
