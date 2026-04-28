@@ -54,8 +54,38 @@ const FavoriteContentSchema = z.object({
   isFavorite: z.boolean(),
 });
 
+const RegenerateContentLinkSchema = z.object({
+  expiration_time: z.coerce.date(),
+});
+
 const CreateTagSchema = z.object({
   name: z.string(),
+});
+
+const ContentFilterFieldSchema = z.enum([
+  "expiration_time",
+  "last_modified_time",
+  "status",
+  "content_type",
+  "for_position",
+  "title",
+  "content_owner",
+  "file_type",
+]);
+
+const ContentFilterOperatorSchema = z.enum([
+  "eq",
+  "neq",
+  "lt",
+  "lte",
+  "gt",
+  "gte",
+]);
+
+const ContentFilterSchema = z.object({
+  field: ContentFilterFieldSchema,
+  op: ContentFilterOperatorSchema,
+  value: z.unknown(),
 });
 
 const contentLockInclude = {
@@ -72,6 +102,34 @@ const contentLockInclude = {
 type UploadResult =
   | { ok: true; url: string; supabasePath?: string }
   | { ok: false; status: number; message: string };
+
+type ContentFilter = z.infer<typeof ContentFilterSchema>;
+type ContentFilterField = z.infer<typeof ContentFilterFieldSchema>;
+type SupportedContentField =
+  | "expiration_time"
+  | "last_modified_time"
+  | "status"
+  | "content_type"
+  | "for_position"
+  | "title"
+  | "content_owner"
+  | "file_type";
+
+const contentDateFilterFields = new Set<ContentFilterField>([
+  "expiration_time",
+  "last_modified_time",
+]);
+
+const contentFieldValueSchemas = {
+  expiration_time: z.coerce.date(),
+  last_modified_time: z.coerce.date(),
+  status: Schemas.ContentStatusSchema,
+  content_type: Schemas.ContentTypeSchema,
+  for_position: Schemas.PositionSchema,
+  title: z.string(),
+  content_owner: z.string(),
+  file_type: z.string(),
+} satisfies Record<SupportedContentField, z.ZodType>;
 
 function getExpiresInSeconds(expirationTime: Date): number {
   return Math.floor((expirationTime.getTime() - Date.now()) / 1000);
@@ -213,6 +271,100 @@ async function findActiveLock(uuid: string) {
     where: { contentUuid: uuid },
     include: contentLockInclude,
   });
+}
+
+function parseContentFilters(
+  query: express.Request["query"],
+):
+  | { ok: true; filters: Prisma.ContentWhereInput[] }
+  | { ok: false; message: string } {
+  const rawFilters = query.filter;
+
+  if (typeof rawFilters === "undefined") {
+    return { ok: true, filters: [] };
+  }
+
+  const filterValues = Array.isArray(rawFilters) ? rawFilters : [rawFilters];
+  const filters: Prisma.ContentWhereInput[] = [];
+
+  for (const rawFilter of filterValues) {
+    if (typeof rawFilter !== "string") {
+      return {
+        ok: false,
+        message:
+          "Each filter query parameter must be a JSON stringified object",
+      };
+    }
+
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(rawFilter);
+    } catch {
+      return {
+        ok: false,
+        message: "Invalid filter JSON in query parameter",
+      };
+    }
+
+    const parsedFilter = ContentFilterSchema.safeParse(parsedJson);
+    if (!parsedFilter.success) {
+      return {
+        ok: false,
+        message: "Invalid content filter definition",
+      };
+    }
+
+    const clause = buildContentFilterClause(parsedFilter.data);
+    if (!clause.ok) {
+      return clause;
+    }
+
+    filters.push(clause.filter);
+  }
+
+  return { ok: true, filters };
+}
+
+function buildContentFilterClause(
+  filter: ContentFilter,
+):
+  | { ok: true; filter: Prisma.ContentWhereInput }
+  | { ok: false; message: string } {
+  if (
+    !contentDateFilterFields.has(filter.field) &&
+    ["lt", "lte", "gt", "gte"].includes(filter.op)
+  ) {
+    return {
+      ok: false,
+      message: `Operator ${filter.op} is only supported for date filters`,
+    };
+  }
+
+  const fieldSchema = contentFieldValueSchemas[filter.field];
+  const parsedValue = fieldSchema.safeParse(filter.value);
+  if (!parsedValue.success) {
+    return {
+      ok: false,
+      message: `Invalid value for content filter field ${filter.field}`,
+    };
+  }
+
+  const value = parsedValue.data;
+
+  switch (filter.op) {
+    case "eq":
+      return { ok: true, filter: { [filter.field]: value } };
+    case "neq":
+      return { ok: true, filter: { [filter.field]: { not: value } } };
+    case "lt":
+      return { ok: true, filter: { [filter.field]: { lt: value } } };
+    case "lte":
+      return { ok: true, filter: { [filter.field]: { lte: value } } };
+    case "gt":
+      return { ok: true, filter: { [filter.field]: { gt: value } } };
+    case "gte":
+      return { ok: true, filter: { [filter.field]: { gte: value } } };
+  }
 }
 
 type ActiveContentLock = NonNullable<
@@ -412,11 +564,27 @@ async function resolveContentUrl({
 
 router.get("/", async (req, res) => {
   const auth = getAuth(req);
-  logger.verbose("Querying Content table for all records");
+  const gettingContent = auth.position === "ADMIN" ? "all" : auth.position;
+  logger.verbose(`Querying Content table for ${gettingContent} records`);
+
+  const parsedFilters = parseContentFilters(req.query);
+  if (!parsedFilters.ok) {
+    return res.status(400).json({ message: parsedFilters.message });
+  }
+
+  const whereClauses = [
+    getVisibleContentWhere(auth),
+    ...parsedFilters.filters,
+  ].filter((clause): clause is Prisma.ContentWhereInput => !!clause);
 
   try {
     const content = await prisma.content.findMany({
-      where: getVisibleContentWhere(auth),
+      where:
+        whereClauses.length > 0 ?
+          {
+            AND: whereClauses,
+          }
+        : undefined,
       include: {
         favoritedBy: {
           where: { employeeUuid: auth.employeeUuid },
@@ -453,7 +621,7 @@ router.get("/", async (req, res) => {
     });
 
     logger.verbose(
-      `Queried Content table for all records: found ${content.length} record(s)`,
+      `Queried Content table for ${gettingContent} records: found ${content.length} record(s)`,
     );
 
     const response = content.map(
@@ -469,10 +637,31 @@ router.get("/", async (req, res) => {
   } catch (e) {
     return sendInternalError(
       res,
-      "Failed to query Content table for all records",
+      `Failed to query Content table for ${gettingContent} records`,
       e,
     );
   }
+});
+
+router.get("/tag", async (req, res) => {
+  const auth = getAuth(req);
+  if (!isAdmin(auth)) {
+    logger.warn(
+      `Rejected content tag get request from user with position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  logger.verbose("Querying content tag table for all content tags");
+  const tags = await prisma.contentTag.findMany();
+  if (!tags) {
+    return sendInternalError(
+      res,
+      "Failed to query content tag table",
+      new Error(),
+    );
+  }
+  return res.status(200).json(tags);
 });
 
 router.post("/tag/create", async (req, res) => {
@@ -1003,6 +1192,95 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     return sendInternalError(
       res,
       `Failed to update Content table record ${uuid}`,
+      e,
+    );
+  }
+});
+
+router.post("/regenerate-link/:uuid", async (req, res) => {
+  const uuid = parseContentUuid(req, res, "Invalid content UUID");
+  if (!uuid) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  logger.verbose(`Querying Content table for record ${uuid}`);
+  const existingContent = await prisma.content.findUnique({ where: { uuid } });
+  if (!existingContent) {
+    logger.warn(
+      `Received regenerate link request for Content table record ${uuid} that does not exist`,
+    );
+    return res.status(400).json({ message: "Invalid content UUID" });
+  }
+  logger.verbose(`Queried Content table for record ${uuid}: record found`);
+
+  const parsed = RegenerateContentLinkSchema.safeParse(req.body);
+  if (!parsed.success) {
+    logger.verbose(
+      `Failed to parse Content regenerate link request body for record ${uuid}:\n${parsed.error.issues}`,
+    );
+    return res.status(400).json({ message: parsed.error.issues });
+  }
+
+  if (!canManagePosition(auth, existingContent.for_position)) {
+    logger.warn(
+      `Rejected Content regenerate link request for record ${uuid}: target position ${existingContent.for_position}, user position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  if (await rejectIfLockedByAnotherUser(uuid, auth, res)) {
+    return;
+  }
+
+  if (!existingContent.supabasePath) {
+    logger.warn(
+      `Rejected Content regenerate link request for external URL record ${uuid}`,
+    );
+    return res.status(400).json({
+      message: "Only Supabase-backed content links can be regenerated",
+    });
+  }
+
+  const urlResult = await resolveContentUrl({
+    uuid,
+    expirationTime: parsed.data.expiration_time,
+    fallbackSupabasePath: existingContent.supabasePath,
+    upsert: true,
+  });
+
+  if (!urlResult.ok) {
+    return res.status(urlResult.status).json({ message: urlResult.message });
+  }
+
+  logger.verbose(`Updating Content table record ${uuid} with regenerated link`);
+
+  try {
+    const updatedContent = await prisma.content.update({
+      where: { uuid },
+      data: {
+        url: urlResult.url,
+        expiration_time: parsed.data.expiration_time,
+      },
+    });
+
+    await prisma.activity.create({
+      data: {
+        employeeUuid: auth.employeeUuid,
+        action: "EDIT_CONTENT",
+        resource: "CONTENT",
+        resourceUuid: updatedContent.uuid,
+        resourceName: updatedContent.title,
+      },
+    });
+
+    logger.verbose(`Regenerated Content link for record ${uuid}`);
+    return res.status(200).json(updatedContent);
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to regenerate Content link for record ${uuid}`,
       e,
     );
   }

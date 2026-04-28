@@ -21,6 +21,7 @@ import {
   FormControlLabel,
   Checkbox,
   Divider,
+  Stack,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
@@ -55,6 +56,9 @@ import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
 import { dedupeAsync } from "../../lib/async-cache";
 import HelpPopup from "../../components/HelpPopup";
+import DocPreviewer from "./DocPreviewer.tsx";
+import InfoPopup from "./ContentInfoPopup.tsx";
+import TagManagerPopup from "./TagManagerPopup.tsx";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -143,6 +147,7 @@ export default function ContentManagement({
   const { session } = useAuth();
 
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
     fileName: string;
@@ -543,6 +548,12 @@ export default function ContentManagement({
             />
           </IconButton>
           {params.row.title}
+          <InfoPopup
+            url={params.row.url}
+            author={params.row.content_owner}
+            position={params.row.for_position}
+            fileType={params.row.file_type}
+          />
         </Box>
       ),
     },
@@ -652,8 +663,12 @@ export default function ContentManagement({
     {
       field: "actions",
       headerName: "Actions",
-      width: 190,
+      width: 220,
+      minWidth: 220,
       align: "center",
+      resizable: false,
+      sortable: false,
+      filterable: false,
       renderCell: (params) => {
         const hasPermission =
           isSystemAdmin || userPosition === params.row.for_position;
@@ -991,6 +1006,12 @@ export default function ContentManagement({
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <HelpPopup description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly." />
+              {isSystemAdmin && (
+                <TagManagerPopup
+                  rows={rows}
+                  onTagsChanged={fetchRows}
+                />
+              )}
               <Button
                 onClick={() => setViewState("new")}
                 variant="contained"
@@ -1043,6 +1064,8 @@ export default function ContentManagement({
         }}
         sx={{
           "height": 600,
+          "overflow": "hidden",
+          "border": "none",
           "& .row-locked": {
             backgroundColor:
               isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(245, 245, 245, 1)",
@@ -1074,24 +1097,76 @@ export default function ContentManagement({
           sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
           columns: {
             columnVisibilityModel: {
-              favorite: false,
+              "favorite": false,
+              "url": false,
+              "author": false,
+              "edited-by": false,
+              "for_position": false,
+              "file_type": false,
             },
           },
         }}
         pageSizeOptions={[5, 10]}
       />
 
-      {previewOpen && (
+      {/* Preview Dialog */}
+      <Dialog
+        open={previewOpen}
+        onClose={() => {
+          setPreviewOpen(false);
+          setSelectedDoc(null);
+        }}
+        maxWidth="lg"
+        fullWidth
+        keepMounted
+      >
+        <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ p: 1, gap: 1, flexShrink: 0 }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{ pl: 1, color: "text.secondary" }}
+              noWrap
+            >
+              {selectedDoc?.fileName ?? "Preview"}
+            </Typography>
+            <Button
+              onClick={() => {
+                setPreviewOpen(false);
+                setSelectedDoc(null);
+              }}
+            >
+              Close
+            </Button>
+          </Stack>
+          <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+            {selectedDoc && (
+              <DocPreviewer
+                key={selectedDoc.uuid}
+                uri={selectedDoc.uri}
+                fileName={selectedDoc.fileName}
+              />
+            )}
+          </Box>
+        </Box>
+      </Dialog>
+
+      {/* Document Editor Modal — opened via the Edit button when checked out */}
+      {editorOpen && selectedDoc && (
         <DocumentEditorModal
-          open={previewOpen}
-          onClose={() => setPreviewOpen(false)}
-          uri={selectedDoc?.uri ?? ""}
-          fileName={selectedDoc?.fileName ?? ""}
-          readOnly={
-            !isSystemAdmin && userPosition !== selectedDoc?.for_position
-          }
+          open={editorOpen}
+          onClose={() => setEditorOpen(false)}
+          uri={selectedDoc.uri}
+          fileName={selectedDoc.fileName}
+          uuid={selectedDoc.uuid}
+          readOnly={false}
         />
       )}
+
       {confirmationDialogs}
     </Box>
   );

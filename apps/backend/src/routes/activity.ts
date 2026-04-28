@@ -4,7 +4,6 @@ import { logger } from "../logger.ts";
 import { getAuth, isAdmin, sendInternalError } from "../lib/request.ts";
 
 const router = express.Router();
-
 /**
  * GET /activity
  * Returns recent activity logs
