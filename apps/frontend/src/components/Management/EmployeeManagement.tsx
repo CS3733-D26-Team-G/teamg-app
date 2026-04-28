@@ -377,6 +377,10 @@ export default function EmployeeManagement() {
             }}
           >
             <Box sx={{ display: "flex", gap: 4 }}>
+              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+                <HeaderSearchBar setSearchQuery={setSearchQuery} />
+              </Box>
+
               <Box>
                 <Button
                   onClick={handleFilterClick}
@@ -482,10 +486,6 @@ export default function EmployeeManagement() {
                   ))}
                 </FormGroup>
               </Popover>
-
-              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-                <HeaderSearchBar setSearchQuery={setSearchQuery} />
-              </Box>
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

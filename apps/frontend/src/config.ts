@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
       DELETE: (uuid: string) => `${API_BASE_URL}/content/tag/delete/${uuid}`,
       UPDATE: (tagUuid: string, contentUuid: string) =>
         `${API_BASE_URL}/content/tag/update/${tagUuid}/${contentUuid}`,
+      GET_ALL: `${API_BASE_URL}/content/tag`,
     },
   },
 };

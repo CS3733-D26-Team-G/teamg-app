@@ -64,6 +64,24 @@ const statusLabels: Record<ContentStatus, string> = {
   UNAVAILABLE: "Unavailable",
 };
 
+const fileTypeLabels: Record<string, string> = {
+  "application/pdf": ".PDF",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    ".DOCX",
+  "application/msword": ".DOC",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".XLSX",
+  "application/vnd.ms-excel": ".XLS",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+    ".PPTX",
+  "application/vnd.ms-powerpoint": ".PPT",
+  "text/plain": ".TXT",
+  "text/csv": ".CSV",
+  "image/png": ".PNG",
+  "image/jpeg": ".JPEG",
+  "application/json": ".JSON",
+  "video/mp4": "Video (.MP4)",
+};
+
 interface ContentManagementProps {
   viewState: ContentRow | "new" | null;
   setViewState: React.Dispatch<React.SetStateAction<ContentRow | "new" | null>>;
@@ -135,6 +153,9 @@ export default function ContentManagement({
   const isDark = theme.palette.mode === "dark";
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+
+  const displayFileType = (fileType: string) =>
+    fileTypeLabels[fileType] ?? fileType;
 
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
@@ -548,7 +569,7 @@ export default function ContentManagement({
           <InfoPopup
             url={params.row.url}
             author={params.row.content_owner}
-            position={params.row.for_position}
+            position={getPositionLabel(params.row.for_position) as Position}
             fileType={params.row.file_type}
           />
         </Box>
@@ -558,7 +579,7 @@ export default function ContentManagement({
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 130,
+      width: 160,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -630,14 +651,18 @@ export default function ContentManagement({
     {
       field: "status",
       headerName: "Status",
-      width: 120,
+      width: 160,
       align: "center",
       renderCell: (params) => (
         <Chip
           label={statusLabels[params.value as ContentStatus]}
-          size="small"
-          variant="outlined"
-          sx={{ borderColor: "black" }}
+          size="medium"
+          variant="filled"
+          sx={{
+            width: 100,
+            borderColor: "black",
+            borderRadius: 1,
+          }}
         />
       ),
     },
@@ -757,9 +782,12 @@ export default function ContentManagement({
               width: "100%",
             }}
           >
-            <Box sx={{ display: "flex", gap: 4 }}>
-              {/* Filter button */}
-              <Box>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+                <HeaderSearchBar setSearchQuery={setSearchQuery} />
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                {/* Filter button */}
                 <Button
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
@@ -771,6 +799,20 @@ export default function ContentManagement({
                 >
                   Filter
                 </Button>
+
+                {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      setPositionFilters([]);
+                      setFileTypeFilters([]);
+                    }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
               </Box>
 
               {/* Filter pop-up */}
@@ -818,7 +860,7 @@ export default function ContentManagement({
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -887,7 +929,7 @@ export default function ContentManagement({
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -981,10 +1023,6 @@ export default function ContentManagement({
                   />
                 </FormGroup>
               </Popover>
-
-              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-                <HeaderSearchBar setSearchQuery={setSearchQuery} />
-              </Box>
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -1005,6 +1043,25 @@ export default function ContentManagement({
               </Button>
             </Box>
           </Box>
+
+          {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+            <Box sx={{ display: "flex", flexWrap: "wrap", pt: 2, gap: 1 }}>
+              {positionFilters.map((position) => (
+                <Chip
+                  key={position}
+                  label={getPositionLabel(position as Position)}
+                  onDelete={() => togglePosition(position)}
+                />
+              ))}
+              {fileTypeFilters.map((fileType) => (
+                <Chip
+                  key={fileType}
+                  label={displayFileType(fileType)}
+                  onDelete={() => toggleFileType(fileType)}
+                />
+              ))}
+            </Box>
+          )}
 
           {lockMessage && (
             <Typography sx={{ pt: 1, color: "warning.main" }}>
@@ -1083,7 +1140,7 @@ export default function ContentManagement({
             columnVisibilityModel: {
               "favorite": false,
               "url": false,
-              "author": false,
+              "content_owner": false,
               "edited-by": false,
               "for_position": false,
               "file_type": false,

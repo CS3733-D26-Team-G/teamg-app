@@ -486,17 +486,6 @@ export default function ContentForm({
             Submit for Approval
           </Button>
         )}
-        {/* Primary save — visible to everyone */}
-        <Button
-          type="submit"
-          variant="contained"
-          fullWidth
-          color="primary"
-          size="large"
-          sx={sharedButtonSx}
-        >
-          {isEditing ? "Save Changes" : "Create Content"}
-        </Button>
 
         {/* Agent only: Submit for Review */}
         {isAgent && (
@@ -527,6 +516,18 @@ export default function ContentForm({
             Submit for Review
           </Button>
         )}
+
+        {/* Primary save — visible to everyone */}
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          color="primary"
+          size="large"
+          sx={sharedButtonSx}
+        >
+          {isEditing ? "Save Changes" : "Create Content"}
+        </Button>
 
         {/* Delete — only when editing and the callback is provided */}
         {isEditing && onDelete && (
