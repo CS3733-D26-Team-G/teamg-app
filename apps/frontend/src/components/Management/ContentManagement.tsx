@@ -66,6 +66,24 @@ const statusLabels: Record<ContentStatus, string> = {
   UNAVAILABLE: "Unavailable",
 };
 
+const fileTypeLabels: Record<string, string> = {
+  "application/pdf": ".PDF",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    ".DOCX",
+  "application/msword": ".DOC",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".XLSX",
+  "application/vnd.ms-excel": ".XLS",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+    ".PPTX",
+  "application/vnd.ms-powerpoint": ".PPT",
+  "text/plain": ".TXT",
+  "text/csv": ".CSV",
+  "image/png": ".PNG",
+  "image/jpeg": ".JPEG",
+  "application/json": ".JSON",
+  "video/mp4": "Video (.MP4)",
+};
+
 interface ContentManagementProps {
   viewState: ContentRow | "new" | null;
   setViewState: React.Dispatch<React.SetStateAction<ContentRow | "new" | null>>;
@@ -127,6 +145,9 @@ export default function ContentManagement({
   const isDark = theme.palette.mode === "dark";
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+
+  const displayFileType = (fileType: string) =>
+    fileTypeLabels[fileType] ?? fileType;
 
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
@@ -752,7 +773,7 @@ export default function ContentManagement({
         <StyledToolbar>
           <Typography
             variant="h2"
-            sx={{ pb: 2, pt: 4, color: "text.primary", fontWeight: "bold" }}
+            sx={{ pb: 3, pt: 2, color: "text.primary", fontWeight: "bold" }}
           >
             Content Management
           </Typography>
@@ -769,7 +790,7 @@ export default function ContentManagement({
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
-              <Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Button
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
@@ -781,6 +802,20 @@ export default function ContentManagement({
                 >
                   Filter
                 </Button>
+
+                {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      setPositionFilters([]);
+                      setFileTypeFilters([]);
+                    }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
               </Box>
 
               {/*Filter Pop-up*/}
@@ -1025,6 +1060,25 @@ export default function ContentManagement({
               </Button>
             </Box>
           </Box>
+
+          {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+            <Box sx={{ display: "flex", flexWrap: "wrap", pt: 2, gap: 1 }}>
+              {positionFilters.map((position) => (
+                <Chip
+                  key={position}
+                  label={getPositionLabel(position as Position)}
+                  onDelete={() => togglePosition(position)}
+                />
+              ))}
+              {fileTypeFilters.map((fileType) => (
+                <Chip
+                  key={fileType}
+                  label={displayFileType(fileType)}
+                  onDelete={() => toggleFileType(fileType)}
+                />
+              ))}
+            </Box>
+          )}
 
           {lockMessage && (
             <Typography sx={{ pt: 1, color: "warning.main" }}>
