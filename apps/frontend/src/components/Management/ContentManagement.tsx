@@ -747,14 +747,33 @@ export default function ContentManagement({
         position="static"
         sx={{ backgroundColor: "background.paper", boxShadow: "none" }}
       >
-        <StyledToolbar>
+        <StyledToolbar
+          sx={{
+            background:
+              "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+            overflow: "hidden",
+          }}
+        >
           <Typography
             variant="h2"
-            sx={{ pb: 3, pt: 2, color: "text.primary", fontWeight: "bold" }}
+            sx={{ pb: 2, pt: 4, color: "White", fontWeight: "bold" }}
           >
             Content Management
           </Typography>
-
+          {[...Array(3)].map((_, i) => (
+            <Box
+              key={i}
+              sx={{
+                position: "absolute",
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.12)",
+                width: 120 + i * 80,
+                height: 120 + i * 80,
+                top: -40 - i * 30,
+                right: -40 - i * 30,
+              }}
+            />
+          ))}
           <Box
             sx={{
               display: "flex",
@@ -774,9 +793,9 @@ export default function ContentManagement({
                   aria-controls={anchorElement ? "filter-menu" : undefined}
                   aria-haspopup="true"
                   aria-expanded={anchorElement ? "true" : undefined}
-                  variant="outlined"
+                  variant="contained"
                   startIcon={<FilterAltIcon />}
-                  sx={{ border: "2px solid" }}
+                  sx={{}}
                 >
                   Filter
                 </Button>

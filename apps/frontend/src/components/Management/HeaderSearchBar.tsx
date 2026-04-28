@@ -17,9 +17,14 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
         placeholder="search"
         variant="outlined"
         size="small"
-        fullWidth // Added fullWidth so it fills your container
+        color="primary"
+        fullWidth // Added fullWidth so it fills container
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
           setSearchQuery(e.target.value);
+        }}
+        sx={{
+          backgroundColor: "white",
+          borderRadius: "4px", // Matches default MUI radius
         }}
         slotProps={{
           input: {
