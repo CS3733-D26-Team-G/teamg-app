@@ -1,6 +1,6 @@
-import { Box, CircularProgress, Typography } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import ActivityTimeline from "./ActivityTimeline";
-import { type ActivityGroup } from "./activityData"; // Import the type, not the const
+import { type ActivityGroup } from "./activityData";
 import { useState, useEffect } from "react";
 import SearchBar from "./HeaderSearchBar";
 import { API_ENDPOINTS } from "../../config";
@@ -43,7 +43,15 @@ export default function ActivityComponent() {
     const groups: { [key: string]: any[] } = {};
 
     rows.forEach((row) => {
-      // FIX: Use 'timestamp', not 'createdAt'
+      console.log(
+        "RAW ROW:",
+        JSON.stringify({
+          action: row.action,
+          resourceName: row.resourceName,
+          resourceUuid: row.resourceUuid,
+        }),
+      );
+
       const dateObj = new Date(row.timestamp);
       const isValid = row.timestamp && !isNaN(dateObj.getTime());
 
@@ -71,7 +79,7 @@ export default function ActivityComponent() {
           row.employee ?
             `${row.employee.first_name} ${row.employee.last_name}`
           : "System",
-        action: row.action?.replace(/_/g, " "),
+        action: row.action,
         resourceUuid: row.resourceUuid,
         resourceName: row.resourceName,
       });
@@ -82,11 +90,6 @@ export default function ActivityComponent() {
 
   return (
     <Box sx={{ width: "100%", justifySelf: "center" }}>
-      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
-        <SearchBar setSearchQuery={setSearchQuery} />
-        <HelpPopup description="The Activity page shows a log of recent actions taken across the platform, including content views and updates." />
-      </Box>
-
       {loading ?
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />

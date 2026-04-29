@@ -4,21 +4,66 @@ import { logger } from "../logger.ts";
 import { getAuth, isAdmin, sendInternalError } from "../lib/request.ts";
 
 const router = express.Router();
-
 /**
  * GET /activity
  * Returns recent activity logs
  */
 router.get("/", async (req, res) => {
   const auth = getAuth(req);
-  if (!isAdmin(auth)) {
-    return res.status(401).json({ message: "Unauthorized" });
+
+  const category = (req.query.category as string) ?? "content";
+
+  const contentActions = [
+    "CREATE_CONTENT",
+    "EDIT_CONTENT",
+    "DELETE_CONTENT",
+    "CHECK_OUT_CONTENT",
+    "CHECK_IN_CONTENT",
+  ];
+  const authActions = ["LOG_IN", "LOG_OUT"];
+
+  let where = {};
+  switch (category) {
+    case "content":
+      where = {
+        action: { in: contentActions },
+      };
+      break;
+
+    case "auth":
+      where = {
+        action: { in: authActions },
+        ...(!isAdmin(auth) ? { employeeUuid: auth.employeeUuid } : {}),
+      };
+      break;
+
+    case "all":
+      if (isAdmin(auth)) {
+        where = {};
+      } else {
+        where = {
+          OR: [
+            { action: { in: contentActions } },
+            {
+              action: { in: authActions },
+              employeeUuid: auth.employeeUuid,
+            },
+          ],
+        };
+      }
+      break;
+
+    default:
+      return res.status(400).json({ message: "Invalid category for activity" });
   }
 
-  logger.verbose("Querying Activity table for last 50 records");
+  logger.verbose(
+    `Querying Activity table for last 50 records in ${category} category`,
+  );
 
   try {
     const activities = await prisma.activity.findMany({
+      where,
       orderBy: {
         timestamp: "desc",
       },

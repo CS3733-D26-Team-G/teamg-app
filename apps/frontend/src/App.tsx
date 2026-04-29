@@ -17,55 +17,42 @@ import Library from "./pages/library.tsx";
 import Activity from "./pages/activity.tsx";
 import Settings from "./pages/settings.tsx";
 import Profile from "./pages/profile.tsx";
-import LoginPopUp from "./pages/LoginPopUp.tsx";
+import Credits from "./pages/Credits.tsx";
+import ApprovalPage from "./pages/approval.tsx";
 
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
 
 function ProtectedRoute({ children }: { children: ReactElement }) {
   const { isLoading, session } = useAuth();
-
-  if (isLoading) {
-    return null;
-  }
-
-  if (!session) {
+  if (isLoading) return null;
+  if (!session)
     return (
       <Navigate
         to="/"
         replace
       />
     );
-  }
-
   return children;
 }
 
 function AdminRoute({ children }: { children: ReactElement }) {
   const { isLoading, session } = useAuth();
-
-  if (isLoading) {
-    return null;
-  }
-
-  if (!session) {
+  if (isLoading) return null;
+  if (!session)
     return (
       <Navigate
         to="/"
         replace
       />
     );
-  }
-
-  if (!session.permissions.canManageEmployees) {
+  if (!session.permissions.canManageEmployees)
     return (
       <Navigate
         to="/library"
         replace
       />
     );
-  }
-
   return children;
 }
 
@@ -135,6 +122,7 @@ function AppLayout() {
             }
           />
 
+          {/* Admin-only routes */}
           <Route
             path="/employee-management"
             element={
@@ -143,7 +131,6 @@ function AppLayout() {
               </AdminRoute>
             }
           />
-
           <Route
             path="/content-management"
             element={
@@ -152,7 +139,14 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/approvals"
+            element={
+              <AdminRoute>
+                <ApprovalPage />
+              </AdminRoute>
+            }
+          />
           <Route
             path="/employee-form"
             element={
@@ -161,7 +155,6 @@ function AppLayout() {
               </AdminRoute>
             }
           />
-
           <Route
             path="/content-form"
             element={
@@ -170,10 +163,14 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/credits"
+            element={<Credits />}
+          />
         </Routes>
       </div>
 
-      {/* Tutorial system — rendered above everything else */}
+      {/* Tutorial system */}
       <TutorialPrompt />
       <TutorialOverlay />
     </div>

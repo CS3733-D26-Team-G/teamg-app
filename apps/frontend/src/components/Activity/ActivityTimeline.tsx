@@ -13,7 +13,7 @@ export default function ActivityTimeline({ data }: ActivityTimelineProps) {
     return <Typography>No data to display in Timeline</Typography>;
   }
   return (
-    <Box sx={{ height: "100%", overflowY: "auto" }}>
+    <Box sx={{ height: "calc(100vh - 200px)", overflowY: "auto" }}>
       <Timeline
         position="right"
         sx={{
