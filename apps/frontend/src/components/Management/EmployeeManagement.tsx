@@ -26,6 +26,7 @@ import CloseIcon from "@mui/icons-material/Close";
 
 import HeaderSearchBar from "./HeaderSearchBar";
 import ManageEmployeeForm from "./ManageEmployeeForm";
+import { User } from "lucide-react";
 import { API_ENDPOINTS } from "../../config";
 import {
   EmployeeFormSchema,
@@ -83,7 +84,6 @@ export default function EmployeeManagement() {
   const [deptAnchor, setDeptAnchor] = useState<null | HTMLElement>(null);
 
   const formOpen = viewState !== null;
-
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) =>
     setAnchorElement(event.currentTarget);
   const handleClose = () => setAnchorElement(null);
@@ -137,6 +137,7 @@ export default function EmployeeManagement() {
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
+        // Search Bar Filter Logic
         if (searchQuery.trim()) {
           const targetFields = [row.position, row.department];
           const searchMatch = targetFields.some((field) =>
@@ -144,6 +145,8 @@ export default function EmployeeManagement() {
           );
           if (!searchMatch) return false;
         }
+        //Filter Button Logic
+        //Position Filter
         if (
           positionFilters.length > 0 &&
           !positionFilters.includes(row.position)
@@ -351,6 +354,7 @@ export default function EmployeeManagement() {
             variant="h2"
             sx={{ pb: 2, pt: 4, color: "White", fontWeight: "bold" }}
           >
+            {" "}
             Employee Management
           </Typography>
           {[...Array(3)].map((_, i) => (
@@ -405,6 +409,7 @@ export default function EmployeeManagement() {
                   paper: { sx: { border: "1px solid", borderColor: "gray" } },
                 }}
               >
+                {/*Position Item*/}
                 <MenuItem
                   onClick={(e) => {
                     setPositionAnchor(e.currentTarget);
@@ -413,6 +418,8 @@ export default function EmployeeManagement() {
                 >
                   Position <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
+
+                {/*Department Item*/}
                 <MenuItem
                   onClick={(e) => {
                     setDeptAnchor(e.currentTarget);

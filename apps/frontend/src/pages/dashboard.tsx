@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivity";
 import SearchBar from "./DashboardComponents/SearchBar";
 import PieChart from "./DashboardComponents/PieChart";
 //import BarChart from "./DashboardComponents/BarChart";
-import NotificationBell from "../components/Notifications/NotificationBell.tsx";
-import { Typography } from "@mui/material";
+import NotificationsBell from "../components/Notifications/NotificationBell.tsx";
+import { AppBar, Box, styled, Toolbar, Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import { CardHeader, Divider } from "@mui/material";
@@ -12,6 +12,7 @@ import { useAuth } from "../auth/AuthContext.tsx";
 import { API_ENDPOINTS } from "../config";
 import { dedupeAsync } from "../lib/async-cache";
 import HelpPopup from "../components/HelpPopup";
+import theme from "../theme.tsx";
 
 export function useActivityData() {
   const [rawLogs, setRawLogs] = useState<any[]>([]);
@@ -183,110 +184,150 @@ export default function Dashboard() {
     helpDescriptions[session?.position ?? ""] ??
     "The Dashboard gives you an overview of your organization.";
 
+  const StyledToolbar = styled(Toolbar)(({ theme }) => ({
+    flexDirection: "column",
+    alignItems: "stretch",
+    paddingTop: theme.spacing(2),
+    paddingBottom: theme.spacing(2),
+    minHeight: 128,
+  }));
+
   return (
-    <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
-      {/* Header Section */}
-      <div className="flex justify-between items-center px-8 py-6 border-b border-gray-200">
-        <Typography
-          variant="h2"
-          sx={{ fontWeight: "bold" }}
-        >
-          Welcome Back {(session?.position ?? "employee").toLowerCase()}!
-        </Typography>
-        <div className="flex items-center gap-2">
-          <HelpPopup
-            description={helpText}
-            infoOrHelp={true}
-          />
-          <NotificationBell />
-          <div className="w-80">
-            <SearchBar setSearchQuery={setSearchQuery} />
-          </div>
-        </div>
-      </div>
-
-      <CardContent className="flex flex-col gap-8 p-8">
-        {/* Row Container: items-stretch forces children to equal height */}
-        <div className="flex flex-row gap-8 items-stretch">
-          {/* Pie Chart: The "Height Driver" */}
-          <Card
-            className="flex-none w-fit outline-1 outline-gray-200"
-            sx={{
-              margin: 0,
-            }}
+    <Box
+      sx={{
+        height: "auto",
+        width: "100%",
+        background:
+          "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+      }}
+    >
+      <StyledToolbar
+        sx={{
+          background:
+            "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+          overflow: "hidden",
+        }}
+      >
+        <div className="flex justify-between items-center px-8 py-6">
+          <Typography
+            variant="h2"
+            sx={{ fontWeight: "bold", color: "white" }}
           >
-            <CardHeader
-              sx={{ py: 1.5, px: 2 }}
-              title={
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
-                >
-                  Employee Demographics
-                  <HelpPopup
-                    description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
-                    infoOrHelp={false}
-                  />
-                </Typography>
-              }
+            Welcome Back {(session?.position ?? "employee").toLowerCase()}!
+          </Typography>
+          {[...Array(3)].map((_, i) => (
+            <Box
+              key={i}
+              sx={{
+                position: "absolute",
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.12)",
+                width: 120 + i * 80,
+                height: 120 + i * 80,
+                top: -40 - i * 30,
+                right: -40 - i * 30,
+              }}
             />
-            <Divider />
-            <CardContent className="h-full flex items-center justify-center p-6">
-              <div className="w-100">
-                <PieChart data={employeePieData} />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity: Grows to fill width and matches height */}
-          <div className="flex-1 min-w-125">
-            <DashboardRecentActivity rawLogs={rawLogs} />
+          ))}
+          <div className="flex items-center gap-2">
+            <HelpPopup
+              description={helpText}
+              infoOrHelp={true}
+            />
+            <NotificationsBell />
+            <div className="w-80">
+              <SearchBar setSearchQuery={setSearchQuery} />
+            </div>
           </div>
         </div>
-
-        {/* Second Row for Bar Chart */}
-        <div className="w-full flex flex-row gap-6">
-          {roles.map((role) => {
-            const key = getAnalyticsKey(role);
-            const count = analytics[key] ?? 0;
-
-            return (
-              <Card
-                key={role}
-                className="flex-1 drop-shadow-md outline-1 outline-gray-200"
-                onClick={() => console.log(analytics)}
-              >
-                <CardContent className="p-4">
+      </StyledToolbar>
+      <Card
+        className="flex flex-col h-auto min-h-[95vh] m-auto max-w-0.95"
+        sx={{ borderRadius: 3 }}
+      >
+        <CardContent className="flex flex-col gap-8 p-8 opacity-full">
+          <div className="flex flex-row gap-8 items-stretch">
+            <Card
+              className="flex-none w-fit outline-1 outline-gray-200"
+              sx={{
+                margin: 0,
+                borderRadius: 3,
+              }}
+            >
+              <CardHeader
+                sx={{ py: 1.5, px: 2 }}
+                title={
                   <Typography
-                    variant="subtitle2"
-                    color="text.secondary"
-                    gutterBottom
+                    variant="h6"
+                    sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
                   >
-                    {role}
-                  </Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{ fontWeight: "bold", fontSize: "2rem" }}
-                  >
-                    {count}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="primary.main"
-                    sx={{ fontWeight: "bold" }}
-                  >
-                    Total Items
+                    Employee Demographics
                     <HelpPopup
-                      description={`This is the total amount of content accessible by ${role}s`}
+                      description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
                       infoOrHelp={false}
                     />
                   </Typography>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+                }
+              />
+              <Divider />
+              <CardContent className="h-full flex items-center justify-center p-6">
+                <div className="w-100">
+                  <PieChart data={employeePieData} />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity: Grows to fill width and matches height */}
+            <div className="flex-1 min-w-125">
+              <DashboardRecentActivity rawLogs={rawLogs} />
+            </div>
+          </div>
+
+          {/* Second Row for Bar Chart */}
+          <div className="w-full flex flex-row gap-6">
+            {roles.map((role) => {
+              const key = getAnalyticsKey(role);
+              const count = analytics[key] ?? 0;
+
+              return (
+                <Card
+                  key={role}
+                  className="flex-1 drop-shadow-md outline-1 outline-gray-200"
+                  onClick={() => console.log(analytics)}
+                  sx={{ borderRadius: 3 }}
+                >
+                  <CardContent className="p-4">
+                    <Typography
+                      variant="subtitle2"
+                      color="text.secondary"
+                      gutterBottom
+                    >
+                      {role}
+                    </Typography>
+                    <Typography
+                      variant="h4"
+                      sx={{ fontWeight: "bold", fontSize: "2rem" }}
+                    >
+                      {count}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="primary.main"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      Total Items
+                      <HelpPopup
+                        description={`This is the total amount of content accessible by ${role}s`}
+                        infoOrHelp={false}
+                      />
+                    </Typography>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

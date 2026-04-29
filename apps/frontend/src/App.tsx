@@ -18,13 +18,16 @@ import Activity from "./pages/activity.tsx";
 import Settings from "./pages/settings.tsx";
 import Profile from "./pages/profile.tsx";
 import Credits from "./pages/Credits.tsx";
+import LoginPopUp from "./pages/LoginPopUp.tsx";
+import AboutUs from "./pages/About.tsx";
+import CalendarPage from "./pages/Calendar.tsx";
 import ApprovalPage from "./pages/approval.tsx";
 import RiskReviewPage from "./pages/risk-review.tsx";
-import AboutUs from "./pages/About.tsx";
 
 import ClaimPage from "./pages/claims.tsx";
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
+import NotificationPage from "./components/Notifications/NotificationPage.tsx";
 
 function ProtectedRoute({ children }: { children: ReactElement }) {
   const { isLoading, session } = useAuth();
@@ -41,21 +44,25 @@ function ProtectedRoute({ children }: { children: ReactElement }) {
 
 function AdminRoute({ children }: { children: ReactElement }) {
   const { isLoading, session } = useAuth();
-  if (isLoading) return null;
-  if (!session)
+  if (isLoading) {
+    return null;
+  }
+  if (!session) {
     return (
       <Navigate
         to="/"
         replace
       />
     );
-  if (!session.permissions.canManageEmployees)
+  }
+  if (!session.permissions.canManageEmployees) {
     return (
       <Navigate
         to="/library"
         replace
       />
     );
+  }
   return children;
 }
 
@@ -66,7 +73,14 @@ function AppLayout() {
   const isLoginPage = location.pathname === "/login";
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background:
+          "linear-gradient(180deg, #1A1E4B 0%, #222847 35%, #263056 70%, #2c3a6a 100%)",
+      }}
+    >
       {!isHeroPage && !isLoginPage && session && <Sidebar />}
 
       <div style={{ flexGrow: 1, minWidth: 0 }}>
@@ -182,7 +196,10 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/calendar"
+            element={<CalendarPage />}
+          />
           <Route
             path="/aboutus"
             element={<AboutUs />}
@@ -190,7 +207,7 @@ function AppLayout() {
         </Routes>
       </div>
 
-      {/* Tutorial system */}
+      {/* Tutorial system — rendered above everything else */}
       <TutorialPrompt />
       <TutorialOverlay />
     </div>

@@ -38,8 +38,19 @@ const TagContentParamsSchema = z.object({
   contentUuid: z.uuid(),
 });
 
+const TagUuidListSchema = z
+  .preprocess((value) => {
+    if (typeof value === "undefined") {
+      return [];
+    }
+
+    return Array.isArray(value) ? value : [value];
+  }, z.array(z.uuid()))
+  .transform((tagUuids) => Array.from(new Set(tagUuids)));
+
 const CreateContentSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
   url: z.string().optional(),
+  tagUuids: TagUuidListSchema,
 });
 
 const UpdateContentSchema = Schemas.ContentUpdateInputObjectZodSchema.omit({
@@ -48,6 +59,7 @@ const UpdateContentSchema = Schemas.ContentUpdateInputObjectZodSchema.omit({
   .partial()
   .extend({
     url: z.string().optional(),
+    tagUuids: TagUuidListSchema,
   });
 
 const FavoriteContentSchema = z.object({
@@ -141,8 +153,6 @@ function getVisibleContentWhere(
   if (isAdmin(auth)) {
     return undefined;
   }
-
-  return { for_position: auth.position };
 }
 
 function parseExternalContentUrl(url: string) {
@@ -192,6 +202,37 @@ function resolvePositionValue(
   }
 
   return position.set ?? null;
+}
+
+async function validateTagUuids(tagUuids: string[]) {
+  if (tagUuids.length === 0) {
+    return { ok: true as const, tagUuids };
+  }
+
+  const matchingTags = await prisma.contentTag.findMany({
+    where: {
+      uuid: {
+        in: tagUuids,
+      },
+    },
+    select: {
+      uuid: true,
+    },
+  });
+
+  if (matchingTags.length !== tagUuids.length) {
+    const validTagUuids = new Set(matchingTags.map((tag) => tag.uuid));
+    const missingTagUuids = tagUuids.filter(
+      (tagUuid) => !validTagUuids.has(tagUuid),
+    );
+
+    return {
+      ok: false as const,
+      missingTagUuids,
+    };
+  }
+
+  return { ok: true as const, tagUuids };
 }
 
 function serializeLock(lock: ActiveContentLock) {
@@ -645,16 +686,18 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/tag", async (req, res) => {
-  const auth = getAuth(req);
-  if (!isAdmin(auth)) {
-    logger.warn(
-      `Rejected content tag get request from user with position ${auth.position}`,
-    );
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+  getAuth(req);
 
   logger.verbose("Querying content tag table for all content tags");
-  const tags = await prisma.contentTag.findMany();
+  const tags = await prisma.contentTag.findMany({
+    select: {
+      uuid: true,
+      name: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
   if (!tags) {
     return sendInternalError(
       res,
@@ -977,7 +1020,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
     return res.status(400).json({ message: parsed.error.issues });
   }
 
-  const input = parsed.data;
+  const { tagUuids, ...input } = parsed.data;
   const validatedUrl = validateProvidedUrl(input.url);
   if (!validatedUrl.ok) {
     logger.warn(`Rejected Content create request with invalid URL`);
@@ -998,6 +1041,17 @@ router.post("/create", upload.single("file"), async (req, res) => {
       `Rejected Content create request for position ${input.for_position} from user with position ${auth.position}`,
     );
     return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const validatedTagUuids = await validateTagUuids(tagUuids);
+  if (!validatedTagUuids.ok) {
+    logger.warn(
+      `Rejected Content create request with invalid tag UUIDs: ${validatedTagUuids.missingTagUuids.join(", ")}`,
+    );
+    return res.status(400).json({
+      message: "One or more tag UUIDs are invalid",
+      tagUuids: validatedTagUuids.missingTagUuids,
+    });
   }
 
   const uuid = randomUUID();
@@ -1024,16 +1078,29 @@ router.post("/create", upload.single("file"), async (req, res) => {
   logger.verbose(`Inserting Content table record ${uuid}`);
 
   try {
-    const content = await prisma.content.create({ data });
+    const content = await prisma.$transaction(async (tx) => {
+      const createdContent = await tx.content.create({ data });
 
-    await prisma.activity.create({
-      data: {
-        employeeUuid: auth.employeeUuid,
-        action: "CREATE_CONTENT",
-        resource: "CONTENT",
-        resourceUuid: content.uuid,
-        resourceName: content.title,
-      },
+      if (validatedTagUuids.tagUuids.length > 0) {
+        await tx.contentTagAssignment.createMany({
+          data: validatedTagUuids.tagUuids.map((tagUuid) => ({
+            contentUuid: createdContent.uuid,
+            tagUuid,
+          })),
+        });
+      }
+
+      await tx.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "CREATE_CONTENT",
+          resource: "CONTENT",
+          resourceUuid: createdContent.uuid,
+          resourceName: createdContent.title,
+        },
+      });
+
+      return createdContent;
     });
 
     logger.verbose(`Inserted Content table record ${uuid}`);
@@ -1073,7 +1140,7 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     return res.status(400).json({ message: parsed.error.issues });
   }
 
-  const input = parsed.data;
+  const { tagUuids, ...input } = parsed.data;
   const validatedUrl = validateProvidedUrl(input.url);
   if (!validatedUrl.ok) {
     logger.warn(
@@ -1106,6 +1173,17 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
       `Rejected Content edit request for record ${uuid}: target position ${targetPosition}, user position ${auth.position}`,
     );
     return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const validatedTagUuids = await validateTagUuids(tagUuids);
+  if (!validatedTagUuids.ok) {
+    logger.warn(
+      `Rejected Content edit request for record ${uuid} with invalid tag UUIDs: ${validatedTagUuids.missingTagUuids.join(", ")}`,
+    );
+    return res.status(400).json({
+      message: "One or more tag UUIDs are invalid",
+      tagUuids: validatedTagUuids.missingTagUuids,
+    });
   }
 
   if (await rejectIfLockedByAnotherUser(uuid, auth, res)) {
@@ -1152,10 +1230,67 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   logger.verbose(`Updating Content table record ${uuid}`);
 
   try {
-    const updatedContent = await prisma.content.update({
-      where: { uuid },
-      data,
+    const updatedContent = await prisma.$transaction(async (tx) => {
+      const content = await tx.content.update({
+        where: { uuid },
+        data,
+      });
+
+      await tx.contentTagAssignment.deleteMany({
+        where: { contentUuid: uuid },
+      });
+
+      if (validatedTagUuids.tagUuids.length > 0) {
+        await tx.contentTagAssignment.createMany({
+          data: validatedTagUuids.tagUuids.map((tagUuid) => ({
+            contentUuid: uuid,
+            tagUuid,
+          })),
+        });
+      }
+
+      await tx.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "EDIT_CONTENT",
+          resource: "CONTENT",
+          resourceUuid: content.uuid,
+          resourceName: content.title,
+        },
+      });
+
+      return content;
     });
+
+    if (
+      input.content_owner &&
+      input.content_owner !== existingContent.content_owner
+    ) {
+      const oldOwner = existingContent.content_owner;
+      const newOwner = input.content_owner;
+
+      await prisma.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "OWNERSHIP_CHANGE",
+          resource: "CONTENT",
+          resourceUuid: updatedContent.uuid,
+          resourceName: `${updatedContent.title} (${oldOwner} → ${newOwner})`,
+        },
+      });
+      logger.verbose("changed owner");
+    } else {
+      await prisma.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "EDIT_CONTENT",
+          resource: "CONTENT",
+          resourceUuid: updatedContent.uuid,
+          resourceName: updatedContent.title,
+        },
+      });
+      logger.verbose("edit content");
+    }
 
     const previousSupabasePath = existingContent.supabasePath;
     const shouldDeleteOldSupabaseObject =
@@ -1177,16 +1312,6 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
         );
       }
     }
-
-    await prisma.activity.create({
-      data: {
-        employeeUuid: auth.employeeUuid,
-        action: "EDIT_CONTENT",
-        resource: "CONTENT",
-        resourceUuid: updatedContent.uuid,
-        resourceName: updatedContent.title,
-      },
-    });
 
     logger.verbose(`Updated Content table record ${uuid}`);
     return res.status(200).json(updatedContent);
