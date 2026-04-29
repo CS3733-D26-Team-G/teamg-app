@@ -66,7 +66,14 @@ function AppLayout() {
   const isLoginPage = location.pathname === "/login";
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background:
+          "linear-gradient(180deg, #1A1E4B 0%, #222847 35%, #263056 70%, #2c3a6a 100%)",
+      }}
+    >
       {!isHeroPage && !isLoginPage && session && <Sidebar />}
 
       <div style={{ flexGrow: 1, minWidth: 0 }}>
