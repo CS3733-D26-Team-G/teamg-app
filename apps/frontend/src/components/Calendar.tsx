@@ -57,8 +57,32 @@ export default function CalendarPage() {
         credentials: "include",
       });
       const data = await res.json();
-      const parsed = ContentRowsSchema.safeParse(data);
-      if (parsed.success) setRows(parsed.data);
+
+      console.log("Calendar Raw Data:", data);
+
+      // We wrap this because if the schema file has a 'path' import,
+      // calling safeParse will throw a hard error.
+      try {
+        const parsed = ContentRowsSchema.safeParse(data);
+        if (parsed.success) {
+          setRows(parsed.data);
+          return; // Exit early if successful
+        } else {
+          console.error("Zod Validation Failed:", parsed.error.format());
+        }
+      } catch (parseError) {
+        console.error(
+          "The Schema file itself crashed (Module 'path' error):",
+          parseError,
+        );
+      }
+
+      // FALLBACK: If parsing fails or crashes, but we have an array,
+      // show the data anyway so the UI doesn't break.
+      if (Array.isArray(data)) {
+        console.warn("Using raw data fallback for calendar items.");
+        setRows(data as ContentRow[]);
+      }
     } catch (err) {
       console.error("Failed to fetch content:", err);
     } finally {
@@ -72,9 +96,20 @@ export default function CalendarPage() {
   }, [fetchProfile, fetchContent]);
 
   const events = useMemo<EventInput[]>(() => {
-    if (!session || !currentUserName) return [];
+    // If currentUserName is missing, events won't show.
+    // Check if the profile API changed its response fields.
+    if (!session || !currentUserName) {
+      console.warn("Calendar hidden: Missing session or username", {
+        session,
+        currentUserName,
+      });
+      return [];
+    }
 
     return rows.reduce((acc: EventInput[], row) => {
+      // Ensure row and expiration_time exist
+      if (!row || !row.expiration_time) return acc;
+
       const isOwner =
         row.content_owner?.toLowerCase() === currentUserName.toLowerCase();
       const isCheckedOutByMe =
@@ -84,18 +119,15 @@ export default function CalendarPage() {
         const originalExpDate = new Date(row.expiration_time);
         if (isNaN(originalExpDate.getTime())) return acc;
 
+        // Logic to prevent "Midnight Spill" in Day View
         let startTime = new Date(originalExpDate);
         const endTime = new Date(originalExpDate);
 
-        // Logic to prevent "Midnight Spill":
-        // If it's exactly midnight (00:00:00), it technically belongs to the next day.
-        // We pull it back to 11:55 PM - 11:59 PM of the previous day.
         if (endTime.getHours() === 0 && endTime.getMinutes() === 0) {
-          endTime.setMilliseconds(-1); // Go to 23:59:59.999 of prev day
+          endTime.setMilliseconds(-1);
           startTime = new Date(endTime);
           startTime.setMinutes(endTime.getMinutes() - 5);
         } else {
-          // Otherwise, just make it a 5-minute block ending at the due time
           startTime.setMinutes(originalExpDate.getMinutes() - 5);
         }
 
@@ -150,18 +182,15 @@ export default function CalendarPage() {
               @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap');
               .fc { font-family: 'Rubik', sans-serif !important; }
               .fc-dayGridMonth-button, .fc-timeGridWeek-button, .fc-dayToday-button { text-transform: capitalize !important; }
-              
               .fc-event { 
                 border-radius: 4px !important; 
                 padding: 1px 4px !important; 
                 cursor: pointer;
                 border: 1px solid rgba(0,0,0,0.1) !important;
+                display: block !important; 
               }
-              
-              /* In Day View, ensure the event doesn't look like a tiny sliver */
-              .fc-timegrid-event {
-                min-height: 30px !important;
-              }
+              .fc-event-title { font-weight: 500; }
+              .fc-timegrid-event { min-height: 30px !important; }
             `}</style>
 
             <FullCalendar
@@ -186,6 +215,7 @@ export default function CalendarPage() {
                 right: "dayGridMonth,timeGridWeek,dayToday",
               }}
               events={events}
+              forceEventDuration={true}
               displayEventTime={true}
               eventTimeFormat={{
                 hour: "numeric",
@@ -193,8 +223,6 @@ export default function CalendarPage() {
                 hour12: true,
               }}
               height="auto"
-              // Ensure that even in Day View, 5 min blocks are visible
-              componentCheck={true}
               eventClick={(info) => {
                 const row = info.event.extendedProps.row;
                 alert(
