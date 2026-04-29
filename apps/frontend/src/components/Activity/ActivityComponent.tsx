@@ -43,7 +43,14 @@ export default function ActivityComponent() {
     const groups: { [key: string]: any[] } = {};
 
     rows.forEach((row) => {
-      // FIX: Use 'timestamp', not 'createdAt'
+      console.log(
+        "RAW ROW:",
+        JSON.stringify({
+          action: row.action,
+          resourceName: row.resourceName,
+          resourceUuid: row.resourceUuid,
+        }),
+      );
       const dateObj = new Date(row.timestamp);
       const isValid = row.timestamp && !isNaN(dateObj.getTime());
 
@@ -74,6 +81,7 @@ export default function ActivityComponent() {
         action: row.action?.replace(/_/g, " "),
         resourceUuid: row.resourceUuid,
         resourceName: row.resourceName,
+        avatarUrl: row.employee?.avatar ?? undefined,
       });
     });
 

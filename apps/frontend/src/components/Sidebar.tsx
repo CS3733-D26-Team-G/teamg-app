@@ -13,14 +13,15 @@ import {
 import { Link } from "react-router";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
-import SpeedIcon from "@mui/icons-material/Speed";
-import SettingsIcon from "@mui/icons-material/Settings";
+import WarningIcon from "@mui/icons-material/Warning";
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import PeopleIcon from "@mui/icons-material/People";
+import SpeedIcon from "@mui/icons-material/Speed";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
@@ -41,6 +42,7 @@ export default function Sidebar() {
   const { clearSession, session } = useAuth();
   const { profile, isLoading: isProfileLoading } = useProfile();
   const isAdmin = session?.permissions.canManageEmployees ?? false;
+  const isUnderwriter = session?.position === "UNDERWRITER";
 
   const handleToggle = (
     setter: React.Dispatch<React.SetStateAction<boolean>>,
@@ -64,7 +66,6 @@ export default function Sidebar() {
         method: "POST",
         credentials: "include",
       });
-
       if (res.ok) {
         clearSession();
         localStorage.clear();
@@ -78,9 +79,21 @@ export default function Sidebar() {
     }
   };
 
-  if (isProfileLoading || !profile) {
-    return;
-  }
+  if (isProfileLoading || !profile) return null;
+
+  // Shared styles for sidebar items — white text on the dark gradient
+  const iconSx = { color: "rgba(255,255,255,0.75)" };
+  const textSx = {
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: 500,
+    fontFamily: "Rubik, sans-serif",
+  };
+  const itemHoverSx = {
+    "borderRadius": "8px",
+    "mx": 0.5,
+    "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" },
+    "&.Mui-selected": { backgroundColor: "rgba(255,255,255,0.15)" },
+  };
 
   return (
     <Box
@@ -90,15 +103,25 @@ export default function Sidebar() {
         transition: "width 0.3s",
         position: "sticky",
         top: 0,
-        backgroundColor: "background",
+        // The sidebar uses the SAME gradient anchor colour (#1A1E4B) as the
+        // page headers, so the two surfaces read as one continuous band when
+        // placed side-by-side. The sidebar runs the gradient top-to-bottom
+        // (darkening slightly) while the header runs left-to-right; where they
+        // meet at the top-left corner the colours are identical.
+        background:
+          "linear-gradient(180deg, #1A1E4B 0%, #222847 35%, #263056 70%, #2c3a6a 100%)",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
+      {/* ── Logo + collapse toggle ─────────────────────────────────────── */}
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: isOpen ? "space-between" : "center",
-          padding: "8px",
+          padding: "10px 8px",
+          minHeight: 64,
         }}
       >
         <Box
@@ -109,41 +132,70 @@ export default function Sidebar() {
             width: "140px",
             display: isOpen ? "block" : "none",
             imageRendering: "crisp-edges",
-            filter: (theme) =>
-              theme.palette.mode === "dark" ? "invert(1)" : "none",
+            // Invert so the dark logo reads white on the dark sidebar
+            filter: "brightness(0) invert(1)",
           }}
         />
-        <IconButton onClick={() => setIsOpen(!isOpen)}>
+        <IconButton
+          onClick={() => setIsOpen(!isOpen)}
+          sx={{ color: "rgba(255,255,255,0.75)" }}
+        >
           {isOpen ?
             <KeyboardDoubleArrowLeftIcon />
           : <KeyboardDoubleArrowRightIcon />}
         </IconButton>
       </Box>
 
-      <List sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+      {/* ── Nav items ──────────────────────────────────────────────────── */}
+      <List
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 0.25,
+          px: 0.5,
+          mt: 0.5,
+        }}
+      >
+        {/* Dashboard */}
         <ListItemButton
           component={Link}
           to="/dashboard"
-          sx={{ px: 2 }}
+          sx={{ ...itemHoverSx, px: 2 }}
         >
           <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
-            <DashboardIcon />
+            <DashboardIcon sx={iconSx} />
           </ListItemIcon>
-          {isOpen && <ListItemText primary="Dashboard" />}
+          {isOpen && (
+            <ListItemText
+              primary="Dashboard"
+              slotProps={{ primary: { sx: textSx } }}
+            />
+          )}
         </ListItemButton>
 
+        {/* Admin management submenu */}
         {isAdmin ?
           <>
             <ListItemButton
               id="tutorial-management-menu"
               onClick={() => handleToggle(setAdminOpen, adminOpen)}
-              sx={{ px: 2 }}
+              sx={{ ...itemHoverSx, px: 2 }}
             >
               <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
-                <AdminPanelSettingsIcon color="primary" />
+                <AdminPanelSettingsIcon
+                  sx={{ color: "rgba(255,255,255,0.75)" }}
+                />
               </ListItemIcon>
-              {isOpen && <ListItemText primary="Management" />}
-              {isOpen && (adminOpen ? <ExpandLess /> : <ExpandMore />)}
+              {isOpen && (
+                <ListItemText
+                  primary="Management"
+                  slotProps={{ primary: { sx: textSx } }}
+                />
+              )}
+              {isOpen &&
+                (adminOpen ?
+                  <ExpandLess sx={{ color: "rgba(255,255,255,0.55)" }} />
+                : <ExpandMore sx={{ color: "rgba(255,255,255,0.55)" }} />)}
             </ListItemButton>
 
             <Collapse
@@ -158,22 +210,59 @@ export default function Sidebar() {
                 <ListItemButton
                   component={Link}
                   to="/employee-management"
-                  sx={{ pl: 4 }}
+                  sx={{ ...itemHoverSx, pl: 4 }}
                 >
                   <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
-                    <PeopleIcon fontSize="small" />
+                    <PeopleIcon
+                      fontSize="small"
+                      sx={{ color: "rgba(255,255,255,0.65)" }}
+                    />
                   </ListItemIcon>
-                  <ListItemText primary="Employees" />
+                  <ListItemText
+                    primary="Employees"
+                    slotProps={{
+                      primary: { sx: { ...textSx, fontSize: "0.9rem" } },
+                    }}
+                  />
                 </ListItemButton>
+
                 <ListItemButton
                   component={Link}
                   to="/content-management"
-                  sx={{ pl: 4 }}
+                  sx={{ ...itemHoverSx, pl: 4 }}
                 >
                   <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
-                    <LibraryBooksIcon fontSize="small" />
+                    <LibraryBooksIcon
+                      fontSize="small"
+                      sx={{ color: "rgba(255,255,255,0.65)" }}
+                    />
                   </ListItemIcon>
-                  <ListItemText primary="Content" />
+                  <ListItemText
+                    primary="Content"
+                    slotProps={{
+                      primary: { sx: { ...textSx, fontSize: "0.9rem" } },
+                    }}
+                  />
+                </ListItemButton>
+
+                {/* Approvals */}
+                <ListItemButton
+                  component={Link}
+                  to="/approvals"
+                  sx={{ ...itemHoverSx, pl: 4 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
+                    <HowToRegIcon
+                      fontSize="small"
+                      sx={{ color: "rgba(255,255,255,0.65)" }}
+                    />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Approvals"
+                    slotProps={{
+                      primary: { sx: { ...textSx, fontSize: "0.9rem" } },
+                    }}
+                  />
                 </ListItemButton>
 
                 <ListItemButton
@@ -189,41 +278,71 @@ export default function Sidebar() {
               </List>
             </Collapse>
           </>
-        : <>
-            <ListItemButton
-              component={Link}
-              to="/library"
-              sx={{ px: 2 }}
-            >
-              <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
-                <LibraryBooksIcon />
-              </ListItemIcon>
-              {isOpen && <ListItemText primary="Content Manager" />}
-            </ListItemButton>
-          </>
+        : <ListItemButton
+            component={Link}
+            to="/library"
+            sx={{ ...itemHoverSx, px: 2 }}
+          >
+            <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+              <LibraryBooksIcon sx={iconSx} />
+            </ListItemIcon>
+            {isOpen && (
+              <ListItemText
+                primary="Content Manager"
+                slotProps={{ primary: { sx: textSx } }}
+              />
+            )}
+          </ListItemButton>
         }
 
+        {isUnderwriter ?
+          <>
+            <ListItemButton
+              component={Link}
+              to="/risk-review"
+              sx={{ ...itemHoverSx, px: 2 }}
+            >
+              <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+                <WarningIcon sx={iconSx} />
+              </ListItemIcon>
+              {isOpen && (
+                <ListItemText
+                  primary="Risk Review"
+                  slotProps={{ primary: { sx: textSx } }}
+                />
+              )}
+            </ListItemButton>
+          </>
+        : null}
+
+        {/* Activity */}
         <ListItemButton
           component={Link}
           to="/activity"
-          sx={{ px: 2 }}
+          sx={{ ...itemHoverSx, px: 2 }}
         >
           <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
-            <SpeedIcon />
+            <SpeedIcon sx={iconSx} />
           </ListItemIcon>
-          {isOpen && <ListItemText primary="Activity" />}
+          {isOpen && (
+            <ListItemText
+              primary="Activity"
+              slotProps={{ primary: { sx: textSx } }}
+            />
+          )}
         </ListItemButton>
       </List>
 
-      <Box sx={{ mt: "auto", px: isOpen ? 2 : 0, pb: 2 }}>
+      {/* ── Profile / account button ────────────────────────────────────── */}
+      <Box sx={{ mt: "auto", px: isOpen ? 1 : 0, pb: 2 }}>
         <ListItemButton
           id={"resources-button"}
           sx={{
-            px: 2,
-            border: isOpen ? "1px solid" : "none",
-            borderColor: "divider",
-            borderRadius: "50px",
-            boxShadow: isOpen ? 2 : 0,
+            "px": 2,
+            "border": isOpen ? "1px solid rgba(255,255,255,0.2)" : "none",
+            "borderRadius": "50px",
+            "boxShadow": isOpen ? "0 2px 8px rgba(0,0,0,0.3)" : 0,
+            "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" },
           }}
           onClick={handleClick}
           aria-controls={open ? "resources-menu" : undefined}
@@ -236,10 +355,20 @@ export default function Sidebar() {
               sx={{ width: 32, height: 32 }}
             />
           </ListItemIcon>
-          {isOpen && <ListItemText primary={profile.first_name ?? ""} />}
-          {isOpen && <KeyboardArrowUpIcon />}
+          {isOpen && (
+            <ListItemText
+              primary={profile.first_name ?? ""}
+              slotProps={{
+                primary: { sx: { color: "white", fontWeight: 600 } },
+              }}
+            />
+          )}
+          {isOpen && (
+            <KeyboardArrowUpIcon sx={{ color: "rgba(255,255,255,0.65)" }} />
+          )}
         </ListItemButton>
       </Box>
+
       <Menu
         id={"resources-menu"}
         anchorEl={anchorElement}
@@ -270,7 +399,7 @@ export default function Sidebar() {
         <MenuItem
           onClick={() => {
             handleClose();
-            handleLogout();
+            void handleLogout();
           }}
         >
           Log Out

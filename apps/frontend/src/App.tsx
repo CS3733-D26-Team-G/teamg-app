@@ -17,40 +17,33 @@ import Library from "./pages/library.tsx";
 import Activity from "./pages/activity.tsx";
 import Settings from "./pages/settings.tsx";
 import Profile from "./pages/profile.tsx";
-import LoginPopUp from "./pages/LoginPopUp.tsx";
 import Credits from "./pages/Credits.tsx";
+import LoginPopUp from "./pages/LoginPopUp.tsx";
 import AboutUs from "./pages/About.tsx";
 import CalendarPage from "./pages/Calendar.tsx";
-
+import ApprovalPage from "./pages/approval.tsx";
+import RiskReviewPage from "./pages/risk-review.tsx";
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
 
 function ProtectedRoute({ children }: { children: ReactElement }) {
   const { isLoading, session } = useAuth();
-
-  if (isLoading) {
-    return null;
-  }
-
-  if (!session) {
+  if (isLoading) return null;
+  if (!session)
     return (
       <Navigate
         to="/"
         replace
       />
     );
-  }
-
   return children;
 }
 
 function AdminRoute({ children }: { children: ReactElement }) {
   const { isLoading, session } = useAuth();
-
   if (isLoading) {
     return null;
   }
-
   if (!session) {
     return (
       <Navigate
@@ -59,7 +52,6 @@ function AdminRoute({ children }: { children: ReactElement }) {
       />
     );
   }
-
   if (!session.permissions.canManageEmployees) {
     return (
       <Navigate
@@ -68,7 +60,6 @@ function AdminRoute({ children }: { children: ReactElement }) {
       />
     );
   }
-
   return children;
 }
 
@@ -138,6 +129,7 @@ function AppLayout() {
             }
           />
 
+          {/* Admin-only routes */}
           <Route
             path="/employee-management"
             element={
@@ -146,7 +138,6 @@ function AppLayout() {
               </AdminRoute>
             }
           />
-
           <Route
             path="/content-management"
             element={
@@ -155,7 +146,14 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/approvals"
+            element={
+              <AdminRoute>
+                <ApprovalPage />
+              </AdminRoute>
+            }
+          />
           <Route
             path="/employee-form"
             element={
@@ -164,7 +162,6 @@ function AppLayout() {
               </AdminRoute>
             }
           />
-
           <Route
             path="/content-form"
             element={
@@ -173,20 +170,21 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/credits"
             element={<Credits />}
           />
-
           <Route
-            path="/aboutus"
-            element={<AboutUs />}
+            path="/risk-review"
+            element={<RiskReviewPage />}
           />
-
           <Route
             path="/calendar"
             element={<CalendarPage />}
+          />
+          <Route
+            path="/aboutus"
+            element={<AboutUs />}
           />
         </Routes>
       </div>
