@@ -13,12 +13,13 @@ import {
 import { Link } from "react-router";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
-import SpeedIcon from "@mui/icons-material/Speed";
+import WarningIcon from "@mui/icons-material/Warning";
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import PeopleIcon from "@mui/icons-material/People";
+import SpeedIcon from "@mui/icons-material/Speed";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import Menu from "@mui/material/Menu";
@@ -40,6 +41,7 @@ export default function Sidebar() {
   const { clearSession, session } = useAuth();
   const { profile, isLoading: isProfileLoading } = useProfile();
   const isAdmin = session?.permissions.canManageEmployees ?? false;
+  const isUnderwriter = session?.position === "UNDERWRITER";
 
   const handleToggle = (
     setter: React.Dispatch<React.SetStateAction<boolean>>,
@@ -280,6 +282,26 @@ export default function Sidebar() {
             )}
           </ListItemButton>
         }
+
+        {isUnderwriter ?
+          <>
+            <ListItemButton
+              component={Link}
+              to="/risk-review"
+              sx={{ ...itemHoverSx, px: 2 }}
+            >
+              <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+                <WarningIcon sx={iconSx} />
+              </ListItemIcon>
+              {isOpen && (
+                <ListItemText
+                  primary="Risk Review"
+                  slotProps={{ primary: { sx: textSx } }}
+                />
+              )}
+            </ListItemButton>
+          </>
+        : null}
 
         {/* Activity */}
         <ListItemButton
