@@ -312,6 +312,29 @@ export default function ContentManagement({
     void fetchRows();
   }, [fetchRows]);
 
+  const fetchTags = useCallback(async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        return;
+      }
+
+      const data: unknown = await res.json();
+      const parsed = ContentTagSummariesSchema.safeParse(data);
+      if (parsed.success) {
+        setAvailableTags(parsed.data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchTags();
+  }, [fetchTags]);
+
   useEffect(() => {
     const fetchTags = async () => {
       try {
@@ -703,6 +726,17 @@ export default function ContentManagement({
     </>
   );
 
+  const recordContentView = async (uuid: string) => {
+    try {
+      await fetch(API_ENDPOINTS.CONTENT.VIEW(uuid), {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Failed to record content view:", error);
+    }
+  };
+
   // ── Column definitions ─────────────────────────────────────────────────────
   const getColumns = (
     onPreview: (row: ContentRow) => void,
@@ -1077,7 +1111,11 @@ export default function ContentManagement({
                       setFileTypeFilters([]);
                       setTagFilters([]);
                     }}
-                    sx={{ borderRadius: 2 }}
+                    sx={{
+                      color: "white",
+                      borderRadius: 2,
+                      border: "1px solid white",
+                    }}
                   >
                     Clear Filters
                   </Button>
@@ -1344,7 +1382,14 @@ export default function ContentManagement({
                 description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
                 infoOrHelp={true}
               />
-              {isSystemAdmin && <TagManagerPopup onTagsChanged={fetchRows} />}
+              {isSystemAdmin && (
+                <TagManagerPopup
+                  onTagsChanged={async () => {
+                    void fetchRows();
+                    void fetchTags();
+                  }}
+                />
+              )}
               <Button
                 onClick={() => setViewState("new")}
                 variant="contained"
@@ -1365,6 +1410,7 @@ export default function ContentManagement({
                   key={position}
                   label={getPositionLabel(position as Position)}
                   onDelete={() => togglePosition(position)}
+                  sx={{ bgcolor: "white", color: "black" }}
                 />
               ))}
               {fileTypeFilters.map((fileType) => (
@@ -1372,6 +1418,7 @@ export default function ContentManagement({
                   key={fileType}
                   label={displayFileType(fileType)}
                   onDelete={() => toggleFileType(fileType)}
+                  sx={{ bgcolor: "white", color: "black" }}
                 />
               ))}
               {tagFilters.map((tag) => (
@@ -1379,6 +1426,7 @@ export default function ContentManagement({
                   key={tag.uuid}
                   label={tag.name}
                   onDelete={() => toggleTag(tag)}
+                  sx={{ bgcolor: "white", color: "black" }}
                 />
               ))}
             </Box>
@@ -1504,13 +1552,17 @@ export default function ContentManagement({
                     getRowId={(row) => row.uuid}
                     columns={getColumns(
                       (row) => {
+                        void recordContentView(row.uuid);
+
                         const isExternalUrl =
                           !row.supabasePath &&
                           !row.url.includes("supabase.co/storage");
+
                         if (isExternalUrl) {
                           window.open(row.url, "_blank");
                           return;
                         }
+
                         setSelectedDoc({
                           uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
                           fileName: row.title,
@@ -1678,7 +1730,6 @@ export default function ContentManagement({
         }}
         maxWidth="xl"
         fullWidth
-        keepMounted
       >
         <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
           <Stack
