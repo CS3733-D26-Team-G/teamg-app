@@ -42,13 +42,13 @@ function getActionConfig(action: string): {
       label: "Checked Out",
       dotColor: "primary",
       chipColor: "primary",
-      icon: <LockOpenIcon sx={{ fontSize: 16 }} />,
+      icon: <LockIcon sx={{ fontSize: 16 }} />,
     },
     check_in_content: {
       label: "Checked In",
       dotColor: "success",
       chipColor: "success",
-      icon: <LockIcon sx={{ fontSize: 16 }} />,
+      icon: <LockOpenIcon sx={{ fontSize: 16 }} />,
     },
     create_content: {
       label: "Created",
