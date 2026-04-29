@@ -1,18 +1,25 @@
-import { API_ENDPOINTS } from "../../../config.ts";
-import { loadContentList } from "../../../lib/api-loaders.ts";
+import type { ActivityRow } from "../../../types/activity.ts";
+import type { ContentRow } from "../../../types/content.ts";
 
-export async function getAllContent() {
-  return loadContentList();
+export interface NotificationActivity {
+  uuid: string;
+  action: string;
+  resourceUuid: string;
+  resourceName: string;
+  timestamp: string;
+  employee?: ActivityRow["employee"];
+  title: string;
+  notificationMessage: string;
 }
 
-export function getExpiresInSeconds(expirationTime: string | null): number {
+export function getExpiresInSeconds(
+  expirationTime: string | Date | null,
+): number {
   if (!expirationTime) return -1;
   return Math.floor((new Date(expirationTime).getTime() - Date.now()) / 1000);
 }
 
-export function getExpiringContent(content: any[]) {
-  const now = new Date();
-
+export function getExpiringContent(content: ContentRow[]) {
   return content
     .filter((item) => {
       if (!item.expirationTime) return false;
@@ -39,7 +46,7 @@ export function getExpirationStatus(
   return "info";
 }
 
-export function getCriticalContent(content: any[]) {
+export function getCriticalContent(content: ContentRow[]) {
   const now = new Date();
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
 
@@ -50,7 +57,7 @@ export function getCriticalContent(content: any[]) {
   });
 }
 
-export function getExpiredContent(content: any[]) {
+export function getExpiredContent(content: ContentRow[]) {
   const now = new Date();
 
   return content.filter((item) => {
@@ -60,59 +67,40 @@ export function getExpiredContent(content: any[]) {
   });
 }
 
-export async function getNormalEdit() {
-  try {
-    const response = await fetch(`${API_ENDPOINTS.ACTIVITY}?category=content`, {
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch notifications: ${response.status}`);
-    }
-
-    const activities = await response.json();
-
-    return activities;
-  } catch (error) {
-    console.error("Error fetching notifications:", error);
-    return [];
-  }
-}
-
-export async function getVerboseNotifications() {
-  try {
-    const response = await fetch(`${API_ENDPOINTS.ACTIVITY}?category=verbose`, {
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch verbose notifications: ${response.status}`,
-      );
-    }
-
-    const activities = await response.json();
-
-    return activities;
-  } catch (error) {
-    console.error("Error fetching verbose notifications:", error);
-    return [];
-  }
-}
-
-export async function getOwnershipChanges() {
-  const activities = await getVerboseNotifications();
+export function getOwnershipChanges(
+  activities: ActivityRow[],
+): NotificationActivity[] {
   return activities
-    .filter((item: any) => item.action === "OWNERSHIP_CHANGE")
-    .map((item: any) => ({
-      ...item,
+    .filter((item) => item.action === "OWNERSHIP_CHANGE")
+    .map((item) => ({
+      uuid: item.uuid,
       action: "OWNERSHIP_CHANGE",
-
-      notificationMessage: item.resourceName,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: (item.resourceName ?? "").split(" (")[0] ?? "",
+      notificationMessage: item.resourceName ?? "",
     }));
 }
 
-export async function getContentEdits() {
-  const activities = await getNormalEdit();
-  return activities.filter((item: any) => item.action === "EDIT_CONTENT");
+export function getContentEdits(
+  activities: ActivityRow[],
+): NotificationActivity[] {
+  return activities
+    .filter((item) => item.action === "EDIT_CONTENT")
+    .map((item) => ({
+      uuid: item.uuid,
+      action: item.action,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: item.resourceName ?? "",
+      notificationMessage: `Content was edited${
+        item.employee ?
+          ` by ${item.employee.firstName} ${item.employee.lastName}`
+        : ""
+      }`,
+    }));
 }

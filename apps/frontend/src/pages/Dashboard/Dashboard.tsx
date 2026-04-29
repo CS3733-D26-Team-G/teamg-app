@@ -9,106 +9,19 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import { CardHeader, Divider } from "@mui/material";
 import { useAuth } from "../../auth/AuthContext.tsx";
-import { API_ENDPOINTS } from "../../config";
-import { dedupeAsync } from "../../lib/async-cache";
 import HelpPopup from "../../components/HelpPopup";
 import theme from "../../theme.tsx";
 import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx";
 import { useProfile } from "../../profile/ProfileContext.tsx";
-
-export function useActivityData() {
-  const [rawLogs, setRawLogs] = useState<any[]>([]);
-  const [analytics, setAnalytics] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>(
-    {},
-  );
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [logsData, countsData, employeeCountsData] = await Promise.all([
-        dedupeAsync("activity", async () => {
-          const res = await fetch(API_ENDPOINTS.ACTIVITY, {
-            credentials: "include",
-          });
-
-          if (res.status === 401) {
-            return [];
-          }
-
-          if (!res.ok) {
-            throw new Error(`Failed to fetch activity: ${res.status}`);
-          }
-
-          return res.json();
-        }),
-        dedupeAsync("content:count-position", async () => {
-          const res = await fetch(API_ENDPOINTS.CONTENT.COUNT_POSITION, {
-            credentials: "include",
-          });
-
-          if (!res.ok) {
-            throw new Error(
-              `Failed to fetch content position counts: ${res.status}`,
-            );
-          }
-
-          return res.json();
-        }),
-        dedupeAsync("employee:count", async () => {
-          const res = await fetch(
-            `${API_ENDPOINTS.ACTIVITY.replace("/activity", "")}/stats/employee/count`,
-            {
-              credentials: "include",
-            },
-          );
-          if (res.status == 401) {
-            return null;
-          }
-          if (!res.ok) {
-            throw new Error(`Employee count fetch failed : ${res.status}`);
-          }
-          return res.json();
-        }),
-      ]);
-      setRawLogs(Array.isArray(logsData) ? logsData : []);
-      setAnalytics(
-        countsData && typeof countsData === "object" ? countsData : {},
-      );
-      setEmployeeCounts(
-        employeeCountsData && typeof employeeCountsData === "object" ?
-          employeeCountsData
-        : {},
-      );
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-      console.error("Fetch failed:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  return {
-    rawLogs,
-    analytics,
-    employeeCounts,
-    loading,
-    error,
-    refetch: fetchData,
-  };
-}
+import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
   const { session } = useAuth();
-  const { rawLogs, analytics, employeeCounts } = useActivityData();
+  const { data, loading, error } = useDashboardBootstrap();
+  const rawLogs = data?.activityAll ?? [];
+  const analytics = (data?.contentCounts ?? {}) as Record<string, number>;
+  const employeeCounts = (data?.employeeCounts ?? {}) as Record<string, number>;
   const employeePieData = [
     {
       id: 0,
@@ -196,6 +109,22 @@ export default function Dashboard() {
   }));
 
   const { profile } = useProfile();
+
+  if (loading && !data) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
+        <Typography variant="h6">Loading dashboard...</Typography>
+      </Box>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box

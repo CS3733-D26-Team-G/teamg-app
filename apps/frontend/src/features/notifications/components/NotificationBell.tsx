@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   getExpiredContent,
-  getAllContent,
   getExpiresInSeconds,
   getExpiringContent,
   getCriticalContent,
@@ -24,6 +23,7 @@ import {
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
+import { useDashboardBootstrap } from "../../dashboard/useDashboardBootstrap.ts";
 
 interface ExpiringContent {
   uuid: string;
@@ -44,7 +44,18 @@ interface NotificationCounts {
   total: number;
 }
 
-function getNotificationMessage(title: string, expirationTime: string): string {
+interface AlertItem {
+  uuid: string;
+  title: string;
+  alertType: "critical" | "expiring" | "ownership" | "edit";
+  notificationMessage?: string | null;
+  expirationTime: string | Date | null;
+}
+
+function getNotificationMessage(
+  title: string,
+  expirationTime: string | Date | null,
+): string {
   const seconds = getExpiresInSeconds(expirationTime);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(seconds / 3600);
@@ -59,179 +70,114 @@ function getNotificationMessage(title: string, expirationTime: string): string {
 }
 
 function useContentInfo() {
-  const [allContent, setAllContent] = useState<ExpiringContent[]>([]);
-  const [criticalContent, setCriticalContent] = useState<ExpiringContent[]>([]);
-  const [expiringContent, setExpiringContent] = useState<ExpiringContent[]>([]);
-  const [expiredContent, setExpiredContent] = useState<ExpiringContent[]>([]);
-  const [ownershipChanges, setOwnershipChanges] = useState<
-    Array<{
-      uuid: string;
-      action: string;
-      resourceUuid: string;
-      resourceName: string;
-      timestamp: string;
-      employee?: {
-        firstName: string;
-        lastName: string;
-      };
-      title: string;
-      notificationMessage: string;
-    }>
-  >([]);
+  const { data, loading, refresh } = useDashboardBootstrap();
+  const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
 
-  const [contentEdits, setContentEdits] = useState<
-    Array<{
-      uuid: string;
-      action: string;
-      resourceUuid: string;
-      resourceName: string;
-      timestamp: string;
-      employee?: {
-        firstName: string;
-        lastName: string;
-      };
-      title: string;
-      notificationMessage: string;
-    }>
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [counts, setCounts] = useState<NotificationCounts>({
-    critical: 0,
-    expiring: 0,
-    expired: 0,
-    ownership: 0,
-    edits: 0,
-    total: 0,
-  });
-
-  const dismissAlert = useCallback(
-    (uuid: string, type: string) => {
-      if (type === "critical" || type === "expiring") {
-        setAllContent((prev) => prev.filter((item) => item.uuid !== uuid));
-        setCriticalContent((prev) => prev.filter((item) => item.uuid !== uuid));
-        setExpiringContent((prev) => prev.filter((item) => item.uuid !== uuid));
-
-        setCounts((prev) => ({
-          ...prev,
-          critical:
-            prev.critical -
-            (criticalContent.find((item) => item.uuid === uuid) ? 1 : 0),
-          expiring:
-            prev.expiring -
-            (expiringContent.find((item) => item.uuid === uuid) ? 1 : 0),
-          total: prev.total - 1,
-        }));
-      }
-
-      if (type === "ownership") {
-        setOwnershipChanges((prev) =>
-          prev.filter((item) => item.uuid !== uuid),
-        );
-        setCounts((prev) => ({
-          ...prev,
-          ownership: prev.ownership - 1,
-          total: prev.total - 1,
-        }));
-      }
-
-      if (type === "edit") {
-        setContentEdits((prev) => prev.filter((item) => item.uuid !== uuid));
-        setCounts((prev) => ({
-          ...prev,
-          edits: prev.edits - 1,
-          total: prev.total - 1,
-        }));
-      }
-    },
-    [criticalContent, expiringContent],
-  );
-
-  const fetchContent = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const [content, ownership, edits] = await Promise.all([
-        getAllContent(),
-        getOwnershipChanges(),
-        getContentEdits(),
-      ]);
-
-      const expiring = getExpiringContent(content);
-      const critical = getCriticalContent(content);
-      const expired = getExpiredContent(content);
-
-      const formattedOwnership = ownership.map((change: any) => ({
-        uuid: change.uuid,
-        action: change.action,
-        resourceUuid: change.resourceUuid,
-        resourceName: change.resourceName,
-        timestamp: change.timestamp,
-        employee: change.employee,
-        title: change.resourceName.split(" (")[0],
-        notificationMessage: change.resourceName,
-      }));
-
-      const formattedEdits = edits.map((edit: any) => ({
-        uuid: edit.uuid,
-        action: edit.action,
-        resourceUuid: edit.resourceUuid,
-        resourceName: edit.resourceName,
-        timestamp: edit.timestamp,
-        employee: edit.employee,
-        title: edit.resourceName,
-        notificationMessage: `Content was edited${edit.employee ? ` by ${edit.employee.firstName} ${edit.employee.lastName}` : ""}`,
-      }));
-
-      setAllContent(content as unknown as ExpiringContent[]);
-      setCriticalContent(critical);
-      setExpiringContent(expiring);
-      setExpiredContent(expired);
-      setOwnershipChanges(formattedOwnership);
-      setContentEdits(formattedEdits);
-
-      const expiringCount = expiring.filter((c) => {
-        const seconds = getExpiresInSeconds(c.expirationTime);
-        return seconds <= 432000 && seconds > 3600;
-      }).length;
-
-      const totalAlerts =
-        critical.length +
-        expiringCount +
-        formattedOwnership.length +
-        formattedEdits.length;
-
-      setCounts({
-        critical: critical.length,
-        expiring: expiringCount,
-        expired: expired.length,
-        ownership: formattedOwnership.length,
-        edits: formattedEdits.length,
-        total: totalAlerts,
-      });
-    } catch (error) {
-      console.error("Failed to fetch content:", error);
-    } finally {
-      setLoading(false);
-    }
+  const dismissAlert = useCallback((uuid: string, type: string) => {
+    setDismissedAlerts((prev) => {
+      const key = `${type}:${uuid}`;
+      return prev.includes(key) ? prev : [...prev, key];
+    });
   }, []);
 
   useEffect(() => {
-    fetchContent();
-    const interval = setInterval(fetchContent, 3600000);
+    const interval = setInterval(() => {
+      void refresh();
+    }, 3600000);
     return () => clearInterval(interval);
-  }, [fetchContent]);
+  }, [refresh]);
+
+  const allContent = useMemo(
+    () => (data?.contentList ?? []) as unknown as ExpiringContent[],
+    [data?.contentList],
+  );
+  const criticalContent = useMemo(
+    () => getCriticalContent(data?.contentList ?? []),
+    [data?.contentList],
+  );
+  const expiringContent = useMemo(
+    () => getExpiringContent(data?.contentList ?? []),
+    [data?.contentList],
+  );
+  const expiredContent = useMemo(
+    () => getExpiredContent(data?.contentList ?? []),
+    [data?.contentList],
+  );
+  const ownershipChanges = useMemo(
+    () => getOwnershipChanges(data?.activityVerbose ?? []),
+    [data?.activityVerbose],
+  );
+  const contentEdits = useMemo(
+    () => getContentEdits(data?.activityContent ?? []),
+    [data?.activityContent],
+  );
+
+  const visibleCriticalContent = useMemo(
+    () =>
+      criticalContent.filter(
+        (item) => !dismissedAlerts.includes(`critical:${item.uuid}`),
+      ),
+    [criticalContent, dismissedAlerts],
+  );
+  const visibleExpiringContent = useMemo(
+    () =>
+      expiringContent.filter(
+        (item) => !dismissedAlerts.includes(`expiring:${item.uuid}`),
+      ),
+    [dismissedAlerts, expiringContent],
+  );
+  const visibleOwnershipChanges = useMemo(
+    () =>
+      ownershipChanges.filter(
+        (item) => !dismissedAlerts.includes(`ownership:${item.uuid}`),
+      ),
+    [dismissedAlerts, ownershipChanges],
+  );
+  const visibleContentEdits = useMemo(
+    () =>
+      contentEdits.filter(
+        (item) => !dismissedAlerts.includes(`edit:${item.uuid}`),
+      ),
+    [contentEdits, dismissedAlerts],
+  );
+
+  const counts = useMemo<NotificationCounts>(() => {
+    const expiringCount = visibleExpiringContent.filter((content) => {
+      const seconds = getExpiresInSeconds(content.expirationTime);
+      return seconds <= 432000 && seconds > 3600;
+    }).length;
+
+    return {
+      critical: visibleCriticalContent.length,
+      expiring: expiringCount,
+      expired: expiredContent.length,
+      ownership: visibleOwnershipChanges.length,
+      edits: visibleContentEdits.length,
+      total:
+        visibleCriticalContent.length +
+        expiringCount +
+        visibleOwnershipChanges.length +
+        visibleContentEdits.length,
+    };
+  }, [
+    expiredContent.length,
+    visibleContentEdits.length,
+    visibleCriticalContent.length,
+    visibleExpiringContent,
+    visibleOwnershipChanges.length,
+  ]);
 
   return {
     allContent,
-    criticalContent,
-    expiringContent,
+    criticalContent: visibleCriticalContent,
+    expiringContent: visibleExpiringContent,
     expiredContent,
-    ownershipChanges,
-    contentEdits,
+    ownershipChanges: visibleOwnershipChanges,
+    contentEdits: visibleContentEdits,
     counts,
     loading,
     dismissAlert,
-    refresh: fetchContent,
+    refresh,
   };
 }
 
@@ -256,7 +202,7 @@ export default function NotificationsBell() {
     setAnchorEl(null);
   };
 
-  const allAlerts = [
+  const allAlerts: AlertItem[] = [
     ...criticalContent.map((c) => ({ ...c, alertType: "critical" as const })),
     ...expiringContent.map((c) => ({ ...c, alertType: "expiring" as const })),
     ...ownershipChanges.map((o) => ({
@@ -419,13 +365,8 @@ export default function NotificationsBell() {
                     color="textSecondary"
                     sx={{ mt: 0.5 }}
                   >
-                    {alert.notificationMessage ||
-                      getNotificationMessage(
-                        alert.title,
-                        alert.expirationTime instanceof Date ?
-                          alert.expirationTime.toISOString()
-                        : alert.expirationTime!,
-                      )}
+                    {alert.notificationMessage ??
+                      getNotificationMessage(alert.title, alert.expirationTime)}
                   </Typography>
                 </ListItem>
               ))}

@@ -3,10 +3,9 @@ import ActivityTimeline from "./ActivityTimeline";
 import { type ActivityGroup, type ActivityItem } from "./activityData"; // Import the type, not the const
 import { useState, useEffect, useMemo } from "react";
 import SearchBar from "./HeaderSearchBar";
-import { API_ENDPOINTS } from "../../../config";
-import { dedupeAsync } from "../../../lib/async-cache";
 import HelpPopup from "../../../components/HelpPopup.tsx";
 import { useAuth } from "../../../auth/AuthContext";
+import { loadActivity } from "../../../lib/activity-loaders.ts";
 
 export default function ActivityComponent() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,17 +23,7 @@ export default function ActivityComponent() {
           filter === "content" ? "content"
           : filter === "login" ? "auth"
           : "all";
-
-        const res = await fetch(
-          `${API_ENDPOINTS.ACTIVITY}?category=${category}`,
-          { method: "GET", credentials: "include" },
-        );
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch activity: ${res.status}`);
-        }
-
-        const rawRows = await res.json();
+        const rawRows = await loadActivity(category);
         const grouped = groupDataByDate(rawRows);
         setData(grouped);
       } catch (error) {
