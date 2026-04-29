@@ -1157,6 +1157,36 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
       data,
     });
 
+    if (
+      input.content_owner &&
+      input.content_owner !== existingContent.content_owner
+    ) {
+      const oldOwner = existingContent.content_owner;
+      const newOwner = input.content_owner;
+
+      await prisma.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "OWNERSHIP_CHANGE",
+          resource: "CONTENT",
+          resourceUuid: updatedContent.uuid,
+          resourceName: `${updatedContent.title} (${oldOwner} → ${newOwner})`,
+        },
+      });
+      logger.verbose("changed owner");
+    } else {
+      await prisma.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "EDIT_CONTENT",
+          resource: "CONTENT",
+          resourceUuid: updatedContent.uuid,
+          resourceName: updatedContent.title,
+        },
+      });
+      logger.verbose("edit content");
+    }
+
     const previousSupabasePath = existingContent.supabasePath;
     const shouldDeleteOldSupabaseObject =
       previousSupabasePath &&
@@ -1177,16 +1207,6 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
         );
       }
     }
-
-    await prisma.activity.create({
-      data: {
-        employeeUuid: auth.employeeUuid,
-        action: "EDIT_CONTENT",
-        resource: "CONTENT",
-        resourceUuid: updatedContent.uuid,
-        resourceName: updatedContent.title,
-      },
-    });
 
     logger.verbose(`Updated Content table record ${uuid}`);
     return res.status(200).json(updatedContent);
