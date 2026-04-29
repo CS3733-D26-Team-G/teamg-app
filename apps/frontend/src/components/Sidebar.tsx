@@ -43,6 +43,7 @@ export default function Sidebar() {
   const { profile, isLoading: isProfileLoading } = useProfile();
   const isAdmin = session?.permissions.canManageEmployees ?? false;
   const isUnderwriter = session?.position === "UNDERWRITER";
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const handleToggle = (
     setter: React.Dispatch<React.SetStateAction<boolean>>,
@@ -268,12 +269,20 @@ export default function Sidebar() {
                 <ListItemButton
                   component={Link}
                   to="/calendar"
-                  sx={{ pl: 4 }}
+                  sx={{ ...itemHoverSx, pl: 4 }}
                 >
                   <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
-                    <CalendarMonthIcon fontSize="small" />
+                    <CalendarMonthIcon
+                      fontSize="small"
+                      sx={{ color: "rgba(255,255,255,0.65)" }}
+                    />
                   </ListItemIcon>
-                  <ListItemText primary="Calendar" />
+                  <ListItemText
+                    primary="Calendar"
+                    slotProps={{
+                      primary: { sx: { ...textSx, fontSize: "0.9rem" } },
+                    }}
+                  />
                 </ListItemButton>
               </List>
             </Collapse>
