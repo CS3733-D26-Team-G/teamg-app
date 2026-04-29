@@ -1,5 +1,6 @@
 import ActivityComponent from "../components/Activity/ActivityComponent";
 import { Typography, Box } from "@mui/material";
+import HelpPopup from "../components/HelpPopup.tsx";
 
 function Activity() {
   return (
@@ -10,6 +11,7 @@ function Activity() {
           background:
             "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
           pb: "1rem",
+          position: "relative",
         }}
       >
         <Typography
@@ -33,7 +35,6 @@ function Activity() {
           />
         ))}
       </Box>
-
       <ActivityComponent />
     </Box>
   );

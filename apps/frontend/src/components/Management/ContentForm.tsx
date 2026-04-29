@@ -26,6 +26,7 @@ import { Schemas } from "@repo/zod";
 import { useAuth } from "../../auth/AuthContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 import type { ContentFormData, ContentRecord } from "../../types/content";
+import { useProfile } from "../../profile/ProfileContext.tsx";
 
 // Positions that are considered "agents" — neither underwriter nor admin.
 const AGENT_POSITIONS: Position[] = [
@@ -81,6 +82,7 @@ export default function ContentForm({
 }: ContentFormProps) {
   const isEditing = !!initialData;
   const { session } = useAuth();
+  const { profile } = useProfile();
   const isAdmin = session?.permissions.canManageAllContent ?? false;
   const userPosition = session?.position as Position | undefined;
 
@@ -92,6 +94,11 @@ export default function ContentForm({
     buildDefaultFormData({
       ...(initialData ?? undefined),
       for_position: initialData?.for_position ?? session?.position,
+      content_owner:
+        initialData?.content_owner ??
+        (profile?.first_name && profile?.last_name ?
+          `${profile.first_name} ${profile.last_name}`
+        : ""),
     }),
   );
   const [sourceType, setSourceType] = useState<"url" | "file">(() =>
@@ -107,6 +114,11 @@ export default function ContentForm({
       buildDefaultFormData({
         ...(initialData ?? undefined),
         for_position: initialData?.for_position ?? session?.position,
+        content_owner:
+          initialData?.content_owner ??
+          (profile?.first_name && profile?.last_name ?
+            `${profile.first_name} ${profile.last_name}`
+          : ""),
       }),
     );
     setSourceType(getInitialSourceType(initialData));
@@ -314,6 +326,7 @@ export default function ContentForm({
         onChange={(e) => handleChange("content_owner", e.target.value)}
         variant="outlined"
         margin="normal"
+        disabled={!isAdmin}
       />
 
       <FormControl

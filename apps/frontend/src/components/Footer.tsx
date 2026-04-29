@@ -51,14 +51,6 @@ export default function Footer() {
           </Typography>
           <Typography variant="body2">
             <MuiLink
-              href="http://localhost:9999/AboutUs"
-              color="inherit"
-            >
-              {t("footer.aboutUs")}
-            </MuiLink>
-          </Typography>
-          <Typography variant="body2">
-            <MuiLink
               href="http://localhost:9999/GuideTour"
               color="inherit"
             >
@@ -71,6 +63,14 @@ export default function Footer() {
               color="inherit"
             >
               {t("Credits")}
+            </MuiLink>
+          </Typography>
+          <Typography variant="body2">
+            <MuiLink
+              href="/aboutus"
+              color="inherit"
+            >
+              {t("About Us")}
             </MuiLink>
           </Typography>
         </Stack>
