@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivity";
 import SearchBar from "./DashboardComponents/SearchBar";
 import PieChart from "./DashboardComponents/PieChart";
-//import BarChart from "./DashboardComponents/BarChart";
+import TypeBarChart from "./DashboardComponents/BarChart";
 import NotificationsBell from "../components/Notifications/NotificationBell.tsx";
 import { AppBar, Box, styled, Toolbar, Typography } from "@mui/material";
 import Card from "@mui/material/Card";
@@ -13,6 +13,7 @@ import { API_ENDPOINTS } from "../config";
 import { dedupeAsync } from "../lib/async-cache";
 import HelpPopup from "../components/HelpPopup";
 import theme from "../theme.tsx";
+import HitsLineChart from "./DashboardComponents/HitsLineChart.tsx";
 
 export function useActivityData() {
   const [rawLogs, setRawLogs] = useState<any[]>([]);
@@ -329,6 +330,25 @@ export default function Dashboard() {
                 </Card>
               );
             })}
+          </div>
+
+          <div className="w-full flex flex-row gap-6">
+            <Card
+              sx={{ borderRadius: 6 }}
+              className="flex-1 flex-col drop-shadow-lg"
+            >
+              <CardContent className="p-6">
+                <HitsLineChart />
+              </CardContent>
+            </Card>
+            {/*<Card*/}
+            {/*  sx={{ borderRadius: 6 }}*/}
+            {/*  className="flex-1 flex-col drop-shadow-lg"*/}
+            {/*>*/}
+            {/*  /!*<CardContent className="p-6">*!/*/}
+            {/*  /!*  <TypeBarChart/>*!/*/}
+            {/*  /!*</CardContent>*!/*/}
+            {/*</Card>*/}
           </div>
         </CardContent>
       </Card>
