@@ -17,7 +17,8 @@ import PersonIcon from "@mui/icons-material/Person";
 
 function getActionConfig(action: string): {
   label: string;
-  color: "primary" | "success" | "warning" | "error" | "default";
+  dotColor: "primary" | "success" | "warning" | "error" | "grey";
+  chipColor: "primary" | "success" | "warning" | "error" | "default";
   icon: React.ReactNode;
 } {
   const normalized = action?.toLowerCase().replace(/\s+/g, "_").trim() ?? "";
@@ -25,50 +26,59 @@ function getActionConfig(action: string): {
     string,
     {
       label: string;
-      color: "primary" | "success" | "warning" | "error" | "default";
+      dotColor: "primary" | "success" | "warning" | "error" | "grey";
+      chipColor: "primary" | "success" | "warning" | "error" | "default";
       icon: React.ReactNode;
     }
   > = {
     edit_content: {
       label: "Edited",
-      color: "primary",
+      dotColor: "primary",
+      chipColor: "primary",
       icon: <EditIcon sx={{ fontSize: 16 }} />,
     },
     check_out_content: {
       label: "Checked Out",
-      color: "info",
+      dotColor: "primary",
+      chipColor: "primary",
       icon: <LockOpenIcon sx={{ fontSize: 16 }} />,
     },
     check_in_content: {
       label: "Checked In",
-      color: "success",
+      dotColor: "success",
+      chipColor: "success",
       icon: <LockIcon sx={{ fontSize: 16 }} />,
     },
     create_content: {
       label: "Created",
-      color: "success",
+      dotColor: "success",
+      chipColor: "success",
       icon: <AddIcon sx={{ fontSize: 16 }} />,
     },
     delete_content: {
       label: "Deleted",
-      color: "error",
+      dotColor: "error",
+      chipColor: "error",
       icon: <DeleteIcon sx={{ fontSize: 16 }} />,
     },
     log_in: {
       label: "Logged In",
-      color: "default",
+      dotColor: "grey",
+      chipColor: "default",
       icon: <PersonIcon sx={{ fontSize: 16 }} />,
     },
     log_out: {
       label: "Logged Out",
-      color: "default",
+      dotColor: "grey",
+      chipColor: "default",
       icon: <PersonIcon sx={{ fontSize: 16 }} />,
     },
   };
   return (
     map[normalized] ?? {
       label: action,
-      color: "default",
+      dotColor: "grey",
+      chipColor: "default",
       icon: <PersonIcon sx={{ fontSize: 16 }} />,
     }
   );
@@ -92,7 +102,7 @@ export default function ActivityTimelineItem({
   avatarUrl,
   onPreview,
 }: ActivityTimelineItemProps) {
-  const { label, color, icon } = getActionConfig(action);
+  const { label, dotColor, chipColor, icon } = getActionConfig(action);
   const isCheckout = isCheckoutAction(action);
   const canPreview = isCheckout && !!resourceUuid && !!resourceName;
 
@@ -112,7 +122,7 @@ export default function ActivityTimelineItem({
       <TimelineSeparator>
         <TimelineConnector />
         <TimelineDot
-          color={color}
+          color={dotColor}
           sx={{ p: 0.5 }}
         >
           {icon}
@@ -175,7 +185,7 @@ export default function ActivityTimelineItem({
 
           <Chip
             label={label}
-            color={color}
+            color={chipColor}
             size="small"
             icon={icon as React.ReactElement}
             sx={{ flexShrink: 0, fontWeight: 500 }}
