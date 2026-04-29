@@ -17,6 +17,9 @@ router.get("/", async (req, res) => {
     "CREATE_CONTENT",
     "EDIT_CONTENT",
     "DELETE_CONTENT",
+    "CREATE_CLAIM",
+    "EDIT_CLAIM",
+    "DELETE_CLAIM",
     "CHECK_OUT_CONTENT",
     "CHECK_IN_CONTENT",
   ];
