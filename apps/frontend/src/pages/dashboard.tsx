@@ -242,11 +242,11 @@ export default function Dashboard() {
         </div>
       </StyledToolbar>
       <Card
-        className="flex flex-col h-auto m-auto max-w-0.95"
+        className="flex flex-col h-auto m-auto max-w-0.95 mr-2 mb-2"
         sx={{ borderRadius: 3 }}
       >
         <CardContent
-          className="flex flex-col gap-5 bg-gray-100"
+          className="flex flex-col gap-5 bg-gray-100 mr-1"
           sx={{ padding: 5, minHeight: "88vh" }}
         >
           <div className="flex flex-row gap-5 items-stretch ">
@@ -274,7 +274,7 @@ export default function Dashboard() {
                 }
               />
               <Divider />
-              <CardContent className="h-full flex items-center justify-center p-6 bg-white">
+              <CardContent className="h-full flex items-contain justify-center p-6 bg-white">
                 <div className="w-100">
                   <PieChart data={employeePieData} />
                 </div>
