@@ -7,7 +7,8 @@ import {
 } from "react";
 import { API_ENDPOINTS } from "../config";
 import { SessionSchema, type Session } from "../types/auth";
-import { dedupeAsync } from "../lib/async-cache";
+import { dedupeAsync, setCacheIdentity } from "../lib/async-cache";
+import { invalidateDashboardBootstrap } from "../lib/activity-loaders";
 
 interface AuthContextValue {
   isLoading: boolean;
@@ -43,10 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshSession = async () => {
     try {
       const nextSession = await fetchSession();
+      setCacheIdentity(nextSession?.employeeUuid ?? null);
+      if (session?.employeeUuid !== nextSession?.employeeUuid) {
+        invalidateDashboardBootstrap();
+      }
       setSession(nextSession);
       return nextSession;
     } catch (error) {
       console.error(error);
+      invalidateDashboardBootstrap();
       setSession(null);
       return null;
     } finally {
@@ -55,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const clearSession = () => {
+    setCacheIdentity(null);
+    invalidateDashboardBootstrap();
     setSession(null);
     setIsLoading(false);
   };

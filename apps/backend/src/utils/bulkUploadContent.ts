@@ -158,15 +158,15 @@ async function main() {
           title,
           url,
           supabasePath,
-          file_type: mimetype,
-          expiration_time: EXPIRATION_TIME,
-          last_modified_time: new Date(),
-          content_type:
+          fileType: mimetype,
+          expirationTime: EXPIRATION_TIME,
+          lastModifiedTime: new Date(),
+          contentType:
             Math.round(Math.random()) == 0 ?
               ContentType.REFERENCE
             : ContentType.WORKFLOW,
-          for_position: position,
-          content_owner: getRandomOwner(position),
+          forPosition: position,
+          contentOwner: getRandomOwner(position),
           status,
         },
       });

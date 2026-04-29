@@ -41,7 +41,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { clearSession, session } = useAuth();
   const { profile, isLoading: isProfileLoading } = useProfile();
-  const isAdmin = session?.permissions.canManageEmployees ?? false;
+  const isAdmin = session?.permissions.can_manage_employees ?? false;
   const isUnderwriter = session?.position === "UNDERWRITER";
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -305,6 +305,26 @@ export default function Sidebar() {
           </>
         : null}
 
+        {!isUnderwriter && !isAdmin ?
+          <>
+            <ListItemButton
+              component={Link}
+              to="/claims"
+              sx={{ ...itemHoverSx, px: 2 }}
+            >
+              <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+                <WarningIcon sx={iconSx} />
+              </ListItemIcon>
+              {isOpen && (
+                <ListItemText
+                  primary="Make a Claim"
+                  slotProps={{ primary: { sx: textSx } }}
+                />
+              )}
+            </ListItemButton>
+          </>
+        : null}
+
         {/* Activity */}
         <ListItemButton
           component={Link}
@@ -363,7 +383,7 @@ export default function Sidebar() {
           </ListItemIcon>
           {isOpen && (
             <ListItemText
-              primary={profile.first_name ?? ""}
+              primary={profile.firstName ?? ""}
               slotProps={{
                 primary: { sx: { color: "white", fontWeight: 600 } },
               }}

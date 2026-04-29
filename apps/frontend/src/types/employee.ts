@@ -17,7 +17,7 @@ export const EmployeeRecordSchema =
   }).extend({
     uuid: z.string(),
     avatar: z.string().nullable(),
-    avatar_supabase_path: z.string().nullable().optional(),
+    avatarSupabasePath: z.string().nullable().optional(),
   });
 
 export type EmployeeRecord = z.infer<typeof EmployeeRecordSchema>;
