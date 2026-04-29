@@ -242,19 +242,23 @@ export default function Dashboard() {
         </div>
       </StyledToolbar>
       <Card
-        className="flex flex-col h-auto min-h-[95vh] m-auto max-w-0.95"
+        className="flex flex-col h-auto m-auto max-w-0.95"
         sx={{ borderRadius: 3 }}
       >
-        <CardContent className="flex flex-col gap-8 p-8 opacity-full">
-          <div className="flex flex-row gap-8 items-stretch">
+        <CardContent
+          className="flex flex-col gap-5 bg-gray-100"
+          sx={{ padding: 5, minHeight: "88vh" }}
+        >
+          <div className="flex flex-row gap-5 items-stretch ">
             <Card
-              className="flex-none w-fit outline-1 outline-gray-200"
+              className="flex-none w-fit outline-1 outline-gray-200 drop-shadow-lg"
               sx={{
                 margin: 0,
                 borderRadius: 3,
               }}
             >
               <CardHeader
+                className="bg-white"
                 sx={{ py: 1.5, px: 2 }}
                 title={
                   <Typography
@@ -270,7 +274,7 @@ export default function Dashboard() {
                 }
               />
               <Divider />
-              <CardContent className="h-full flex items-center justify-center p-6">
+              <CardContent className="h-full flex items-center justify-center p-6 bg-white">
                 <div className="w-100">
                   <PieChart data={employeePieData} />
                 </div>
@@ -292,7 +296,7 @@ export default function Dashboard() {
               return (
                 <Card
                   key={role}
-                  className="flex-1 drop-shadow-md outline-1 outline-gray-200"
+                  className="flex-1 drop-shadow-lg outline-1 outline-gray-200"
                   onClick={() => console.log(analytics)}
                   sx={{ borderRadius: 3 }}
                 >
