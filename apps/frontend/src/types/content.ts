@@ -48,6 +48,7 @@ export const ContentRecordSchema =
       file_type: z.string().nullable(),
       is_favorite: z.boolean(),
       favorite_count: z.number().int().nonnegative(),
+      created_at: z.coerce.date().nullable().optional(),
     })
     .strip();
 
