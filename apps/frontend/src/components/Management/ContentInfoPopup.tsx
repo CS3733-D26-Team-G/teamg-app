@@ -6,12 +6,14 @@ import IconButton from "@mui/material/IconButton";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import { CopyIcon } from "lucide-react";
+import type { ContentTagSummary } from "../../types/content";
 
 interface InfoButtonProps {
   url: string;
   author: string;
   position: string;
   fileType: string | null;
+  tags: ContentTagSummary[];
   editor?: string;
   editorAvatar?: string | null;
   createdAt?: Date | string | null;
@@ -56,6 +58,7 @@ export default function InfoPopup({
   author,
   position,
   fileType,
+  tags,
   editor,
   editorAvatar,
   createdAt,
@@ -162,6 +165,12 @@ export default function InfoPopup({
           </Typography>
           <Typography>
             <b>File Type:</b> {formatFileType(fileType)}
+          </Typography>
+          <Typography>
+            <b>Tags: </b>
+            {tags.length > 0 ?
+              tags.map((tag) => tag.name).join(", ")
+            : "No Tags"}
           </Typography>
 
           <Typography>
