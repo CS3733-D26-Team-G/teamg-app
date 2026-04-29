@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { IconButton, Popover, Typography, Box } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import InfoIcon from "@mui/icons-material/Info";
 
 interface HelpPopupProps {
   description: string;
+  infoOrHelp: boolean;
 }
 
-export default function HelpPopup({ description }: HelpPopupProps) {
+export default function HelpPopup({ description, infoOrHelp }: HelpPopupProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -27,7 +29,9 @@ export default function HelpPopup({ description }: HelpPopupProps) {
         sx={{ color: "text.secondary" }}
         aria-label="Help"
       >
-        <HelpOutlineIcon fontSize="medium" />
+        {infoOrHelp ?
+          <HelpOutlineIcon fontSize="medium" />
+        : <InfoIcon fontSize="medium" />}
       </IconButton>
 
       <Popover

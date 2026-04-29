@@ -91,6 +91,10 @@ export default function ActivityComponent() {
 
   return (
     <Box sx={{ width: "100%", justifySelf: "center" }}>
+      <HelpPopup
+        description="The Activity page shows a log of recent actions taken across the platform, including content views and updates."
+        infoOrHelp={true}
+      />
       {loading ?
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
