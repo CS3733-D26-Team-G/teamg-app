@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Typography,
   Box,
@@ -22,12 +22,15 @@ import {
   ContentTagSummariesSchema,
   type ContentTagSummary,
 } from "../../../types/content";
+import { invalidateContentTags } from "../../../lib/api-loaders";
 
 interface TagManagerPopupProps {
-  onTagsChanged: () => Promise<void>;
+  availableTags: ContentTagSummary[];
+  onTagsChanged: () => Promise<ContentTagSummary[]>;
 }
 
 export default function TagManagerPopup({
+  availableTags,
   onTagsChanged,
 }: TagManagerPopupProps) {
   const [open, setOpen] = useState(false);
@@ -35,24 +38,12 @@ export default function TagManagerPopup({
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
   const [localTags, setLocalTags] = useState<ContentTagSummary[]>([]);
 
+  useEffect(() => {
+    setLocalTags(availableTags);
+  }, [availableTags]);
+
   const handleOpen = async () => {
-    try {
-      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const data: unknown = await res.json();
-        const parsed = ContentTagSummariesSchema.safeParse(data);
-        if (!parsed.success) {
-          console.error(parsed.error);
-          setLocalTags([]);
-        } else {
-          setLocalTags(parsed.data);
-        }
-      }
-    } catch (error) {
-      console.error(error);
-    }
+    setLocalTags(availableTags);
     setOpen(true);
   };
 
@@ -86,7 +77,8 @@ export default function TagManagerPopup({
       );
       setLocalTags((prev) => [...prev, createdTag]);
       setNewTag("");
-      await onTagsChanged();
+      invalidateContentTags();
+      setLocalTags(await onTagsChanged());
     } catch (e) {
       console.error(e);
     }
@@ -105,7 +97,8 @@ export default function TagManagerPopup({
 
       setLocalTags((prev) => prev.filter((tag) => tag.uuid !== uuid));
       setPendingDeleteTag(null);
-      await onTagsChanged();
+      invalidateContentTags();
+      setLocalTags(await onTagsChanged());
     } catch (e) {
       console.error(e);
     }

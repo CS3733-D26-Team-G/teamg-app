@@ -57,7 +57,7 @@ function AdminRoute({ children }: { children: ReactElement }) {
     );
   }
 
-  if (!session.permissions.canManageEmployees) {
+  if (!session.permissions.can_manage_employees) {
     return (
       <Navigate
         to="/library"

@@ -28,10 +28,10 @@ import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 interface ExpiringContent {
   uuid: string;
   title: string;
-  expiration_time: string;
-  expires_in_seconds: number;
-  status: "active" | "expiring_soon" | "critical" | "expired";
-  notification_message: string | null;
+  expirationTime: string | Date;
+  expiresInSeconds?: number;
+  status?: string;
+  notificationMessage?: string | null;
   formatted_time_remaining?: string;
 }
 
@@ -71,11 +71,11 @@ function useContentInfo() {
       resourceName: string;
       timestamp: string;
       employee?: {
-        first_name: string;
-        last_name: string;
+        firstName: string;
+        lastName: string;
       };
       title: string;
-      notification_message: string;
+      notificationMessage: string;
     }>
   >([]);
 
@@ -87,11 +87,11 @@ function useContentInfo() {
       resourceName: string;
       timestamp: string;
       employee?: {
-        first_name: string;
-        last_name: string;
+        firstName: string;
+        lastName: string;
       };
       title: string;
-      notification_message: string;
+      notificationMessage: string;
     }>
   >([]);
   const [loading, setLoading] = useState(true);
@@ -168,7 +168,7 @@ function useContentInfo() {
         timestamp: change.timestamp,
         employee: change.employee,
         title: change.resourceName.split(" (")[0],
-        notification_message: change.resourceName,
+        notificationMessage: change.resourceName,
       }));
 
       const formattedEdits = edits.map((edit: any) => ({
@@ -179,10 +179,10 @@ function useContentInfo() {
         timestamp: edit.timestamp,
         employee: edit.employee,
         title: edit.resourceName,
-        notification_message: `Content was edited${edit.employee ? ` by ${edit.employee.first_name} ${edit.employee.last_name}` : ""}`,
+        notificationMessage: `Content was edited${edit.employee ? ` by ${edit.employee.firstName} ${edit.employee.lastName}` : ""}`,
       }));
 
-      setAllContent(content);
+      setAllContent(content as unknown as ExpiringContent[]);
       setCriticalContent(critical);
       setExpiringContent(expiring);
       setExpiredContent(expired);
@@ -190,7 +190,7 @@ function useContentInfo() {
       setContentEdits(formattedEdits);
 
       const expiringCount = expiring.filter((c) => {
-        const seconds = getExpiresInSeconds(c.expiration_time);
+        const seconds = getExpiresInSeconds(c.expirationTime);
         return seconds <= 432000 && seconds > 3600;
       }).length;
 
@@ -263,15 +263,15 @@ export default function NotificationsBell() {
       uuid: o.uuid,
       title: o.title,
       alertType: "ownership" as const,
-      notification_message: o.notification_message,
-      expiration_time: null,
+      notificationMessage: o.notificationMessage,
+      expirationTime: null,
     })),
     ...contentEdits.map((e) => ({
       uuid: e.uuid,
       title: e.title,
       alertType: "edit" as const,
-      notification_message: e.notification_message,
-      expiration_time: null,
+      notificationMessage: e.notificationMessage,
+      expirationTime: null,
     })),
   ];
 
@@ -419,10 +419,12 @@ export default function NotificationsBell() {
                     color="textSecondary"
                     sx={{ mt: 0.5 }}
                   >
-                    {alert.notification_message ||
+                    {alert.notificationMessage ||
                       getNotificationMessage(
                         alert.title,
-                        alert.expiration_time!,
+                        alert.expirationTime instanceof Date ?
+                          alert.expirationTime.toISOString()
+                        : alert.expirationTime!,
                       )}
                   </Typography>
                 </ListItem>

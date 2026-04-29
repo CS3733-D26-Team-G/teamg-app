@@ -224,7 +224,7 @@ function Profile() {
                     ml: -0.8,
                   }}
                 >
-                  {profile.first_name} {profile.last_name}
+                  {profile.firstName} {profile.lastName}
                 </Typography>
                 <Typography
                   sx={{
@@ -232,7 +232,7 @@ function Profile() {
                     fontWeight: 500,
                   }}
                 >
-                  {profile.corporate_email}
+                  {profile.corporateEmail}
                 </Typography>
                 <Typography
                   sx={{
@@ -283,9 +283,7 @@ function Profile() {
                   >
                     First Name
                   </Typography>
-                  <Typography fontWeight="bold">
-                    {profile.first_name}
-                  </Typography>
+                  <Typography fontWeight="bold">{profile.firstName}</Typography>
                 </Grid>
                 <Grid
                   size={4}
@@ -297,7 +295,7 @@ function Profile() {
                   >
                     Last Name
                   </Typography>
-                  <Typography fontWeight="bold">{profile.last_name}</Typography>
+                  <Typography fontWeight="bold">{profile.lastName}</Typography>
                 </Grid>
                 <Grid
                   size={4}
@@ -310,7 +308,7 @@ function Profile() {
                     Date of Birth
                   </Typography>
                   <Typography fontWeight="bold">
-                    {profile.date_of_birth.toLocaleDateString()}
+                    {profile.dateOfBirth.toLocaleDateString()}
                   </Typography>
                 </Grid>
               </Grid>
@@ -326,7 +324,7 @@ function Profile() {
                     Phone
                   </Typography>
                   <Typography fontWeight="bold">
-                    {profile.phone_number}
+                    {profile.phoneNumber}
                   </Typography>
                 </Grid>
                 <Grid
@@ -340,7 +338,7 @@ function Profile() {
                     Email
                   </Typography>
                   <Typography fontWeight="bold">
-                    {profile.corporate_email}
+                    {profile.corporateEmail}
                   </Typography>
                 </Grid>
                 <Grid
@@ -509,7 +507,7 @@ function Profile() {
                     mt: 1,
                   }}
                 >
-                  Member Since: {profile.start_date.toDateString()}
+                  Member Since: {profile.startDate.toDateString()}
                 </Typography>
               </Stack>
             </Box>

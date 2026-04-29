@@ -32,20 +32,20 @@ export type InsuranceClaimUpdatePayload = z.infer<
 
 export const InsuranceClaimRequestorSchema = z.object({
   uuid: z.string(),
-  first_name: z.string(),
-  last_name: z.string(),
-  corporate_email: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  corporateEmail: z.string(),
 });
 
 export const InsuranceClaimContentSummarySchema =
   Schemas.ContentCreateManyInputObjectZodSchema.pick({
     title: true,
     url: true,
-    content_type: true,
+    contentType: true,
     status: true,
   }).extend({
     uuid: z.string(),
-    file_type: z.string().nullable(),
+    fileType: z.string().nullable(),
   });
 
 export const InsuranceClaimRecordSchema =

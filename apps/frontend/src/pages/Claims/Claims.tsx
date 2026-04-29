@@ -38,7 +38,12 @@ import InputAdornment from "@mui/material/InputAdornment";
 import HelpPopup from "../../components/HelpPopup";
 import { API_ENDPOINTS } from "../../config";
 import CalendarInput from "../../components/CalendarInput";
-import { ContentRowsSchema, type ContentRow } from "../../types/content";
+import type { ContentRow } from "../../types/content";
+import {
+  invalidateClaimsList,
+  loadClaimsList,
+  loadContentList,
+} from "../../lib/api-loaders";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -68,31 +73,31 @@ const CLAIM_TYPE_LABELS: Record<ClaimType, string> = {
 
 interface ClaimRecord {
   uuid: string;
-  claim_type: ClaimType;
-  incident_date: string;
-  incident_description: string;
+  claimType: ClaimType;
+  incidentDate: string;
+  incidentDescription: string;
   status: string;
-  created_at?: string;
+  createdAt?: string;
   requestor?: {
-    first_name: string;
-    last_name: string;
-    corporate_email: string;
+    firstName: string;
+    lastName: string;
+    corporateEmail: string;
   };
-  claimContentAssignment?: Array<{
+  contents?: Array<{
     content: {
       uuid: string;
       title: string;
       url: string;
-      file_type: string | null;
+      fileType: string | null;
       status: string;
     };
   }>;
 }
 
 interface ClaimFormData {
-  claim_type: ClaimType;
-  incident_date: Date;
-  incident_description: string;
+  claimType: ClaimType;
+  incidentDate: Date;
+  incidentDescription: string;
   selectedContentUuids: string[];
 }
 
@@ -147,12 +152,7 @@ export default function ClaimPage() {
   const fetchClaims = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(API_ENDPOINTS.CLAIM.ROOT, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-      const data = (await res.json()) as ClaimRecord[];
-      setClaims(Array.isArray(data) ? data : []);
+      setClaims(await loadClaimsList<ClaimRecord>());
     } catch (err) {
       console.error(err);
       setClaims([]);
@@ -560,9 +560,9 @@ function ClaimForm({
   onCancel: () => void;
 }) {
   const [formData, setFormData] = useState<ClaimFormData>({
-    claim_type: "AUTO",
-    incident_date: new Date(),
-    incident_description: "",
+    claimType: "AUTO",
+    incidentDate: new Date(),
+    incidentDescription: "",
     selectedContentUuids: [],
   });
   const [submitting, setSubmitting] = useState(false);
@@ -577,13 +577,7 @@ function ClaimForm({
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const raw: unknown = await res.json();
-        const parsed = ContentRowsSchema.safeParse(raw);
-        setAvailableContent(parsed.success ? parsed.data : []);
+        setAvailableContent(await loadContentList());
       } catch (err) {
         console.error("Failed to load content library:", err);
         setAvailableContent([]);
@@ -595,7 +589,7 @@ function ClaimForm({
   }, []);
 
   const filteredContent = availableContent.filter((row) =>
-    [row.title, row.content_owner, row.for_position, row.file_type]
+    [row.title, row.contentOwner, row.forPosition, row.fileType]
       .filter(Boolean)
       .some((f) => f!.toLowerCase().includes(contentSearch.toLowerCase())),
   );
@@ -621,7 +615,7 @@ function ClaimForm({
     e.preventDefault();
     setError(null);
 
-    if (!formData.incident_description.trim()) {
+    if (!formData.incidentDescription.trim()) {
       setError("Please provide an incident description.");
       return;
     }
@@ -636,9 +630,9 @@ function ClaimForm({
         },
         credentials: "include",
         body: JSON.stringify({
-          claim_type: formData.claim_type,
-          incident_date: formData.incident_date.toISOString(), // Ensure ISO string
-          incident_description: formData.incident_description,
+          claimType: formData.claimType,
+          incidentDate: formData.incidentDate.toISOString(), // Ensure ISO string
+          incidentDescription: formData.incidentDescription,
           contentUuids: formData.selectedContentUuids, // Sent as a clean array
         }),
       });
@@ -655,6 +649,7 @@ function ClaimForm({
         return;
       }
 
+      invalidateClaimsList();
       onSuccess();
     } catch (err) {
       console.error(err);
@@ -680,11 +675,11 @@ function ClaimForm({
         <Select
           labelId="claim-type-label"
           label="Claim Type"
-          value={formData.claim_type}
+          value={formData.claimType}
           onChange={(e) =>
             setFormData((prev) => ({
               ...prev,
-              claim_type: e.target.value as ClaimType,
+              claimType: e.target.value as ClaimType,
             }))
           }
         >
@@ -703,9 +698,9 @@ function ClaimForm({
       <Box sx={{ mt: 1 }}>
         <CalendarInput
           label="Incident Date"
-          value={formData.incident_date}
+          value={formData.incidentDate}
           onChange={(d) =>
-            setFormData((prev) => ({ ...prev, incident_date: d }))
+            setFormData((prev) => ({ ...prev, incidentDate: d }))
           }
         />
       </Box>
@@ -719,11 +714,11 @@ function ClaimForm({
         required
         minRows={4}
         maxRows={8}
-        value={formData.incident_description}
+        value={formData.incidentDescription}
         onChange={(e) =>
           setFormData((prev) => ({
             ...prev,
-            incident_description: e.target.value,
+            incidentDescription: e.target.value,
           }))
         }
         margin="normal"
@@ -839,8 +834,8 @@ function ClaimForm({
           : filteredContent.map((row, i) => {
               const selected = isSelected(row.uuid);
               const ext =
-                row.file_type ?
-                  row.file_type.split("/").pop()?.toUpperCase()
+                row.fileType ?
+                  row.fileType.split("/").pop()?.toUpperCase()
                 : null;
 
               return (
@@ -900,9 +895,9 @@ function ClaimForm({
                       variant="caption"
                       color="text.secondary"
                     >
-                      {row.content_owner}
-                      {row.for_position &&
-                        ` · ${row.for_position.replace(/_/g, " ")}`}
+                      {row.contentOwner}
+                      {row.forPosition &&
+                        ` · ${row.forPosition.replace(/_/g, " ")}`}
                     </Typography>
                   </Box>
 
@@ -1038,7 +1033,7 @@ function ClaimHistoryCard({
   claim: ClaimRecord;
   index: number;
 }) {
-  const attachmentCount = claim.claimContentAssignment?.length ?? 0;
+  const attachmentCount = claim.contents?.length ?? 0;
 
   return (
     <Box
@@ -1066,7 +1061,7 @@ function ClaimHistoryCard({
                 spacing={1}
               >
                 <Typography sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
-                  {CLAIM_TYPE_LABELS[claim.claim_type] ?? claim.claim_type}
+                  {CLAIM_TYPE_LABELS[claim.claimType] ?? claim.claimType}
                 </Typography>
                 <Chip
                   label={statusLabel(claim.status)}
@@ -1081,7 +1076,7 @@ function ClaimHistoryCard({
                 color="text.secondary"
               >
                 Incident:{" "}
-                {new Date(claim.incident_date).toLocaleDateString(undefined, {
+                {new Date(claim.incidentDate).toLocaleDateString(undefined, {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
@@ -1112,64 +1107,60 @@ function ClaimHistoryCard({
             variant="body2"
             sx={{ lineHeight: 1.7, mb: 2, whiteSpace: "pre-wrap" }}
           >
-            {claim.incident_description}
+            {claim.incidentDescription}
           </Typography>
 
-          {claim.claimContentAssignment &&
-            claim.claimContentAssignment.length > 0 && (
-              <>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    mb: 0.75,
-                    fontWeight: 700,
-                    fontSize: "0.75rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    color: "text.secondary",
-                  }}
-                >
-                  Attachments
-                </Typography>
-                <Stack spacing={0.5}>
-                  {claim.claimContentAssignment.map(({ content }) => (
-                    <Stack
-                      key={content.uuid}
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}
-                      sx={{
-                        px: 1.5,
-                        py: 0.75,
-                        borderRadius: "8px",
-                        backgroundColor: "action.hover",
-                      }}
+          {claim.contents && claim.contents.length > 0 && (
+            <>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  mb: 0.75,
+                  fontWeight: 700,
+                  fontSize: "0.75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "text.secondary",
+                }}
+              >
+                Attachments
+              </Typography>
+              <Stack spacing={0.5}>
+                {claim.contents.map(({ content }) => (
+                  <Stack
+                    key={content.uuid}
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{
+                      px: 1.5,
+                      py: 0.75,
+                      borderRadius: "8px",
+                      backgroundColor: "action.hover",
+                    }}
+                  >
+                    <AttachFileIcon
+                      sx={{ fontSize: 15, color: "text.secondary" }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{ flexGrow: 1 }}
                     >
-                      <AttachFileIcon
-                        sx={{ fontSize: 15, color: "text.secondary" }}
+                      {content.title}
+                    </Typography>
+                    {content.fileType && (
+                      <Chip
+                        label={content.fileType.split("/").pop()?.toUpperCase()}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 18, fontSize: "0.62rem" }}
                       />
-                      <Typography
-                        variant="body2"
-                        sx={{ flexGrow: 1 }}
-                      >
-                        {content.title}
-                      </Typography>
-                      {content.file_type && (
-                        <Chip
-                          label={content.file_type
-                            .split("/")
-                            .pop()
-                            ?.toUpperCase()}
-                          size="small"
-                          variant="outlined"
-                          sx={{ height: 18, fontSize: "0.62rem" }}
-                        />
-                      )}
-                    </Stack>
-                  ))}
-                </Stack>
-              </>
-            )}
+                    )}
+                  </Stack>
+                ))}
+              </Stack>
+            </>
+          )}
         </AccordionDetails>
       </Accordion>
     </Box>

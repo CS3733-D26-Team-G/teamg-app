@@ -41,7 +41,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { clearSession, session } = useAuth();
   const { profile, isLoading: isProfileLoading } = useProfile();
-  const isAdmin = session?.permissions.canManageEmployees ?? false;
+  const isAdmin = session?.permissions.can_manage_employees ?? false;
   const isUnderwriter = session?.position === "UNDERWRITER";
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -383,7 +383,7 @@ export default function Sidebar() {
           </ListItemIcon>
           {isOpen && (
             <ListItemText
-              primary={profile.first_name ?? ""}
+              primary={profile.firstName ?? ""}
               slotProps={{
                 primary: { sx: { color: "white", fontWeight: 600 } },
               }}

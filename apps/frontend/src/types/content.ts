@@ -54,7 +54,7 @@ export const ContentRecordSchema =
     .extend({
       uuid: z.string(),
       supabasePath: z.string().nullable(),
-      file_type: z.string().nullable(),
+      fileType: z.string().nullable(),
       is_favorite: z.boolean(),
       favorite_count: z.number().int().nonnegative(),
     })
@@ -78,8 +78,8 @@ export const ContentRowSchema = ContentWithTagsSchema.extend({
     .object({
       lockedByEmp: z.object({
         uuid: z.string(),
-        first_name: z.string(),
-        last_name: z.string(),
+        firstName: z.string(),
+        lastName: z.string(),
         avatar: z.string().nullable(),
       }),
     })
@@ -97,7 +97,7 @@ export const ContentRowsSchema = z.array(ContentRowSchema);
  */
 export const ContentFavoriteResponseSchema =
   Schemas.FavoriteContentCreateManyInputObjectZodSchema.extend({
-    isFavorite: z.boolean(),
+    is_favorite: z.boolean(),
     changed: z.boolean(),
     message: z.string(),
   });

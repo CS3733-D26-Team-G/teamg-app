@@ -1,13 +1,8 @@
 import { API_ENDPOINTS } from "../../../config.ts";
-import { useAuth } from "../../../auth/AuthContext.tsx";
+import { loadContentList } from "../../../lib/api-loaders.ts";
 
 export async function getAllContent() {
-  const response = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
-    credentials: "include",
-  });
-
-  const content = await response.json();
-  return content;
+  return loadContentList();
 }
 
 export function getExpiresInSeconds(expirationTime: string | null): number {
@@ -20,16 +15,16 @@ export function getExpiringContent(content: any[]) {
 
   return content
     .filter((item) => {
-      if (!item.expiration_time) return false;
-      const expiresInSeconds = getExpiresInSeconds(item.expiration_time);
+      if (!item.expirationTime) return false;
+      const expiresInSeconds = getExpiresInSeconds(item.expirationTime);
       return expiresInSeconds <= 432000 && expiresInSeconds > 0;
     })
     .map((item) => ({
       ...item,
-      expiresInSeconds: getExpiresInSeconds(item.expiration_time),
-      expiresAt: new Date(item.expiration_time),
+      expiresInSeconds: getExpiresInSeconds(item.expirationTime),
+      expiresAt: new Date(item.expirationTime),
       isExpired: false,
-      status: getExpirationStatus(getExpiresInSeconds(item.expiration_time)),
+      status: getExpirationStatus(getExpiresInSeconds(item.expirationTime)),
     }))
     .sort((a, b) => a.expiresInSeconds - b.expiresInSeconds);
 }
@@ -49,8 +44,8 @@ export function getCriticalContent(content: any[]) {
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
 
   return content.filter((item) => {
-    if (!item.expiration_time) return false;
-    const expiresAt = new Date(item.expiration_time);
+    if (!item.expirationTime) return false;
+    const expiresAt = new Date(item.expirationTime);
     return expiresAt > now && expiresAt <= oneHourLater;
   });
 }
@@ -59,8 +54,8 @@ export function getExpiredContent(content: any[]) {
   const now = new Date();
 
   return content.filter((item) => {
-    if (!item.expiration_time) return false;
-    const expiresAt = new Date(item.expiration_time);
+    if (!item.expirationTime) return false;
+    const expiresAt = new Date(item.expirationTime);
     return expiresAt <= now;
   });
 }
@@ -113,7 +108,7 @@ export async function getOwnershipChanges() {
       ...item,
       action: "OWNERSHIP_CHANGE",
 
-      notification_message: item.resourceName,
+      notificationMessage: item.resourceName,
     }));
 }
 

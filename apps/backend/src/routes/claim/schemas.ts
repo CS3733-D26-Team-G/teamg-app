@@ -30,9 +30,9 @@ export const claimInclude = {
   requestor: {
     select: {
       uuid: true,
-      first_name: true,
-      last_name: true,
-      corporate_email: true,
+      firstName: true,
+      lastName: true,
+      corporateEmail: true,
     },
   },
   contents: {
@@ -45,8 +45,8 @@ export const claimInclude = {
           uuid: true,
           title: true,
           url: true,
-          file_type: true,
-          content_type: true,
+          fileType: true,
+          contentType: true,
           status: true,
         },
       },

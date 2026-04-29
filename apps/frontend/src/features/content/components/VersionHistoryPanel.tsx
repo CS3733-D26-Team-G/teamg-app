@@ -46,8 +46,8 @@ interface HistoryActivity {
   details?: string | null;
   employee: {
     uuid: string;
-    first_name: string;
-    last_name: string;
+    firstName: string;
+    lastName: string;
   } | null;
 }
 
@@ -136,7 +136,7 @@ function employeeName(
   fallback = "System",
 ): string {
   if (!emp) return fallback;
-  return `${emp.first_name} ${emp.last_name}`.trim() || fallback;
+  return `${emp.firstName} ${emp.lastName}`.trim() || fallback;
 }
 
 // ─── Event config ─────────────────────────────────────────────────────────────
@@ -493,7 +493,7 @@ export default function VersionHistoryPanel({
       <Box sx={{ flex: 1, overflowY: "auto", px: 1.5, pt: 1.5, pb: 2 }}>
         {/* Expiration status badge at the top of the panel */}
         <ExpirationStatus
-          expirationTime={contentRow.expiration_time}
+          expirationTime={contentRow.expirationTime}
           isDark={isDark}
         />
 

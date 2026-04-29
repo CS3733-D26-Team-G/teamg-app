@@ -2,16 +2,18 @@
   "name": "@repo/zod",
   "private": true,
   "type": "module",
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
-      "default": "./dist/src/index.js"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "generated"
   ],
   "scripts": {
     "prebuild": "node ./scripts/patch-generated-imports.mjs",

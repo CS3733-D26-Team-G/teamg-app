@@ -29,7 +29,7 @@ router.get("/", async (req, res) => {
       isAdmin(auth) ? undefined : (
         (
           await prisma.content.findMany({
-            where: { for_position: auth.position },
+            where: { forPosition: auth.position },
             select: { uuid: true },
           })
         ).map((content) => content.uuid)
@@ -116,8 +116,8 @@ router.get("/", async (req, res) => {
         employee: {
           select: {
             uuid: true,
-            first_name: true,
-            last_name: true,
+            firstName: true,
+            lastName: true,
             avatar: true,
           },
         },

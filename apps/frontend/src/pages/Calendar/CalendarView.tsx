@@ -9,7 +9,6 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import { API_ENDPOINTS } from "../../config";
 import { useAuth } from "../../auth/AuthContext";
 import { ContentRowsSchema, type ContentRow } from "../../types/content";
 import type { EventInput } from "@fullcalendar/core";
@@ -18,6 +17,8 @@ import SearchBar from "../../features/dashboard/components/SearchBar.tsx";
 import { getExpirationStatus } from "../../features/notifications/components/Notifications.ts";
 import HelpPopup from "../../components/HelpPopup.tsx";
 import NotificationsBell from "../../features/notifications/components/NotificationBell.tsx";
+import { useProfile } from "../../profile/ProfileContext.tsx";
+import { loadContentList } from "../../lib/api-loaders";
 
 const CREATED_COLOR = "#4f46e5";
 const CHECKED_OUT_COLOR = "#d97706";
@@ -50,50 +51,14 @@ export function getEventColor(expirationTime: string | null): string {
 
 export default function CalendarPage() {
   const { session } = useAuth();
+  const { profile } = useProfile();
   const calendarRef = useRef<FullCalendar>(null);
   const [rows, setRows] = useState<ContentRow[]>([]);
-  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const fetchProfile = useCallback(async () => {
-    if (!session?.employeeUuid) return;
-    try {
-      const res = await fetch(API_ENDPOINTS.PROFILE.ROOT, {
-        credentials: "include",
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setCurrentUserName(`${data.first_name} ${data.last_name}`);
-    } catch (err) {
-      console.error("Failed to fetch profile:", err);
-    }
-  }, [session?.employeeUuid]);
 
   const fetchContent = useCallback(async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
-        credentials: "include",
-      });
-      const data = await res.json();
-
-      try {
-        const parsed = ContentRowsSchema.safeParse(data);
-        if (parsed.success) {
-          setRows(parsed.data);
-          return;
-        } else {
-          console.error("Zod Validation Failed:", parsed.error.format());
-        }
-      } catch (parseError) {
-        console.error(
-          "The Schema file itself crashed (Module 'path' error):",
-          parseError,
-        );
-      }
-
-      if (Array.isArray(data)) {
-        setRows(data as ContentRow[]);
-      }
+      setRows(await loadContentList());
     } catch (err) {
       console.error("Failed to fetch content:", err);
     } finally {
@@ -102,9 +67,16 @@ export default function CalendarPage() {
   }, []);
 
   useEffect(() => {
-    void fetchProfile();
     void fetchContent();
-  }, [fetchProfile, fetchContent]);
+  }, [fetchContent]);
+
+  const currentUserName = useMemo(() => {
+    if (!profile?.firstName || !profile?.lastName) {
+      return null;
+    }
+
+    return `${profile.firstName} ${profile.lastName}`;
+  }, [profile?.firstName, profile?.lastName]);
 
   const events = useMemo<EventInput[]>(() => {
     if (!session || !currentUserName) {
@@ -112,15 +84,15 @@ export default function CalendarPage() {
     }
 
     return rows.reduce((acc: EventInput[], row) => {
-      if (!row || !row.expiration_time) return acc;
+      if (!row || !row.expirationTime) return acc;
 
       const isOwner =
-        row.content_owner?.toLowerCase() === currentUserName.toLowerCase();
+        row.contentOwner?.toLowerCase() === currentUserName.toLowerCase();
       const isCheckedOutByMe =
         row.editLock?.lockedByEmp?.uuid === session.employeeUuid;
 
       if (isOwner || isCheckedOutByMe) {
-        const originalExpDate = new Date(row.expiration_time);
+        const originalExpDate = new Date(row.expirationTime);
         if (isNaN(originalExpDate.getTime())) return acc;
 
         let startTime = new Date(originalExpDate);
@@ -146,7 +118,7 @@ export default function CalendarPage() {
           start: startTime,
           end: endTime,
           allDay: false,
-          color: getEventColor(row.expiration_time.toString()),
+          color: getEventColor(row.expirationTime.toString()),
           extendedProps: { row },
         });
       }

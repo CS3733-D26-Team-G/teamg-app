@@ -62,7 +62,6 @@ import {
 import MenuItem from "@mui/material/MenuItem";
 import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
-import { dedupeAsync } from "../../../lib/async-cache";
 import HelpPopup from "../../../components/HelpPopup";
 import DocPreviewer from "./DocPreviewer.tsx";
 import InfoPopup from "./ContentInfoPopup.tsx";
@@ -72,6 +71,11 @@ import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import {
+  invalidateContentList,
+  loadContentList,
+  loadContentTags,
+} from "../../../lib/api-loaders";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -240,7 +244,7 @@ export default function ContentManagement({
     uri: string;
     fileName: string;
     uuid: string;
-    for_position: Position;
+    forPosition: Position;
   } | null>(null);
 
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
@@ -248,7 +252,7 @@ export default function ContentManagement({
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
 
   const userPosition = session?.position ?? null;
-  const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
+  const isSystemAdmin = session?.permissions.can_manage_all_content ?? false;
 
   // Form modal open state — derived from viewState
   const formOpen = viewState !== null;
@@ -267,7 +271,7 @@ export default function ContentManagement({
           uri: API_ENDPOINTS.CONTENT.FILE(matched.uuid),
           fileName: matched.title,
           uuid: matched.uuid,
-          for_position: matched.for_position,
+          forPosition: matched.forPosition,
         });
         setPreviewOpen(true);
       }
@@ -278,26 +282,9 @@ export default function ContentManagement({
 
   const fetchRows = useCallback(async () => {
     try {
-      const data = await dedupeAsync("content:list", async () => {
-        const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
-          credentials: "include",
-        });
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
-      });
-      console.log(rows[0]);
-      const parsed = ContentRowsSchema.safeParse(data);
-
-      if (!parsed.success) {
-        console.error(parsed.error);
-        setRows([]);
-        return;
-      }
-
+      const data = await loadContentList();
       setRows(
-        parsed.data.map((r) => ({
+        data.map((r) => ({
           ...r,
           isLocked: r.editLock != null,
         })),
@@ -314,48 +301,16 @@ export default function ContentManagement({
 
   const fetchTags = useCallback(async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        return;
-      }
-
-      const data: unknown = await res.json();
-      const parsed = ContentTagSummariesSchema.safeParse(data);
-      if (parsed.success) {
-        setAvailableTags(parsed.data);
-      }
+      setAvailableTags(await loadContentTags());
     } catch (error) {
       console.error(error);
+      setAvailableTags([]);
     }
   }, []);
 
   useEffect(() => {
     void fetchTags();
   }, [fetchTags]);
-
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
-          credentials: "include",
-        });
-        if (!res.ok) {
-          return;
-        }
-
-        const data: unknown = await res.json();
-        const parsed = ContentTagSummariesSchema.safeParse(data);
-        if (parsed.success) {
-          setAvailableTags(parsed.data);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    void fetchTags();
-  }, []);
 
   useEffect(() => {
     if (rows.length > 0 && session?.employeeUuid) {
@@ -397,9 +352,9 @@ export default function ContentManagement({
             row.title,
             row.status,
             row.url,
-            row.content_owner,
-            row.for_position,
-            row.file_type,
+            row.contentOwner,
+            row.forPosition,
+            row.fileType,
           ];
           const searchMatch = targetFields.some((field) =>
             field?.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -409,14 +364,14 @@ export default function ContentManagement({
 
         if (
           positionFilters.length > 0 &&
-          !positionFilters.includes(row.for_position)
+          !positionFilters.includes(row.forPosition)
         ) {
           return false;
         }
 
         if (
           fileTypeFilters.length > 0 &&
-          !fileTypeFilters.includes(row.file_type ?? "")
+          !fileTypeFilters.includes(row.fileType ?? "")
         ) {
           return false;
         }
@@ -475,6 +430,7 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
+        invalidateContentList();
         setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
         setViewState((current) =>
           current !== "new" && current?.uuid === rowToDelete.uuid ?
@@ -508,6 +464,7 @@ export default function ContentManagement({
         return;
       }
 
+      invalidateContentList();
       setRows((prev) =>
         prev.map((r) =>
           r.uuid === row.uuid ?
@@ -517,8 +474,8 @@ export default function ContentManagement({
               editLock: {
                 lockedByEmp: {
                   uuid: session?.employeeUuid ?? "",
-                  first_name: "",
-                  last_name: "",
+                  firstName: "",
+                  lastName: "",
                   avatar: null,
                 },
               },
@@ -537,7 +494,7 @@ export default function ContentManagement({
       uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
       fileName: row.title,
       uuid: row.uuid,
-      for_position: row.for_position,
+      forPosition: row.forPosition,
     });
     setEditorOpen(true);
   };
@@ -549,6 +506,7 @@ export default function ContentManagement({
         credentials: "include",
       });
 
+      invalidateContentList();
       setRows((prev) =>
         prev.map((r) =>
           r.uuid === uuid ? { ...r, isLocked: false, editLock: null } : r,
@@ -583,6 +541,7 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
+        invalidateContentList();
         if (isExisting) {
           if (!returningToEditorRef.current) {
             await releaseLock(uuid);
@@ -623,7 +582,7 @@ export default function ContentManagement({
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isFavorite: nextIsFavorite }),
+        body: JSON.stringify({ is_favorite: nextIsFavorite }),
       });
 
       if (!res.ok) {
@@ -635,14 +594,16 @@ export default function ContentManagement({
 
       if (!parsed.success) {
         console.error(parsed.error);
+        invalidateContentList();
         await fetchRows();
         return;
       }
 
+      invalidateContentList();
       setRows((prevRows) =>
         prevRows.map((r) =>
           r.uuid === parsed.data.contentUuid ?
-            { ...r, is_favorite: parsed.data.isFavorite }
+            { ...r, is_favorite: parsed.data.is_favorite }
           : r,
         ),
       );
@@ -788,29 +749,29 @@ export default function ContentManagement({
           {params.row.title}
           <InfoPopup
             url={params.row.url}
-            author={params.row.content_owner}
-            position={getPositionLabel(params.row.for_position) as Position}
-            fileType={params.row.file_type}
+            author={params.row.contentOwner}
+            position={getPositionLabel(params.row.forPosition) as Position}
+            fileType={params.row.fileType}
             tags={params.row.tags ?? []}
             editor={
               params.row.editLock?.lockedByEmp ?
-                `${params.row.editLock.lockedByEmp.first_name} 
-              ${params.row.editLock.lockedByEmp.last_name}`
+                `${params.row.editLock.lockedByEmp.firstName} 
+              ${params.row.editLock.lockedByEmp.lastName}`
               : ""
             }
             editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
-            updatedAt={params.row.last_modified_time}
+            updatedAt={params.row.lastModifiedTime}
           />
         </Box>
       ),
     },
     {
-      field: "last_modified_time",
+      field: "lastModifiedTime",
       headerName: "Last Modified",
       type: "dateTime",
       width: 160,
       valueGetter: (_value, row) =>
-        row.last_modified_time ? new Date(row.last_modified_time) : null,
+        row.lastModifiedTime ? new Date(row.lastModifiedTime) : null,
       renderCell: (params) => {
         const date = params.value as Date | null;
         const isNew = sessionNewIds.has(params.row.uuid);
@@ -850,7 +811,7 @@ export default function ContentManagement({
       ),
     },
     {
-      field: "content_owner",
+      field: "contentOwner",
       headerName: "Author",
       width: 140,
     },
@@ -860,11 +821,11 @@ export default function ContentManagement({
       width: 140,
       valueGetter: (_, row) => {
         const employee = row.editLock?.lockedByEmp;
-        return employee ? `${employee.first_name} ${employee.last_name}` : "";
+        return employee ? `${employee.firstName} ${employee.lastName}` : "";
       },
     },
     {
-      field: "for_position",
+      field: "forPosition",
       headerName: "Position",
       width: 160,
       align: "center",
@@ -892,7 +853,7 @@ export default function ContentManagement({
       ),
     },
     {
-      field: "file_type",
+      field: "fileType",
       headerName: "File Type",
       width: 110,
       align: "center",
@@ -918,8 +879,7 @@ export default function ContentManagement({
       filterable: false,
       renderCell: (params) => {
         const row = params.row;
-        const hasPermission =
-          isSystemAdmin || userPosition === row.for_position;
+        const hasPermission = isSystemAdmin || userPosition === row.forPosition;
         const lockedByUuid = row.editLock?.lockedByEmp?.uuid;
         const isCheckedOutByMe =
           row.isLocked && lockedByUuid === session?.employeeUuid;
@@ -989,7 +949,7 @@ export default function ContentManagement({
             {isCheckedOutByMe && (
               <Tooltip
                 title={
-                  row.file_type?.startsWith("video/") ?
+                  row.fileType?.startsWith("video/") ?
                     "Video files cannot be edited"
                   : "Open editor"
                 }
@@ -998,7 +958,7 @@ export default function ContentManagement({
                   <IconButton
                     color="primary"
                     onClick={() => onOpenEditor(row)}
-                    disabled={row.file_type?.startsWith("video/")}
+                    disabled={row.fileType?.startsWith("video/")}
                   >
                     <EditIcon />
                   </IconButton>
@@ -1021,7 +981,7 @@ export default function ContentManagement({
             {/* Locked by someone else */}
             {isCheckedOutByOther && (
               <Tooltip
-                title={`Checked out by ${row.editLock?.lockedByEmp.first_name} ${row.editLock?.lockedByEmp.last_name}`}
+                title={`Checked out by ${row.editLock?.lockedByEmp.firstName} ${row.editLock?.lockedByEmp.lastName}`}
               >
                 <span>
                   <Button
@@ -1384,9 +1344,10 @@ export default function ContentManagement({
               />
               {isSystemAdmin && (
                 <TagManagerPopup
+                  availableTags={availableTags}
                   onTagsChanged={async () => {
-                    void fetchRows();
-                    void fetchTags();
+                    await fetchTags();
+                    return await loadContentTags();
                   }}
                 />
               )}
@@ -1444,7 +1405,7 @@ export default function ContentManagement({
       <Box sx={{ width: "100%" }}>
         {orderedPositions.map(({ key, label, chipSx }) => {
           const positionRows = filteredRows.filter(
-            (r) => r.for_position === key,
+            (r) => r.forPosition === key,
           );
           const favoriteCount = positionRows.filter(
             (r) => r.is_favorite,
@@ -1567,7 +1528,7 @@ export default function ContentManagement({
                           uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
                           fileName: row.title,
                           uuid: row.uuid,
-                          for_position: row.for_position,
+                          forPosition: row.forPosition,
                         });
                         setPreviewOpen(true);
                       },
@@ -1579,7 +1540,7 @@ export default function ContentManagement({
                     getRowClassName={(params) => {
                       const hasPermission =
                         isSystemAdmin ||
-                        userPosition === params.row.for_position;
+                        userPosition === params.row.forPosition;
                       const isNew = sessionNewIds.has(params.row.uuid);
                       const classes: string[] = [];
                       if (!hasPermission) classes.push("row-locked");
@@ -1598,10 +1559,10 @@ export default function ContentManagement({
                         columnVisibilityModel: {
                           "favorite": false,
                           "url": false,
-                          "content_owner": false,
+                          "contentOwner": false,
                           "edited-by": false,
-                          "for_position": false, // redundant inside its own section
-                          "file_type": false,
+                          "forPosition": false, // redundant inside its own section
+                          "fileType": false,
                         },
                       },
                     }}
@@ -1710,6 +1671,7 @@ export default function ContentManagement({
         >
           <ContentForm
             initialData={viewState === "new" ? null : viewState}
+            availableTags={availableTags}
             onSave={handleSave}
             onCancel={() => void handleCloseFormModal()}
             onDelete={

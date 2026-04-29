@@ -15,23 +15,23 @@ export interface ReviewClaimContent {
   uuid: string;
   title: string;
   url: string;
-  file_type: string | null;
-  content_type: string | null;
+  fileType: string | null;
+  contentType: string | null;
   status: string;
 }
 
 export interface ReviewClaimRequestor {
   uuid: string;
-  first_name: string;
-  last_name: string;
-  corporate_email: string;
+  firstName: string;
+  lastName: string;
+  corporateEmail: string;
 }
 
 export interface ReviewClaimRecord {
   uuid: string;
-  claim_type: string;
-  incident_date: string;
-  incident_description: string;
+  claimType: string;
+  incidentDate: string;
+  incidentDescription: string;
   status: string;
   createdAt: string;
   requestor: ReviewClaimRequestor;

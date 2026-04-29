@@ -125,14 +125,14 @@ type ActiveContentLock = NonNullable<
 
 export function serializeLock(lock: ActiveContentLock) {
   return {
-    content_uuid: lock.contentUuid,
-    locked_by_emp_uuid: lock.lockedByEmpUuid,
-    locked_at: lock.lockedAt,
+    contentUuid: lock.contentUuid,
+    lockedByEmpUuid: lock.lockedByEmpUuid,
+    lockedAt: lock.lockedAt,
     locked_by: {
       uuid: lock.lockedByEmp.uuid,
-      first_name: lock.lockedByEmp.first_name,
-      last_name: lock.lockedByEmp.last_name,
-      corporate_email: lock.lockedByEmp.corporate_email,
+      firstName: lock.lockedByEmp.firstName,
+      lastName: lock.lockedByEmp.lastName,
+      corporateEmail: lock.lockedByEmp.corporateEmail,
     },
   };
 }
@@ -299,10 +299,10 @@ export async function loadAccessibleContent(
     return null;
   }
 
-  if (!canManagePosition(auth, content.for_position)) {
+  if (!canManagePosition(auth, content.forPosition)) {
     if (options?.logUnauthorized) {
       logger.warn(
-        `Rejected Content request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
+        `Rejected Content request for record ${uuid}: target position ${content.forPosition}, user position ${auth.position}`,
       );
     }
     res

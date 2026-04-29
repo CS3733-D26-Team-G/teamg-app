@@ -40,6 +40,7 @@ import { API_ENDPOINTS } from "../../../config.ts";
 import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
 import type { ContentRow } from "../../../types/content.ts";
 import { useTheme } from "@mui/material/styles";
+import { invalidateContentList } from "../../../lib/api-loaders.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -291,6 +292,7 @@ export default function DocumentEditorModal({
       credentials: "include",
       body: formData,
     });
+    invalidateContentList();
 
     // Reset URI cache so the next open re-fetches the updated file
     currentUriRef.current = "";

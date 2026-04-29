@@ -44,9 +44,9 @@ export function serializeClaim(claim: ClaimWithRelations) {
   return {
     uuid: claim.uuid,
     requestorEmployeeUuid: claim.requestorEmployeeUuid,
-    incident_date: claim.incident_date,
-    claim_type: claim.claim_type,
-    incident_description: claim.incident_description,
+    incidentDate: claim.incidentDate,
+    claimType: claim.claimType,
+    incidentDescription: claim.incidentDescription,
     status: claim.status,
     createdAt: claim.createdAt,
     updatedAt: claim.updatedAt,

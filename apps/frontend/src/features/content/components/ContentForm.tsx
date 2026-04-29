@@ -32,8 +32,6 @@ import type {
   ContentRecord,
   ContentTagSummary,
 } from "../../../types/content";
-import { ContentTagSummariesSchema } from "../../../types/content";
-import { API_ENDPOINTS } from "../../../config.ts";
 import { useProfile } from "../../../profile/ProfileContext.tsx";
 
 // Positions that are considered "agents" — neither underwriter nor admin.
@@ -50,6 +48,7 @@ type ContentFormInitialData = ContentRecord & {
 
 interface ContentFormProps {
   initialData?: ContentFormInitialData | null;
+  availableTags: ContentTagSummary[];
   onSave: (data: FormData) => void;
   onCancel: () => void;
   onDelete?: () => void;
@@ -58,7 +57,7 @@ interface ContentFormProps {
 function getInitialSourceType(
   initialData?: ContentFormInitialData | null,
 ): "url" | "file" {
-  if (initialData?.supabasePath || initialData?.file_type) return "file";
+  if (initialData?.supabasePath || initialData?.fileType) return "file";
   return initialData?.url ? "url" : "file";
 }
 
@@ -77,17 +76,18 @@ function buildDefaultFormData(
   return {
     title: seed?.title ?? "",
     url: seed?.url ?? "",
-    content_owner: seed?.content_owner ?? "",
-    for_position: (seed?.for_position ?? "UNDERWRITER") as Position,
-    last_modified_time: coerceToDate(seed?.last_modified_time),
-    expiration_time: coerceToDate(seed?.expiration_time),
-    content_type: (seed?.content_type ?? "REFERENCE") as ContentType,
+    contentOwner: seed?.contentOwner ?? "",
+    forPosition: (seed?.forPosition ?? "UNDERWRITER") as Position,
+    lastModifiedTime: coerceToDate(seed?.lastModifiedTime),
+    expirationTime: coerceToDate(seed?.expirationTime),
+    contentType: (seed?.contentType ?? "REFERENCE") as ContentType,
     status: (seed?.status ?? "AVAILABLE") as ContentStatus,
   };
 }
 
 export default function ContentForm({
   initialData,
+  availableTags,
   onSave,
   onCancel,
   onDelete,
@@ -95,7 +95,7 @@ export default function ContentForm({
   const isEditing = !!initialData;
   const { session } = useAuth();
   const { profile } = useProfile();
-  const isAdmin = session?.permissions.canManageAllContent ?? false;
+  const isAdmin = session?.permissions.can_manage_all_content ?? false;
   const userPosition = session?.position as Position | undefined;
 
   // Derived role flags
@@ -105,11 +105,11 @@ export default function ContentForm({
   const [formData, setFormData] = useState<ContentFormData>(() =>
     buildDefaultFormData({
       ...(initialData ?? undefined),
-      for_position: initialData?.for_position ?? session?.position,
-      content_owner:
-        initialData?.content_owner ??
-        (profile?.first_name && profile?.last_name ?
-          `${profile.first_name} ${profile.last_name}`
+      forPosition: initialData?.forPosition ?? session?.position,
+      contentOwner:
+        initialData?.contentOwner ??
+        (profile?.firstName && profile?.lastName ?
+          `${profile.firstName} ${profile.lastName}`
         : ""),
     }),
   );
@@ -117,36 +117,7 @@ export default function ContentForm({
     getInitialSourceType(initialData),
   );
   const [file, setFile] = useState<File | null>(null);
-
-  const [availableTags, setAvailableTags] = useState<ContentTagSummary[]>([]);
   const [selectedTagUuids, setSelectedTagUuids] = useState<string[]>([]);
-
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
-          credentials: "include",
-        });
-        if (!res.ok) {
-          throw new Error(`Failed to fetch tags: ${res.status}`);
-        }
-
-        const data: unknown = await res.json();
-        const parsed = ContentTagSummariesSchema.safeParse(data);
-        if (!parsed.success) {
-          console.error(parsed.error);
-          setAvailableTags([]);
-          return;
-        }
-
-        setAvailableTags(parsed.data);
-      } catch (error) {
-        console.error(error);
-        setAvailableTags([]);
-      }
-    };
-    void fetchTags();
-  }, []);
 
   // Underwriter-only risk assessment comment
   const [riskAssessment, setRiskAssessment] = useState("");
@@ -155,11 +126,11 @@ export default function ContentForm({
     setFormData(
       buildDefaultFormData({
         ...(initialData ?? undefined),
-        for_position: initialData?.for_position ?? session?.position,
-        content_owner:
-          initialData?.content_owner ??
-          (profile?.first_name && profile?.last_name ?
-            `${profile.first_name} ${profile.last_name}`
+        forPosition: initialData?.forPosition ?? session?.position,
+        contentOwner:
+          initialData?.contentOwner ??
+          (profile?.firstName && profile?.lastName ?
+            `${profile.firstName} ${profile.lastName}`
           : ""),
       }),
     );
@@ -208,14 +179,11 @@ export default function ContentForm({
   const buildBody = (extra?: Record<string, string>): FormData => {
     const body = new FormData();
     body.append("title", formData.title);
-    body.append("content_owner", formData.content_owner);
-    body.append("for_position", formData.for_position);
-    body.append(
-      "last_modified_time",
-      formData.last_modified_time.toISOString(),
-    );
-    body.append("expiration_time", formData.expiration_time.toISOString());
-    body.append("content_type", formData.content_type);
+    body.append("contentOwner", formData.contentOwner);
+    body.append("forPosition", formData.forPosition);
+    body.append("lastModifiedTime", formData.lastModifiedTime.toISOString());
+    body.append("expirationTime", formData.expirationTime.toISOString());
+    body.append("contentType", formData.contentType);
     body.append("status", formData.status);
 
     selectedTagUuids.forEach((uuid) => body.append("tagUuids", uuid));
@@ -367,8 +335,8 @@ export default function ContentForm({
       <TextField
         label="Content Owner"
         fullWidth
-        value={formData.content_owner}
-        onChange={(e) => handleChange("content_owner", e.target.value)}
+        value={formData.contentOwner}
+        onChange={(e) => handleChange("contentOwner", e.target.value)}
         variant="outlined"
         margin="normal"
         disabled={!isAdmin}
@@ -382,8 +350,8 @@ export default function ContentForm({
         <Select
           labelId="recipient-label"
           label="Intended Recipient"
-          value={formData.for_position}
-          onChange={handleSelectChange("for_position")}
+          value={formData.forPosition}
+          onChange={handleSelectChange("forPosition")}
           disabled={!isAdmin}
         >
           {positionOptions.map((position) => (
@@ -399,14 +367,14 @@ export default function ContentForm({
 
       <CalendarInput
         label="Last Modified Date"
-        value={formData.last_modified_time}
-        onChange={(newDate) => handleChange("last_modified_time", newDate)}
+        value={formData.lastModifiedTime}
+        onChange={(newDate) => handleChange("lastModifiedTime", newDate)}
       />
 
       <CalendarInput
         label="Link Expiration Date"
-        value={formData.expiration_time}
-        onChange={(newDate) => handleChange("expiration_time", newDate)}
+        value={formData.expirationTime}
+        onChange={(newDate) => handleChange("expirationTime", newDate)}
       />
 
       <FormControl
@@ -417,8 +385,8 @@ export default function ContentForm({
         <Select
           labelId="content-type-label"
           label="Type of Content"
-          value={formData.content_type}
-          onChange={handleSelectChange("content_type")}
+          value={formData.contentType}
+          onChange={handleSelectChange("contentType")}
         >
           {contentTypeOptions.map((contentType) => (
             <MenuItem

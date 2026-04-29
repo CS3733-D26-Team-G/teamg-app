@@ -163,7 +163,7 @@ export default function ActivityTimelineItem({
   action,
   resourceName,
   resourceUuid,
-  avatarUrl,
+  avatar_url,
   onPreview,
 }: ActivityTimelineItemProps) {
   const { label, dotColor, chipColor, icon } = getActionConfig(action);
@@ -209,7 +209,7 @@ export default function ActivityTimelineItem({
           }}
         >
           <Avatar
-            src={avatarUrl}
+            src={avatar_url}
             sx={{ width: 32, height: 32, fontSize: "0.7rem", fontWeight: 600 }}
           >
             {user

@@ -163,7 +163,7 @@ export default function EmployeeManagement() {
   );
 
   const handleDelete = async (row: EmployeeRecord) => {
-    if (!window.confirm(`Remove employee ${row.first_name} ${row.last_name}?`))
+    if (!window.confirm(`Remove employee ${row.firstName} ${row.lastName}?`))
       return;
     try {
       const res = await fetch(API_ENDPOINTS.EMPLOYEE.DELETE(row.uuid), {
@@ -192,7 +192,7 @@ export default function EmployeeManagement() {
 
     if (
       !window.confirm(
-        `Are you sure you want to ${isExisting ? "update" : "create"} "${formData.first_name} ${formData.last_name}"?`,
+        `Are you sure you want to ${isExisting ? "update" : "create"} "${formData.firstName} ${formData.lastName}"?`,
       )
     ) {
       return;
@@ -243,8 +243,8 @@ export default function EmployeeManagement() {
         filterable: false,
         renderCell: (params) => {
           const { avatar } = params.row;
-          const firstInitial = params.row.first_name?.[0] ?? "";
-          const lastInitial = params.row.last_name?.[0] ?? "";
+          const firstInitial = params.row.firstName?.[0] ?? "";
+          const lastInitial = params.row.lastName?.[0] ?? "";
           const initials = (firstInitial + lastInitial).toUpperCase() || "?";
           return (
             <Box
@@ -270,8 +270,8 @@ export default function EmployeeManagement() {
           );
         },
       },
-      { field: "first_name", headerName: "First Name", flex: 1, minWidth: 140 },
-      { field: "last_name", headerName: "Last Name", flex: 1, minWidth: 140 },
+      { field: "firstName", headerName: "First Name", flex: 1, minWidth: 140 },
+      { field: "lastName", headerName: "Last Name", flex: 1, minWidth: 140 },
       {
         field: "position",
         headerName: "Position",
@@ -297,7 +297,7 @@ export default function EmployeeManagement() {
           deptLabels[value as Department] ?? String(value),
       },
       {
-        field: "corporate_email",
+        field: "corporateEmail",
         headerName: "Corporate Email",
         flex: 1.2,
         minWidth: 220,

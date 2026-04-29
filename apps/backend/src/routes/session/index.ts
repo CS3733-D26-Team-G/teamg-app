@@ -26,8 +26,8 @@ router.get("/", async (req, res) => {
       position: auth.position,
       settings: normalizeAccountSettings(account?.settings),
       permissions: {
-        canManageEmployees: admin,
-        canManageAllContent: admin,
+        can_manage_employees: admin,
+        can_manage_all_content: admin,
       },
     });
   } catch (e) {

@@ -43,11 +43,11 @@ export const UpdateContentSchema =
     });
 
 export const FavoriteContentSchema = z.object({
-  isFavorite: z.boolean(),
+  is_favorite: z.boolean(),
 });
 
 export const RegenerateContentLinkSchema = z.object({
-  expiration_time: z.coerce.date(),
+  expirationTime: z.coerce.date(),
 });
 
 export const CreateTagSchema = z.object({
@@ -55,14 +55,14 @@ export const CreateTagSchema = z.object({
 });
 
 export const ContentFilterFieldSchema = z.enum([
-  "expiration_time",
-  "last_modified_time",
+  "expirationTime",
+  "lastModifiedTime",
   "status",
-  "content_type",
-  "for_position",
+  "contentType",
+  "forPosition",
   "title",
-  "content_owner",
-  "file_type",
+  "contentOwner",
+  "fileType",
 ]);
 
 export const ContentFilterOperatorSchema = z.enum([
@@ -84,9 +84,9 @@ export const contentLockInclude = {
   lockedByEmp: {
     select: {
       uuid: true,
-      first_name: true,
-      last_name: true,
-      corporate_email: true,
+      firstName: true,
+      lastName: true,
+      corporateEmail: true,
     },
   },
 } satisfies Prisma.ContentEditLockInclude;
@@ -94,29 +94,29 @@ export const contentLockInclude = {
 export type ContentFilter = z.infer<typeof ContentFilterSchema>;
 export type ContentFilterField = z.infer<typeof ContentFilterFieldSchema>;
 export type SupportedContentField =
-  | "expiration_time"
-  | "last_modified_time"
+  | "expirationTime"
+  | "lastModifiedTime"
   | "status"
-  | "content_type"
-  | "for_position"
+  | "contentType"
+  | "forPosition"
   | "title"
-  | "content_owner"
-  | "file_type";
+  | "contentOwner"
+  | "fileType";
 
 export const contentDateFilterFields = new Set<ContentFilterField>([
-  "expiration_time",
-  "last_modified_time",
+  "expirationTime",
+  "lastModifiedTime",
 ]);
 
 export const contentFieldValueSchemas = {
-  expiration_time: z.coerce.date(),
-  last_modified_time: z.coerce.date(),
+  expirationTime: z.coerce.date(),
+  lastModifiedTime: z.coerce.date(),
   status: Schemas.ContentStatusSchema,
-  content_type: Schemas.ContentTypeSchema,
-  for_position: Schemas.PositionSchema,
+  contentType: Schemas.ContentTypeSchema,
+  forPosition: Schemas.PositionSchema,
   title: z.string(),
-  content_owner: z.string(),
-  file_type: z.string(),
+  contentOwner: z.string(),
+  fileType: z.string(),
 } satisfies Record<SupportedContentField, z.ZodType>;
 
 export type UploadResult =

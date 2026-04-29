@@ -43,16 +43,16 @@ function buildDefaultFormData(
   seed?: Partial<EmployeeFormData>,
 ): EmployeeFormData {
   return {
-    first_name: seed?.first_name ?? "",
-    last_name: seed?.last_name ?? "",
-    date_of_birth: coerceToDate(seed?.date_of_birth),
+    firstName: seed?.firstName ?? "",
+    lastName: seed?.lastName ?? "",
+    dateOfBirth: coerceToDate(seed?.dateOfBirth),
     position: (seed?.position ?? "UNDERWRITER") as Position,
     department: (seed?.department ?? "OPERATION_TECHNOLOGY") as Department,
-    start_date: coerceToDate(seed?.start_date),
+    startDate: coerceToDate(seed?.startDate),
     supervisor: seed?.supervisor ?? "",
-    phone_number: seed?.phone_number ?? "",
-    personal_email: seed?.personal_email ?? "",
-    corporate_email: seed?.corporate_email ?? "",
+    phoneNumber: seed?.phoneNumber ?? "",
+    personalEmail: seed?.personalEmail ?? "",
+    corporateEmail: seed?.corporateEmail ?? "",
   };
 }
 
@@ -137,24 +137,24 @@ export default function ManageEmployeeForm({
           label="First Name"
           fullWidth
           required
-          value={formData.first_name}
-          onChange={(e) => handleChange("first_name", e.target.value)}
+          value={formData.firstName}
+          onChange={(e) => handleChange("firstName", e.target.value)}
           margin="normal"
         />
         <TextField
           label="Last Name"
           fullWidth
           required
-          value={formData.last_name}
-          onChange={(e) => handleChange("last_name", e.target.value)}
+          value={formData.lastName}
+          onChange={(e) => handleChange("lastName", e.target.value)}
           margin="normal"
         />
       </Stack>
 
       <CalendarInput
         label="Date of Birth"
-        value={formData.date_of_birth}
-        onChange={(d) => handleChange("date_of_birth", d)}
+        value={formData.dateOfBirth}
+        onChange={(d) => handleChange("dateOfBirth", d)}
       />
 
       <Divider sx={{ my: 2 }} />
@@ -225,8 +225,8 @@ export default function ManageEmployeeForm({
 
       <CalendarInput
         label="Start Date"
-        value={formData.start_date}
-        onChange={(d) => handleChange("start_date", d)}
+        value={formData.startDate}
+        onChange={(d) => handleChange("startDate", d)}
       />
 
       <TextField
@@ -242,8 +242,8 @@ export default function ManageEmployeeForm({
         label="Phone Number"
         fullWidth
         required
-        value={formData.phone_number}
-        onChange={(e) => handleChange("phone_number", e.target.value)}
+        value={formData.phoneNumber}
+        onChange={(e) => handleChange("phoneNumber", e.target.value)}
         margin="normal"
       />
 
@@ -267,8 +267,8 @@ export default function ManageEmployeeForm({
           type="email"
           fullWidth
           required
-          value={formData.personal_email}
-          onChange={(e) => handleChange("personal_email", e.target.value)}
+          value={formData.personalEmail}
+          onChange={(e) => handleChange("personalEmail", e.target.value)}
           margin="normal"
         />
         <TextField
@@ -276,8 +276,8 @@ export default function ManageEmployeeForm({
           type="email"
           fullWidth
           required
-          value={formData.corporate_email}
-          onChange={(e) => handleChange("corporate_email", e.target.value)}
+          value={formData.corporateEmail}
+          onChange={(e) => handleChange("corporateEmail", e.target.value)}
           margin="normal"
         />
       </Stack>

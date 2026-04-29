@@ -31,7 +31,7 @@ router.get("/", async (req, res) => {
     const normalizedSettings = normalizeAccountSettings(settings);
 
     logger.verbose(
-      `Returned account settings for username ${account.username}: dark_mode=${normalizedSettings.darkMode}`,
+      `Returned account settings for username ${account.username}: ${JSON.stringify(normalizedSettings)}`,
     );
     return res.status(200).json(normalizedSettings);
   } catch (e) {
@@ -80,7 +80,7 @@ router.put("/", async (req, res) => {
     const normalizedSettings = normalizeAccountSettings(settings);
 
     logger.verbose(
-      `Updated account settings for username ${account.username}: dark_mode=${settings.dark_mode}`,
+      `Updated account settings for username ${account.username}: ${JSON.stringify(normalizedSettings)}`,
     );
     return res.status(200).json(normalizedSettings);
   } catch (e) {

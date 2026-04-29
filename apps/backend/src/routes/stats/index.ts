@@ -53,7 +53,7 @@ router.get("/content/count/position", async (req, res) => {
     const positions = Object.values(Position);
     const groupedCounts = await prisma.content.groupBy({
       where: getVisibleContentWhere(auth),
-      by: ["for_position"],
+      by: ["forPosition"],
       _count: {
         _all: true,
       },
@@ -62,7 +62,7 @@ router.get("/content/count/position", async (req, res) => {
     const stats = positions.reduce<Record<Position, number>>(
       (acc, position) => {
         acc[position] =
-          groupedCounts.find((group) => group.for_position === position)?._count
+          groupedCounts.find((group) => group.forPosition === position)?._count
             ._all ?? 0;
         return acc;
       },

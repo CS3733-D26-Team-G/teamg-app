@@ -218,7 +218,7 @@ export default function Dashboard() {
             variant="h2"
             sx={{ fontWeight: "bold", color: "white" }}
           >
-            Welcome Back {profile?.first_name}!
+            Welcome Back {profile?.firstName}!
           </Typography>
           {[...Array(3)].map((_, i) => (
             <Box

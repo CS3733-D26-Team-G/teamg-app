@@ -62,7 +62,7 @@ router.put("/avatar", upload.single("avatar"), async (req, res) => {
       where: { uuid: auth.employeeUuid },
       select: {
         uuid: true,
-        avatar_supabase_path: true,
+        avatarSupabasePath: true,
       },
     });
 
@@ -74,7 +74,7 @@ router.put("/avatar", upload.single("avatar"), async (req, res) => {
       `Uploading avatar for employee ${auth.employeeUuid} to Supabase path ${avatarPath}`,
     );
 
-    const previousAvatarPath = existingEmployee.avatar_supabase_path;
+    const previousAvatarPath = existingEmployee.avatarSupabasePath;
 
     if (previousAvatarPath) {
       const deleteResult = await supabase.storage
@@ -120,7 +120,7 @@ router.put("/avatar", upload.single("avatar"), async (req, res) => {
       where: { uuid: auth.employeeUuid },
       data: {
         avatar: publicUrl,
-        avatar_supabase_path: uploadedAvatarPath,
+        avatarSupabasePath: uploadedAvatarPath,
       },
     });
 

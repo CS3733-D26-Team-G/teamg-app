@@ -8,5 +8,5 @@ export function getVisibleContentWhere(
     return undefined;
   }
 
-  return { for_position: auth.position };
+  return { forPosition: auth.position };
 }

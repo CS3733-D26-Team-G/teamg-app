@@ -94,8 +94,8 @@ router.get("/", async (req, res) => {
             lockedByEmp: {
               select: {
                 uuid: true,
-                first_name: true,
-                last_name: true,
+                firstName: true,
+                lastName: true,
                 avatar: true,
               },
             },
@@ -103,7 +103,7 @@ router.get("/", async (req, res) => {
         },
       },
       orderBy: {
-        last_modified_time: "desc",
+        lastModifiedTime: "desc",
       },
     });
 
@@ -264,9 +264,9 @@ router.post("/create", upload.single("file"), async (req, res) => {
     });
   }
 
-  if (!canManagePosition(auth, input.for_position)) {
+  if (!canManagePosition(auth, input.forPosition)) {
     logger.warn(
-      `Rejected Content create request for position ${input.for_position} from user with position ${auth.position}`,
+      `Rejected Content create request for position ${input.forPosition} from user with position ${auth.position}`,
     );
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -286,7 +286,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
   const urlResult = await resolveContentUrl({
     file: req.file ?? undefined,
     uuid,
-    expirationTime: input.expiration_time,
+    expirationTime: input.expirationTime,
     providedUrl: validatedUrl.normalizedUrl,
     upsert: false,
   });
@@ -300,7 +300,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
     uuid,
     url: urlResult.url,
     supabasePath: urlResult.supabasePath,
-    file_type: req.file?.mimetype ?? null,
+    fileType: req.file?.mimetype ?? null,
   };
 
   logger.verbose(`Inserting Content table record ${uuid}`);
@@ -395,7 +395,7 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   }
 
   const targetPosition =
-    resolvePositionValue(input.for_position) ?? existingContent.for_position;
+    resolvePositionValue(input.forPosition) ?? existingContent.forPosition;
   if (!canManagePosition(auth, targetPosition)) {
     logger.warn(
       `Rejected Content edit request for record ${uuid}: target position ${targetPosition}, user position ${auth.position}`,
@@ -419,9 +419,9 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   }
 
   const expirationTime =
-    input.expiration_time instanceof Date ?
-      input.expiration_time
-    : existingContent.expiration_time;
+    input.expirationTime instanceof Date ?
+      input.expirationTime
+    : existingContent.expirationTime;
 
   const urlResult = await resolveContentUrl({
     file: req.file ?? undefined,
@@ -445,14 +445,14 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   const nextFileType =
     req.file ? req.file.mimetype
     : effectiveProvidedUrl ? null
-    : existingContent.file_type;
+    : existingContent.fileType;
 
   const data = {
     ...input,
     url: urlResult.url,
     supabasePath: nextSupabasePath,
-    file_type: nextFileType,
-    last_modified_time: new Date(),
+    fileType: nextFileType,
+    lastModifiedTime: new Date(),
   };
 
   logger.verbose(`Updating Content table record ${uuid}`);
@@ -491,11 +491,11 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     });
 
     if (
-      input.content_owner &&
-      input.content_owner !== existingContent.content_owner
+      input.contentOwner &&
+      input.contentOwner !== existingContent.contentOwner
     ) {
-      const oldOwner = existingContent.content_owner;
-      const newOwner = input.content_owner;
+      const oldOwner = existingContent.contentOwner;
+      const newOwner = input.contentOwner;
 
       await prisma.activity.create({
         data: {
@@ -578,9 +578,9 @@ router.post("/regenerate-link/:uuid", async (req, res) => {
     return res.status(400).json({ message: parsed.error.issues });
   }
 
-  if (!canManagePosition(auth, existingContent.for_position)) {
+  if (!canManagePosition(auth, existingContent.forPosition)) {
     logger.warn(
-      `Rejected Content regenerate link request for record ${uuid}: target position ${existingContent.for_position}, user position ${auth.position}`,
+      `Rejected Content regenerate link request for record ${uuid}: target position ${existingContent.forPosition}, user position ${auth.position}`,
     );
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -600,7 +600,7 @@ router.post("/regenerate-link/:uuid", async (req, res) => {
 
   const urlResult = await resolveContentUrl({
     uuid,
-    expirationTime: parsed.data.expiration_time,
+    expirationTime: parsed.data.expirationTime,
     fallbackSupabasePath: existingContent.supabasePath,
     upsert: true,
   });
@@ -616,8 +616,8 @@ router.post("/regenerate-link/:uuid", async (req, res) => {
       where: { uuid },
       data: {
         url: urlResult.url,
-        expiration_time: parsed.data.expiration_time,
-        last_modified_time: new Date(),
+        expirationTime: parsed.data.expirationTime,
+        lastModifiedTime: new Date(),
       },
     });
 
@@ -664,9 +664,9 @@ router.post("/delete/:uuid", async (req, res) => {
       `Queried Content table for record ${uuid} before delete: record found`,
     );
 
-    if (!canManagePosition(auth, content.for_position)) {
+    if (!canManagePosition(auth, content.forPosition)) {
       logger.warn(
-        `Rejected Content delete request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
+        `Rejected Content delete request for record ${uuid}: target position ${content.forPosition}, user position ${auth.position}`,
       );
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -726,13 +726,13 @@ router.post("/favorite/:uuid", async (req, res) => {
 
   const input = parsed.data;
   logger.verbose(
-    `Parsed Content favorite request for content ${uuid}: isFavorite=${input.isFavorite}`,
+    `Parsed Content favorite request for content ${uuid}: is_favorite=${input.is_favorite}`,
   );
 
   try {
     const content = await prisma.content.findUnique({
       where: { uuid },
-      select: { uuid: true, for_position: true },
+      select: { uuid: true, forPosition: true },
     });
 
     if (!content) {
@@ -742,9 +742,9 @@ router.post("/favorite/:uuid", async (req, res) => {
       return res.status(404).json({ message: "Content not found" });
     }
 
-    if (!canManagePosition(auth, content.for_position)) {
+    if (!canManagePosition(auth, content.forPosition)) {
       logger.warn(
-        `Rejected Content favorite request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
+        `Rejected Content favorite request for record ${uuid}: target position ${content.forPosition}, user position ${auth.position}`,
       );
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -766,14 +766,14 @@ router.post("/favorite/:uuid", async (req, res) => {
     );
 
     if (favoriteContentRecord) {
-      if (input.isFavorite) {
+      if (input.is_favorite) {
         logger.warn(
           `Received content favorite request by employee ${auth.employeeUuid} for content ${uuid} that was already favorited`,
         );
         return res.status(200).json({
           employeeUuid: auth.employeeUuid,
           contentUuid: uuid,
-          isFavorite: true,
+          is_favorite: true,
           changed: false,
           message: "Content was already favorited",
         });
@@ -797,20 +797,20 @@ router.post("/favorite/:uuid", async (req, res) => {
       return res.status(200).json({
         employeeUuid: auth.employeeUuid,
         contentUuid: uuid,
-        isFavorite: false,
+        is_favorite: false,
         changed: true,
         message: "Content unfavorited successfully",
       });
     }
 
-    if (!input.isFavorite) {
+    if (!input.is_favorite) {
       logger.warn(
         `Received content unfavorite request by employee ${auth.employeeUuid} for content ${uuid} that was not favorited`,
       );
       return res.status(200).json({
         employeeUuid: auth.employeeUuid,
         contentUuid: uuid,
-        isFavorite: false,
+        is_favorite: false,
         changed: false,
         message: "Content was not favorited",
       });
@@ -832,7 +832,7 @@ router.post("/favorite/:uuid", async (req, res) => {
     return res.status(200).json({
       employeeUuid: auth.employeeUuid,
       contentUuid: uuid,
-      isFavorite: true,
+      is_favorite: true,
       changed: true,
       message: "Content favorited successfully",
     });
@@ -940,8 +940,8 @@ router.get("/history/:uuid", async (req, res) => {
         employee: {
           select: {
             uuid: true,
-            first_name: true,
-            last_name: true,
+            firstName: true,
+            lastName: true,
           },
         },
       },

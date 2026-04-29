@@ -48,7 +48,7 @@ export function transformBackendData(rawData: any): ActivityGroup[] {
         : "--:--",
       user:
         row.employee ?
-          `${row.employee.first_name} ${row.employee.last_name}`
+          `${row.employee.firstName} ${row.employee.lastName}`
         : "System",
       action: row.action || "Action",
       resourceName: row.resourceName || "System Resource",

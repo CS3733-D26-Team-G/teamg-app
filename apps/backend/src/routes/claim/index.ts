@@ -138,7 +138,7 @@ router.post("/create", async (req, res) => {
           action: "CREATE_CLAIM",
           resource: "INSURANCE_CLAIM",
           resourceUuid: claim.uuid,
-          resourceName: claim.incident_description,
+          resourceName: claim.incidentDescription,
         },
       });
 
@@ -249,7 +249,7 @@ router.put("/update/:uuid", async (req, res) => {
           action: "EDIT_CLAIM",
           resource: "INSURANCE_CLAIM",
           resourceUuid: claim.uuid,
-          resourceName: claim.incident_description,
+          resourceName: claim.incidentDescription,
         },
       });
 
@@ -305,7 +305,7 @@ router.post("/delete/:uuid", async (req, res) => {
           action: "DELETE_CLAIM",
           resource: "INSURANCE_CLAIM",
           resourceUuid: existingClaimResult.claim.uuid,
-          resourceName: existingClaimResult.claim.incident_description,
+          resourceName: existingClaimResult.claim.incidentDescription,
         },
       });
 

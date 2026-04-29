@@ -5,7 +5,7 @@ export interface ActivityItem {
   action: string;
   resourceUuid?: string;
   resourceName?: string;
-  avatarUrl?: string;
+  avatar_url?: string;
 }
 
 export interface ActivityItem {
@@ -15,7 +15,7 @@ export interface ActivityItem {
   action: string;
   resourceUuid?: string;
   resourceName?: string;
-  avatarUrl?: string;
+  avatar_url?: string;
   employeeUuid?: string;
 }
 
@@ -70,7 +70,7 @@ export function transformBackendData(rawData: any): ActivityGroup[] {
         : "--:--",
       user:
         row.employee ?
-          `${row.employee.first_name} ${row.employee.last_name}`
+          `${row.employee.firstName} ${row.employee.lastName}`
         : "System",
       action: row.action || "Action",
       resourceName: row.resourceName || undefined,

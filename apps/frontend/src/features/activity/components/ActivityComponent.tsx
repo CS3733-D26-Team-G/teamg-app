@@ -14,7 +14,7 @@ export default function ActivityComponent() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "content" | "login">("all");
   const { session } = useAuth();
-  const isAdmin = session?.permissions.canManageAllContent ?? false;
+  const isAdmin = session?.permissions.can_manage_all_content ?? false;
 
   useEffect(() => {
     setLoading(true);
@@ -84,12 +84,12 @@ export default function ActivityComponent() {
           : "--:--",
         user:
           row.employee ?
-            `${row.employee.first_name} ${row.employee.last_name}`
+            `${row.employee.firstName} ${row.employee.lastName}`
           : "System",
         action: row.action?.replace(/_/g, " "),
         resourceUuid: row.resourceUuid,
         resourceName: row.resourceName,
-        avatarUrl: row.employee?.avatar ?? undefined,
+        avatar_url: row.employee?.avatar ?? undefined,
         employeeUuid: row.employeeUuid,
       });
     });

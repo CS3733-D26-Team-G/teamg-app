@@ -57,6 +57,7 @@ function MyForms({ viewState }: ContentManagementProps) {
             currentViewState
           : undefined
         }
+        availableTags={[]}
         onSave={handleSave}
         onCancel={handleCancel}
       />

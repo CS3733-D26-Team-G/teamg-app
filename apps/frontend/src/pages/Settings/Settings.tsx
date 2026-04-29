@@ -21,7 +21,7 @@ function Settings() {
   const { session } = useAuth();
   const navigate = useNavigate();
 
-  const isAdmin = session?.permissions?.canManageEmployees ?? false;
+  const isAdmin = session?.permissions?.can_manage_employees ?? false;
 
   const handleStartGuidedTour = () => {
     navigate("/dashboard");

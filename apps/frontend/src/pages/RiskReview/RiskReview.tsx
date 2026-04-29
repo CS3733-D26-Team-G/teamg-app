@@ -29,6 +29,7 @@ import {
   type ReviewClaimContent,
   type ReviewClaimRecord,
 } from "../../features/claims/types";
+import { invalidateClaimsList, loadClaimsList } from "../../lib/api-loaders";
 
 type RiskStatus = "RISK_CLEARED" | "RISK_FLAGGED" | null;
 
@@ -48,12 +49,7 @@ export default function RiskReviewPage() {
   const fetchClaims = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(API_ENDPOINTS.CLAIM.ROOT, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-      const data = (await res.json()) as ReviewClaimRecord[];
-      const all = Array.isArray(data) ? data : [];
+      const all = await loadClaimsList<ReviewClaimRecord>();
       const pending = all; // filter disabled — showing all claims
       setCards(
         pending.map((claim) => ({
@@ -109,6 +105,7 @@ export default function RiskReviewPage() {
           }),
         ),
       );
+      invalidateClaimsList();
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -384,8 +381,8 @@ function RiskCardComponent({
 }: RiskCardProps) {
   const { claim, expanded, status, riskNotes } = card;
   const incidentDate =
-    claim.incident_date ?
-      new Date(claim.incident_date).toLocaleDateString(undefined, {
+    claim.incidentDate ?
+      new Date(claim.incidentDate).toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -453,9 +450,9 @@ function RiskCardComponent({
             }}
           >
             {CLAIM_TYPE_LABELS[
-              claim.claim_type as keyof typeof CLAIM_TYPE_LABELS
-            ] ?? claim.claim_type}{" "}
-            — {claim.requestor.first_name} {claim.requestor.last_name}
+              claim.claimType as keyof typeof CLAIM_TYPE_LABELS
+            ] ?? claim.claimType}{" "}
+            — {claim.requestor.firstName} {claim.requestor.lastName}
           </Typography>
           <Stack
             direction="row"
@@ -466,7 +463,7 @@ function RiskCardComponent({
               variant="caption"
               color="text.secondary"
             >
-              {claim.requestor.corporate_email}
+              {claim.requestor.corporateEmail}
             </Typography>
             {incidentDate && (
               <Typography
@@ -546,7 +543,7 @@ function RiskCardComponent({
                 variant="body2"
                 sx={{ lineHeight: 1.7 }}
               >
-                {claim.incident_description}
+                {claim.incidentDescription}
               </Typography>
             </Box>
           </Box>
@@ -570,8 +567,8 @@ function RiskCardComponent({
               <Stack spacing={0.75}>
                 {claim.contents.map((content) => {
                   const ext =
-                    content.file_type ?
-                      content.file_type.split("/").pop()?.toUpperCase()
+                    content.fileType ?
+                      content.fileType.split("/").pop()?.toUpperCase()
                     : null;
                   return (
                     <Box
