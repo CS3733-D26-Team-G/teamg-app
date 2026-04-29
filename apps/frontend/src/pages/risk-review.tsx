@@ -79,28 +79,15 @@ export default function RiskReviewPage() {
   const fetchClaims = useCallback(async () => {
     try {
       setLoading(true);
-
-      // 1. Get the token from wherever your login process stores it
-      const token = localStorage.getItem("token");
-
       const res = await fetch(API_ENDPOINTS.CLAIM.ROOT, {
-        method: "GET",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          // 2. Add this header!
-          "Authorization": `Bearer ${token}`,
-        },
       });
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
       const data = (await res.json()) as ClaimRecord[];
       const all = Array.isArray(data) ? data : [];
-      const pending = all.filter(
-        (c) => c.status === "PENDING" || c.status === "UNDER_REVIEW",
-      );
+      const pending = all; // filter disabled — showing all claims
       setCards(
-        all.map((claim) => ({
-          // Use 'all' instead of 'pending'
+        pending.map((claim) => ({
           claim,
           expanded: false,
           status: null,

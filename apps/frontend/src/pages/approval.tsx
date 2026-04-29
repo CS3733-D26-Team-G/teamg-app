@@ -86,7 +86,7 @@ export default function ApprovalPage() {
       const all = Array.isArray(data) ? data : [];
 
       // Admins see all claims; show only those cleared by underwriters
-      const cleared = all.filter((c) => c.status === "RISK_CLEARED");
+      const cleared = all; // filter disabled — showing all claims
 
       setCards(
         cleared.map((claim) => ({
@@ -157,7 +157,7 @@ export default function ApprovalPage() {
   const pendingCount = cards.filter((c) => c.status === null).length;
 
   return (
-    <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
+    <Box sx={{ minHeight: "100vh", backgroundColor: "white" }}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <Box
         sx={{
@@ -343,7 +343,7 @@ export default function ApprovalPage() {
             >
               <Typography
                 variant="body2"
-                sx={{ color: "white" }}
+                color="text.secondary"
               >
                 {approvedCount + deniedCount} of {cards.length} reviewed
               </Typography>
@@ -369,22 +369,17 @@ export default function ApprovalPage() {
                     disabled={submitting || approvedCount + deniedCount === 0}
                     onClick={() => void handleSubmitApprovals()}
                     sx={{
-                      "background": "linear-gradient(135deg, #4F6BED, #6C8EF5)",
+                      "background": "linear-gradient(135deg, #1A1E4B, #395176)",
                       "fontWeight": 700,
                       "px": 4,
                       "py": 1.4,
                       "borderRadius": "12px",
                       "textTransform": "none",
                       "fontSize": "1rem",
-                      "boxShadow": "0 4px 16px rgba(79,107,237,0.45)",
+                      "boxShadow": "0 4px 16px rgba(26,30,75,0.35)",
                       "&:hover": {
-                        background: "linear-gradient(135deg, #3A54D4, #5A7AE8)",
-                        boxShadow: "0 6px 20px rgba(79,107,237,0.6)",
-                      },
-                      "&.Mui-disabled": {
-                        background: "rgba(255, 255, 255, 0.15)",
-                        color: "rgba(255, 255, 255, 0.4)",
-                        boxShadow: "none",
+                        background: "linear-gradient(135deg, #0f1230, #2d4060)",
+                        boxShadow: "0 6px 20px rgba(26,30,75,0.5)",
                       },
                     }}
                   >
