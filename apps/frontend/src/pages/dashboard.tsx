@@ -4,6 +4,7 @@ import SearchBar from "./DashboardComponents/SearchBar";
 import HitsLineChart from "./DashboardComponents/HitsLineChart";
 import PieChart from "./DashboardComponents/PieChart";
 import TypeBarChart from "./DashboardComponents/BarChart";
+import AdminCards from "./DashboardComponents/AdminCards";
 import NotificationBell from "../components/Notifications/NotificationBell.tsx";
 import { Typography } from "@mui/material";
 import Card from "@mui/material/Card";
@@ -234,6 +235,35 @@ export default function Dashboard() {
     helpDescriptions[session?.position ?? ""] ??
     "The Dashboard gives you an overview of your organization.";
 
+  const employeeDemographicsCard = (
+    <Card
+      className="w-[420px] min-w-[420px] outline-1 outline-gray-200"
+      sx={{
+        margin: 0,
+      }}
+    >
+      {" "}
+      <CardHeader
+        sx={{ py: 1.5, px: 2 }}
+        title={
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+          >
+            {" "}
+            Employee Demographics
+          </Typography>
+        }
+      />
+      <Divider />
+      <CardContent className="flex items-center justify-center p-6">
+        <div className="w-full">
+          <PieChart data={employeePieData} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
       {/* Header Section */}
@@ -253,32 +283,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Card className="outline-1 outline-gray-200">
-        <CardHeader
-          sx={{ py: 1.5, px: 2 }}
-          title={
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
-            >
-              Content Edit Hits By Role
-            </Typography>
-          }
-        />{" "}
-        <Divider />
-        <CardContent className="p-6">
-          <HitsLineChart data={editHitsByRole} />
-        </CardContent>
-      </Card>
       <CardContent className="flex flex-col gap-8 p-8">
-        {/* Row Container: items-stretch forces children to equal height */}
-        <div className="flex flex-row gap-8 items-stretch">
-          {/* Pie Chart: The "Height Driver" */}
+        <div className="flex flex-row gap-8 items-start">
           <Card
-            className="flex-none w-fit outline-1 outline-gray-200"
-            sx={{
-              margin: 0,
-            }}
+            className="w-fit outline-1 outline-gray-200"
+            sx={{ margin: 0 }}
           >
             <CardHeader
               sx={{ py: 1.5, px: 2 }}
@@ -292,31 +301,68 @@ export default function Dashboard() {
               }
             />
             <Divider />
-            <CardContent className="h-full flex items-center justify-center p-6">
-              <div className="w-100">
-                <PieChart data={employeePieData} />
-              </div>
+            <CardContent className="p-6">
+              <HitsLineChart data={editHitsByRole} />
             </CardContent>
           </Card>
 
-          <Card className="outline-1 outline-gray-200">
-            <CardHeader
-              sx={{ py: 1.5, px: 2 }}
-              title={
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
-                >
-                  {" "}
-                  File Types
-                </Typography>
-              }
-            />
-            <Divider />
-            <CardContent className="p-6">
-              <TypeBarChart data={fileTypeCount} />
-            </CardContent>
-          </Card>
+          {employeeDemographicsCard}
+        </div>
+
+        {session?.position === "ADMIN" && (
+          <div className="flex flex-row gap-8 items-start">
+            <AdminCards />
+
+            <div className="w-[420px] min-w-[420px]">
+              <Card
+                className="outline-1 outline-gray-200"
+                sx={{ margin: 0 }}
+              >
+                <CardHeader
+                  sx={{ py: 1.5, px: 2 }}
+                  title={
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+                    >
+                      File Types
+                    </Typography>
+                  }
+                />
+                <Divider />
+                <CardContent className="p-6">
+                  <TypeBarChart data={fileTypeCount} />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-row gap-8 items-start">
+          {session?.position !== "ADMIN" && (
+            <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
+              <Card
+                className="outline-1 outline-gray-200"
+                sx={{ margin: 0 }}
+              >
+                <CardHeader
+                  sx={{ py: 1.5, px: 2 }}
+                  title={
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+                    >
+                      File Types
+                    </Typography>
+                  }
+                />
+                <Divider />
+                <CardContent className="p-6">
+                  <TypeBarChart data={fileTypeCount} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Recent Activity: Grows to fill width and matches height */}
           <div className="flex-1 min-w-125">

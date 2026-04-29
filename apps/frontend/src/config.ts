@@ -21,6 +21,9 @@ export const API_ENDPOINTS = {
     AVATAR: `${API_BASE_URL}/profile/avatar`,
   },
   ACCOUNT_SETTINGS: `${API_BASE_URL}/account-settings`,
+  STATS: {
+    ACTIVITY_ACTION_SUMMARY: `${API_BASE_URL}/stats/activity/action-summary`,
+  },
   EMPLOYEE: {
     ROOT: `${API_BASE_URL}/employee`,
     CREATE: `${API_BASE_URL}/employee/create`,

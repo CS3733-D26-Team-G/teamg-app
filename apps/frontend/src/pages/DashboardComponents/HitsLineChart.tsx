@@ -14,15 +14,22 @@ interface EditHitsLineChartProps {
   data: EditHitsRow[];
 }
 
+function formatDateLabel(date: string) {
+  const [year, month, day] = date.split("-");
+  if (!year || !month || !day) {
+    return date;
+  }
+  return `${Number(month)}/${Number(day)}`;
+}
 export default function HitsLineChart({ data }: EditHitsLineChartProps) {
   return (
     <LineChart
-      width={800}
       height={320}
+      margin={{ top: 16, right: 24, bottom: 24, left: 48 }}
       xAxis={[
         {
           scaleType: "point",
-          data: data.map((row) => row.date),
+          data: data.map((row) => formatDateLabel(row.date)),
         },
       ]}
       series={[
@@ -57,6 +64,8 @@ export default function HitsLineChart({ data }: EditHitsLineChartProps) {
           color: "#74414e",
         },
       ]}
+      grid={{ horizontal: true }}
+      sx={{ width: "100%", mr: "auto" }}
     />
   );
 }

@@ -3,12 +3,28 @@ import { Position, Prisma, prisma } from "@repo/db";
 import {
   getAuth,
   isAdmin,
-  //requireAdmin,
+  requireAdmin,
   sendInternalError,
 } from "../lib/request.ts";
 import { logger } from "../logger.ts";
 
 const router = express.Router();
+const DASHBOARD_TIME_ZONE = "America/New_York";
+
+function formatDashboardDateKey(timestamp: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: DASHBOARD_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(timestamp);
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  return `${year}-${month}-${day}`;
+}
 
 function getVisibleContentWhere(
   auth: NonNullable<Express.Request["auth"]>,
@@ -52,6 +68,48 @@ router.get(
       return res.status(200).json(stats);
     } catch (e) {
       return sendInternalError(res, "Failed to retrieve employee stats", e);
+    }
+  },
+);
+router.get(
+  "/activity/action-summary",
+  requireAdmin("dashboard activity summary"),
+  async (req, res) => {
+    const position = req.query.position as Position | undefined;
+    const employeeUuid = req.query.employeeUuid as string | undefined;
+    try {
+      const employeeWhere: Prisma.EmployeeWhereInput = {
+        ...(position ? { position } : {}),
+        ...(employeeUuid ? { uuid: employeeUuid } : {}),
+      };
+      const hasEmployeeFilter = Object.keys(employeeWhere).length > 0;
+      const activities = await prisma.activity.groupBy({
+        by: ["action"],
+        where: {
+          ...(hasEmployeeFilter ? { employee: employeeWhere } : {}),
+          action: {
+            in: ["EDIT_CONTENT", "CHECK_OUT_CONTENT", "DELETE_CONTENT"],
+          },
+        },
+        _count: {
+          _all: true,
+        },
+      });
+      const summary = {
+        edited:
+          activities.find((activity) => activity.action === "EDIT_CONTENT")
+            ?._count._all ?? 0,
+        checkedOut:
+          activities.find((activity) => activity.action === "CHECK_OUT_CONTENT")
+            ?._count._all ?? 0,
+        deleted:
+          activities.find((activity) => activity.action === "DELETE_CONTENT")
+            ?._count._all ?? 0,
+        previewed: 0,
+      };
+      return res.status(200).json(summary);
+    } catch (e) {
+      return sendInternalError(res, "Can't get summary", e);
     }
   },
 );
@@ -153,7 +211,7 @@ router.get("/content/edit-hits-by-role", async (req, res) => {
     } & Partial<Record<Position, number>>;
     const grouped = new Map<string, EditHitsRow>();
     for (const activity of activities) {
-      const date = activity.timestamp.toISOString().slice(0, 10);
+      const date = formatDashboardDateKey(activity.timestamp);
       if (!grouped.has(date)) {
         const baseRow: EditHitsRow = { date };
         for (const position of positions) {
