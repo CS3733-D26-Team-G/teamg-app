@@ -23,11 +23,6 @@ import {
   type ContentTagSummary,
 } from "../../types/content";
 
-// interface Tag {
-//   uuid: string;
-//   name: string;
-// }
-
 interface TagManagerPopupProps {
   onTagsChanged: () => Promise<void>;
 }
