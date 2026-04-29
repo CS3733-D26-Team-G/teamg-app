@@ -726,6 +726,17 @@ export default function ContentManagement({
     </>
   );
 
+  const recordContentView = async (uuid: string) => {
+    try {
+      await fetch(API_ENDPOINTS.CONTENT.VIEW(uuid), {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Failed to record content view:", error);
+    }
+  };
+
   // ── Column definitions ─────────────────────────────────────────────────────
   const getColumns = (
     onPreview: (row: ContentRow) => void,
@@ -1534,13 +1545,17 @@ export default function ContentManagement({
                     getRowId={(row) => row.uuid}
                     columns={getColumns(
                       (row) => {
+                        void recordContentView(row.uuid);
+
                         const isExternalUrl =
                           !row.supabasePath &&
                           !row.url.includes("supabase.co/storage");
+
                         if (isExternalUrl) {
                           window.open(row.url, "_blank");
                           return;
                         }
+
                         setSelectedDoc({
                           uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
                           fileName: row.title,
