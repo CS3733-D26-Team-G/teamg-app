@@ -6,7 +6,7 @@ import PieChart from "./DashboardComponents/PieChart";
 import TypeBarChart from "./DashboardComponents/BarChart";
 import AdminCards from "./DashboardComponents/AdminCards";
 import NotificationBell from "../components/Notifications/NotificationBell.tsx";
-import { Typography } from "@mui/material";
+import { Box, styled, Toolbar, Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import { CardHeader, Divider } from "@mui/material";
@@ -208,6 +208,14 @@ export default function Dashboard() {
     helpDescriptions[session?.position ?? ""] ??
     "The Dashboard gives you an overview of your organization.";
 
+  const StyledToolbar = styled(Toolbar)(({ theme }) => ({
+    flexDirection: "column",
+    alignItems: "stretch",
+    paddingTop: theme.spacing(2),
+    paddingBottom: theme.spacing(2),
+    minHeight: 128,
+  }));
+
   const employeeDemographicsCard = (
     <Card
       className="w-[420px] min-w-[420px] outline-1 outline-gray-200"
@@ -221,6 +229,10 @@ export default function Dashboard() {
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
             Employee Demographics
+            <HelpPopup
+              description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
+              infoOrHelp={false}
+            />
           </Typography>
         }
       />
@@ -262,163 +274,199 @@ export default function Dashboard() {
   );
 
   return (
-    <Card className="m-auto flex h-auto min-h-[95vh] flex-col">
-      <div className="flex items-center justify-between border-b border-gray-200 px-8 py-6">
-        <Typography
-          variant="h2"
-          sx={{ fontWeight: "bold" }}
-        >
-          Welcome Back{" "}
-          {profile?.first_name ??
-            (session?.position ?? "employee").toLowerCase()}
-          !
-        </Typography>
-        <div className="flex items-center gap-2">
-          <HelpPopup
-            description={helpText}
-            infoOrHelp={true}
-          />
-          <NotificationBell />
-          <div className="w-80">
-            <SearchBar setSearchQuery={setSearchQuery} />
-          </div>
-        </div>
-      </div>
-
-      <CardContent className="flex flex-col gap-8 p-8">
-        <div className="flex flex-row gap-8 items-start">
-          <Card
-            className="flex-1 outline-1 outline-gray-200"
-            sx={{ margin: 0, borderRadius: 3 }}
+    <Box
+      sx={{
+        height: "auto",
+        width: "100%",
+        background:
+          "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+      }}
+    >
+      <StyledToolbar
+        sx={{
+          background:
+            "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        <div className="flex justify-between items-center px-8 py-6">
+          <Typography
+            variant="h2"
+            sx={{ fontWeight: "bold", color: "white" }}
           >
-            <CardHeader
-              sx={{ py: 1.5, px: 2 }}
-              title={
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
-                >
-                  Employee Edits (per day)
-                  <HelpPopup
-                    description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
-                    infoOrHelp={false}
-                  />
-                </Typography>
-              }
+            Welcome Back {profile?.first_name}!
+          </Typography>
+          {[...Array(3)].map((_, i) => (
+            <Box
+              key={i}
+              sx={{
+                position: "absolute",
+                borderRadius: "50%",
+                border: "1px solid rgba(238, 31, 31, 0.12)",
+                width: 120 + i * 80,
+                height: 120 + i * 80,
+                top: -40 - i * 30,
+                right: -40 - i * 30,
+              }}
             />
-            <Divider />
-            <CardContent className="p-6">
-              <HitsLineChart />
-            </CardContent>
-          </Card>
-
-          <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
-            {employeeDemographicsCard}
-            {popularContentSearchCard}
-          </div>
-        </div>
-
-        {session?.position === "ADMIN" && (
-          <div className="flex flex-row gap-8 items-start">
-            <AdminCards />
-            <div className="w-[420px] min-w-[420px]">
-              <Card
-                className="outline-1 outline-gray-200"
-                sx={{ margin: 0, borderRadius: 3 }}
-              >
-                <CardHeader
-                  sx={{ py: 1.5, px: 2 }}
-                  title={
-                    <Typography
-                      variant="h6"
-                      sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
-                    >
-                      File Types
-                    </Typography>
-                  }
-                />
-                <Divider />
-                <CardContent className="p-6">
-                  <TypeBarChart data={fileTypeCount} />
-                </CardContent>
-              </Card>
+          ))}
+          <div className="flex items-center gap-2">
+            <HelpPopup
+              description={helpText}
+              infoOrHelp={true}
+            />
+            <NotificationBell />
+            <div className="w-80">
+              <SearchBar setSearchQuery={setSearchQuery} />
             </div>
           </div>
-        )}
+        </div>
+      </StyledToolbar>
 
-        <div className="flex flex-row gap-8 items-start">
-          {session?.position !== "ADMIN" && (
+      <Card
+        className="m-auto mr-2 mb-2 flex h-auto min-h-[95vh] flex-col"
+        sx={{ borderRadius: 3 }}
+      >
+        <CardContent
+          className="mr-1 flex flex-col gap-5 bg-gray-100"
+          sx={{ padding: 5, minHeight: "88vh" }}
+        >
+          <div className="flex flex-row gap-8 items-start">
             <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
-              <Card
-                className="outline-1 outline-gray-200"
-                sx={{ margin: 0, borderRadius: 3 }}
-              >
-                <CardHeader
-                  sx={{ py: 1.5, px: 2 }}
-                  title={
+              {employeeDemographicsCard}
+            </div>
+
+            <div className="flex-1 min-w-[500px]">
+              <DashboardRecentActivity rawLogs={rawLogs} />
+            </div>
+          </div>
+
+          <div className="flex flex-row gap-8 items-start">
+            {roles.map((role) => {
+              const key = getAnalyticsKey(role);
+              const count = analytics[key] ?? 0;
+
+              return (
+                <Card
+                  key={role}
+                  className="flex-1 drop-shadow-lg outline-1 outline-gray-200"
+                  sx={{ borderRadius: 3 }}
+                >
+                  <CardContent className="p-4">
                     <Typography
-                      variant="h6"
-                      sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+                      variant="subtitle2"
+                      color="text.secondary"
+                      gutterBottom
                     >
-                      File Types
+                      {role}
                     </Typography>
-                  }
-                />
-                <Divider />
-                <CardContent className="p-6">
-                  <TypeBarChart data={fileTypeCount} />
-                </CardContent>
-              </Card>
+                    <Typography
+                      variant="h4"
+                      sx={{ fontWeight: "bold", fontSize: "2rem" }}
+                    >
+                      {count}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="primary.main"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      Total Items
+                      <HelpPopup
+                        description={`This is the total amount of content accessible by ${role}s`}
+                        infoOrHelp={false}
+                      />
+                    </Typography>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {session?.position === "ADMIN" && (
+            <div className="flex flex-row gap-8 items-start">
+              <AdminCards />
+              <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
+                <Card
+                  className="outline-1 outline-gray-200"
+                  sx={{ margin: 0, borderRadius: 3 }}
+                >
+                  <CardHeader
+                    sx={{ py: 1.5, px: 2 }}
+                    title={
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+                      >
+                        File Types
+                      </Typography>
+                    }
+                  />
+                  <Divider />
+                  <CardContent className="p-6">
+                    <TypeBarChart data={fileTypeCount} />
+                  </CardContent>
+                </Card>
+                {popularContentSearchCard}
+              </div>
             </div>
           )}
 
-          <div className="flex-1 min-w-[500px]">
-            <DashboardRecentActivity rawLogs={rawLogs} />
-          </div>
-        </div>
+          <div className="flex flex-row gap-8 items-start">
+            {session?.position !== "ADMIN" && (
+              <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
+                <Card
+                  className="outline-1 outline-gray-200"
+                  sx={{ margin: 0, borderRadius: 3 }}
+                >
+                  <CardHeader
+                    sx={{ py: 1.5, px: 2 }}
+                    title={
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+                      >
+                        File Types
+                      </Typography>
+                    }
+                  />
+                  <Divider />
+                  <CardContent className="p-6">
+                    <TypeBarChart data={fileTypeCount} />
+                  </CardContent>
+                </Card>
+                {popularContentSearchCard}
+              </div>
+            )}
 
-        <div className="flex w-full flex-row gap-6">
-          {roles.map((role) => {
-            const key = getAnalyticsKey(role);
-            const count = analytics[key] ?? 0;
-
-            return (
-              <Card
-                key={role}
-                className="flex-1 drop-shadow-lg outline-1 outline-gray-200"
-                sx={{ borderRadius: 3 }}
-              >
-                <CardContent className="p-4">
+            <Card
+              className="flex-1 outline-1 outline-gray-200"
+              sx={{ margin: 0, borderRadius: 3 }}
+            >
+              <CardHeader
+                sx={{ py: 1.5, px: 2 }}
+                title={
                   <Typography
-                    variant="subtitle2"
-                    color="text.secondary"
-                    gutterBottom
+                    variant="h6"
+                    sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
                   >
-                    {role}
-                  </Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{ fontWeight: "bold", fontSize: "2rem" }}
-                  >
-                    {count}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="primary.main"
-                    sx={{ fontWeight: "bold" }}
-                  >
-                    Total Items
+                    Employee Edits By Day
                     <HelpPopup
-                      description={`This is the total amount of content accessible by ${role}s`}
+                      description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
                       infoOrHelp={false}
                     />
                   </Typography>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+                }
+              />
+              <Divider />
+              <CardContent className="p-6">
+                <HitsLineChart />
+              </CardContent>
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

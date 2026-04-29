@@ -82,21 +82,25 @@ export default function HitsLineChart() {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.UNDERWRITER ?? 0),
           label: "Underwriter",
           color: "#395176",
+          shape: "circle",
         },
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.BUSINESS_ANALYST ?? 0),
           label: "Business Analyst",
           color: "#bea5aa",
+          shape: "circle",
         },
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.ACTUARIAL_ANALYST ?? 0),
           label: "Actuarial Analyst",
           color: "#ba667b",
+          shape: "circle",
         },
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.EXL_OPERATIONS ?? 0),
           label: "EXL Operations",
           color: "#721b31",
+          shape: "circle",
         },
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map(
@@ -104,11 +108,13 @@ export default function HitsLineChart() {
           ),
           label: "Business Ops Rating",
           color: "#509edd",
+          shape: "circle",
         },
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.ADMIN ?? 0),
           label: "Admin",
           color: "#74414e",
+          shape: "circle",
         },
       ]}
       grid={{ horizontal: true }}
