@@ -28,7 +28,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { API_ENDPOINTS } from "../config.ts";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.tsx";
-import Typography from "@mui/material/Typography";
+//import Typography from "@mui/material/Typography";
 import { useProfile } from "../profile/ProfileContext.tsx";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 

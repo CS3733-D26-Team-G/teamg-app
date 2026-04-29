@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Popover, Typography, Box, Avatar } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
+//import InfoIcon from "@mui/icons-material/Info";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import IconButton from "@mui/material/IconButton";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+//import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import { CopyIcon } from "lucide-react";
 
