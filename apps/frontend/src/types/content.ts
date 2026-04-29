@@ -81,6 +81,7 @@ export const ContentRowSchema = ContentRecordSchema.extend({
       }),
     )
     .default([]),
+  created_at: z.coerce.date().nullable().optional(),
 });
 export type ContentRow = z.infer<typeof ContentRowSchema>;
 export const ContentRowsSchema = z.array(ContentRowSchema);

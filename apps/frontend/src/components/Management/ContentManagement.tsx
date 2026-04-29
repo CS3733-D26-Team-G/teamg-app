@@ -448,9 +448,12 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
-        if (isExisting && !returningToEditorRef.current) {
-          await releaseLock(uuid);
+        if (isExisting) {
+          if (!returningToEditorRef.current) {
+            await releaseLock(uuid);
+          }
         } else {
+          // Only new content gets highlighted
           const data = (await res.json()) as { uuid: string };
           setSessionNewIds((prev) => new Set([...prev, data.uuid]));
         }
@@ -649,6 +652,8 @@ export default function ContentManagement({
               : ""
             }
             editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
+            createdAt={params.row.created_at}
+            updatedAt={params.row.last_modified_time}
           />
         </Box>
       ),
@@ -1406,14 +1411,17 @@ export default function ContentManagement({
             >
               {selectedDoc?.fileName ?? "Preview"}
             </Typography>
-            <Button
-              onClick={() => {
-                setPreviewOpen(false);
-                setSelectedDoc(null);
-              }}
-            >
-              Close
-            </Button>
+            <Tooltip title="Close">
+              <IconButton
+                onClick={() => {
+                  setPreviewOpen(false);
+                  setSelectedDoc(null);
+                }}
+                size="small"
+              >
+                <CloseIcon />
+              </IconButton>
+            </Tooltip>
           </Stack>
           <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
             {selectedDoc && (
@@ -1443,9 +1451,6 @@ export default function ContentManagement({
             <DocumentEditorModal
               open={editorOpen}
               onClose={() => {
-                if (!skipLockReleaseRef.current) {
-                  void releaseLock(selectedDoc.uuid);
-                }
                 skipLockReleaseRef.current = false;
                 setEditorOpen(false);
               }}

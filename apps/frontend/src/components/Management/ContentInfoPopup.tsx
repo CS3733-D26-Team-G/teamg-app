@@ -14,6 +14,8 @@ interface InfoButtonProps {
   fileType: string | null;
   editor?: string;
   editorAvatar?: string | null;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
 }
 
 function formatFileType(mime: string | null): string {
@@ -40,6 +42,15 @@ function formatFileType(mime: string | null): string {
   return mimeMap[mime] ?? mime;
 }
 
+function formatDate(value: Date | string | null | undefined): string {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function InfoPopup({
   url,
   author,
@@ -47,6 +58,8 @@ export default function InfoPopup({
   fileType,
   editor,
   editorAvatar,
+  createdAt,
+  updatedAt,
 }: InfoButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [copied, setCopied] = useState(false);
@@ -149,6 +162,14 @@ export default function InfoPopup({
           </Typography>
           <Typography>
             <b>File Type:</b> {formatFileType(fileType)}
+          </Typography>
+
+          <Typography>
+            <b>Created:</b> {formatDate(createdAt)}
+          </Typography>
+
+          <Typography>
+            <b>Last Updated:</b> {formatDate(updatedAt)}
           </Typography>
         </Box>
       </Popover>
