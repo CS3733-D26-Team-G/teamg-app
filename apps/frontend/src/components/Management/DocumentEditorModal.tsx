@@ -8,10 +8,10 @@
  * Supported editing:
  * - PDF files: full annotation and content editing, saved back to the server.
  * - Non-PDF files (docx, pptx, etc.): displayed via Apryse's internal PDF
- *   conversion. Note: the Apryse demo licence does not support saving non-PDF
+ *   conversion. Note: the Apryse demo license does not support saving non-PDF
  *   formats back as their original type — editing should be restricted to PDFs.
  *
- * Save behaviour:
+ * Save behavior:
  * - Reads the document bytes via getFileData(), wraps them in a Blob with the
  *   correct MIME type derived from the fileName extension, and PUTs to the
  *   backend edit endpoint.
@@ -23,7 +23,18 @@
  */
 
 import { useRef, useEffect, useState } from "react";
-import { Dialog, Box, Button, Stack, Typography } from "@mui/material";
+import {
+  Dialog,
+  Box,
+  Stack,
+  Typography,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import SaveIcon from "@mui/icons-material/Save";
+import CloseIcon from "@mui/icons-material/Close";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import WebViewer, { type WebViewerInstance } from "@pdftron/webviewer";
 import { API_ENDPOINTS } from "../../config.ts";
 import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
@@ -49,6 +60,10 @@ interface Props {
   readOnly?: boolean;
   /** Called after a successful save so the parent can refresh its data. */
   onSaved?: () => void;
+  /** Called when the user clicks Delete; parent handles confirmation + API call. */
+  onDelete?: () => void;
+  /** Called when the user clicks the Edit (open form) button. */
+  onOpenForm?: () => void;
 }
 
 // ─── MIME lookup ──────────────────────────────────────────────────────────────
@@ -88,6 +103,8 @@ export default function DocumentEditorModal({
   contentRow,
   readOnly = false,
   onSaved,
+  onDelete,
+  onOpenForm,
 }: Props) {
   // ─── Refs ──────────────────────────────────────────────────────────────────
 
@@ -239,6 +256,48 @@ export default function DocumentEditorModal({
     );
   }, [theme.palette.mode, viewerReady]);
 
+  // ─── Save handler ─────────────────────────────────────────────────────────
+
+  const handleSave = async () => {
+    const instance = instanceRef.current;
+    if (!instance) return;
+    const doc = instance.Core.documentViewer.getDocument();
+
+    const extFromName =
+      fileName.includes(".") ?
+        (fileName.split(".").pop()?.toLowerCase() ?? "pdf")
+      : "pdf";
+
+    const extToMime: Record<string, string> = {
+      pdf: "application/pdf",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ppt: "application/vnd.ms-powerpoint",
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+    };
+
+    const mimeType = extToMime[extFromName] ?? "application/pdf";
+
+    const data = await doc.getFileData({});
+    const blob = new Blob([data], { type: mimeType });
+    const formData = new FormData();
+    formData.append("file", blob, fileName);
+
+    await fetch(API_ENDPOINTS.CONTENT.EDIT(uuid), {
+      method: "PUT",
+      credentials: "include",
+      body: formData,
+    });
+
+    // Reset URI cache so the next open re-fetches the updated file
+    currentUriRef.current = "";
+    onSaved?.();
+    onClose();
+  };
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -254,74 +313,73 @@ export default function DocumentEditorModal({
       keepMounted // Keep WebViewer alive between opens to avoid re-initialization
     >
       <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
-        {/* ── Top bar: file name + Save/Close actions ── */}
+        {/* ── Top bar: file name + actions ── */}
         <Stack
           direction="row"
           justifyContent="space-between"
           alignItems="center"
-          sx={{ p: 1, gap: 1, flexShrink: 0 }}
+          sx={{ px: 2, py: 1, gap: 1, flexShrink: 0 }}
         >
           <Typography
             variant="subtitle2"
             sx={{ pl: 1, color: "text.secondary" }}
+            noWrap
           >
             {fileName}
           </Typography>
+
           <Stack
             direction="row"
-            gap={1}
+            gap={0.5}
+            alignItems="center"
           >
-            <Button
-              variant="contained"
-              onClick={async () => {
-                const instance = instanceRef.current;
-                if (!instance) return;
-                const doc = instance.Core.documentViewer.getDocument();
+            {/* Open content form */}
+            {onOpenForm && (
+              <Tooltip title="Edit metadata">
+                <IconButton
+                  onClick={onOpenForm}
+                  size="small"
+                >
+                  <EditNoteIcon />
+                </IconButton>
+              </Tooltip>
+            )}
 
-                // Derive MIME type from the file extension so the server stores
-                // the correct Content-Type. Avoids the mime-types Node.js library
-                // which cannot run in the browser (path.extname is not available).
-                const extFromName =
-                  fileName.includes(".") ?
-                    (fileName.split(".").pop()?.toLowerCase() ?? "pdf")
-                  : "pdf";
+            {/* Delete file */}
+            {onDelete && (
+              <Tooltip title="Delete">
+                <IconButton
+                  onClick={onDelete}
+                  size="small"
+                  color="error"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
+            )}
 
-                const extToMime: Record<string, string> = {
-                  pdf: "application/pdf",
-                  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                  ppt: "application/vnd.ms-powerpoint",
-                  png: "image/png",
-                  jpg: "image/jpeg",
-                  jpeg: "image/jpeg",
-                };
+            {/* Save */}
+            {!readOnly && (
+              <Tooltip title="Save">
+                <IconButton
+                  onClick={() => void handleSave()}
+                  size="small"
+                  color="primary"
+                >
+                  <SaveIcon />
+                </IconButton>
+              </Tooltip>
+            )}
 
-                const mimeType = extToMime[extFromName] ?? "application/pdf";
-
-                // getFileData({}) returns the document bytes as an ArrayBuffer.
-                // Note: on the Apryse demo licence, non-PDF formats are converted
-                // to PDF internally, so only PDF round-trips are fully reliable.
-                const data = await doc.getFileData({});
-                const blob = new Blob([data], { type: mimeType });
-                const formData = new FormData();
-                formData.append("file", blob, fileName);
-
-                await fetch(API_ENDPOINTS.CONTENT.EDIT(uuid), {
-                  method: "PUT",
-                  credentials: "include",
-                  body: formData,
-                });
-
-                // Reset URI cache so the next open re-fetches the updated file
-                currentUriRef.current = "";
-                onSaved?.();
-                onClose();
-              }}
-            >
-              Save
-            </Button>
-            <Button onClick={onClose}>Close</Button>
+            {/* Close */}
+            <Tooltip title="Close">
+              <IconButton
+                onClick={onClose}
+                size="small"
+              >
+                <CloseIcon />
+              </IconButton>
+            </Tooltip>
           </Stack>
         </Stack>
 

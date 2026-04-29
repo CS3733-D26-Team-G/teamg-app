@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import {
   IconButton,
@@ -58,9 +64,9 @@ import DocumentEditorModal from "./DocumentEditorModal.tsx";
 import { dedupeAsync } from "../../lib/async-cache";
 import HelpPopup from "../../components/HelpPopup";
 import DocPreviewer from "./DocPreviewer.tsx";
-import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
 import InfoPopup from "./ContentInfoPopup.tsx";
 import TagManagerPopup from "./TagManagerPopup.tsx";
+import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -158,6 +164,8 @@ export default function ContentManagement({
   const isDark = theme.palette.mode === "dark";
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+  const skipLockReleaseRef = useRef(false);
+  const returningToEditorRef = useRef(false);
 
   const displayFileType = (fileType: string) =>
     fileTypeLabels[fileType] ?? fileType;
@@ -193,6 +201,7 @@ export default function ContentManagement({
 
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
   const [pendingSave, setPendingSave] = useState<FormData | null>(null);
+  const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
@@ -257,6 +266,12 @@ export default function ContentManagement({
   useEffect(() => {
     void fetchRows();
   }, [fetchRows]);
+
+  useEffect(() => {
+    if (rows.length > 0 && session?.employeeUuid) {
+      setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
+    }
+  }, [rows, session?.employeeUuid]);
 
   const filteredRows = useMemo(
     () =>
@@ -374,6 +389,7 @@ export default function ContentManagement({
                   uuid: session?.employeeUuid ?? "",
                   first_name: "",
                   last_name: "",
+                  avatar: null,
                 },
               },
             }
@@ -437,7 +453,7 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
-        if (isExisting) {
+        if (isExisting && !returningToEditorRef.current) {
           await releaseLock(uuid);
         } else {
           const data = (await res.json()) as { uuid: string };
@@ -452,6 +468,12 @@ export default function ContentManagement({
   };
 
   const handleCloseFormModal = async () => {
+    if (returningToEditorRef.current) {
+      returningToEditorRef.current = false;
+      setViewState(null);
+      setEditorOpen(true); // reopen editor without re-fetching
+      return;
+    }
     if (viewState !== null && viewState !== "new") {
       await releaseLock(viewState.uuid);
     }
@@ -522,14 +544,6 @@ export default function ContentManagement({
   const handleClose = () => {
     setAnchorElement(null);
   };
-
-  const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (rows.length > 0 && session?.employeeUuid) {
-      setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
-    }
-  }, [rows, session?.employeeUuid]);
 
   // ── Confirmation dialogs ───────────────────────────────────────────────────
   const confirmationDialogs = (
@@ -633,6 +647,13 @@ export default function ContentManagement({
             author={params.row.content_owner}
             position={getPositionLabel(params.row.for_position) as Position}
             fileType={params.row.file_type}
+            editor={
+              params.row.editLock?.lockedByEmp ?
+                `${params.row.editLock.lockedByEmp.first_name} 
+              ${params.row.editLock.lockedByEmp.last_name}`
+              : ""
+            }
+            editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
           />
         </Box>
       ),
@@ -720,11 +741,7 @@ export default function ContentManagement({
           label={statusLabels[params.value as ContentStatus]}
           size="medium"
           variant="filled"
-          sx={{
-            width: 100,
-            borderColor: "black",
-            borderRadius: 1,
-          }}
+          sx={{ width: 100, borderColor: "black", borderRadius: 1 }}
         />
       ),
     },
@@ -780,6 +797,8 @@ export default function ContentManagement({
                 <VisibilityIcon />
               </IconButton>
             </Tooltip>
+
+            {/* Download */}
             <Tooltip
               title={
                 !hasPermission ?
@@ -790,7 +809,7 @@ export default function ContentManagement({
               <span>
                 <IconButton
                   color="primary"
-                  onClick={() => void onDownload(params.row)}
+                  onClick={() => void onDownload(row)}
                   disabled={!hasPermission}
                 >
                   <DownloadIcon />
@@ -803,7 +822,7 @@ export default function ContentManagement({
               <Tooltip
                 title={
                   !hasPermission ?
-                    "Content is checked out"
+                    "You don't have permission"
                   : "Check Out to edit"
                 }
               >
@@ -951,10 +970,10 @@ export default function ContentManagement({
                   aria-expanded={anchorElement ? "true" : undefined}
                   variant="contained"
                   startIcon={<FilterAltIcon />}
-                  sx={{}}
                 >
                   Filter
                 </Button>
+
                 {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
                   <Button
                     size="small"
@@ -1181,7 +1200,10 @@ export default function ContentManagement({
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <HelpPopup description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly." />
+              <HelpPopup
+                description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
+                infoOrHelp={true}
+              />
               {isSystemAdmin && (
                 <TagManagerPopup
                   rows={rows}
@@ -1390,7 +1412,7 @@ export default function ContentManagement({
           setPreviewOpen(false);
           setSelectedDoc(null);
         }}
-        maxWidth="lg"
+        maxWidth="xl"
         fullWidth
         keepMounted
       >
@@ -1435,7 +1457,7 @@ export default function ContentManagement({
         </Box>
       </Dialog>
 
-      {/* Document Editor Modal — opened via the Edit button when checked out */}
+      {/* ── Document Editor Modal — opened via Edit button when checked out ── */}
       {editorOpen &&
         selectedDoc &&
         (() => {
@@ -1444,17 +1466,29 @@ export default function ContentManagement({
           return (
             <DocumentEditorModal
               open={editorOpen}
-              onClose={() => setEditorOpen(false)}
+              onClose={() => {
+                if (!skipLockReleaseRef.current) {
+                  void releaseLock(selectedDoc.uuid);
+                }
+                skipLockReleaseRef.current = false;
+                setEditorOpen(false);
+              }}
               uri={selectedDoc.uri}
               fileName={selectedDoc.fileName}
               uuid={selectedDoc.uuid}
-              contentRow={editorRow}
+              contentRow={rows.find((r) => r.uuid === selectedDoc.uuid)!}
               onSaved={() => void fetchRows()}
               readOnly={false}
+              onDelete={() => editorRow && handleDelete(editorRow)}
+              onOpenForm={() => {
+                returningToEditorRef.current = true;
+                skipLockReleaseRef.current = true;
+                setEditorOpen(false);
+                setViewState(editorRow);
+              }}
             />
           );
         })()}
-
       {confirmationDialogs}
     </Box>
   );

@@ -275,7 +275,10 @@ export default function Dashboard() {
           Welcome Back {(session?.position ?? "employee").toLowerCase()}!
         </Typography>
         <div className="flex items-center gap-2">
-          <HelpPopup description={helpText} />
+          <HelpPopup
+            description={helpText}
+            infoOrHelp={true}
+          />
           <NotificationBell />
           <div className="w-80">
             <SearchBar setSearchQuery={setSearchQuery} />
@@ -297,6 +300,10 @@ export default function Dashboard() {
                   sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
                 >
                   Employee Demographics
+                  <HelpPopup
+                    description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
+                    infoOrHelp={false}
+                  />
                 </Typography>
               }
             />
@@ -402,6 +409,10 @@ export default function Dashboard() {
                     sx={{ fontWeight: "bold" }}
                   >
                     Total Items
+                    <HelpPopup
+                      description={`This is the total amount of content accessible by ${role}s`}
+                      infoOrHelp={false}
+                    />
                   </Typography>
                 </CardContent>
               </Card>
