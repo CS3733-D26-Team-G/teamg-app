@@ -5,8 +5,11 @@ import {
   getExpiresInSeconds,
   getExpiringContent,
   getCriticalContent,
-} from "./ExpiringContent.ts";
-import { NotificationsActive } from "@mui/icons-material";
+  getContentEdits,
+  getOwnershipChanges,
+} from "./Notifications.ts";
+import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
+import NotificationPage from "./NotificationPage.tsx";
 
 import {
   Box,
@@ -16,11 +19,11 @@ import {
   List,
   ListItem,
   Typography,
-  Button,
   Chip,
   CircularProgress,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 
 interface ExpiringContent {
   uuid: string;
@@ -32,10 +35,12 @@ interface ExpiringContent {
   formatted_time_remaining?: string;
 }
 
-interface ExpirationCounts {
+interface NotificationCounts {
   critical: number;
   expiring: number;
   expired: number;
+  ownership: number;
+  edits: number;
   total: number;
 }
 
@@ -58,31 +63,85 @@ function useContentInfo() {
   const [criticalContent, setCriticalContent] = useState<ExpiringContent[]>([]);
   const [expiringContent, setExpiringContent] = useState<ExpiringContent[]>([]);
   const [expiredContent, setExpiredContent] = useState<ExpiringContent[]>([]);
+  const [ownershipChanges, setOwnershipChanges] = useState<
+    Array<{
+      uuid: string;
+      action: string;
+      resourceUuid: string;
+      resourceName: string;
+      timestamp: string;
+      employee?: {
+        first_name: string;
+        last_name: string;
+      };
+      title: string;
+      notification_message: string;
+    }>
+  >([]);
+
+  const [contentEdits, setContentEdits] = useState<
+    Array<{
+      uuid: string;
+      action: string;
+      resourceUuid: string;
+      resourceName: string;
+      timestamp: string;
+      employee?: {
+        first_name: string;
+        last_name: string;
+      };
+      title: string;
+      notification_message: string;
+    }>
+  >([]);
   const [loading, setLoading] = useState(true);
-  const [counts, setCounts] = useState<ExpirationCounts>({
+  const [counts, setCounts] = useState<NotificationCounts>({
     critical: 0,
     expiring: 0,
     expired: 0,
+    ownership: 0,
+    edits: 0,
     total: 0,
   });
 
   const dismissAlert = useCallback(
-    (uuid: string) => {
-      setAllContent((prev) => prev.filter((item) => item.uuid !== uuid));
+    (uuid: string, type: string) => {
+      if (type === "critical" || type === "expiring") {
+        setAllContent((prev) => prev.filter((item) => item.uuid !== uuid));
+        setCriticalContent((prev) => prev.filter((item) => item.uuid !== uuid));
+        setExpiringContent((prev) => prev.filter((item) => item.uuid !== uuid));
 
-      setCriticalContent((prev) => prev.filter((item) => item.uuid !== uuid));
+        setCounts((prev) => ({
+          ...prev,
+          critical:
+            prev.critical -
+            (criticalContent.find((item) => item.uuid === uuid) ? 1 : 0),
+          expiring:
+            prev.expiring -
+            (expiringContent.find((item) => item.uuid === uuid) ? 1 : 0),
+          total: prev.total - 1,
+        }));
+      }
 
-      setExpiringContent((prev) => prev.filter((item) => item.uuid !== uuid));
-      setCounts((prev) => ({
-        ...prev,
-        critical:
-          prev.critical -
-          (criticalContent.find((item) => item.uuid === uuid) ? 1 : 0),
-        expiring:
-          prev.expiring -
-          (expiringContent.find((item) => item.uuid === uuid) ? 1 : 0),
-        total: prev.total - 1,
-      }));
+      if (type === "ownership") {
+        setOwnershipChanges((prev) =>
+          prev.filter((item) => item.uuid !== uuid),
+        );
+        setCounts((prev) => ({
+          ...prev,
+          ownership: prev.ownership - 1,
+          total: prev.total - 1,
+        }));
+      }
+
+      if (type === "edit") {
+        setContentEdits((prev) => prev.filter((item) => item.uuid !== uuid));
+        setCounts((prev) => ({
+          ...prev,
+          edits: prev.edits - 1,
+          total: prev.total - 1,
+        }));
+      }
     },
     [criticalContent, expiringContent],
   );
@@ -90,25 +149,64 @@ function useContentInfo() {
   const fetchContent = useCallback(async () => {
     try {
       setLoading(true);
-      const content = await getAllContent();
 
-      // Calculate expiration data
+      const [content, ownership, edits] = await Promise.all([
+        getAllContent(),
+        getOwnershipChanges(),
+        getContentEdits(),
+      ]);
+
       const expiring = getExpiringContent(content);
       const critical = getCriticalContent(content);
       const expired = getExpiredContent(content);
+
+      const formattedOwnership = ownership.map((change: any) => ({
+        uuid: change.uuid,
+        action: change.action,
+        resourceUuid: change.resourceUuid,
+        resourceName: change.resourceName,
+        timestamp: change.timestamp,
+        employee: change.employee,
+        title: change.resourceName.split(" (")[0],
+        notification_message: change.resourceName,
+      }));
+
+      const formattedEdits = edits.map((edit: any) => ({
+        uuid: edit.uuid,
+        action: edit.action,
+        resourceUuid: edit.resourceUuid,
+        resourceName: edit.resourceName,
+        timestamp: edit.timestamp,
+        employee: edit.employee,
+        title: edit.resourceName,
+        notification_message: `Content was edited${edit.employee ? ` by ${edit.employee.first_name} ${edit.employee.last_name}` : ""}`,
+      }));
 
       setAllContent(content);
       setCriticalContent(critical);
       setExpiringContent(expiring);
       setExpiredContent(expired);
+      setOwnershipChanges(formattedOwnership);
+      setContentEdits(formattedEdits);
+
+      const expiringCount = expiring.filter((c) => {
+        const seconds = getExpiresInSeconds(c.expiration_time);
+        return seconds <= 432000 && seconds > 3600;
+      }).length;
+
+      const totalAlerts =
+        critical.length +
+        expiringCount +
+        formattedOwnership.length +
+        formattedEdits.length;
+
       setCounts({
         critical: critical.length,
-        expiring: expiring.filter((c) => {
-          const seconds = getExpiresInSeconds(c.expiration_time);
-          return seconds <= 432000 && seconds > 3600;
-        }).length,
+        expiring: expiringCount,
         expired: expired.length,
-        total: expiring.length + expired.length,
+        ownership: formattedOwnership.length,
+        edits: formattedEdits.length,
+        total: totalAlerts,
       });
     } catch (error) {
       console.error("Failed to fetch content:", error);
@@ -128,6 +226,8 @@ function useContentInfo() {
     criticalContent,
     expiringContent,
     expiredContent,
+    ownershipChanges,
+    contentEdits,
     counts,
     loading,
     dismissAlert,
@@ -139,9 +239,10 @@ export default function NotificationsBell() {
   const {
     criticalContent,
     expiringContent,
+    ownershipChanges,
+    contentEdits,
     counts,
     loading,
-    refresh,
     dismissAlert,
   } = useContentInfo();
 
@@ -155,30 +256,65 @@ export default function NotificationsBell() {
     setAnchorEl(null);
   };
 
-  const allAlerts = [...criticalContent, ...expiringContent];
-  const open = Boolean(anchorEl);
-  const totalAlerts = counts.critical + counts.expiring;
+  const allAlerts = [
+    ...criticalContent.map((c) => ({ ...c, alertType: "critical" as const })),
+    ...expiringContent.map((c) => ({ ...c, alertType: "expiring" as const })),
+    ...ownershipChanges.map((o) => ({
+      uuid: o.uuid,
+      title: o.title,
+      alertType: "ownership" as const,
+      notification_message: o.notification_message,
+      expiration_time: null,
+    })),
+    ...contentEdits.map((e) => ({
+      uuid: e.uuid,
+      title: e.title,
+      alertType: "edit" as const,
+      notification_message: e.notification_message,
+      expiration_time: null,
+    })),
+  ];
 
-  const handleDismiss = (uuid: string, title: string, status: string) => {
-    dismissAlert(uuid);
-    console.log(
-      `"${title}" alert dismissed. You won't see this reminder again.`,
-    );
+  const open = Boolean(anchorEl);
+  const totalAlerts = counts.total;
+
+  const handleDismiss = (uuid: string, title: string, alertType: string) => {
+    dismissAlert(uuid, alertType);
+    console.log(`"${title}" alert dismissed.`);
+  };
+
+  const getAlertColor = (alertType: string) => {
+    switch (alertType) {
+      case "critical":
+        return "error";
+      case "expiring":
+        return "warning";
+      case "ownership":
+        return "info";
+      case "edit":
+        return "secondary";
+      default:
+        return "default";
+    }
+  };
+
+  const getAlertIcon = () => {
+    return totalAlerts <= 0 ?
+        <NotificationsIcon />
+      : <NotificationsActiveIcon />;
   };
 
   return (
     <>
       <IconButton
         onClick={handleClick}
-        color="inherit"
+        sx={{ color: "white" }}
       >
         <Badge
           badgeContent={totalAlerts}
           color={counts.critical > 0 ? "error" : "warning"}
         >
-          {totalAlerts <= 0 ?
-            <NotificationsIcon />
-          : <NotificationsActive />}
+          {getAlertIcon()}
         </Badge>
       </IconButton>
 
@@ -196,17 +332,27 @@ export default function NotificationsBell() {
         }}
       >
         <Box sx={{ p: 2, width: 400 }}>
-          <Typography variant="h6">
-            Expiring Content
-            {totalAlerts > 0 && (
-              <Chip
-                label={totalAlerts}
-                size="small"
-                color={counts.critical > 0 ? "error" : "warning"}
-                sx={{ ml: 1 }}
-              />
-            )}
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
+            <Typography variant="h6">
+              Notifications
+              {totalAlerts > 0 && (
+                <Chip
+                  label={totalAlerts}
+                  size="small"
+                  color={counts.critical > 0 ? "error" : "warning"}
+                  sx={{ ml: 1 }}
+                />
+              )}
+            </Typography>
+            {/*<NotificationPage />*/}
+          </Box>
 
           {loading ?
             <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
@@ -217,12 +363,12 @@ export default function NotificationsBell() {
               sx={{ p: 2, textAlign: "center" }}
               color="textSecondary"
             >
-              No expiring content
+              No current notifications
             </Typography>
           : <List sx={{ p: 0 }}>
-              {allAlerts.map((alert) => (
+              {allAlerts.slice(0, 10).map((alert) => (
                 <ListItem
-                  key={alert.uuid}
+                  key={`${alert.alertType}-${alert.uuid}`}
                   sx={{
                     flexDirection: "column",
                     alignItems: "flex-start",
@@ -236,21 +382,37 @@ export default function NotificationsBell() {
                     justifyContent="space-between"
                     alignItems="center"
                   >
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight="bold"
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
                     >
-                      {alert.title}
-                    </Typography>
-                    <Button
-                      size="small"
-                      variant="outlined"
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight="bold"
+                      >
+                        {alert.title}
+                      </Typography>
+                      <Chip
+                        label={alert.alertType}
+                        size="small"
+                        color={getAlertColor(alert.alertType) as any}
+                        variant="outlined"
+                      />
+                    </Box>
+                    <IconButton
                       onClick={() =>
-                        handleDismiss(alert.uuid, alert.title, alert.status)
+                        handleDismiss(alert.uuid, alert.title, alert.alertType)
                       }
+                      size="small"
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: "#e0e0e0",
+                        },
+                      }}
                     >
-                      Dismiss
-                    </Button>
+                      <ClearOutlinedIcon />
+                    </IconButton>
                   </Box>
                   <Typography
                     variant="caption"
@@ -260,11 +422,20 @@ export default function NotificationsBell() {
                     {alert.notification_message ||
                       getNotificationMessage(
                         alert.title,
-                        alert.expiration_time,
+                        alert.expiration_time!,
                       )}
                   </Typography>
                 </ListItem>
               ))}
+              {allAlerts.length > 10 && (
+                <Typography
+                  variant="caption"
+                  color="textSecondary"
+                  sx={{ p: 1, textAlign: "center", display: "block" }}
+                >
+                  +{allAlerts.length - 10} more notifications
+                </Typography>
+              )}
             </List>
           }
         </Box>

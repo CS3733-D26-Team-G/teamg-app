@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
     COUNT_POSITION: `${API_BASE_URL}/stats/content/count/position`,
     COUNT_FILE_TYPE: `${API_BASE_URL}/stats/content/count/file-type`,
     COUNT_EDIT_HITS_BY_ROLE: `${API_BASE_URL}/stats/content/edit-hits-by-role`,
+    VIEW: (uuid: string) => `${API_BASE_URL}/content/view/${uuid}`,
     FAVORITE: (uuid: string) => `${API_BASE_URL}/content/favorite/${uuid}`,
     EDIT: (uuid: string) => `${API_BASE_URL}/content/edit/${uuid}`,
     DELETE: (uuid: string) => `${API_BASE_URL}/content/delete/${uuid}`,

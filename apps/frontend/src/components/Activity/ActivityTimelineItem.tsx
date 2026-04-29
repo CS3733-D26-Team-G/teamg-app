@@ -14,7 +14,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PersonIcon from "@mui/icons-material/Person";
-import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+// SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 
 function actionDictator(action: string): string {
   const normalized = action?.toLowerCase().replace(/\s+/g, "_").trim() ?? "";

@@ -14,6 +14,7 @@ import { useAuth } from "../auth/AuthContext.tsx";
 import { API_ENDPOINTS } from "../config";
 import { dedupeAsync } from "../lib/async-cache";
 import HelpPopup from "../components/HelpPopup";
+import { useProfile } from "../profile/ProfileContext.tsx";
 
 export function useActivityData() {
   const [rawLogs, setRawLogs] = useState<any[]>([]);
@@ -23,9 +24,10 @@ export function useActivityData() {
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>(
     {},
   );
-  const [fileTypeCount, setfileTypeCount] = useState<
+  const [fileTypeCount, setFileTypeCount] = useState<
     { type: string; count: number }[]
   >([]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -66,7 +68,7 @@ export function useActivityData() {
                 credentials: "include",
               },
             );
-            if (res.status == 401) {
+            if (res.status === 401) {
               return null;
             }
             if (!res.ok) {
@@ -84,6 +86,7 @@ export function useActivityData() {
             return res.json();
           }),
         ]);
+
       setRawLogs(Array.isArray(logsData) ? logsData : []);
       setAnalytics(
         countsData && typeof countsData === "object" ? countsData : {},
@@ -93,7 +96,7 @@ export function useActivityData() {
           employeeCountsData
         : {},
       );
-      setfileTypeCount(
+      setFileTypeCount(
         Array.isArray(fileTypeCountData) ? fileTypeCountData : [],
       );
       setError(null);
@@ -123,8 +126,10 @@ export function useActivityData() {
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
   const { session } = useAuth();
+  const { profile } = useProfile();
   const { rawLogs, analytics, employeeCounts, fileTypeCount } =
     useActivityData();
+
   const employeePieData = [
     {
       id: 0,
@@ -163,6 +168,7 @@ export default function Dashboard() {
       color: "#721b31",
     },
   ];
+
   const roles = [
     "Business Analyst",
     "Underwriter",
@@ -177,13 +183,12 @@ export default function Dashboard() {
       "Underwriter": "UNDERWRITER",
       "Actuarial Analyst": "ACTUARIAL_ANALYST",
       "EXL Operations": "EXL_OPERATIONS",
-      "Business Ops Team": "BUSINESS_OP_RATING", // Matches your console log!
+      "Business Ops Team": "BUSINESS_OP_RATING",
     };
 
     return mapping[role] || role.replace(/\s+/g, "_").toUpperCase();
   };
 
-  // Role-based help descriptions
   const helpDescriptions: Record<string, string> = {
     UNDERWRITER:
       "You are an UnderWriter, please give us time to give you help.",
@@ -206,11 +211,8 @@ export default function Dashboard() {
   const employeeDemographicsCard = (
     <Card
       className="w-[420px] min-w-[420px] outline-1 outline-gray-200"
-      sx={{
-        margin: 0,
-      }}
+      sx={{ margin: 0, borderRadius: 3 }}
     >
-      {" "}
       <CardHeader
         sx={{ py: 1.5, px: 2 }}
         title={
@@ -218,7 +220,6 @@ export default function Dashboard() {
             variant="h6"
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
-            {" "}
             Employee Demographics
           </Typography>
         }
@@ -235,7 +236,7 @@ export default function Dashboard() {
   const popularContentSearchCard = (
     <Card
       className="outline-1 outline-gray-200"
-      sx={{ margin: 0 }}
+      sx={{ margin: 0, borderRadius: 3 }}
     >
       <CardHeader
         sx={{ py: 1.5, px: 2 }}
@@ -261,14 +262,16 @@ export default function Dashboard() {
   );
 
   return (
-    <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
-      {/* Header Section */}
-      <div className="flex justify-between items-center px-8 py-6 border-b border-gray-200">
+    <Card className="m-auto flex h-auto min-h-[95vh] flex-col">
+      <div className="flex items-center justify-between border-b border-gray-200 px-8 py-6">
         <Typography
           variant="h2"
           sx={{ fontWeight: "bold" }}
         >
-          Welcome Back {(session?.position ?? "employee").toLowerCase()}!
+          Welcome Back{" "}
+          {profile?.first_name ??
+            (session?.position ?? "employee").toLowerCase()}
+          !
         </Typography>
         <div className="flex items-center gap-2">
           <HelpPopup
@@ -286,7 +289,7 @@ export default function Dashboard() {
         <div className="flex flex-row gap-8 items-start">
           <Card
             className="flex-1 outline-1 outline-gray-200"
-            sx={{ margin: 0 }}
+            sx={{ margin: 0, borderRadius: 3 }}
           >
             <CardHeader
               sx={{ py: 1.5, px: 2 }}
@@ -318,11 +321,10 @@ export default function Dashboard() {
         {session?.position === "ADMIN" && (
           <div className="flex flex-row gap-8 items-start">
             <AdminCards />
-
             <div className="w-[420px] min-w-[420px]">
               <Card
                 className="outline-1 outline-gray-200"
-                sx={{ margin: 0 }}
+                sx={{ margin: 0, borderRadius: 3 }}
               >
                 <CardHeader
                   sx={{ py: 1.5, px: 2 }}
@@ -349,7 +351,7 @@ export default function Dashboard() {
             <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
               <Card
                 className="outline-1 outline-gray-200"
-                sx={{ margin: 0 }}
+                sx={{ margin: 0, borderRadius: 3 }}
               >
                 <CardHeader
                   sx={{ py: 1.5, px: 2 }}
@@ -370,14 +372,12 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Recent Activity: Grows to fill width and matches height */}
           <div className="flex-1 min-w-[500px]">
             <DashboardRecentActivity rawLogs={rawLogs} />
           </div>
         </div>
 
-        {/* Second Row for Bar Chart */}
-        <div className="w-full flex flex-row gap-6">
+        <div className="flex w-full flex-row gap-6">
           {roles.map((role) => {
             const key = getAnalyticsKey(role);
             const count = analytics[key] ?? 0;
@@ -385,8 +385,8 @@ export default function Dashboard() {
             return (
               <Card
                 key={role}
-                className="flex-1 drop-shadow-md outline-1 outline-gray-200"
-                onClick={() => console.log(analytics)}
+                className="flex-1 drop-shadow-lg outline-1 outline-gray-200"
+                sx={{ borderRadius: 3 }}
               >
                 <CardContent className="p-4">
                   <Typography

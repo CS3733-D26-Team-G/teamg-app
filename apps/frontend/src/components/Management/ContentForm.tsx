@@ -15,6 +15,8 @@ import {
   Divider,
   Paper,
   type SelectChangeEvent,
+  Autocomplete,
+  Chip,
 } from "@mui/material";
 import { CloudUpload, Link as LinkIcon } from "@mui/icons-material";
 import RateReviewIcon from "@mui/icons-material/RateReview";
@@ -25,7 +27,13 @@ import CalendarInput from "../CalendarInput.tsx";
 import { Schemas } from "@repo/zod";
 import { useAuth } from "../../auth/AuthContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
-import type { ContentFormData, ContentRecord } from "../../types/content";
+import type {
+  ContentFormData,
+  ContentRecord,
+  ContentTagSummary,
+} from "../../types/content";
+import { ContentTagSummariesSchema } from "../../types/content";
+import { API_ENDPOINTS } from "../../config.ts";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 
 // Positions that are considered "agents" — neither underwriter nor admin.
@@ -36,15 +44,19 @@ const AGENT_POSITIONS: Position[] = [
   "BUSINESS_OP_RATING",
 ];
 
+type ContentFormInitialData = ContentRecord & {
+  tags?: ContentTagSummary[];
+};
+
 interface ContentFormProps {
-  initialData?: ContentRecord | null;
+  initialData?: ContentFormInitialData | null;
   onSave: (data: FormData) => void;
   onCancel: () => void;
   onDelete?: () => void;
 }
 
 function getInitialSourceType(
-  initialData?: ContentRecord | null,
+  initialData?: ContentFormInitialData | null,
 ): "url" | "file" {
   if (initialData?.supabasePath || initialData?.file_type) return "file";
   return initialData?.url ? "url" : "file";
@@ -106,6 +118,36 @@ export default function ContentForm({
   );
   const [file, setFile] = useState<File | null>(null);
 
+  const [availableTags, setAvailableTags] = useState<ContentTagSummary[]>([]);
+  const [selectedTagUuids, setSelectedTagUuids] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error(`Failed to fetch tags: ${res.status}`);
+        }
+
+        const data: unknown = await res.json();
+        const parsed = ContentTagSummariesSchema.safeParse(data);
+        if (!parsed.success) {
+          console.error(parsed.error);
+          setAvailableTags([]);
+          return;
+        }
+
+        setAvailableTags(parsed.data);
+      } catch (error) {
+        console.error(error);
+        setAvailableTags([]);
+      }
+    };
+    void fetchTags();
+  }, []);
+
   // Underwriter-only risk assessment comment
   const [riskAssessment, setRiskAssessment] = useState("");
 
@@ -123,6 +165,7 @@ export default function ContentForm({
     );
     setSourceType(getInitialSourceType(initialData));
     setFile(null);
+    setSelectedTagUuids(initialData?.tags?.map((tag) => tag.uuid) ?? []);
     setRiskAssessment("");
   }, [initialData, session?.position]);
 
@@ -174,6 +217,8 @@ export default function ContentForm({
     body.append("expiration_time", formData.expiration_time.toISOString());
     body.append("content_type", formData.content_type);
     body.append("status", formData.status);
+
+    selectedTagUuids.forEach((uuid) => body.append("tagUuids", uuid));
 
     if (sourceType === "file") {
       if (file) body.append("file", file);
@@ -384,6 +429,41 @@ export default function ContentForm({
             </MenuItem>
           ))}
         </Select>
+      </FormControl>
+
+      <FormControl
+        fullWidth
+        margin="normal"
+      >
+        <Autocomplete
+          multiple
+          options={availableTags}
+          getOptionLabel={(tag) => tag.name}
+          value={availableTags.filter((tag) =>
+            selectedTagUuids.includes(tag.uuid),
+          )}
+          onChange={(_, selectedTags) =>
+            setSelectedTagUuids(selectedTags.map((tag) => tag.uuid))
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Tags"
+              margin="normal"
+              placeholder={selectedTagUuids.length ? "" : "Select tags..."}
+            />
+          )}
+          renderTags={(selected, getTagProps) =>
+            selected.map((tag, index) => (
+              <Chip
+                label={tag.name}
+                size="small"
+                {...getTagProps({ index })}
+                key={tag.uuid}
+              />
+            ))
+          }
+        />
       </FormControl>
 
       <FormControl

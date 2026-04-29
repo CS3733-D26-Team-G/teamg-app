@@ -26,12 +26,16 @@ export default function HelpPopup({ description, infoOrHelp }: HelpPopupProps) {
       <IconButton
         onClick={handleOpen}
         size="small"
-        sx={{ color: "text.secondary" }}
+        sx={{ color: "lightgrey" }}
         aria-label="Help"
       >
         {infoOrHelp ?
           <HelpOutlineIcon fontSize="medium" />
-        : <InfoIcon fontSize="medium" />}
+        : <InfoIcon
+            fontSize="medium"
+            sx={{ color: "#A9A9A9" }}
+          />
+        }
       </IconButton>
 
       <Popover

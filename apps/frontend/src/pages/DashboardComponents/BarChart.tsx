@@ -18,6 +18,7 @@ const FILE_TYPE_COLORS = [
   "#721b31",
   "#74414e",
 ];
+
 function normalizeFileType(
   type: string,
 ): (typeof FILE_TYPE_ORDER)[number] | null {
@@ -58,13 +59,14 @@ export default function TypeBarChart({ data }: ChartProps) {
       ppt: 0,
     },
   );
+
   for (const item of data) {
     const normalizedType = normalizeFileType(item.type);
-
     if (normalizedType) {
       totals[normalizedType] += item.count;
     }
   }
+
   const chartData = FILE_TYPE_ORDER.map((type) => ({
     type,
     count: totals[type],

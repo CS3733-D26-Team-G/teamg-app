@@ -28,8 +28,9 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { API_ENDPOINTS } from "../config.ts";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.tsx";
-import Typography from "@mui/material/Typography";
+//import Typography from "@mui/material/Typography";
 import { useProfile } from "../profile/ProfileContext.tsx";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -42,6 +43,7 @@ export default function Sidebar() {
   const { profile, isLoading: isProfileLoading } = useProfile();
   const isAdmin = session?.permissions.canManageEmployees ?? false;
   const isUnderwriter = session?.position === "UNDERWRITER";
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const handleToggle = (
     setter: React.Dispatch<React.SetStateAction<boolean>>,
@@ -315,6 +317,22 @@ export default function Sidebar() {
           {isOpen && (
             <ListItemText
               primary="Activity"
+              slotProps={{ primary: { sx: textSx } }}
+            />
+          )}
+        </ListItemButton>
+
+        <ListItemButton
+          component={Link}
+          to="/calendar"
+          sx={{ ...itemHoverSx, pl: 2 }}
+        >
+          <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+            <CalendarMonthIcon sx={iconSx} />
+          </ListItemIcon>
+          {isOpen && (
+            <ListItemText
+              primary="Calendar"
               slotProps={{ primary: { sx: textSx } }}
             />
           )}

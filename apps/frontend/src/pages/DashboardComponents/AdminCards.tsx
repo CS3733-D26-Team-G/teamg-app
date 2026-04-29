@@ -164,7 +164,7 @@ export default function AdminCards() {
   return (
     <Card
       className="w-[560px] max-w-[560px] outline-1 outline-gray-200"
-      sx={{ margin: 0 }}
+      sx={{ margin: 0, borderRadius: 3 }}
     >
       <CardHeader
         sx={{ py: 1.5, px: 2 }}

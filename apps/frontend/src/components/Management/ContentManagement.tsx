@@ -50,7 +50,9 @@ import "./ContentManagement.css";
 import {
   ContentFavoriteResponseSchema,
   ContentRowsSchema,
+  ContentTagSummariesSchema,
   type ContentRow,
+  type ContentTagSummary,
 } from "../../types/content";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -67,12 +69,53 @@ import DocPreviewer from "./DocPreviewer.tsx";
 import InfoPopup from "./ContentInfoPopup.tsx";
 import TagManagerPopup from "./TagManagerPopup.tsx";
 import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
   IN_USE: "In-Use",
   UNAVAILABLE: "Unavailable",
 };
+
+const POSITION_CONFIG: {
+  key: string;
+  label: string;
+  chipSx: object;
+}[] = [
+  {
+    key: "UNDERWRITER",
+    label: "Underwriter",
+    chipSx: { backgroundColor: "#1976d2", color: "white" },
+  },
+  {
+    key: "BUSINESS_ANALYST",
+    label: "Business Analyst",
+    chipSx: { backgroundColor: "#2e7d32", color: "white" },
+  },
+  {
+    key: "ACTUARIAL_ANALYST",
+    label: "Actuarial Analyst",
+    chipSx: { backgroundColor: "#ed6c02", color: "white" },
+  },
+  {
+    key: "EXL_OPERATIONS",
+    label: "EXL Operations",
+    chipSx: { backgroundColor: "#7b1fa2", color: "white" },
+  },
+  {
+    key: "BUSINESS_OP_RATING",
+    label: "Business Ops Rating",
+    chipSx: { backgroundColor: "#0288d1", color: "white" },
+  },
+  {
+    key: "ADMIN",
+    label: "Admin",
+    chipSx: { backgroundColor: "#d32f2f", color: "white" },
+  },
+];
 
 const fileTypeLabels: Record<string, string> = {
   "application/pdf": ".PDF",
@@ -164,6 +207,8 @@ export default function ContentManagement({
   const isDark = theme.palette.mode === "dark";
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+  const [tagFilters, setTagFilters] = useState<ContentTagSummary[]>([]);
+  const [availableTags, setAvailableTags] = useState<ContentTagSummary[]>([]);
   const skipLockReleaseRef = useRef(false);
   const returningToEditorRef = useRef(false);
 
@@ -177,6 +222,7 @@ export default function ContentManagement({
   const [fileTypeAnchor, setFileTypeAnchor] = useState<null | HTMLElement>(
     null,
   );
+  const [tagAnchor, setTagAnchor] = useState<null | HTMLElement>(null);
 
   const [searchParams] = useSearchParams();
 
@@ -243,6 +289,7 @@ export default function ContentManagement({
         }
         return res.json();
       });
+      console.log(rows[0]);
       const parsed = ContentRowsSchema.safeParse(data);
 
       if (!parsed.success) {
@@ -267,11 +314,82 @@ export default function ContentManagement({
     void fetchRows();
   }, [fetchRows]);
 
+  const fetchTags = useCallback(async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        return;
+      }
+
+      const data: unknown = await res.json();
+      const parsed = ContentTagSummariesSchema.safeParse(data);
+      if (parsed.success) {
+        setAvailableTags(parsed.data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchTags();
+  }, [fetchTags]);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          return;
+        }
+
+        const data: unknown = await res.json();
+        const parsed = ContentTagSummariesSchema.safeParse(data);
+        if (parsed.success) {
+          setAvailableTags(parsed.data);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    void fetchTags();
+  }, []);
+
   useEffect(() => {
     if (rows.length > 0 && session?.employeeUuid) {
       setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
     }
   }, [rows, session?.employeeUuid]);
+
+  const [expandedPositions, setExpandedPositions] = useState<Set<string>>(
+    () => new Set(POSITION_CONFIG.map((p) => p.key)), // all open by default
+  );
+
+  const toggleAccordion = (key: string) => {
+    setExpandedPositions((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+
+      return next;
+    });
+  };
+
+  const orderedPositions = useMemo(() => {
+    if (!userPosition) return POSITION_CONFIG;
+    return [
+      ...POSITION_CONFIG.filter((p) => p.key === userPosition),
+      ...POSITION_CONFIG.filter((p) => p.key !== userPosition),
+    ];
+  }, [userPosition]);
 
   const filteredRows = useMemo(
     () =>
@@ -308,9 +426,18 @@ export default function ContentManagement({
           return false;
         }
 
+        if (
+          tagFilters.length > 0 &&
+          !tagFilters.some((tf) =>
+            row.tags?.some((tag) => tag.uuid === tf.uuid),
+          )
+        ) {
+          return false;
+        }
+
         return true;
       }),
-    [rows, searchQuery, positionFilters, fileTypeFilters],
+    [rows, searchQuery, positionFilters, fileTypeFilters, tagFilters],
   );
 
   const togglePosition = (position: string) => {
@@ -326,6 +453,14 @@ export default function ContentManagement({
       cur.includes(fileType) ?
         cur.filter((type) => type !== fileType)
       : cur.concat(fileType),
+    );
+  };
+
+  const toggleTag = (tag: ContentTagSummary) => {
+    setTagFilters((cur) =>
+      cur.some((t) => t.uuid === tag.uuid) ?
+        cur.filter((t) => t.uuid !== tag.uuid)
+      : cur.concat(tag),
     );
   };
 
@@ -453,9 +588,12 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
-        if (isExisting && !returningToEditorRef.current) {
-          await releaseLock(uuid);
+        if (isExisting) {
+          if (!returningToEditorRef.current) {
+            await releaseLock(uuid);
+          }
         } else {
+          // Only new content gets highlighted
           const data = (await res.json()) as { uuid: string };
           setSessionNewIds((prev) => new Set([...prev, data.uuid]));
         }
@@ -593,6 +731,17 @@ export default function ContentManagement({
     </>
   );
 
+  const recordContentView = async (uuid: string) => {
+    try {
+      await fetch(API_ENDPOINTS.CONTENT.VIEW(uuid), {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Failed to record content view:", error);
+    }
+  };
+
   // ── Column definitions ─────────────────────────────────────────────────────
   const getColumns = (
     onPreview: (row: ContentRow) => void,
@@ -647,6 +796,7 @@ export default function ContentManagement({
             author={params.row.content_owner}
             position={getPositionLabel(params.row.for_position) as Position}
             fileType={params.row.file_type}
+            tags={params.row.tags ?? []}
             editor={
               params.row.editLock?.lockedByEmp ?
                 `${params.row.editLock.lockedByEmp.first_name} 
@@ -654,6 +804,7 @@ export default function ContentManagement({
               : ""
             }
             editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
+            updatedAt={params.row.last_modified_time}
           />
         </Box>
       ),
@@ -974,15 +1125,22 @@ export default function ContentManagement({
                   Filter
                 </Button>
 
-                {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+                {(positionFilters.length > 0 ||
+                  fileTypeFilters.length > 0 ||
+                  tagFilters.length > 0) && (
                   <Button
                     size="small"
                     variant="outlined"
                     onClick={() => {
                       setPositionFilters([]);
                       setFileTypeFilters([]);
+                      setTagFilters([]);
                     }}
-                    sx={{ borderRadius: 2 }}
+                    sx={{
+                      color: "white",
+                      borderRadius: 2,
+                      border: "1px solid white",
+                    }}
                   >
                     Clear Filters
                   </Button>
@@ -1005,6 +1163,7 @@ export default function ContentManagement({
                   onClick={(event) => {
                     setPositionAnchor(event.currentTarget);
                     setFileTypeAnchor(null);
+                    setTagAnchor(null);
                   }}
                 >
                   Position
@@ -1014,9 +1173,20 @@ export default function ContentManagement({
                   onClick={(event) => {
                     setFileTypeAnchor(event.currentTarget);
                     setPositionAnchor(null);
+                    setTagAnchor(null);
                   }}
                 >
                   File Type
+                  <ArrowRightIcon sx={{ ml: "auto" }} />
+                </MenuItem>
+                <MenuItem
+                  onClick={(event) => {
+                    setTagAnchor(event.currentTarget);
+                    setPositionAnchor(null);
+                    setFileTypeAnchor(null);
+                  }}
+                >
+                  Tags
                   <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
               </Popover>
@@ -1197,6 +1367,39 @@ export default function ContentManagement({
                   />
                 </FormGroup>
               </Popover>
+
+              {/* Tags sub-pop-up */}
+              <Popover
+                open={Boolean(tagAnchor)}
+                anchorEl={tagAnchor}
+                onClose={() => setTagAnchor(null)}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                slotProps={{
+                  paper: {
+                    sx: { border: "1px solid", borderColor: "gray", ml: 1 },
+                  },
+                }}
+              >
+                <FormGroup sx={{ pl: 1 }}>
+                  {availableTags.length === 0 && (
+                    <Typography>No Tags Available</Typography>
+                  )}
+
+                  {availableTags.map((tag) => (
+                    <FormControlLabel
+                      key={tag.uuid}
+                      control={
+                        <Checkbox
+                          onChange={() => toggleTag(tag)}
+                          checked={tagFilters.some((t) => t.uuid === tag.uuid)}
+                        />
+                      }
+                      label={tag.name}
+                    />
+                  ))}
+                </FormGroup>
+              </Popover>
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -1206,8 +1409,10 @@ export default function ContentManagement({
               />
               {isSystemAdmin && (
                 <TagManagerPopup
-                  rows={rows}
-                  onTagsChanged={fetchRows}
+                  onTagsChanged={async () => {
+                    void fetchRows();
+                    void fetchTags();
+                  }}
                 />
               )}
               <Button
@@ -1221,13 +1426,16 @@ export default function ContentManagement({
             </Box>
           </Box>
 
-          {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+          {(positionFilters.length > 0 ||
+            fileTypeFilters.length > 0 ||
+            tagFilters.length > 0) && (
             <Box sx={{ display: "flex", flexWrap: "wrap", pt: 2, gap: 1 }}>
               {positionFilters.map((position) => (
                 <Chip
                   key={position}
                   label={getPositionLabel(position as Position)}
                   onDelete={() => togglePosition(position)}
+                  sx={{ bgcolor: "white", color: "black" }}
                 />
               ))}
               {fileTypeFilters.map((fileType) => (
@@ -1235,6 +1443,15 @@ export default function ContentManagement({
                   key={fileType}
                   label={displayFileType(fileType)}
                   onDelete={() => toggleFileType(fileType)}
+                  sx={{ bgcolor: "white", color: "black" }}
+                />
+              ))}
+              {tagFilters.map((tag) => (
+                <Chip
+                  key={tag.uuid}
+                  label={tag.name}
+                  onDelete={() => toggleTag(tag)}
+                  sx={{ bgcolor: "white", color: "black" }}
                 />
               ))}
             </Box>
@@ -1247,86 +1464,209 @@ export default function ContentManagement({
         </StyledToolbar>
       </AppBar>
 
-      {/* ── Data grid ───────────────────────────────────────────────────── */}
-      <DataGrid
-        rows={filteredRows}
-        getRowId={(row) => row.uuid}
-        columns={getColumns(
-          (row) => {
-            const isExternalUrl =
-              !row.supabasePath && !row.url.includes("supabase.co/storage");
-            if (isExternalUrl) {
-              window.open(row.url, "_blank");
-              return;
-            }
-            setSelectedDoc({
-              uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
-              fileName: row.title,
-              uuid: row.uuid,
-              for_position: row.for_position,
-            });
-            setPreviewOpen(true);
-          },
-          handleDownload,
-          handleCheckout,
-          handleOpenEditor,
-          releaseLock,
-        )}
-        getRowClassName={(params) => {
-          const hasPermission =
-            isSystemAdmin || userPosition === params.row.for_position;
-          const isNew = sessionNewIds.has(params.row.uuid);
-          const classes: string[] = [];
-          if (!hasPermission) classes.push("row-locked");
-          if (isNew) classes.push("row-new");
-          return classes.join(" ");
-        }}
-        sx={{
-          "height": 600,
-          "overflow": "hidden",
-          "border": "none",
-          "& .row-locked": {
-            backgroundColor:
-              isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(245, 245, 245, 1)",
-            color: "text.disabled",
-            cursor: "not-allowed",
-          },
-          "& .row-locked a": {
-            color: "inherit",
-            pointerEvents: "none",
-            textDecoration: "none",
-          },
-          "& .row-new": {
-            backgroundColor:
-              isDark ?
-                `${theme.palette.primary.main}1F`
-              : `${theme.palette.primary.light}80`,
-            borderLeft: "3px solid",
-            borderLeftColor: theme.palette.primary.main,
-          },
-          "& .row-new:hover": {
-            backgroundColor:
-              isDark ?
-                `${theme.palette.primary.main}38`
-              : `${theme.palette.primary.light}D9`,
-          },
-        }}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 10 } },
-          sorting: { sortModel: [{ field: "favorite", sort: "desc" }] },
-          columns: {
-            columnVisibilityModel: {
-              "favorite": false,
-              "url": false,
-              "content_owner": false,
-              "edited-by": false,
-              "for_position": false,
-              "file_type": false,
-            },
-          },
-        }}
-        pageSizeOptions={[5, 10]}
-      />
+      {/* ── Accordion Data grids ───────────────────────────────────────────────────── */}
+      <Box sx={{ width: "100%" }}>
+        {orderedPositions.map(({ key, label, chipSx }) => {
+          const positionRows = filteredRows.filter(
+            (r) => r.for_position === key,
+          );
+          const favoriteCount = positionRows.filter(
+            (r) => r.is_favorite,
+          ).length;
+          const isExpanded = expandedPositions.has(key);
+
+          return (
+            <Accordion
+              key={key}
+              expanded={isExpanded}
+              onChange={() => toggleAccordion(key)}
+              disableGutters
+              elevation={0}
+              sx={{
+                "mb": 1.5,
+                "overflow": "hidden",
+                "border": "1px solid",
+                "borderColor": "divider",
+                "&:before": { display: "none" },
+                "borderRadius": "8px !important",
+                "& .MuiAccordion-root": { borderRadius: "8px !important" },
+                "& .MuiPaper-root": { borderRadius: "8px !important" },
+                "& .MuiAccordionDetails-root": {
+                  borderBottomLeftRadius: "8px",
+                  borderBottomRightRadius: "8px",
+                  overflow: "hidden",
+                },
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  background:
+                    "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
+                  minHeight: 52,
+                  px: 2,
+                }}
+              >
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  gap={1.5}
+                  sx={{ width: "100%" }}
+                >
+                  <Typography
+                    sx={{
+                      color: "white",
+                      fontWeight: 600,
+                      fontSize: "0.95rem",
+                    }}
+                  >
+                    {label}
+                  </Typography>
+                  <Chip
+                    label={`${positionRows.length} file${positionRows.length !== 1 ? "s" : ""}`}
+                    size="small"
+                    sx={{
+                      fontWeight: 500,
+                      ...chipSx,
+                    }}
+                  />
+                  {favoriteCount > 0 && (
+                    <Chip
+                      icon={
+                        <Heart
+                          size={12}
+                          fill="#e50000"
+                          color="#e50000"
+                        />
+                      }
+                      label={favoriteCount}
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        color: "rgba(255,255,255,0.8)",
+                        borderColor: "rgba(255,255,255,0.4)",
+                      }}
+                    />
+                  )}
+                </Stack>
+              </AccordionSummary>
+
+              <AccordionDetails sx={{ p: 0 }}>
+                {positionRows.length === 0 ?
+                  <Typography
+                    sx={{
+                      p: 3,
+                      color: "text.secondary",
+                      fontSize: "0.875rem",
+                      textAlign: "center",
+                    }}
+                  >
+                    No content for this position
+                    {(
+                      searchQuery ||
+                      positionFilters.length ||
+                      fileTypeFilters.length
+                    ) ?
+                      " matching current filters"
+                    : ""}
+                    .
+                  </Typography>
+                : <DataGrid
+                    rows={positionRows}
+                    getRowId={(row) => row.uuid}
+                    columns={getColumns(
+                      (row) => {
+                        void recordContentView(row.uuid);
+
+                        const isExternalUrl =
+                          !row.supabasePath &&
+                          !row.url.includes("supabase.co/storage");
+
+                        if (isExternalUrl) {
+                          window.open(row.url, "_blank");
+                          return;
+                        }
+
+                        setSelectedDoc({
+                          uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+                          fileName: row.title,
+                          uuid: row.uuid,
+                          for_position: row.for_position,
+                        });
+                        setPreviewOpen(true);
+                      },
+                      handleDownload,
+                      handleCheckout,
+                      handleOpenEditor,
+                      releaseLock,
+                    )}
+                    getRowClassName={(params) => {
+                      const hasPermission =
+                        isSystemAdmin ||
+                        userPosition === params.row.for_position;
+                      const isNew = sessionNewIds.has(params.row.uuid);
+                      const classes: string[] = [];
+                      if (!hasPermission) classes.push("row-locked");
+                      if (isNew) classes.push("row-new");
+                      return classes.join(" ");
+                    }}
+                    autoHeight
+                    hideFooterPagination={positionRows.length <= 10}
+                    pageSizeOptions={[10, 25]}
+                    initialState={{
+                      pagination: { paginationModel: { pageSize: 10 } },
+                      sorting: {
+                        sortModel: [{ field: "favorite", sort: "desc" }],
+                      },
+                      columns: {
+                        columnVisibilityModel: {
+                          "favorite": false,
+                          "url": false,
+                          "content_owner": false,
+                          "edited-by": false,
+                          "for_position": false, // redundant inside its own section
+                          "file_type": false,
+                        },
+                      },
+                    }}
+                    sx={{
+                      "borderRadius": "0 0 8px 8px",
+                      "overflow": "hidden",
+                      "& .row-locked": {
+                        backgroundColor:
+                          isDark ?
+                            "rgba(255,255,255,0.12)"
+                          : "rgba(245,245,245,1)",
+                        color: "text.disabled",
+                        cursor: "not-allowed",
+                      },
+                      "& .row-locked a": {
+                        color: "inherit",
+                        pointerEvents: "none",
+                        textDecoration: "none",
+                      },
+                      "& .row-new": {
+                        backgroundColor:
+                          isDark ?
+                            `${theme.palette.primary.main}1F`
+                          : `${theme.palette.primary.light}80`,
+                        borderLeft: "3px solid",
+                        borderLeftColor: theme.palette.primary.main,
+                      },
+                      "& .row-new:hover": {
+                        backgroundColor:
+                          isDark ?
+                            `${theme.palette.primary.main}38`
+                          : `${theme.palette.primary.light}D9`,
+                      },
+                    }}
+                  />
+                }
+              </AccordionDetails>
+            </Accordion>
+          );
+        })}
+      </Box>
 
       {/* ── Content Form Modal ───────────────────────────────────────────── */}
       <Dialog
@@ -1414,7 +1754,6 @@ export default function ContentManagement({
         }}
         maxWidth="xl"
         fullWidth
-        keepMounted
       >
         <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
           <Stack
@@ -1430,14 +1769,17 @@ export default function ContentManagement({
             >
               {selectedDoc?.fileName ?? "Preview"}
             </Typography>
-            <Button
-              onClick={() => {
-                setPreviewOpen(false);
-                setSelectedDoc(null);
-              }}
-            >
-              Close
-            </Button>
+            <Tooltip title="Close">
+              <IconButton
+                onClick={() => {
+                  setPreviewOpen(false);
+                  setSelectedDoc(null);
+                }}
+                size="small"
+              >
+                <CloseIcon />
+              </IconButton>
+            </Tooltip>
           </Stack>
           <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
             {selectedDoc && (
@@ -1467,9 +1809,6 @@ export default function ContentManagement({
             <DocumentEditorModal
               open={editorOpen}
               onClose={() => {
-                if (!skipLockReleaseRef.current) {
-                  void releaseLock(selectedDoc.uuid);
-                }
                 skipLockReleaseRef.current = false;
                 setEditorOpen(false);
               }}
