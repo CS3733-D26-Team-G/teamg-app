@@ -102,8 +102,6 @@ export const ContentFavoriteResponseSchema =
     message: z.string(),
   });
 
-export type ContentFavoriteResponse = FavoriteContent & {
-  isFavorite: boolean;
-  changed: boolean;
-  message: string;
-};
+export type ContentFavoriteResponse = z.infer<
+  typeof ContentFavoriteResponseSchema
+>;

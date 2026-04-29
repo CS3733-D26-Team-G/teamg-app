@@ -1,4 +1,4 @@
-import type { InsuranceClaim, InsuranceClaimType } from "@repo/db";
+import type { InsuranceClaimType } from "@repo/db";
 import { Schemas } from "@repo/zod";
 import { z } from "zod";
 
@@ -55,9 +55,6 @@ export const InsuranceClaimRecordSchema =
     contents: z.array(InsuranceClaimContentSummarySchema),
   });
 
-export type InsuranceClaimRecord = InsuranceClaim & {
-  requestor: z.infer<typeof InsuranceClaimRequestorSchema>;
-  contents: z.infer<typeof InsuranceClaimContentSummarySchema>[];
-};
+export type InsuranceClaimRecord = z.infer<typeof InsuranceClaimRecordSchema>;
 
 export const InsuranceClaimRecordsSchema = z.array(InsuranceClaimRecordSchema);
