@@ -163,14 +163,9 @@ export default function InfoPopup({
           <Typography>
             <b>Position:</b> {position}
           </Typography>
+
           <Typography>
             <b>File Type:</b> {formatFileType(fileType)}
-          </Typography>
-          <Typography>
-            <b>Tags: </b>
-            {tags.length > 0 ?
-              tags.map((tag) => tag.name).join(", ")
-            : "No Tags"}
           </Typography>
 
           <Typography>
@@ -179,6 +174,13 @@ export default function InfoPopup({
 
           <Typography>
             <b>Last Updated:</b> {formatDate(updatedAt)}
+          </Typography>
+
+          <Typography>
+            <b>Tags: </b>
+            {tags.length > 0 ?
+              tags.map((tag) => tag.name).join(", ")
+            : "No Tags"}
           </Typography>
         </Box>
       </Popover>
