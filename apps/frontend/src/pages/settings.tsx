@@ -36,7 +36,7 @@ function Settings() {
       <Typography
         variant="h1"
         gutterBottom
-        color="text.primary"
+        sx={{ color: "white" }}
       >
         Settings
       </Typography>
