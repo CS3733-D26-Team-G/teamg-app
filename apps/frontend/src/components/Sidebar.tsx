@@ -265,23 +265,6 @@ export default function Sidebar() {
                     }}
                   />
                 </ListItemButton>
-
-                <ListItemButton
-                  component={Link}
-                  to="/calendar"
-                  sx={{ ...itemHoverSx, pl: 4 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
-                    <CalendarMonthIcon
-                      fontSize="small"
-                      sx={{ color: "rgba(255,255,255,0.65)" }}
-                    />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Calendar"
-                    sx={{ color: "rgba(255,255,255,0.65)" }}
-                  />
-                </ListItemButton>
               </List>
             </Collapse>
           </>
