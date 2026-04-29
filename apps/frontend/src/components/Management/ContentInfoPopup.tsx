@@ -1,21 +1,17 @@
 import React, { useState } from "react";
 import { Popover, Typography, Box } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import IconButton from "@mui/material/IconButton";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import { CopyIcon } from "lucide-react";
+import type { ContentTagSummary } from "../../types/content";
 
 interface InfoButtonProps {
   url: string;
   author: string;
   position: string;
   fileType: string | null;
-  tags: {
-    uuid: string;
-    name: string;
-  }[];
+  tags: ContentTagSummary[];
 }
 
 function formatFileType(mime: string | null): string {

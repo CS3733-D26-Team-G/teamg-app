@@ -1,6 +1,15 @@
-import type { Content, FavoriteContent } from "@repo/db";
+import type { FavoriteContent } from "@repo/db";
 import { Schemas } from "@repo/zod";
 import { z } from "zod";
+
+export const ContentTagSummarySchema = z.object({
+  uuid: z.string(),
+  name: z.string(),
+});
+
+export const ContentTagSummariesSchema = z.array(ContentTagSummarySchema);
+
+export type ContentTagSummary = z.infer<typeof ContentTagSummarySchema>;
 
 /**
  * Create/edit form schemas
@@ -51,23 +60,20 @@ export const ContentRecordSchema =
     })
     .strip();
 
-export type ContentRecord = Content & {
-  is_favorite: boolean;
-  favorite_count: number;
-};
+export type ContentRecord = z.infer<typeof ContentRecordSchema>;
 export const ContentRecordsSchema = z.array(ContentRecordSchema);
+
+export const ContentWithTagsSchema = ContentRecordSchema.extend({
+  tags: ContentTagSummariesSchema,
+});
+
+export type ContentWithTags = z.infer<typeof ContentWithTagsSchema>;
 /**
  * UI row schema for ContentManagement/DataGrid
  *
  * This extends the API record with frontend-only state.
  */
-export const ContentRowSchema = ContentRecordSchema.extend({
-  tags: z.array(
-    z.object({
-      uuid: z.string(),
-      name: z.string(),
-    }),
-  ),
+export const ContentRowSchema = ContentWithTagsSchema.extend({
   editLock: z
     .object({
       lockedByEmp: z.object({

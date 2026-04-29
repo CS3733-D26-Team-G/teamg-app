@@ -18,7 +18,10 @@ import AddIcon from "@mui/icons-material/Add";
 import { API_ENDPOINTS } from "../../config.ts";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
-import type { ContentTag } from "@repo/db";
+import {
+  ContentTagSummariesSchema,
+  type ContentTagSummary,
+} from "../../types/content";
 
 // interface Tag {
 //   uuid: string;
@@ -35,7 +38,7 @@ export default function TagManagerPopup({
   const [open, setOpen] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
-  const [localTags, setLocalTags] = useState<ContentTag[]>([]);
+  const [localTags, setLocalTags] = useState<ContentTagSummary[]>([]);
 
   const handleOpen = async () => {
     try {
@@ -43,8 +46,14 @@ export default function TagManagerPopup({
         credentials: "include",
       });
       if (res.ok) {
-        const data: ContentTag[] = await res.json();
-        setLocalTags(data);
+        const data: unknown = await res.json();
+        const parsed = ContentTagSummariesSchema.safeParse(data);
+        if (!parsed.success) {
+          console.error(parsed.error);
+          setLocalTags([]);
+        } else {
+          setLocalTags(parsed.data);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -77,7 +86,9 @@ export default function TagManagerPopup({
         throw new Error("Failed to create tag");
       }
 
-      const createdTag: ContentTag = await res.json();
+      const createdTag = ContentTagSummariesSchema.element.parse(
+        await res.json(),
+      );
       setLocalTags((prev) => [...prev, createdTag]);
       setNewTag("");
       await onTagsChanged();
