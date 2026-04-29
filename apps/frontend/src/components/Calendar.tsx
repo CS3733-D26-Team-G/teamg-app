@@ -2,16 +2,19 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { API_ENDPOINTS } from "../config";
 import { useAuth } from "../auth/AuthContext";
 import { ContentRowsSchema, type ContentRow } from "../types/content";
 import type { EventInput } from "@fullcalendar/core";
-import { Box, Typography } from "@mui/material";
+import { Box, Card, styled, Toolbar, Typography } from "@mui/material";
 
 const CREATED_COLOR = "#4f46e5";
 const CHECKED_OUT_COLOR = "#d97706";
 import { getExpirationStatus } from "./Notifications/Notifications.ts";
+import HelpPopup from "./HelpPopup.tsx";
+import NotificationsBell from "./Notifications/NotificationBell.tsx";
+import SearchBar from "../pages/DashboardComponents/SearchBar.tsx";
 
 function getExpiresInSeconds(expirationTime: string | null): number {
   if (!expirationTime) return -1;
@@ -141,91 +144,93 @@ export default function CalendarPage() {
     return result;
   }, [rows, session, currentUserName]);
 
+  const StyledToolbar = styled(Toolbar)(({ theme }) => ({
+    flexDirection: "column",
+    alignItems: "stretch",
+    paddingTop: theme.spacing(2),
+    paddingBottom: theme.spacing(2),
+    minHeight: 128,
+  }));
+
   return (
     <Box
       sx={{
-        backgroundColor: "background.default",
-        overflowX: "hidden",
         width: "100%",
-        minWidth: 0,
       }}
     >
-      {/* Header */}
-      <Box
+      <StyledToolbar
         sx={{
-          position: "relative",
-          overflow: "hidden",
           background:
-            "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
-          px: 3,
-          pt: 4,
-          pb: 2,
+            "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+          overflow: "hidden",
         }}
       >
-        <Typography
-          variant="h2"
-          sx={{
-            color: "white",
-            fontWeight: "bold",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          Calendar
-        </Typography>
+        <div className="flex justify-between items-center px-8 py-6">
+          <Typography
+            variant="h2"
+            sx={{ fontWeight: "bold", color: "white" }}
+          >
+            Calendar
+          </Typography>
+          {[...Array(3)].map((_, i) => (
+            <Box
+              key={i}
+              sx={{
+                position: "absolute",
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.12)",
+                width: 120 + i * 80,
+                height: 120 + i * 80,
+                top: -40 - i * 30,
+                right: -40 - i * 30,
+              }}
+            />
+          ))}
+          <div className="flex items-center gap-2">
+            <HelpPopup
+              description={"See upcoming expiring content"}
+              infoOrHelp={true}
+            />
+            <NotificationsBell />
+          </div>
+        </div>
+      </StyledToolbar>
 
-        {[...Array(3)].map((_, i) => (
-          <Box
-            key={i}
-            sx={{
-              position: "absolute",
-              borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,0.12)",
-              width: 120 + i * 80,
-              height: 120 + i * 80,
-              top: -40 - i * 30,
-              right: -40 - i * 30,
-            }}
-          />
-        ))}
-      </Box>
-
-      <Box
+      <Card
         sx={{
           p: 3,
           backgroundColor: "#ffffff",
           minWidth: 0,
-          width: "100%",
+          width: "165vh",
+          overflowX: "auto",
         }}
       >
         {loading ?
           <Typography>Loading calendar…</Typography>
         : <>
-            <style>{`
-              .fc-event {
-                border: 1px solid #000 !important;
-                box-sizing: border-box;
-                border-radius: 6px;
-              }
+            {/*<style>{`*/}
+            {/*  .fc-event {*/}
+            {/*    border: 1px solid #000 !important;*/}
+            {/*    box-sizing: border-box;*/}
+            {/*    border-radius: 6px;*/}
+            {/*  }*/}
 
-              .fc {
-                max-width: 100%;
-              }
+            {/*  .fc {*/}
+            {/*    max-width: 100%;*/}
+            {/*  }*/}
 
-              .fc-toolbar-title {
-                color: #111827 !important;
-              }
+            {/*  .fc-toolbar-title {*/}
+            {/*    color: #111827 !important;*/}
+            {/*  }*/}
 
-              .fc-view-harness {
-                min-width: 0 !important;
-              }
+            {/*  .fc-view-harness {*/}
+            {/*    min-width: 0 !important;*/}
+            {/*  }*/}
 
-              .fc-scrollgrid {
-                width: 100% !important;
-              }
-            `}</style>
-
+            {/*  .fc-scrollgrid {*/}
+            {/*    width: 100% !important;*/}
+            {/*  }*/}
+            {/*`}</style>*/}
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
@@ -250,7 +255,7 @@ export default function CalendarPage() {
             />
           </>
         }
-      </Box>
+      </Card>
     </Box>
   );
 }
