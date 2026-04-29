@@ -63,6 +63,7 @@ model InsuranceClaim {
   incident_date         DateTime                 @db.Date
   claim_type            InsuranceClaimType
   incident_description  String
+  status                InsuranceClaimStatus     @default(PENDING)
   createdAt             DateTime                 @default(now()) @db.Timestamp(6)
   updatedAt             DateTime                 @updatedAt @db.Timestamp(6)
   requestor             Employee                 @relation(fields: [requestorEmployeeUuid], references: [uuid])
@@ -205,6 +206,11 @@ enum InsuranceClaimType {
   HOME
   AUTO
   BUSINESS
+}
+
+enum InsuranceClaimStatus {
+  PENDING
+  UNDER_REVIEW
 }
 
 enum HitType {
