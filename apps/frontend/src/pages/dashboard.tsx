@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivity";
 import SearchBar from "./DashboardComponents/SearchBar";
 import PieChart from "./DashboardComponents/PieChart";
-//import BarChart from "./DashboardComponents/BarChart";
+import TypeBarChart from "./DashboardComponents/BarChart";
 import NotificationsBell from "../components/Notifications/NotificationBell.tsx";
 import { AppBar, Box, styled, Toolbar, Typography } from "@mui/material";
 import Card from "@mui/material/Card";
@@ -341,6 +341,14 @@ export default function Dashboard() {
                 <HitsLineChart />
               </CardContent>
             </Card>
+            {/*<Card*/}
+            {/*  sx={{ borderRadius: 6 }}*/}
+            {/*  className="flex-1 flex-col drop-shadow-lg"*/}
+            {/*>*/}
+            {/*  /!*<CardContent className="p-6">*!/*/}
+            {/*  /!*  <TypeBarChart/>*!/*/}
+            {/*  /!*</CardContent>*!/*/}
+            {/*</Card>*/}
           </div>
         </CardContent>
       </Card>
