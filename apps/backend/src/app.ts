@@ -54,6 +54,7 @@ app.get("/", (_req, res) => {
 app.use(auth);
 
 import contentRouter from "./routes/content.ts";
+import claimRouter from "./routes/claim.ts";
 import employeeRouter from "./routes/employee.ts";
 import loginRouter from "./routes/login.ts";
 import logoutRouter from "./routes/logout.ts";
@@ -66,6 +67,7 @@ import statsRouter from "./routes/stats.ts";
 const routeMap = {
   "account-settings": accountSettingsRouter,
   "activity": activityRouter,
+  "claim": claimRouter,
   "content": contentRouter,
   "employee": employeeRouter,
   "login": loginRouter,

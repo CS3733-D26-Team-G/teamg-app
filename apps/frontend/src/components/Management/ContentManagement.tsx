@@ -641,6 +641,13 @@ export default function ContentManagement({
             author={params.row.content_owner}
             position={getPositionLabel(params.row.for_position) as Position}
             fileType={params.row.file_type}
+            editor={
+              params.row.editLock?.lockedByEmp ?
+                `${params.row.editLock.lockedByEmp.first_name} 
+              ${params.row.editLock.lockedByEmp.last_name}`
+              : ""
+            }
+            editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
           />
         </Box>
       ),
@@ -1167,7 +1174,10 @@ export default function ContentManagement({
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <HelpPopup description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly." />
+              <HelpPopup
+                description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
+                infoOrHelp={true}
+              />
               {isSystemAdmin && (
                 <TagManagerPopup
                   rows={rows}

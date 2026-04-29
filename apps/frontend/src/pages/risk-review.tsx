@@ -13,44 +13,43 @@ import {
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import ThumbUpIcon from "@mui/icons-material/ThumbUp";
-import ThumbDownIcon from "@mui/icons-material/ThumbDown";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import FlagIcon from "@mui/icons-material/Flag";
 import PublishIcon from "@mui/icons-material/Publish";
+import GavelIcon from "@mui/icons-material/Gavel";
 import HelpPopup from "../components/HelpPopup";
 import DocPreviewer from "../components/Management/DocPreviewer";
 import { API_ENDPOINTS } from "../config";
 import { ContentRowsSchema, type ContentRow } from "../types/content";
-import { dedupeAsync } from "../lib/async-cache";
 
-type ApprovalStatus = "approved" | "denied" | null;
+type RiskStatus = "cleared" | "flagged" | null;
 
-interface ApprovalCard {
+interface RiskCardData {
   content: ContentRow;
   expanded: boolean;
-  status: ApprovalStatus;
-  reviewComment: string;
+  status: RiskStatus;
+  riskNotes: string;
 }
 
-export default function ApprovalPage() {
-  const [cards, setCards] = useState<ApprovalCard[]>([]);
+export default function RiskReviewPage() {
+  const [cards, setCards] = useState<RiskCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const fetchAdminContent = useCallback(async () => {
+  const fetchUnderwriterContent = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await dedupeAsync("content:list", async () => {
-        const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-        return res.json();
+      // Bypass the deduplication cache so we always get fresh data on this page
+      const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
+        credentials: "include",
       });
+      if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+      const data: unknown = await res.json();
 
       const parsed = ContentRowsSchema.safeParse(data);
       if (!parsed.success) {
@@ -59,17 +58,17 @@ export default function ApprovalPage() {
         return;
       }
 
-      // Filter to only content intended for ADMIN (submitted for review/approval)
-      const adminContent = parsed.data.filter(
-        (row) => row.for_position === "ADMIN",
+      // Only show content targeted at underwriters
+      const underwriterContent = parsed.data.filter(
+        (row) => row.for_position === "UNDERWRITER",
       );
 
       setCards(
-        adminContent.map((content) => ({
+        underwriterContent.map((content) => ({
           content,
           expanded: false,
           status: null,
-          reviewComment: "",
+          riskNotes: "",
         })),
       );
     } catch (err) {
@@ -81,8 +80,8 @@ export default function ApprovalPage() {
   }, []);
 
   useEffect(() => {
-    void fetchAdminContent();
-  }, [fetchAdminContent]);
+    void fetchUnderwriterContent();
+  }, [fetchUnderwriterContent]);
 
   const toggleExpanded = (uuid: string) => {
     setCards((prev) =>
@@ -92,7 +91,7 @@ export default function ApprovalPage() {
     );
   };
 
-  const setStatus = (uuid: string, status: ApprovalStatus) => {
+  const setStatus = (uuid: string, status: RiskStatus) => {
     setCards((prev) =>
       prev.map((c) =>
         c.content.uuid === uuid ? { ...c, status, expanded: false } : c,
@@ -100,15 +99,15 @@ export default function ApprovalPage() {
     );
   };
 
-  const setComment = (uuid: string, comment: string) => {
+  const setNotes = (uuid: string, notes: string) => {
     setCards((prev) =>
       prev.map((c) =>
-        c.content.uuid === uuid ? { ...c, reviewComment: comment } : c,
+        c.content.uuid === uuid ? { ...c, riskNotes: notes } : c,
       ),
     );
   };
 
-  const handleSubmitApprovals = async () => {
+  const handleSubmitReviews = async () => {
     const reviewed = cards.filter((c) => c.status !== null);
     if (reviewed.length === 0) return;
 
@@ -121,10 +120,10 @@ export default function ApprovalPage() {
             credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              status: card.status === "approved" ? "AVAILABLE" : "UNAVAILABLE",
+              status: card.status === "cleared" ? "AVAILABLE" : "IN_USE",
               workflow_action:
-                card.status === "approved" ? "APPROVED" : "DENIED",
-              review_comment: card.reviewComment,
+                card.status === "cleared" ? "RISK_CLEARED" : "RISK_FLAGGED",
+              risk_assessment: card.riskNotes,
             }),
           }),
         ),
@@ -137,11 +136,10 @@ export default function ApprovalPage() {
     }
   };
 
-  const approvedCount = cards.filter((c) => c.status === "approved").length;
-  const deniedCount = cards.filter((c) => c.status === "denied").length;
+  const clearedCount = cards.filter((c) => c.status === "cleared").length;
+  const flaggedCount = cards.filter((c) => c.status === "flagged").length;
   const pendingCount = cards.filter((c) => c.status === null).length;
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -179,21 +177,32 @@ export default function ApprovalPage() {
           justifyContent="space-between"
         >
           <Box>
-            <Typography
-              variant="h2"
-              sx={{ color: "white", fontWeight: 700, mb: 0.5 }}
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1.5}
+              sx={{ mb: 0.5 }}
             >
-              Approval Queue
-            </Typography>
+              <GavelIcon
+                sx={{ color: "rgba(255,255,255,0.85)", fontSize: 28 }}
+              />
+              <Typography
+                variant="h2"
+                sx={{ color: "white", fontWeight: 700 }}
+              >
+                Risk Review Queue
+              </Typography>
+            </Stack>
             <Typography
               sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
             >
-              Review and approve content submitted for admin sign-off
+              Assess risk on underwriter content — clear or flag each document
+              before submitting
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
             <HelpPopup
-              description="This page shows all content submitted for admin approval. Expand each card to review the document and underwriter comments, then approve or deny."
+              description="This queue shows all content assigned to underwriters. Expand each card to read the document, write your risk assessment notes, then clear or flag it before submitting your review."
               infoOrHelp={true}
             />
           </Box>
@@ -222,7 +231,7 @@ export default function ApprovalPage() {
                   sx={{ fontSize: 14, color: "#4caf50 !important" }}
                 />
               }
-              label={`${approvedCount} Approved`}
+              label={`${clearedCount} Cleared`}
               size="small"
               sx={{
                 backgroundColor: "rgba(76,175,80,0.2)",
@@ -232,14 +241,14 @@ export default function ApprovalPage() {
             />
             <Chip
               icon={
-                <CancelIcon
-                  sx={{ fontSize: 14, color: "#f44336 !important" }}
+                <WarningAmberIcon
+                  sx={{ fontSize: 14, color: "#ffa726 !important" }}
                 />
               }
-              label={`${deniedCount} Denied`}
+              label={`${flaggedCount} Flagged`}
               size="small"
               sx={{
-                backgroundColor: "rgba(244,67,54,0.2)",
+                backgroundColor: "rgba(255,167,38,0.2)",
                 color: "white",
                 fontWeight: 600,
               }}
@@ -255,22 +264,16 @@ export default function ApprovalPage() {
             <CircularProgress />
           </Box>
         : cards.length === 0 ?
-          <Box
-            sx={{
-              textAlign: "center",
-              mt: 10,
-              color: "text.secondary",
-            }}
-          >
+          <Box sx={{ textAlign: "center", mt: 10, color: "text.secondary" }}>
             <CheckCircleIcon sx={{ fontSize: 56, mb: 2, opacity: 0.25 }} />
             <Typography
               variant="h6"
               sx={{ fontWeight: 600, mb: 0.5 }}
             >
-              Queue is empty
+              Queue is clear
             </Typography>
             <Typography variant="body2">
-              No content is awaiting admin approval right now.
+              No underwriter content is awaiting risk review right now.
             </Typography>
           </Box>
         : submitted ?
@@ -280,26 +283,24 @@ export default function ApprovalPage() {
             animate={{ opacity: 1, y: 0 }}
             sx={{ textAlign: "center", mt: 10 }}
           >
-            <CheckCircleIcon
-              sx={{ fontSize: 64, color: "success.main", mb: 2 }}
-            />
+            <VerifiedIcon sx={{ fontSize: 64, color: "success.main", mb: 2 }} />
             <Typography
               variant="h5"
               sx={{ fontWeight: 700, mb: 1 }}
             >
-              Approvals submitted!
+              Risk assessments submitted!
             </Typography>
             <Typography
               color="text.secondary"
               sx={{ mb: 3 }}
             >
-              {approvedCount} approved · {deniedCount} denied
+              {clearedCount} cleared · {flaggedCount} flagged
             </Typography>
             <Button
               variant="outlined"
               onClick={() => {
                 setSubmitted(false);
-                void fetchAdminContent();
+                void fetchUnderwriterContent();
               }}
             >
               Refresh Queue
@@ -309,22 +310,20 @@ export default function ApprovalPage() {
             <Stack spacing={1.5}>
               <AnimatePresence>
                 {cards.map((card, index) => (
-                  <ApprovalCard
+                  <RiskCard
                     key={card.content.uuid}
                     card={card}
                     index={index}
                     onToggle={() => toggleExpanded(card.content.uuid)}
-                    onApprove={() => setStatus(card.content.uuid, "approved")}
-                    onDeny={() => setStatus(card.content.uuid, "denied")}
-                    onCommentChange={(val) =>
-                      setComment(card.content.uuid, val)
-                    }
+                    onClear={() => setStatus(card.content.uuid, "cleared")}
+                    onFlag={() => setStatus(card.content.uuid, "flagged")}
+                    onNotesChange={(val) => setNotes(card.content.uuid, val)}
                   />
                 ))}
               </AnimatePresence>
             </Stack>
 
-            {/* ── Submit approvals ─────────────────────────────────────── */}
+            {/* ── Submit risk assessments ──────────────────────────────── */}
             <Box
               component={motion.div}
               initial={{ opacity: 0, y: 16 }}
@@ -345,12 +344,12 @@ export default function ApprovalPage() {
                 variant="body2"
                 color="text.secondary"
               >
-                {approvedCount + deniedCount} of {cards.length} reviewed
+                {clearedCount + flaggedCount} of {cards.length} reviewed
               </Typography>
               <Tooltip
                 title={
-                  approvedCount + deniedCount === 0 ?
-                    "Review at least one item first"
+                  clearedCount + flaggedCount === 0 ?
+                    "Review at least one document first"
                   : ""
                 }
               >
@@ -366,8 +365,8 @@ export default function ApprovalPage() {
                         />
                       : <PublishIcon />
                     }
-                    disabled={submitting || approvedCount + deniedCount === 0}
-                    onClick={() => void handleSubmitApprovals()}
+                    disabled={submitting || clearedCount + flaggedCount === 0}
+                    onClick={() => void handleSubmitReviews()}
                     sx={{
                       "background": "linear-gradient(135deg, #1A1E4B, #395176)",
                       "fontWeight": 700,
@@ -383,7 +382,7 @@ export default function ApprovalPage() {
                       },
                     }}
                   >
-                    Submit Approvals
+                    Submit Risk Assessments
                   </Button>
                 </span>
               </Tooltip>
@@ -395,35 +394,29 @@ export default function ApprovalPage() {
   );
 }
 
-// ── Individual card ────────────────────────────────────────────────────────────
+// ── Individual risk card ───────────────────────────────────────────────────────
 
-interface ApprovalCardProps {
-  card: ApprovalCard;
+interface RiskCardProps {
+  card: RiskCardData;
   index: number;
   onToggle: () => void;
-  onApprove: () => void;
-  onDeny: () => void;
-  onCommentChange: (val: string) => void;
+  onClear: () => void;
+  onFlag: () => void;
+  onNotesChange: (val: string) => void;
 }
 
-function ApprovalCard({
+function RiskCard({
   card,
   index,
   onToggle,
-  onApprove,
-  onDeny,
-  onCommentChange,
-}: ApprovalCardProps) {
-  const { content, expanded, status, reviewComment } = card;
+  onClear,
+  onFlag,
+  onNotesChange,
+}: RiskCardProps) {
+  const { content, expanded, status, riskNotes } = card;
 
   const isExternalUrl =
     !content.supabasePath && !content.url.includes("supabase.co/storage");
-
-  const statusColor = {
-    approved: "success.main",
-    denied: "error.main",
-    null: "text.disabled",
-  }[String(status)];
 
   return (
     <Box
@@ -436,18 +429,18 @@ function ApprovalCard({
         overflow: "hidden",
         border: "1.5px solid",
         borderColor:
-          status === "approved" ? "success.main"
-          : status === "denied" ? "error.main"
+          status === "cleared" ? "success.main"
+          : status === "flagged" ? "warning.main"
           : "divider",
         backgroundColor: "background.paper",
-        transition: "border-color 0.2s",
+        transition: "border-color 0.2s, box-shadow 0.2s",
         boxShadow:
-          status === "approved" ? "0 0 0 3px rgba(76,175,80,0.12)"
-          : status === "denied" ? "0 0 0 3px rgba(244,67,54,0.12)"
+          status === "cleared" ? "0 0 0 3px rgba(76,175,80,0.12)"
+          : status === "flagged" ? "0 0 0 3px rgba(255,167,38,0.15)"
           : "0 2px 8px rgba(0,0,0,0.06)",
       }}
     >
-      {/* ── Card header row ────────────────────────────────────────── */}
+      {/* ── Card header row ────────────────────────────────────────────── */}
       <Box
         onClick={status === null ? onToggle : undefined}
         sx={{
@@ -461,12 +454,12 @@ function ApprovalCard({
           "&:hover": status === null ? { backgroundColor: "action.hover" } : {},
         }}
       >
-        {/* Status checkbox icon */}
+        {/* Status icon */}
         <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
-          {status === "approved" ?
+          {status === "cleared" ?
             <CheckCircleIcon sx={{ color: "success.main", fontSize: 28 }} />
-          : status === "denied" ?
-            <CancelIcon sx={{ color: "error.main", fontSize: 28 }} />
+          : status === "flagged" ?
+            <WarningAmberIcon sx={{ color: "warning.main", fontSize: 28 }} />
           : <CheckBoxOutlineBlankIcon
               sx={{ color: "text.disabled", fontSize: 28 }}
             />
@@ -480,8 +473,8 @@ function ApprovalCard({
               fontWeight: 600,
               fontSize: "0.975rem",
               color:
-                status === "approved" ? "success.main"
-                : status === "denied" ? "error.main"
+                status === "cleared" ? "success.main"
+                : status === "flagged" ? "warning.dark"
                 : "text.primary",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -524,7 +517,7 @@ function ApprovalCard({
           </Stack>
         </Box>
 
-        {/* Status label + expand icon */}
+        {/* Status chip + expand icon */}
         <Stack
           direction="row"
           alignItems="center"
@@ -533,9 +526,9 @@ function ApprovalCard({
         >
           {status !== null && (
             <Chip
-              label={status === "approved" ? "Approved" : "Denied"}
+              label={status === "cleared" ? "Cleared" : "Flagged"}
               size="small"
-              color={status === "approved" ? "success" : "error"}
+              color={status === "cleared" ? "success" : "warning"}
               variant="filled"
               sx={{ fontWeight: 700, fontSize: "0.72rem" }}
             />
@@ -547,7 +540,7 @@ function ApprovalCard({
         </Stack>
       </Box>
 
-      {/* ── Expandable body ────────────────────────────────────────── */}
+      {/* ── Expandable body ─────────────────────────────────────────────── */}
       <Collapse
         in={expanded}
         timeout={280}
@@ -556,7 +549,7 @@ function ApprovalCard({
         <Box
           sx={{ p: 2.5, display: "flex", flexDirection: "column", gap: 2.5 }}
         >
-          {/* Underwriter comments field */}
+          {/* Risk assessment notes */}
           <Box>
             <Typography
               variant="subtitle2"
@@ -569,16 +562,16 @@ function ApprovalCard({
                 color: "text.secondary",
               }}
             >
-              Underwriter Comments
+              Risk Assessment Notes
             </Typography>
             <TextField
-              placeholder="Risk assessment notes from the underwriter will appear here, or add your own review notes…"
+              placeholder="Summarise your risk evaluation — note any concerns, eligibility issues, compliance flags, or conditions that apply to this document…"
               fullWidth
               multiline
               minRows={3}
               maxRows={6}
-              value={reviewComment}
-              onChange={(e) => onCommentChange(e.target.value)}
+              value={riskNotes}
+              onChange={(e) => onNotesChange(e.target.value)}
               variant="outlined"
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -649,7 +642,7 @@ function ApprovalCard({
             </Box>
           </Box>
 
-          {/* Approve / Deny buttons */}
+          {/* Clear Risk / Flag Risk buttons */}
           <Stack
             direction="row"
             spacing={1.5}
@@ -658,8 +651,8 @@ function ApprovalCard({
               variant="contained"
               fullWidth
               size="large"
-              startIcon={<ThumbUpIcon />}
-              onClick={onApprove}
+              startIcon={<VerifiedIcon />}
+              onClick={onClear}
               sx={{
                 "borderRadius": "10px",
                 "fontWeight": 700,
@@ -675,30 +668,30 @@ function ApprovalCard({
                 },
               }}
             >
-              Approve
+              Submit for Approval
             </Button>
             <Button
               variant="contained"
               fullWidth
               size="large"
-              startIcon={<ThumbDownIcon />}
-              onClick={onDeny}
+              startIcon={<FlagIcon />}
+              onClick={onFlag}
               sx={{
                 "borderRadius": "10px",
                 "fontWeight": 700,
                 "textTransform": "none",
                 "fontSize": "0.95rem",
                 "py": 1.2,
-                "background": "linear-gradient(135deg, #7f0000, #c62828)",
+                "background": "linear-gradient(135deg, #e65100, #f57c00)",
                 "color": "white",
-                "boxShadow": "0 4px 14px rgba(198,40,40,0.3)",
+                "boxShadow": "0 4px 14px rgba(230,81,0,0.3)",
                 "&:hover": {
-                  background: "linear-gradient(135deg, #5f0000, #a31515)",
-                  boxShadow: "0 6px 18px rgba(198,40,40,0.45)",
+                  background: "linear-gradient(135deg, #bf360c, #d84315)",
+                  boxShadow: "0 6px 18px rgba(230,81,0,0.45)",
                 },
               }}
             >
-              Deny
+              Flag Risk
             </Button>
           </Stack>
         </Box>
