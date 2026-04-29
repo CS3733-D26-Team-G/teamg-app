@@ -3,8 +3,9 @@ export interface ActivityItem {
   time: string;
   user: string;
   action: string;
-  resourceUuid?: string; // UUID for content or employees
-  resourceName?: string; // Name for content or employees
+  resourceUuid?: string;
+  resourceName?: string;
+  avatarUrl?: string;
 }
 
 export interface ActivityGroup {

@@ -82,6 +82,7 @@ export default function ActivityComponent() {
         action: row.action,
         resourceUuid: row.resourceUuid,
         resourceName: row.resourceName,
+        avatarUrl: row.employee?.avatar ?? undefined,
       });
     });
 
