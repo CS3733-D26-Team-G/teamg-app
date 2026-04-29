@@ -50,6 +50,7 @@ export default function DashboardRecentActivity({
         display: "flex",
         flexDirection: "column",
         padding: "0 !important",
+        borderRadius: 3,
       }}
     >
       <CardHeader

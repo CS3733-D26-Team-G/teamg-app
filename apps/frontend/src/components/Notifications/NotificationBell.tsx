@@ -308,7 +308,7 @@ export default function NotificationsBell() {
     <>
       <IconButton
         onClick={handleClick}
-        color="inherit"
+        sx={{ color: "white" }}
       >
         <Badge
           badgeContent={totalAlerts}
