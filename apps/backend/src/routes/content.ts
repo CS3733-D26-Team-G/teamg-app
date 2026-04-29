@@ -948,6 +948,14 @@ router.post("/lock/:uuid", async (req, res) => {
       },
     });
 
+    await prisma.contentHit.create({
+      data: {
+        contentUuid: uuid,
+        employeeUuid: auth.employeeUuid,
+        action: "ACCESS",
+      },
+    });
+
     return res.status(200).json({
       locked: true,
       lock: serializeLock(lock),
@@ -1730,6 +1738,30 @@ router.get("/history/:uuid", async (req, res) => {
       `Failed to query activity history for content ${uuid}`,
       e,
     );
+  }
+});
+
+router.post("/view/:uuid", async (req, res) => {
+  const uuid = parseContentUuid(req, res, "Invalid content UUID");
+  if (!uuid) return;
+
+  const auth = getAuth(req);
+
+  try {
+    const content = await loadAccessibleContent(uuid, auth, res);
+    if (!content) return;
+
+    await prisma.contentHit.create({
+      data: {
+        contentUuid: uuid,
+        employeeUuid: auth.employeeUuid,
+        action: "VIEW",
+      },
+    });
+
+    return res.status(200).json({ message: "View recorded" });
+  } catch (e) {
+    return sendInternalError(res, "Failed to record view", e);
   }
 });
 
