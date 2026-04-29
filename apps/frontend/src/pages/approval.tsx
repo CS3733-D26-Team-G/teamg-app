@@ -24,40 +24,7 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import HelpPopup from "../components/HelpPopup";
 import { API_ENDPOINTS } from "../config";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-type ApprovalStatus = "approved" | "denied" | null;
-
-interface ClaimRecord {
-  uuid: string;
-  claim_type: string;
-  incident_date: string;
-  incident_description: string;
-  status: string;
-  risk_assessment?: string;
-  created_at?: string;
-  requestor?: {
-    first_name: string;
-    last_name: string;
-    corporate_email: string;
-  };
-  claimContentAssignment?: Array<{
-    content: {
-      uuid: string;
-      title: string;
-      url: string;
-      file_type: string | null;
-      status: string;
-    };
-  }>;
-}
-
-interface ApprovalCard {
-  claim: ClaimRecord;
-  expanded: boolean;
-  status: ApprovalStatus;
-  reviewComment: string;
-}
+type ApprovalStatus = "APPROVED" | "DENIED" | null;
 
 const CLAIM_TYPE_LABELS: Record<string, string> = {
   AUTO: "Auto",
@@ -70,7 +37,37 @@ const CLAIM_TYPE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-// ── Main page ──────────────────────────────────────────────────────────────────
+interface ClaimContent {
+  uuid: string;
+  title: string;
+  url: string;
+  file_type: string | null;
+  content_type: string | null;
+  status: string;
+}
+
+interface ClaimRecord {
+  uuid: string;
+  claim_type: string;
+  incident_date: string;
+  incident_description: string;
+  status: string;
+  createdAt: string;
+  requestor: {
+    uuid: string;
+    first_name: string;
+    last_name: string;
+    corporate_email: string;
+  };
+  contents: ClaimContent[];
+}
+
+interface ApprovalCard {
+  claim: ClaimRecord;
+  expanded: boolean;
+  status: ApprovalStatus;
+  reviewComment: string;
+}
 
 export default function ApprovalPage() {
   const [cards, setCards] = useState<ApprovalCard[]>([]);
@@ -86,14 +83,13 @@ export default function ApprovalPage() {
       });
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
       const data = (await res.json()) as ClaimRecord[];
+      const all = Array.isArray(data) ? data : [];
 
-      // Admins see only risk-cleared claims awaiting final sign-off
-      const readyForApproval = (Array.isArray(data) ? data : []).filter(
-        (c) => c.status === "RISK_CLEARED",
-      );
+      // Admins see all claims; show only those cleared by underwriters
+      const cleared = all.filter((c) => c.status === "RISK_CLEARED");
 
       setCards(
-        readyForApproval.map((claim) => ({
+        cleared.map((claim) => ({
           claim,
           expanded: false,
           status: null,
@@ -112,34 +108,30 @@ export default function ApprovalPage() {
     void fetchClaims();
   }, [fetchClaims]);
 
-  const toggleExpanded = (uuid: string) => {
+  const toggleExpanded = (uuid: string) =>
     setCards((prev) =>
       prev.map((c) =>
         c.claim.uuid === uuid ? { ...c, expanded: !c.expanded } : c,
       ),
     );
-  };
 
-  const setStatus = (uuid: string, status: ApprovalStatus) => {
+  const setStatus = (uuid: string, status: ApprovalStatus) =>
     setCards((prev) =>
       prev.map((c) =>
         c.claim.uuid === uuid ? { ...c, status, expanded: false } : c,
       ),
     );
-  };
 
-  const setComment = (uuid: string, comment: string) => {
+  const setComment = (uuid: string, comment: string) =>
     setCards((prev) =>
       prev.map((c) =>
         c.claim.uuid === uuid ? { ...c, reviewComment: comment } : c,
       ),
     );
-  };
 
   const handleSubmitApprovals = async () => {
     const reviewed = cards.filter((c) => c.status !== null);
     if (reviewed.length === 0) return;
-
     setSubmitting(true);
     try {
       await Promise.all(
@@ -148,10 +140,7 @@ export default function ApprovalPage() {
             method: "PUT",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              status: card.status === "approved" ? "APPROVED" : "DENIED",
-              review_comment: card.reviewComment,
-            }),
+            body: JSON.stringify({ status: card.status }), // "APPROVED" or "DENIED"
           }),
         ),
       );
@@ -163,8 +152,8 @@ export default function ApprovalPage() {
     }
   };
 
-  const approvedCount = cards.filter((c) => c.status === "approved").length;
-  const deniedCount = cards.filter((c) => c.status === "denied").length;
+  const approvedCount = cards.filter((c) => c.status === "APPROVED").length;
+  const deniedCount = cards.filter((c) => c.status === "DENIED").length;
   const pendingCount = cards.filter((c) => c.status === null).length;
 
   return (
@@ -196,7 +185,6 @@ export default function ApprovalPage() {
             }}
           />
         ))}
-
         <Stack
           direction="row"
           alignItems="flex-start"
@@ -212,17 +200,16 @@ export default function ApprovalPage() {
             <Typography
               sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
             >
-              Final review of risk-cleared claims — approve or deny each one
+              Review risk-cleared claims and issue final approval or denial
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
             <HelpPopup
-              description="This page shows claims that have been risk-cleared by an underwriter and are now awaiting your final decision. Expand each claim to review the details, underwriter notes, and attachments, then approve or deny."
+              description="This page shows all claims that have been risk-cleared by an underwriter. Expand each card to review the incident details, attached evidence, and the underwriter's assessment, then approve or deny."
               infoOrHelp={true}
             />
           </Box>
         </Stack>
-
         {!loading && cards.length > 0 && (
           <Stack
             direction="row"
@@ -287,7 +274,7 @@ export default function ApprovalPage() {
               Queue is empty
             </Typography>
             <Typography variant="body2">
-              No risk-cleared claims are awaiting final approval right now.
+              No risk-cleared claims are awaiting admin approval right now.
             </Typography>
           </Box>
         : submitted ?
@@ -326,19 +313,18 @@ export default function ApprovalPage() {
             <Stack spacing={1.5}>
               <AnimatePresence>
                 {cards.map((card, index) => (
-                  <ApprovalClaimCard
+                  <ApprovalCardComponent
                     key={card.claim.uuid}
                     card={card}
                     index={index}
                     onToggle={() => toggleExpanded(card.claim.uuid)}
-                    onApprove={() => setStatus(card.claim.uuid, "approved")}
-                    onDeny={() => setStatus(card.claim.uuid, "denied")}
+                    onApprove={() => setStatus(card.claim.uuid, "APPROVED")}
+                    onDeny={() => setStatus(card.claim.uuid, "DENIED")}
                     onCommentChange={(val) => setComment(card.claim.uuid, val)}
                   />
                 ))}
               </AnimatePresence>
             </Stack>
-
             <Box
               component={motion.div}
               initial={{ opacity: 0, y: 16 }}
@@ -364,7 +350,7 @@ export default function ApprovalPage() {
               <Tooltip
                 title={
                   approvedCount + deniedCount === 0 ?
-                    "Review at least one claim first"
+                    "Review at least one item first"
                   : ""
                 }
               >
@@ -409,9 +395,7 @@ export default function ApprovalPage() {
   );
 }
 
-// ── Individual approval card ───────────────────────────────────────────────────
-
-interface ApprovalClaimCardProps {
+interface ApprovalCardProps {
   card: ApprovalCard;
   index: number;
   onToggle: () => void;
@@ -420,16 +404,23 @@ interface ApprovalClaimCardProps {
   onCommentChange: (val: string) => void;
 }
 
-function ApprovalClaimCard({
+function ApprovalCardComponent({
   card,
   index,
   onToggle,
   onApprove,
   onDeny,
   onCommentChange,
-}: ApprovalClaimCardProps) {
+}: ApprovalCardProps) {
   const { claim, expanded, status, reviewComment } = card;
-  const attachments = claim.claimContentAssignment ?? [];
+  const incidentDate =
+    claim.incident_date ?
+      new Date(claim.incident_date).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <Box
@@ -442,18 +433,18 @@ function ApprovalClaimCard({
         overflow: "hidden",
         border: "1.5px solid",
         borderColor:
-          status === "approved" ? "success.main"
-          : status === "denied" ? "error.main"
+          status === "APPROVED" ? "success.main"
+          : status === "DENIED" ? "error.main"
           : "divider",
         backgroundColor: "background.paper",
-        transition: "border-color 0.2s, box-shadow 0.2s",
+        transition: "border-color 0.2s",
         boxShadow:
-          status === "approved" ? "0 0 0 3px rgba(76,175,80,0.12)"
-          : status === "denied" ? "0 0 0 3px rgba(244,67,54,0.12)"
+          status === "APPROVED" ? "0 0 0 3px rgba(76,175,80,0.12)"
+          : status === "DENIED" ? "0 0 0 3px rgba(244,67,54,0.12)"
           : "0 2px 8px rgba(0,0,0,0.06)",
       }}
     >
-      {/* Header row */}
+      {/* Header */}
       <Box
         onClick={status === null ? onToggle : undefined}
         sx={{
@@ -468,60 +459,69 @@ function ApprovalClaimCard({
         }}
       >
         <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
-          {status === "approved" ?
+          {status === "APPROVED" ?
             <CheckCircleIcon sx={{ color: "success.main", fontSize: 28 }} />
-          : status === "denied" ?
+          : status === "DENIED" ?
             <CancelIcon sx={{ color: "error.main", fontSize: 28 }} />
           : <CheckBoxOutlineBlankIcon
               sx={{ color: "text.disabled", fontSize: 28 }}
             />
           }
         </Box>
-
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography
             sx={{
               fontWeight: 600,
               fontSize: "0.975rem",
               color:
-                status === "approved" ? "success.main"
-                : status === "denied" ? "error.main"
+                status === "APPROVED" ? "success.main"
+                : status === "DENIED" ? "error.main"
                 : "text.primary",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
           >
-            {CLAIM_TYPE_LABELS[claim.claim_type] ?? claim.claim_type} Claim
+            {CLAIM_TYPE_LABELS[claim.claim_type] ?? claim.claim_type} —{" "}
+            {claim.requestor.first_name} {claim.requestor.last_name}
           </Typography>
           <Stack
             direction="row"
             spacing={1.5}
             sx={{ mt: 0.4 }}
           >
-            {claim.requestor && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                {claim.requestor.first_name} {claim.requestor.last_name} ·{" "}
-                {claim.requestor.corporate_email}
-              </Typography>
-            )}
             <Typography
               variant="caption"
               color="text.secondary"
             >
-              · Incident:{" "}
-              {new Date(claim.incident_date).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
+              {claim.requestor.corporate_email}
             </Typography>
+            {incidentDate && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                · Incident: {incidentDate}
+              </Typography>
+            )}
+            {claim.contents.length > 0 && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                · {claim.contents.length} attachment
+                {claim.contents.length !== 1 ? "s" : ""}
+              </Typography>
+            )}
+            <Chip
+              label="Risk Cleared"
+              size="small"
+              color="success"
+              variant="outlined"
+              sx={{ height: 16, fontSize: "0.6rem" }}
+            />
           </Stack>
         </Box>
-
         <Stack
           direction="row"
           alignItems="center"
@@ -530,9 +530,9 @@ function ApprovalClaimCard({
         >
           {status !== null && (
             <Chip
-              label={status === "approved" ? "Approved" : "Denied"}
+              label={status === "APPROVED" ? "Approved" : "Denied"}
               size="small"
-              color={status === "approved" ? "success" : "error"}
+              color={status === "APPROVED" ? "success" : "error"}
               variant="filled"
               sx={{ fontWeight: 700, fontSize: "0.72rem" }}
             />
@@ -544,7 +544,7 @@ function ApprovalClaimCard({
         </Stack>
       </Box>
 
-      {/* Expandable body */}
+      {/* Body */}
       <Collapse
         in={expanded}
         timeout={280}
@@ -558,7 +558,7 @@ function ApprovalClaimCard({
             <Typography
               variant="subtitle2"
               sx={{
-                mb: 0.75,
+                mb: 1,
                 fontWeight: 700,
                 fontSize: "0.78rem",
                 textTransform: "uppercase",
@@ -568,60 +568,31 @@ function ApprovalClaimCard({
             >
               Incident Description
             </Typography>
-            <Typography
-              variant="body2"
+            <Box
               sx={{
-                lineHeight: 1.75,
-                whiteSpace: "pre-wrap",
                 p: 1.5,
-                borderRadius: "8px",
+                borderRadius: "10px",
                 backgroundColor: "action.hover",
+                border: "1px solid",
+                borderColor: "divider",
               }}
             >
-              {claim.incident_description}
-            </Typography>
-          </Box>
-
-          {/* Underwriter risk assessment */}
-          {claim.risk_assessment && (
-            <Box>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  mb: 0.75,
-                  fontWeight: 700,
-                  fontSize: "0.78rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  color: "text.secondary",
-                }}
-              >
-                Underwriter Risk Assessment
-              </Typography>
               <Typography
                 variant="body2"
-                sx={{
-                  lineHeight: 1.75,
-                  whiteSpace: "pre-wrap",
-                  p: 1.5,
-                  borderRadius: "8px",
-                  border: "1px solid",
-                  borderColor: "divider",
-                  fontStyle: "italic",
-                }}
+                sx={{ lineHeight: 1.7 }}
               >
-                {claim.risk_assessment}
+                {claim.incident_description}
               </Typography>
             </Box>
-          )}
+          </Box>
 
           {/* Attachments */}
-          {attachments.length > 0 && (
+          {claim.contents.length > 0 && (
             <Box>
               <Typography
                 variant="subtitle2"
                 sx={{
-                  mb: 0.75,
+                  mb: 1,
                   fontWeight: 700,
                   fontSize: "0.78rem",
                   textTransform: "uppercase",
@@ -629,53 +600,72 @@ function ApprovalClaimCard({
                   color: "text.secondary",
                 }}
               >
-                Supporting Evidence
+                Supporting Evidence ({claim.contents.length})
               </Typography>
-              <Stack spacing={0.5}>
-                {attachments.map(({ content }) => (
-                  <Stack
-                    key={content.uuid}
-                    direction="row"
-                    alignItems="center"
-                    spacing={1}
-                    sx={{
-                      px: 1.5,
-                      py: 0.75,
-                      borderRadius: "8px",
-                      backgroundColor: "action.hover",
-                    }}
-                  >
-                    <AttachFileIcon
-                      sx={{ fontSize: 15, color: "text.secondary" }}
-                    />
-                    <Typography
-                      variant="body2"
-                      sx={{ flexGrow: 1 }}
+              <Stack spacing={0.75}>
+                {claim.contents.map((content) => {
+                  const ext =
+                    content.file_type ?
+                      content.file_type.split("/").pop()?.toUpperCase()
+                    : null;
+                  return (
+                    <Box
+                      key={content.uuid}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        px: 1.5,
+                        py: 1,
+                        borderRadius: "8px",
+                        backgroundColor: "action.hover",
+                        border: "1px solid",
+                        borderColor: "divider",
+                      }}
                     >
-                      {content.title}
-                    </Typography>
-                    {content.file_type && (
-                      <Chip
-                        label={content.file_type
-                          .split("/")
-                          .pop()
-                          ?.toUpperCase()}
-                        size="small"
-                        variant="outlined"
-                        sx={{ height: 18, fontSize: "0.62rem" }}
+                      <AttachFileIcon
+                        sx={{
+                          fontSize: 16,
+                          color: "text.secondary",
+                          flexShrink: 0,
+                        }}
                       />
-                    )}
-                    <Button
-                      size="small"
-                      href={content.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{ textTransform: "none", fontSize: "0.75rem" }}
-                    >
-                      View
-                    </Button>
-                  </Stack>
-                ))}
+                      <Typography
+                        variant="body2"
+                        sx={{ flexGrow: 1, minWidth: 0 }}
+                        noWrap
+                      >
+                        {content.title}
+                      </Typography>
+                      {ext && (
+                        <Chip
+                          label={`.${ext}`}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            height: 18,
+                            fontSize: "0.62rem",
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      <Button
+                        size="small"
+                        variant="text"
+                        href={content.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          flexShrink: 0,
+                          textTransform: "none",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        View
+                      </Button>
+                    </Box>
+                  );
+                })}
               </Stack>
             </Box>
           )}
@@ -693,10 +683,10 @@ function ApprovalClaimCard({
                 color: "text.secondary",
               }}
             >
-              Review Comments
+              Review Comment (optional)
             </Typography>
             <TextField
-              placeholder="Add your decision notes or any conditions attached to this approval or denial…"
+              placeholder="Add a note about this approval or denial…"
               fullWidth
               multiline
               minRows={3}

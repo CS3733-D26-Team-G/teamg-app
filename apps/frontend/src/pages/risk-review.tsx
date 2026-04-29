@@ -25,39 +25,7 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import HelpPopup from "../components/HelpPopup";
 import { API_ENDPOINTS } from "../config";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-type RiskStatus = "cleared" | "flagged" | null;
-
-interface ClaimRecord {
-  uuid: string;
-  claim_type: string;
-  incident_date: string;
-  incident_description: string;
-  status: string;
-  created_at?: string;
-  requestor?: {
-    first_name: string;
-    last_name: string;
-    corporate_email: string;
-  };
-  claimContentAssignment?: Array<{
-    content: {
-      uuid: string;
-      title: string;
-      url: string;
-      file_type: string | null;
-      status: string;
-    };
-  }>;
-}
-
-interface RiskCard {
-  claim: ClaimRecord;
-  expanded: boolean;
-  status: RiskStatus;
-  riskNotes: string;
-}
+type RiskStatus = "RISK_CLEARED" | "RISK_FLAGGED" | null;
 
 const CLAIM_TYPE_LABELS: Record<string, string> = {
   AUTO: "Auto",
@@ -70,7 +38,37 @@ const CLAIM_TYPE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-// ── Main page ──────────────────────────────────────────────────────────────────
+interface ClaimContent {
+  uuid: string;
+  title: string;
+  url: string;
+  file_type: string | null;
+  content_type: string | null;
+  status: string;
+}
+
+interface ClaimRecord {
+  uuid: string;
+  claim_type: string;
+  incident_date: string;
+  incident_description: string;
+  status: string;
+  createdAt: string;
+  requestor: {
+    uuid: string;
+    first_name: string;
+    last_name: string;
+    corporate_email: string;
+  };
+  contents: ClaimContent[];
+}
+
+interface RiskCard {
+  claim: ClaimRecord;
+  expanded: boolean;
+  status: RiskStatus;
+  riskNotes: string;
+}
 
 export default function RiskReviewPage() {
   const [cards, setCards] = useState<RiskCard[]>([]);
@@ -81,31 +79,28 @@ export default function RiskReviewPage() {
   const fetchClaims = useCallback(async () => {
     try {
       setLoading(true);
+
+      // 1. Get the token from wherever your login process stores it
       const token = localStorage.getItem("token");
 
       const res = await fetch(API_ENDPOINTS.CLAIM.ROOT, {
         method: "GET",
-        credentials: "include", // Keeps cookie support
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          // 2. Add this header!
           "Authorization": `Bearer ${token}`,
         },
       });
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
       const data = (await res.json()) as ClaimRecord[];
-
-      console.log(
-        "[RiskReviewPage] claim statuses from API:",
-        data.map((c) => ({ uuid: c.uuid, status: c.status })),
+      const all = Array.isArray(data) ? data : [];
+      const pending = all.filter(
+        (c) => c.status === "PENDING" || c.status === "UNDER_REVIEW",
       );
-      // ------------------------------
-
-      // If you want EVERYTHING to show up regardless of status (as you mentioned),
-      // change the filter to just return true or remove it:
-      const pending = Array.isArray(data) ? data : [];
-
       setCards(
-        pending.map((claim) => ({
+        all.map((claim) => ({
+          // Use 'all' instead of 'pending'
           claim,
           expanded: false,
           status: null,
@@ -124,32 +119,28 @@ export default function RiskReviewPage() {
     void fetchClaims();
   }, [fetchClaims]);
 
-  const toggleExpanded = (uuid: string) => {
+  const toggleExpanded = (uuid: string) =>
     setCards((prev) =>
       prev.map((c) =>
         c.claim.uuid === uuid ? { ...c, expanded: !c.expanded } : c,
       ),
     );
-  };
 
-  const setStatus = (uuid: string, status: RiskStatus) => {
+  const setStatus = (uuid: string, status: RiskStatus) =>
     setCards((prev) =>
       prev.map((c) =>
         c.claim.uuid === uuid ? { ...c, status, expanded: false } : c,
       ),
     );
-  };
 
-  const setNotes = (uuid: string, notes: string) => {
+  const setNotes = (uuid: string, notes: string) =>
     setCards((prev) =>
       prev.map((c) => (c.claim.uuid === uuid ? { ...c, riskNotes: notes } : c)),
     );
-  };
 
   const handleSubmitReviews = async () => {
     const reviewed = cards.filter((c) => c.status !== null);
     if (reviewed.length === 0) return;
-
     setSubmitting(true);
     try {
       await Promise.all(
@@ -158,11 +149,7 @@ export default function RiskReviewPage() {
             method: "PUT",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              status:
-                card.status === "cleared" ? "RISK_CLEARED" : "RISK_FLAGGED",
-              risk_assessment: card.riskNotes,
-            }),
+            body: JSON.stringify({ status: card.status }),
           }),
         ),
       );
@@ -174,13 +161,12 @@ export default function RiskReviewPage() {
     }
   };
 
-  const clearedCount = cards.filter((c) => c.status === "cleared").length;
-  const flaggedCount = cards.filter((c) => c.status === "flagged").length;
+  const clearedCount = cards.filter((c) => c.status === "RISK_CLEARED").length;
+  const flaggedCount = cards.filter((c) => c.status === "RISK_FLAGGED").length;
   const pendingCount = cards.filter((c) => c.status === null).length;
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
-      {/* ── Header ──────────────────────────────────────────────────────── */}
       <Box
         sx={{
           background:
@@ -207,7 +193,6 @@ export default function RiskReviewPage() {
             }}
           />
         ))}
-
         <Stack
           direction="row"
           alignItems="flex-start"
@@ -233,18 +218,16 @@ export default function RiskReviewPage() {
             <Typography
               sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
             >
-              Assess risk on submitted claims — clear or flag each one before
-              forwarding to admin approval
+              Review pending claims — clear or flag each one before submitting
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
             <HelpPopup
-              description="This queue shows all claims submitted by agents that are pending your risk assessment. Expand each claim to review its details and attachments, write your risk notes, then clear or flag it."
+              description="This queue shows all claims with PENDING status filed by agents. Expand each card to read the incident details and attached evidence, write your risk assessment notes, then clear or flag before submitting."
               infoOrHelp={true}
             />
           </Box>
         </Stack>
-
         {!loading && cards.length > 0 && (
           <Stack
             direction="row"
@@ -258,7 +241,6 @@ export default function RiskReviewPage() {
                 backgroundColor: "rgba(255,255,255,0.15)",
                 color: "white",
                 fontWeight: 600,
-                backdropFilter: "blur(4px)",
               }}
             />
             <Chip
@@ -293,7 +275,6 @@ export default function RiskReviewPage() {
         )}
       </Box>
 
-      {/* ── Content ─────────────────────────────────────────────────────── */}
       <Box sx={{ px: 4, py: 3, maxWidth: 960, mx: "auto" }}>
         {loading ?
           <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
@@ -309,7 +290,7 @@ export default function RiskReviewPage() {
               Queue is clear
             </Typography>
             <Typography variant="body2">
-              No claims are awaiting risk review right now.
+              No claims are pending risk review right now.
             </Typography>
           </Box>
         : submitted ?
@@ -346,19 +327,18 @@ export default function RiskReviewPage() {
             <Stack spacing={1.5}>
               <AnimatePresence>
                 {cards.map((card, index) => (
-                  <RiskClaimCard
+                  <RiskCardComponent
                     key={card.claim.uuid}
                     card={card}
                     index={index}
                     onToggle={() => toggleExpanded(card.claim.uuid)}
-                    onClear={() => setStatus(card.claim.uuid, "cleared")}
-                    onFlag={() => setStatus(card.claim.uuid, "flagged")}
+                    onClear={() => setStatus(card.claim.uuid, "RISK_CLEARED")}
+                    onFlag={() => setStatus(card.claim.uuid, "RISK_FLAGGED")}
                     onNotesChange={(val) => setNotes(card.claim.uuid, val)}
                   />
                 ))}
               </AnimatePresence>
             </Stack>
-
             <Box
               component={motion.div}
               initial={{ opacity: 0, y: 16 }}
@@ -429,9 +409,7 @@ export default function RiskReviewPage() {
   );
 }
 
-// ── Individual risk card ───────────────────────────────────────────────────────
-
-interface RiskClaimCardProps {
+interface RiskCardProps {
   card: RiskCard;
   index: number;
   onToggle: () => void;
@@ -440,16 +418,23 @@ interface RiskClaimCardProps {
   onNotesChange: (val: string) => void;
 }
 
-function RiskClaimCard({
+function RiskCardComponent({
   card,
   index,
   onToggle,
   onClear,
   onFlag,
   onNotesChange,
-}: RiskClaimCardProps) {
+}: RiskCardProps) {
   const { claim, expanded, status, riskNotes } = card;
-  const attachments = claim.claimContentAssignment ?? [];
+  const incidentDate =
+    claim.incident_date ?
+      new Date(claim.incident_date).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <Box
@@ -462,18 +447,18 @@ function RiskClaimCard({
         overflow: "hidden",
         border: "1.5px solid",
         borderColor:
-          status === "cleared" ? "success.main"
-          : status === "flagged" ? "warning.main"
+          status === "RISK_CLEARED" ? "success.main"
+          : status === "RISK_FLAGGED" ? "warning.main"
           : "divider",
         backgroundColor: "background.paper",
         transition: "border-color 0.2s, box-shadow 0.2s",
         boxShadow:
-          status === "cleared" ? "0 0 0 3px rgba(76,175,80,0.12)"
-          : status === "flagged" ? "0 0 0 3px rgba(255,167,38,0.15)"
+          status === "RISK_CLEARED" ? "0 0 0 3px rgba(76,175,80,0.12)"
+          : status === "RISK_FLAGGED" ? "0 0 0 3px rgba(255,167,38,0.15)"
           : "0 2px 8px rgba(0,0,0,0.06)",
       }}
     >
-      {/* Header row */}
+      {/* Header */}
       <Box
         onClick={status === null ? onToggle : undefined}
         sx={{
@@ -488,68 +473,62 @@ function RiskClaimCard({
         }}
       >
         <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
-          {status === "cleared" ?
+          {status === "RISK_CLEARED" ?
             <CheckCircleIcon sx={{ color: "success.main", fontSize: 28 }} />
-          : status === "flagged" ?
+          : status === "RISK_FLAGGED" ?
             <WarningAmberIcon sx={{ color: "warning.main", fontSize: 28 }} />
           : <CheckBoxOutlineBlankIcon
               sx={{ color: "text.disabled", fontSize: 28 }}
             />
           }
         </Box>
-
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography
             sx={{
               fontWeight: 600,
               fontSize: "0.975rem",
               color:
-                status === "cleared" ? "success.main"
-                : status === "flagged" ? "warning.dark"
+                status === "RISK_CLEARED" ? "success.main"
+                : status === "RISK_FLAGGED" ? "warning.dark"
                 : "text.primary",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
           >
-            {CLAIM_TYPE_LABELS[claim.claim_type] ?? claim.claim_type} Claim
+            {CLAIM_TYPE_LABELS[claim.claim_type] ?? claim.claim_type} —{" "}
+            {claim.requestor.first_name} {claim.requestor.last_name}
           </Typography>
           <Stack
             direction="row"
             spacing={1.5}
             sx={{ mt: 0.4 }}
           >
-            {claim.requestor && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                {claim.requestor.first_name} {claim.requestor.last_name}
-              </Typography>
-            )}
             <Typography
               variant="caption"
               color="text.secondary"
             >
-              · Incident:{" "}
-              {new Date(claim.incident_date).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
+              {claim.requestor.corporate_email}
             </Typography>
-            {attachments.length > 0 && (
+            {incidentDate && (
               <Typography
                 variant="caption"
                 color="text.secondary"
               >
-                · {attachments.length} attachment
-                {attachments.length !== 1 ? "s" : ""}
+                · Incident: {incidentDate}
+              </Typography>
+            )}
+            {claim.contents.length > 0 && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                · {claim.contents.length} attachment
+                {claim.contents.length !== 1 ? "s" : ""}
               </Typography>
             )}
           </Stack>
         </Box>
-
         <Stack
           direction="row"
           alignItems="center"
@@ -558,9 +537,9 @@ function RiskClaimCard({
         >
           {status !== null && (
             <Chip
-              label={status === "cleared" ? "Cleared" : "Flagged"}
+              label={status === "RISK_CLEARED" ? "Cleared" : "Flagged"}
               size="small"
-              color={status === "cleared" ? "success" : "warning"}
+              color={status === "RISK_CLEARED" ? "success" : "warning"}
               variant="filled"
               sx={{ fontWeight: 700, fontSize: "0.72rem" }}
             />
@@ -572,7 +551,7 @@ function RiskClaimCard({
         </Stack>
       </Box>
 
-      {/* Expandable body */}
+      {/* Body */}
       <Collapse
         in={expanded}
         timeout={280}
@@ -586,7 +565,7 @@ function RiskClaimCard({
             <Typography
               variant="subtitle2"
               sx={{
-                mb: 0.75,
+                mb: 1,
                 fontWeight: 700,
                 fontSize: "0.78rem",
                 textTransform: "uppercase",
@@ -596,27 +575,31 @@ function RiskClaimCard({
             >
               Incident Description
             </Typography>
-            <Typography
-              variant="body2"
+            <Box
               sx={{
-                lineHeight: 1.75,
-                whiteSpace: "pre-wrap",
                 p: 1.5,
-                borderRadius: "8px",
+                borderRadius: "10px",
                 backgroundColor: "action.hover",
+                border: "1px solid",
+                borderColor: "divider",
               }}
             >
-              {claim.incident_description}
-            </Typography>
+              <Typography
+                variant="body2"
+                sx={{ lineHeight: 1.7 }}
+              >
+                {claim.incident_description}
+              </Typography>
+            </Box>
           </Box>
 
           {/* Attachments */}
-          {attachments.length > 0 && (
+          {claim.contents.length > 0 && (
             <Box>
               <Typography
                 variant="subtitle2"
                 sx={{
-                  mb: 0.75,
+                  mb: 1,
                   fontWeight: 700,
                   fontSize: "0.78rem",
                   textTransform: "uppercase",
@@ -624,53 +607,72 @@ function RiskClaimCard({
                   color: "text.secondary",
                 }}
               >
-                Supporting Evidence
+                Supporting Evidence ({claim.contents.length})
               </Typography>
-              <Stack spacing={0.5}>
-                {attachments.map(({ content }) => (
-                  <Stack
-                    key={content.uuid}
-                    direction="row"
-                    alignItems="center"
-                    spacing={1}
-                    sx={{
-                      px: 1.5,
-                      py: 0.75,
-                      borderRadius: "8px",
-                      backgroundColor: "action.hover",
-                    }}
-                  >
-                    <AttachFileIcon
-                      sx={{ fontSize: 15, color: "text.secondary" }}
-                    />
-                    <Typography
-                      variant="body2"
-                      sx={{ flexGrow: 1 }}
+              <Stack spacing={0.75}>
+                {claim.contents.map((content) => {
+                  const ext =
+                    content.file_type ?
+                      content.file_type.split("/").pop()?.toUpperCase()
+                    : null;
+                  return (
+                    <Box
+                      key={content.uuid}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        px: 1.5,
+                        py: 1,
+                        borderRadius: "8px",
+                        backgroundColor: "action.hover",
+                        border: "1px solid",
+                        borderColor: "divider",
+                      }}
                     >
-                      {content.title}
-                    </Typography>
-                    {content.file_type && (
-                      <Chip
-                        label={content.file_type
-                          .split("/")
-                          .pop()
-                          ?.toUpperCase()}
-                        size="small"
-                        variant="outlined"
-                        sx={{ height: 18, fontSize: "0.62rem" }}
+                      <AttachFileIcon
+                        sx={{
+                          fontSize: 16,
+                          color: "text.secondary",
+                          flexShrink: 0,
+                        }}
                       />
-                    )}
-                    <Button
-                      size="small"
-                      href={content.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{ textTransform: "none", fontSize: "0.75rem" }}
-                    >
-                      View
-                    </Button>
-                  </Stack>
-                ))}
+                      <Typography
+                        variant="body2"
+                        sx={{ flexGrow: 1, minWidth: 0 }}
+                        noWrap
+                      >
+                        {content.title}
+                      </Typography>
+                      {ext && (
+                        <Chip
+                          label={`.${ext}`}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            height: 18,
+                            fontSize: "0.62rem",
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      <Button
+                        size="small"
+                        variant="text"
+                        href={content.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          flexShrink: 0,
+                          textTransform: "none",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        View
+                      </Button>
+                    </Box>
+                  );
+                })}
               </Stack>
             </Box>
           )}
@@ -691,7 +693,7 @@ function RiskClaimCard({
               Risk Assessment Notes
             </Typography>
             <TextField
-              placeholder="Summarise your risk evaluation — note any concerns, eligibility issues, compliance flags, or conditions that apply to this claim…"
+              placeholder="Summarise your risk evaluation — note any concerns, eligibility issues, compliance flags, or conditions…"
               fullWidth
               multiline
               minRows={3}
@@ -708,7 +710,7 @@ function RiskClaimCard({
             />
           </Box>
 
-          {/* Clear / Flag buttons */}
+          {/* Action buttons */}
           <Stack
             direction="row"
             spacing={1.5}

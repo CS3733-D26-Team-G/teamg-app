@@ -94,6 +94,7 @@ function getClaimVisibilityWhere(auth: Auth): Prisma.InsuranceClaimWhereInput {
 function serializeClaim(claim: ClaimWithRelations) {
   return {
     uuid: claim.uuid,
+    status: claim.status,
     requestorEmployeeUuid: claim.requestorEmployeeUuid,
     incident_date: claim.incident_date,
     claim_type: claim.claim_type,
