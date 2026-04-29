@@ -42,7 +42,9 @@ import "./ContentManagement.css";
 import {
   ContentFavoriteResponseSchema,
   ContentRowsSchema,
+  ContentTagSummariesSchema,
   type ContentRow,
+  type ContentTagSummary,
 } from "../../types/content";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -153,6 +155,8 @@ export default function ContentManagement({
   const isDark = theme.palette.mode === "dark";
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+  const [tagFilters, setTagFilters] = useState<ContentTagSummary[]>([]);
+  const [availableTags, setAvailableTags] = useState<ContentTagSummary[]>([]);
 
   const displayFileType = (fileType: string) =>
     fileTypeLabels[fileType] ?? fileType;
@@ -164,6 +168,7 @@ export default function ContentManagement({
   const [fileTypeAnchor, setFileTypeAnchor] = useState<null | HTMLElement>(
     null,
   );
+  const [tagAnchor, setTagAnchor] = useState<null | HTMLElement>(null);
 
   const [searchParams] = useSearchParams();
 
@@ -248,6 +253,28 @@ export default function ContentManagement({
     void fetchRows();
   }, [fetchRows]);
 
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          return;
+        }
+
+        const data: unknown = await res.json();
+        const parsed = ContentTagSummariesSchema.safeParse(data);
+        if (parsed.success) {
+          setAvailableTags(parsed.data);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    void fetchTags();
+  }, []);
+
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
@@ -280,9 +307,18 @@ export default function ContentManagement({
           return false;
         }
 
+        if (
+          tagFilters.length > 0 &&
+          !tagFilters.some((tf) =>
+            row.tags?.some((tag) => tag.uuid === tf.uuid),
+          )
+        ) {
+          return false;
+        }
+
         return true;
       }),
-    [rows, searchQuery, positionFilters, fileTypeFilters],
+    [rows, searchQuery, positionFilters, fileTypeFilters, tagFilters],
   );
 
   const togglePosition = (position: string) => {
@@ -298,6 +334,14 @@ export default function ContentManagement({
       cur.includes(fileType) ?
         cur.filter((type) => type !== fileType)
       : cur.concat(fileType),
+    );
+  };
+
+  const toggleTag = (tag: ContentTagSummary) => {
+    setTagFilters((cur) =>
+      cur.some((t) => t.uuid === tag.uuid) ?
+        cur.filter((t) => t.uuid !== tag.uuid)
+      : cur.concat(tag),
     );
   };
 
@@ -817,13 +861,16 @@ export default function ContentManagement({
                   Filter
                 </Button>
 
-                {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+                {(positionFilters.length > 0 ||
+                  fileTypeFilters.length > 0 ||
+                  tagFilters.length > 0) && (
                   <Button
                     size="small"
                     variant="outlined"
                     onClick={() => {
                       setPositionFilters([]);
                       setFileTypeFilters([]);
+                      setTagFilters([]);
                     }}
                     sx={{ borderRadius: 2 }}
                   >
@@ -848,6 +895,7 @@ export default function ContentManagement({
                   onClick={(event) => {
                     setPositionAnchor(event.currentTarget);
                     setFileTypeAnchor(null);
+                    setTagAnchor(null);
                   }}
                 >
                   Position
@@ -857,9 +905,20 @@ export default function ContentManagement({
                   onClick={(event) => {
                     setFileTypeAnchor(event.currentTarget);
                     setPositionAnchor(null);
+                    setTagAnchor(null);
                   }}
                 >
                   File Type
+                  <ArrowRightIcon sx={{ ml: "auto" }} />
+                </MenuItem>
+                <MenuItem
+                  onClick={(event) => {
+                    setTagAnchor(event.currentTarget);
+                    setPositionAnchor(null);
+                    setFileTypeAnchor(null);
+                  }}
+                >
+                  Tags
                   <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
               </Popover>
@@ -1040,6 +1099,39 @@ export default function ContentManagement({
                   />
                 </FormGroup>
               </Popover>
+
+              {/* Tags sub-pop-up */}
+              <Popover
+                open={Boolean(tagAnchor)}
+                anchorEl={tagAnchor}
+                onClose={() => setTagAnchor(null)}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                slotProps={{
+                  paper: {
+                    sx: { border: "1px solid", borderColor: "gray", ml: 1 },
+                  },
+                }}
+              >
+                <FormGroup sx={{ pl: 1 }}>
+                  {availableTags.length === 0 && (
+                    <Typography>No Tags Available</Typography>
+                  )}
+
+                  {availableTags.map((tag) => (
+                    <FormControlLabel
+                      key={tag.uuid}
+                      control={
+                        <Checkbox
+                          onChange={() => toggleTag(tag)}
+                          checked={tagFilters.some((t) => t.uuid === tag.uuid)}
+                        />
+                      }
+                      label={tag.name}
+                    />
+                  ))}
+                </FormGroup>
+              </Popover>
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -1056,7 +1148,9 @@ export default function ContentManagement({
             </Box>
           </Box>
 
-          {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+          {(positionFilters.length > 0 ||
+            fileTypeFilters.length > 0 ||
+            tagFilters.length > 0) && (
             <Box sx={{ display: "flex", flexWrap: "wrap", pt: 2, gap: 1 }}>
               {positionFilters.map((position) => (
                 <Chip
@@ -1070,6 +1164,13 @@ export default function ContentManagement({
                   key={fileType}
                   label={displayFileType(fileType)}
                   onDelete={() => toggleFileType(fileType)}
+                />
+              ))}
+              {tagFilters.map((tag) => (
+                <Chip
+                  key={tag.uuid}
+                  label={tag.name}
+                  onDelete={() => toggleTag(tag)}
                 />
               ))}
             </Box>
