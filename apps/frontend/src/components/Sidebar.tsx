@@ -28,8 +28,9 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { API_ENDPOINTS } from "../config.ts";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.tsx";
-import Typography from "@mui/material/Typography";
+//import Typography from "@mui/material/Typography";
 import { useProfile } from "../profile/ProfileContext.tsx";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -262,6 +263,17 @@ export default function Sidebar() {
                       primary: { sx: { ...textSx, fontSize: "0.9rem" } },
                     }}
                   />
+                </ListItemButton>
+
+                <ListItemButton
+                  component={Link}
+                  to="/calendar"
+                  sx={{ pl: 4 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
+                    <CalendarMonthIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary="Calendar" />
                 </ListItemButton>
               </List>
             </Collapse>

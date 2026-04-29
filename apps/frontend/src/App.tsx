@@ -18,10 +18,11 @@ import Activity from "./pages/activity.tsx";
 import Settings from "./pages/settings.tsx";
 import Profile from "./pages/profile.tsx";
 import Credits from "./pages/Credits.tsx";
+import LoginPopUp from "./pages/LoginPopUp.tsx";
+import AboutUs from "./pages/About.tsx";
+import CalendarPage from "./pages/Calendar.tsx";
 import ApprovalPage from "./pages/approval.tsx";
 import RiskReviewPage from "./pages/risk-review.tsx";
-import AboutUs from "./pages/About.tsx";
-
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
 import NotificationPage from "./components/Notifications/NotificationPage.tsx";
@@ -41,21 +42,25 @@ function ProtectedRoute({ children }: { children: ReactElement }) {
 
 function AdminRoute({ children }: { children: ReactElement }) {
   const { isLoading, session } = useAuth();
-  if (isLoading) return null;
-  if (!session)
+  if (isLoading) {
+    return null;
+  }
+  if (!session) {
     return (
       <Navigate
         to="/"
         replace
       />
     );
-  if (!session.permissions.canManageEmployees)
+  }
+  if (!session.permissions.canManageEmployees) {
     return (
       <Navigate
         to="/library"
         replace
       />
     );
+  }
   return children;
 }
 
@@ -174,7 +179,10 @@ function AppLayout() {
             path="/risk-review"
             element={<RiskReviewPage />}
           />
-
+          <Route
+            path="/calendar"
+            element={<CalendarPage />}
+          />
           <Route
             path="/aboutus"
             element={<AboutUs />}
@@ -182,7 +190,7 @@ function AppLayout() {
         </Routes>
       </div>
 
-      {/* Tutorial system */}
+      {/* Tutorial system — rendered above everything else */}
       <TutorialPrompt />
       <TutorialOverlay />
     </div>
