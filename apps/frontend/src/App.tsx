@@ -19,7 +19,7 @@ import Settings from "./pages/settings.tsx";
 import Profile from "./pages/profile.tsx";
 import Credits from "./pages/Credits.tsx";
 import ApprovalPage from "./pages/approval.tsx";
-
+import RiskReviewPage from "./pages/risk-review.tsx";
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
 import NotificationPage from "./components/Notifications/NotificationPage.tsx";
@@ -167,6 +167,10 @@ function AppLayout() {
           <Route
             path="/credits"
             element={<Credits />}
+          />
+          <Route
+            path="/risk-review"
+            element={<RiskReviewPage />}
           />
         </Routes>
       </div>

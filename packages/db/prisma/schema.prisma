@@ -34,23 +34,48 @@ model Employee {
   activities           Activity[]
   contentLocks         ContentEditLock[]
   favoriteContents     FavoriteContent[]
+  submittedClaims      InsuranceClaim[]
 }
 
 model Content {
-  uuid               String                 @id @default(uuid()) @db.Uuid
+  uuid               String                   @id @default(uuid()) @db.Uuid
   title              String
   url                String
   content_owner      String
-  last_modified_time DateTime               @db.Timestamp(6)
-  expiration_time    DateTime               @db.Timestamp(6)
+  last_modified_time DateTime                 @db.Timestamp(6)
+  expiration_time    DateTime                 @db.Timestamp(6)
   content_type       ContentType
   status             ContentStatus
   for_position       Position
   supabasePath       String?
   file_type          String?
   editLock           ContentEditLock?
-  tagAssignments     ContentTagAssignment[]
   favoritedBy        FavoriteContent[]
+  tagAssignments     ContentTagAssignment[]
+  claimAssignments   ClaimContentAssignment[]
+}
+
+model InsuranceClaim {
+  uuid                  String                   @id @default(uuid()) @db.Uuid
+  requestorEmployeeUuid String                   @db.Uuid
+  incident_date         DateTime                 @db.Date
+  claim_type            InsuranceClaimType
+  incident_description  String
+  createdAt             DateTime                 @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime                 @updatedAt @db.Timestamp(6)
+  requestor             Employee                 @relation(fields: [requestorEmployeeUuid], references: [uuid])
+  contents              ClaimContentAssignment[]
+}
+
+model ClaimContentAssignment {
+  claimUuid   String         @db.Uuid
+  contentUuid String         @db.Uuid
+  createdAt   DateTime       @default(now())
+  claim       InsuranceClaim @relation(fields: [claimUuid], references: [uuid], onDelete: Cascade)
+  content     Content        @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
+
+  @@id([claimUuid, contentUuid])
+  @@index([contentUuid])
 }
 
 model FavoriteContent {
@@ -147,6 +172,9 @@ enum ActionType {
   CREATE_CONTENT
   EDIT_CONTENT
   DELETE_CONTENT
+  CREATE_CLAIM
+  EDIT_CLAIM
+  DELETE_CLAIM
   CREATE_EMPLOYEE
   EDIT_EMPLOYEE
   DELETE_EMPLOYEE
@@ -158,4 +186,11 @@ enum ActionType {
 enum ResourceType {
   EMPLOYEE
   CONTENT
+  INSURANCE_CLAIM
+}
+
+enum InsuranceClaimType {
+  HOME
+  AUTO
+  BUSINESS
 }
