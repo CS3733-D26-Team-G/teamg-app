@@ -2,41 +2,29 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { API_ENDPOINTS } from "../config";
 import { useAuth } from "../auth/AuthContext";
 import { ContentRowsSchema, type ContentRow } from "../types/content";
 import type { EventInput } from "@fullcalendar/core";
 import { Box, Typography } from "@mui/material";
-
-const CREATED_COLOR = "#4f46e5";
-const CHECKED_OUT_COLOR = "#d97706";
 import { getExpirationStatus } from "./Notifications/Notifications.ts";
 
-function getExpiresInSeconds(expirationTime: string | null): number {
-  if (!expirationTime) return -1;
-
-  return Math.floor((new Date(expirationTime).getTime() - Date.now()) / 1000);
-}
-
 export function getEventColor(expirationTime: string | null): string {
-  if (!expirationTime) return "#11d42b"; // fallback (created / default)
-
+  if (!expirationTime) return "#11d42b";
   const expiresInSeconds = Math.floor(
     (new Date(expirationTime).getTime() - Date.now()) / 1000,
   );
-
   const status = getExpirationStatus(expiresInSeconds);
-
   switch (status) {
     case "critical":
-      return "#dc2626"; // red
+      return "#dc2626";
     case "warning":
-      return "#f59e0b"; // orange
+      return "#f59e0b";
     case "info":
-      return "#2563eb"; // blue
+      return "#2563eb";
     case "expired":
-      return "#6b7280"; // gray
+      return "#6b7280";
     default:
       return "#4f46e5";
   }
@@ -44,25 +32,19 @@ export function getEventColor(expirationTime: string | null): string {
 
 export default function CalendarPage() {
   const { session } = useAuth();
+  const calendarRef = useRef<FullCalendar>(null);
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.employeeUuid) return;
-
     try {
       const res = await fetch(API_ENDPOINTS.PROFILE.ROOT, {
         credentials: "include",
       });
-
       if (!res.ok) return;
-
-      const data = (await res.json()) as {
-        first_name: string;
-        last_name: string;
-      };
-
+      const data = await res.json();
       setCurrentUserName(`${data.first_name} ${data.last_name}`);
     } catch (err) {
       console.error("Failed to fetch profile:", err);
@@ -74,17 +56,9 @@ export default function CalendarPage() {
       const res = await fetch(API_ENDPOINTS.CONTENT.ROOT, {
         credentials: "include",
       });
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      const data: unknown = await res.json();
+      const data = await res.json();
       const parsed = ContentRowsSchema.safeParse(data);
-
-      if (parsed.success) {
-        setRows(parsed.data);
-      }
+      if (parsed.success) setRows(parsed.data);
     } catch (err) {
       console.error("Failed to fetch content:", err);
     } finally {
@@ -100,64 +74,57 @@ export default function CalendarPage() {
   const events = useMemo<EventInput[]>(() => {
     if (!session || !currentUserName) return [];
 
-    const result: EventInput[] = [];
-
-    for (const row of rows) {
+    return rows.reduce((acc: EventInput[], row) => {
       const isOwner =
         row.content_owner?.toLowerCase() === currentUserName.toLowerCase();
-
       const isCheckedOutByMe =
         row.editLock?.lockedByEmp?.uuid === session.employeeUuid;
 
-      if (isOwner) {
-        result.push({
-          id: `created-${row.uuid}`,
-          title: `📄 ${row.title}`,
-          start: row.expiration_time,
-          allDay: true,
+      if (isOwner || isCheckedOutByMe) {
+        const originalExpDate = new Date(row.expiration_time);
+        if (isNaN(originalExpDate.getTime())) return acc;
+
+        let startTime = new Date(originalExpDate);
+        const endTime = new Date(originalExpDate);
+
+        // Logic to prevent "Midnight Spill":
+        // If it's exactly midnight (00:00:00), it technically belongs to the next day.
+        // We pull it back to 11:55 PM - 11:59 PM of the previous day.
+        if (endTime.getHours() === 0 && endTime.getMinutes() === 0) {
+          endTime.setMilliseconds(-1); // Go to 23:59:59.999 of prev day
+          startTime = new Date(endTime);
+          startTime.setMinutes(endTime.getMinutes() - 5);
+        } else {
+          // Otherwise, just make it a 5-minute block ending at the due time
+          startTime.setMinutes(originalExpDate.getMinutes() - 5);
+        }
+
+        const timeString = originalExpDate.toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+
+        acc.push({
+          id: `${isOwner ? "owner" : "checkout"}-${row.uuid}`,
+          title: `${isOwner ? "📄" : "👁️"} ${row.title} (${timeString})`,
+          start: startTime,
+          end: endTime,
+          allDay: false,
           color: getEventColor(row.expiration_time.toString()),
-          extendedProps: {
-            type: "created",
-            row,
-          },
+          extendedProps: { row },
         });
       }
-
-      if (isCheckedOutByMe) {
-        result.push({
-          id: `checkout-${row.uuid}`,
-          title: `👁️ ${row.title} (checked out)`,
-          start: row.expiration_time,
-          allDay: true,
-          color: getEventColor(row.expiration_time.toString()),
-          extendedProps: {
-            type: "checkout",
-            row,
-          },
-        });
-      }
-    }
-
-    return result;
+      return acc;
+    }, []);
   }, [rows, session, currentUserName]);
 
   return (
-    <Box
-      sx={{
-        backgroundColor: "background.default",
-        overflowX: "hidden",
-        width: "100%",
-        minWidth: 0,
-      }}
-    >
-      {/* Header */}
+    <Box sx={{ backgroundColor: "background.default", width: "100%" }}>
       <Box
         sx={{
-          position: "relative",
-          overflow: "hidden",
           background:
             "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
           px: 3,
           pt: 4,
           pb: 2,
@@ -168,83 +135,70 @@ export default function CalendarPage() {
           sx={{
             color: "white",
             fontWeight: "bold",
-            position: "relative",
-            zIndex: 1,
+            fontFamily: "'Rubik', sans-serif",
           }}
         >
           Calendar
         </Typography>
-
-        {[...Array(3)].map((_, i) => (
-          <Box
-            key={i}
-            sx={{
-              position: "absolute",
-              borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,0.12)",
-              width: 120 + i * 80,
-              height: 120 + i * 80,
-              top: -40 - i * 30,
-              right: -40 - i * 30,
-            }}
-          />
-        ))}
       </Box>
 
-      <Box
-        sx={{
-          p: 3,
-          backgroundColor: "#ffffff",
-          minWidth: 0,
-          width: "100%",
-        }}
-      >
+      <Box sx={{ p: 3, backgroundColor: "#ffffff" }}>
         {loading ?
           <Typography>Loading calendar…</Typography>
         : <>
             <style>{`
-              .fc-event {
-                border: 1px solid #000 !important;
-                box-sizing: border-box;
-                border-radius: 6px;
+              @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap');
+              .fc { font-family: 'Rubik', sans-serif !important; }
+              .fc-dayGridMonth-button, .fc-timeGridWeek-button, .fc-dayToday-button { text-transform: capitalize !important; }
+              
+              .fc-event { 
+                border-radius: 4px !important; 
+                padding: 1px 4px !important; 
+                cursor: pointer;
+                border: 1px solid rgba(0,0,0,0.1) !important;
               }
-
-              .fc {
-                max-width: 100%;
-              }
-
-              .fc-toolbar-title {
-                color: #111827 !important;
-              }
-
-              .fc-view-harness {
-                min-width: 0 !important;
-              }
-
-              .fc-scrollgrid {
-                width: 100% !important;
+              
+              /* In Day View, ensure the event doesn't look like a tiny sliver */
+              .fc-timegrid-event {
+                min-height: 30px !important;
               }
             `}</style>
 
             <FullCalendar
+              ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
+              customButtons={{
+                dayToday: {
+                  text: "Day",
+                  click: () => {
+                    const calendarApi = calendarRef.current?.getApi();
+                    if (calendarApi) {
+                      calendarApi.today();
+                      calendarApi.changeView("timeGridDay");
+                    }
+                  },
+                },
+              }}
               headerToolbar={{
-                left: "prev,next today",
+                left: "prev,next",
                 center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay",
+                right: "dayGridMonth,timeGridWeek,dayToday",
               }}
               events={events}
+              displayEventTime={true}
+              eventTimeFormat={{
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              }}
               height="auto"
+              // Ensure that even in Day View, 5 min blocks are visible
+              componentCheck={true}
               eventClick={(info) => {
-                const row = info.event.extendedProps.row as ContentRow;
-
+                const row = info.event.extendedProps.row;
                 alert(
-                  `${row.title}
-                  Status: ${row.status}
-                  Expires: ${new Date(
-                    row.expiration_time,
-                  ).toLocaleDateString()}`,
+                  `${row.title}\nExpires: ${new Date(row.expiration_time).toLocaleString()}`,
                 );
               }}
             />

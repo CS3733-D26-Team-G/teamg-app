@@ -265,25 +265,6 @@ export default function Sidebar() {
                     }}
                   />
                 </ListItemButton>
-
-                <ListItemButton
-                  component={Link}
-                  to="/calendar"
-                  sx={{ ...itemHoverSx, pl: 4 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
-                    <CalendarMonthIcon
-                      fontSize="small"
-                      sx={{ color: "rgba(255,255,255,0.65)" }}
-                    />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Calendar"
-                    slotProps={{
-                      primary: { sx: { ...textSx, fontSize: "0.9rem" } },
-                    }}
-                  />
-                </ListItemButton>
               </List>
             </Collapse>
           </>
@@ -336,6 +317,22 @@ export default function Sidebar() {
           {isOpen && (
             <ListItemText
               primary="Activity"
+              slotProps={{ primary: { sx: textSx } }}
+            />
+          )}
+        </ListItemButton>
+
+        <ListItemButton
+          component={Link}
+          to="/calendar"
+          sx={{ ...itemHoverSx, pl: 2 }}
+        >
+          <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+            <CalendarMonthIcon sx={iconSx} />
+          </ListItemIcon>
+          {isOpen && (
+            <ListItemText
+              primary="Calendar"
               slotProps={{ primary: { sx: textSx } }}
             />
           )}
