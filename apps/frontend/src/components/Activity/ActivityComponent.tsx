@@ -1,9 +1,10 @@
 import { Box, CircularProgress, Button } from "@mui/material";
 import ActivityTimeline from "./ActivityTimeline";
-import { type ActivityGroup, type ActivityItem } from "./activityData";
+import { type ActivityGroup, type ActivityItem } from "./activityData"; // Import the type, not the const
 import { useState, useEffect, useMemo } from "react";
 import SearchBar from "./HeaderSearchBar";
 import { API_ENDPOINTS } from "../../config";
+import { dedupeAsync } from "../../lib/async-cache";
 import HelpPopup from "../HelpPopup.tsx";
 import { useAuth } from "../../auth/AuthContext";
 
@@ -13,12 +14,10 @@ export default function ActivityComponent() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "content" | "login">("all");
   const { session } = useAuth();
-
   const isAdmin = session?.permissions.canManageAllContent ?? false;
 
   useEffect(() => {
     setLoading(true);
-
     const getActivity = async () => {
       try {
         const category =
@@ -52,6 +51,14 @@ export default function ActivityComponent() {
     const groups: { [key: string]: any[] } = {};
 
     rows.forEach((row) => {
+      console.log(
+        "RAW ROW:",
+        JSON.stringify({
+          action: row.action,
+          resourceName: row.resourceName,
+          resourceUuid: row.resourceUuid,
+        }),
+      );
       const dateObj = new Date(row.timestamp);
       const isValid = row.timestamp && !isNaN(dateObj.getTime());
 
@@ -79,7 +86,7 @@ export default function ActivityComponent() {
           row.employee ?
             `${row.employee.first_name} ${row.employee.last_name}`
           : "System",
-        action: row.action,
+        action: row.action?.replace(/_/g, " "),
         resourceUuid: row.resourceUuid,
         resourceName: row.resourceName,
         avatarUrl: row.employee?.avatar ?? undefined,
@@ -92,7 +99,6 @@ export default function ActivityComponent() {
 
   const filteredData = useMemo(() => {
     if (!searchQuery.trim()) return data;
-
     return data
       .map((group) => ({
         ...group,
@@ -125,14 +131,14 @@ export default function ActivityComponent() {
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <SearchBar setSearchQuery={setSearchQuery} />
+          <HelpPopup
+            description="The Activity page shows a log of recent actions taken across the platform, including content views and updates."
+            infoOrHelp={true}
+          />
         </Box>
 
         {isAdmin && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <HelpPopup
-              description="The Activity page shows a log of recent actions taken across the platform, including content views and updates."
-              infoOrHelp={false}
-            />
             {(["all", "content", "login"] as const).map((val) => (
               <Button
                 key={val}

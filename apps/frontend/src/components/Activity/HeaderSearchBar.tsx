@@ -20,7 +20,7 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
           width: "90%",
           marginLeft: "24px",
           backgroundColor: "white",
-          borderRadius: "4px", // Matches default MUI radius
+          borderRadius: "32px", // Matches default MUI radius
         }}
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
           setSearchQuery(e.target.value);

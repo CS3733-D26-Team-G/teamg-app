@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Popover, Typography, Box, Avatar } from "@mui/material";
+//import InfoIcon from "@mui/icons-material/Info";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import IconButton from "@mui/material/IconButton";
+//import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import { CopyIcon } from "lucide-react";
 import type { ContentTagSummary } from "../../types/content";
@@ -14,6 +16,8 @@ interface InfoButtonProps {
   tags: ContentTagSummary[];
   editor?: string;
   editorAvatar?: string | null;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
 }
 
 function formatFileType(mime: string | null): string {
@@ -40,6 +44,15 @@ function formatFileType(mime: string | null): string {
   return mimeMap[mime] ?? mime;
 }
 
+function formatDate(value: Date | string | null | undefined): string {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function InfoPopup({
   url,
   author,
@@ -48,6 +61,8 @@ export default function InfoPopup({
   tags,
   editor,
   editorAvatar,
+  createdAt,
+  updatedAt,
 }: InfoButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [copied, setCopied] = useState(false);
@@ -148,9 +163,19 @@ export default function InfoPopup({
           <Typography>
             <b>Position:</b> {position}
           </Typography>
+
           <Typography>
             <b>File Type:</b> {formatFileType(fileType)}
           </Typography>
+
+          <Typography>
+            <b>Created:</b> {formatDate(createdAt)}
+          </Typography>
+
+          <Typography>
+            <b>Last Updated:</b> {formatDate(updatedAt)}
+          </Typography>
+
           <Typography>
             <b>Tags: </b>
             {tags.length > 0 ?
