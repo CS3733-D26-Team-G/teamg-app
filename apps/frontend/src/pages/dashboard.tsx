@@ -198,7 +198,7 @@ export default function Dashboard() {
             description={helpText}
             infoOrHelp={true}
           />
-          <NotificationBell />
+          <NotificationsBell />
           <div className="w-80">
             <SearchBar setSearchQuery={setSearchQuery} />
           </div>
