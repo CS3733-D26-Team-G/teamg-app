@@ -351,7 +351,7 @@ export default function NotificationsBell() {
                 />
               )}
             </Typography>
-            <NotificationPage />
+            {/*<NotificationPage />*/}
           </Box>
 
           {loading ?
