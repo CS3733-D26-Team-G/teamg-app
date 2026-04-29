@@ -384,6 +384,7 @@ export default function ContentManagement({
                   uuid: session?.employeeUuid ?? "",
                   first_name: "",
                   last_name: "",
+                  avatar: null,
                 },
               },
             }
