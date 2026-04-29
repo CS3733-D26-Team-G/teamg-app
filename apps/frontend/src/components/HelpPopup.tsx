@@ -26,7 +26,7 @@ export default function HelpPopup({ description, infoOrHelp }: HelpPopupProps) {
       <IconButton
         onClick={handleOpen}
         size="small"
-        sx={{ color: "whitesmoke" }}
+        sx={{ color: "lightgrey" }}
         aria-label="Help"
       >
         {infoOrHelp ?
