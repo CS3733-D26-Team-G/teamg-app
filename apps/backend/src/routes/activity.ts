@@ -22,6 +22,7 @@ router.get("/", async (req, res) => {
   ];
   const claimActions = ["CREATE_CLAIM", "EDIT_CLAIM", "DELETE_CLAIM"];
   const authActions = ["LOG_IN", "LOG_OUT"];
+  const verboseContentActions = ["OWNERSHIP_CHANGE"];
 
   try {
     const accessibleContentUuids =
@@ -53,6 +54,17 @@ router.get("/", async (req, res) => {
           ],
         };
 
+    const verboseFilter =
+      isAdmin(auth) ?
+        {
+          action: { in: verboseContentActions },
+        }
+      : {
+          action: { in: verboseContentActions },
+          resource: "CONTENT",
+          resourceUuid: { in: accessibleContentUuids },
+        };
+
     const authFilter =
       isAdmin(auth) ?
         {
@@ -69,12 +81,19 @@ router.get("/", async (req, res) => {
         where = contentFilter;
         break;
 
+      case "verbose":
+        where = verboseFilter;
+        break;
+
       case "auth":
         where = authFilter;
         break;
 
       case "all":
-        where = isAdmin(auth) ? {} : { OR: [contentFilter, authFilter] };
+        where =
+          isAdmin(auth) ?
+            {}
+          : { OR: [contentFilter, verboseFilter, authFilter] };
         break;
 
       default:

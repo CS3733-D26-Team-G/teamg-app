@@ -3,7 +3,7 @@ import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivi
 import SearchBar from "./DashboardComponents/SearchBar";
 import PieChart from "./DashboardComponents/PieChart";
 //import BarChart from "./DashboardComponents/BarChart";
-import NotificationBell from "../components/Notifications/NotificationBell.tsx";
+import NotificationsBell from "../components/Notifications/NotificationBell.tsx";
 import { Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -198,7 +198,7 @@ export default function Dashboard() {
             description={helpText}
             infoOrHelp={true}
           />
-          <NotificationBell />
+          <NotificationsBell />
           <div className="w-80">
             <SearchBar setSearchQuery={setSearchQuery} />
           </div>
@@ -206,9 +206,7 @@ export default function Dashboard() {
       </div>
 
       <CardContent className="flex flex-col gap-8 p-8">
-        {/* Row Container: items-stretch forces children to equal height */}
         <div className="flex flex-row gap-8 items-stretch">
-          {/* Pie Chart: The "Height Driver" */}
           <Card
             className="flex-none w-fit outline-1 outline-gray-200"
             sx={{
