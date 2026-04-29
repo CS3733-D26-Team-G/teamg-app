@@ -201,7 +201,10 @@ export default function RiskReviewPage() {
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-            <HelpPopup description="This queue shows all content assigned to underwriters. Expand each card to read the document, write your risk assessment notes, then clear or flag it before submitting your review." />
+            <HelpPopup
+              description="This queue shows all content assigned to underwriters. Expand each card to read the document, write your risk assessment notes, then clear or flag it before submitting your review."
+              infoOrHelp={true}
+            />
           </Box>
         </Stack>
 

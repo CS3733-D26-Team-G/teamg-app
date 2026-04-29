@@ -27,6 +27,13 @@ export const API_ENDPOINTS = {
     UPDATE: (uuid: string) => `${API_BASE_URL}/employee/update/${uuid}`,
     DELETE: (uuid: string) => `${API_BASE_URL}/employee/delete/${uuid}`,
   },
+  CLAIM: {
+    ROOT: `${API_BASE_URL}/claim`,
+    GET: (uuid: string) => `${API_BASE_URL}/claim/${uuid}`,
+    CREATE: `${API_BASE_URL}/claim/create`,
+    UPDATE: (uuid: string) => `${API_BASE_URL}/claim/update/${uuid}`,
+    DELETE: (uuid: string) => `${API_BASE_URL}/claim/delete/${uuid}`,
+  },
 
   CONTENT: {
     ROOT: `${API_BASE_URL}/content`,
