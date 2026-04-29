@@ -80,6 +80,7 @@ export const ContentRowSchema = ContentWithTagsSchema.extend({
         uuid: z.string(),
         first_name: z.string(),
         last_name: z.string(),
+        avatar: z.string().nullable(),
       }),
     })
     .nullable(),

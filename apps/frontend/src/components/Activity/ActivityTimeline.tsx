@@ -2,7 +2,7 @@ import { Box, Divider, Typography, Dialog, Button, Stack } from "@mui/material";
 import { Fragment, useState } from "react";
 import Timeline from "@mui/lab/Timeline";
 import ActivityTimelineItem from "./ActivityTimelineItem";
-import { type ActivityGroup } from "./activityData";
+import { type ActivityGroup, type ActivityItem } from "./activityData";
 import DocPreviewer from "../Management/DocPreviewer";
 import { API_ENDPOINTS } from "../../config";
 
@@ -63,7 +63,7 @@ export default function ActivityTimeline({ data }: ActivityTimelineProps) {
                 <Divider sx={{ flexGrow: 1, borderColor: "divider" }} />
               </Box>
 
-              {group.items.map((item) => (
+              {group.items.map((item: ActivityItem) => (
                 <ActivityTimelineItem
                   key={item.id}
                   {...item}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Popover, Typography, Box } from "@mui/material";
+import { Popover, Typography, Box, Avatar } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import IconButton from "@mui/material/IconButton";
 import CheckIcon from "@mui/icons-material/Check";
@@ -12,6 +12,8 @@ interface InfoButtonProps {
   position: string;
   fileType: string | null;
   tags: ContentTagSummary[];
+  editor?: string;
+  editorAvatar?: string | null;
 }
 
 function formatFileType(mime: string | null): string {
@@ -44,6 +46,8 @@ export default function InfoPopup({
   position,
   fileType,
   tags,
+  editor,
+  editorAvatar,
 }: InfoButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [copied, setCopied] = useState(false);
@@ -117,6 +121,30 @@ export default function InfoPopup({
           <Typography>
             <b>Author:</b> {author}
           </Typography>
+          {editor && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <Typography>
+                <b>Editor:</b>
+              </Typography>
+              <Avatar
+                src={editorAvatar ?? undefined}
+                sx={{
+                  width: 24,
+                  height: 24,
+                  fontSize: "1rem",
+                }}
+              >
+                {editor[0]}
+              </Avatar>
+              <Typography>{editor}</Typography>
+            </Box>
+          )}
           <Typography>
             <b>Position:</b> {position}
           </Typography>
