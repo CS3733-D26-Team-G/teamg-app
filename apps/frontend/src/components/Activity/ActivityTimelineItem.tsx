@@ -14,6 +14,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PersonIcon from "@mui/icons-material/Person";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 
 function getActionConfig(action: string): {
   label: string;
@@ -72,6 +73,48 @@ function getActionConfig(action: string): {
       dotColor: "grey",
       chipColor: "default",
       icon: <PersonIcon sx={{ fontSize: 16 }} />,
+    },
+    create_claim: {
+      label: "Created Claim",
+      dotColor: "success",
+      chipColor: "success",
+      icon: <AddIcon sx={{ fontSize: 16 }} />,
+    },
+    edit_claim: {
+      label: "Edited Claim",
+      dotColor: "primary",
+      chipColor: "primary",
+      icon: <EditIcon sx={{ fontSize: 16 }} />,
+    },
+    delete_claim: {
+      label: "Deleted Claim",
+      dotColor: "error",
+      chipColor: "error",
+      icon: <DeleteIcon sx={{ fontSize: 16 }} />,
+    },
+    create_employee: {
+      label: "Created Employee",
+      dotColor: "success",
+      chipColor: "success",
+      icon: <AddIcon sx={{ fontSize: 16 }} />,
+    },
+    edit_employee: {
+      label: "Edited Employee",
+      dotColor: "primary",
+      chipColor: "primary",
+      icon: <EditIcon sx={{ fontSize: 16 }} />,
+    },
+    delete_employee: {
+      label: "Deleted Employee",
+      dotColor: "error",
+      chipColor: "error",
+      icon: <DeleteIcon sx={{ fontSize: 16 }} />,
+    },
+    ownership_change: {
+      label: "Ownership Changed",
+      dotColor: "warning",
+      chipColor: "warning",
+      icon: <EditIcon sx={{ fontSize: 16 }} />,
     },
   };
   return (
