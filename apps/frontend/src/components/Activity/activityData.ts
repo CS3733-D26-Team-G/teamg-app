@@ -8,9 +8,15 @@ export interface ActivityItem {
   avatarUrl?: string;
 }
 
-export interface ActivityGroup {
-  date: string;
-  items: ActivityItem[];
+export interface ActivityItem {
+  id: string | number;
+  time: string;
+  user: string;
+  action: string;
+  resourceUuid?: string;
+  resourceName?: string;
+  avatarUrl?: string;
+  employeeUuid?: string;
 }
 
 /**

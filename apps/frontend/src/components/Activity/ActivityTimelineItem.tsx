@@ -16,6 +16,27 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import PersonIcon from "@mui/icons-material/Person";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 
+function actionDictator(action: string): string {
+  const normalized = action?.toLowerCase().replace(/\s+/g, "_").trim() ?? "";
+  const map: Record<string, string> = {
+    edit_content: "edited",
+    delete_content: "deleted",
+    create_content: "created",
+    log_in: "logged in",
+    log_out: "logged out",
+    check_in_content: "checked in",
+    check_out_content: "checked out",
+    create_claim: "created claim",
+    edit_claim: "edited claim",
+    delete_claim: "deleted claim",
+    create_employee: "created employee",
+    edit_employee: "edited employee",
+    delete_employee: "deleted employee",
+    ownership_change: "changed ownership of",
+  };
+  return map[normalized] || normalized.replace(/_/g, " ");
+}
+
 function getActionConfig(action: string): {
   label: string;
   dotColor: "primary" | "success" | "warning" | "error" | "grey";
@@ -39,13 +60,13 @@ function getActionConfig(action: string): {
       icon: <EditIcon sx={{ fontSize: 16 }} />,
     },
     check_out_content: {
-      label: "Checked Out",
+      label: "Check Out",
       dotColor: "primary",
       chipColor: "primary",
       icon: <LockIcon sx={{ fontSize: 16 }} />,
     },
     check_in_content: {
-      label: "Checked In",
+      label: "Check In",
       dotColor: "success",
       chipColor: "success",
       icon: <LockOpenIcon sx={{ fontSize: 16 }} />,
@@ -63,13 +84,13 @@ function getActionConfig(action: string): {
       icon: <DeleteIcon sx={{ fontSize: 16 }} />,
     },
     log_in: {
-      label: "Logged In",
+      label: "Log In",
       dotColor: "grey",
       chipColor: "default",
       icon: <PersonIcon sx={{ fontSize: 16 }} />,
     },
     log_out: {
-      label: "Logged Out",
+      label: "Log Out",
       dotColor: "grey",
       chipColor: "default",
       icon: <PersonIcon sx={{ fontSize: 16 }} />,
@@ -204,7 +225,7 @@ export default function ActivityTimelineItem({
               variant="body2"
               noWrap
             >
-              <strong>{user}</strong> <strong>{label.toLowerCase()}</strong>{" "}
+              <strong>{user}</strong> <strong>{actionDictator(action)}</strong>{" "}
               {resourceName &&
                 (canPreview ?
                   <Link

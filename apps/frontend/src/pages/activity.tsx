@@ -1,18 +1,9 @@
 import ActivityComponent from "../components/Activity/ActivityComponent";
 import { Typography, Box } from "@mui/material";
-import SearchBar from "../components/Activity/HeaderSearchBar";
-import HelpPopup from "../components/HelpPopup.tsx";
-import { useState } from "react";
 
 function Activity() {
-  const [searchQuery, setSearchQuery] = useState("");
-
   return (
-    <Box
-      sx={{
-        backgroundColor: "background.paper",
-      }}
-    >
+    <Box sx={{ backgroundColor: "background.paper" }}>
       <Box
         className="activity-header"
         sx={{
@@ -23,10 +14,7 @@ function Activity() {
       >
         <Typography
           variant="h2"
-          sx={{
-            p: "48px 24px 16px 24px",
-            color: "white",
-          }}
+          sx={{ p: "48px 24px 16px 24px", color: "white" }}
         >
           Recent Activity
         </Typography>
@@ -44,12 +32,9 @@ function Activity() {
             }}
           />
         ))}
-        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
-          <SearchBar setSearchQuery={setSearchQuery} />
-          <HelpPopup description="The Activity page shows a log of recent actions taken across the platform, including content views and updates." />
-        </Box>
       </Box>
-      <ActivityComponent></ActivityComponent>
+
+      <ActivityComponent />
     </Box>
   );
 }
