@@ -76,15 +76,11 @@ export default function CalendarPage() {
       });
       const data = await res.json();
 
-      console.log("Calendar Raw Data:", data);
-
-      // We wrap this because if the schema file has a 'path' import,
-      // calling safeParse will throw a hard error.
       try {
         const parsed = ContentRowsSchema.safeParse(data);
         if (parsed.success) {
           setRows(parsed.data);
-          return; // Exit early if successful
+          return;
         } else {
           console.error("Zod Validation Failed:", parsed.error.format());
         }
@@ -95,10 +91,7 @@ export default function CalendarPage() {
         );
       }
 
-      // FALLBACK: If parsing fails or crashes, but we have an array,
-      // show the data anyway so the UI doesn't break.
       if (Array.isArray(data)) {
-        console.warn("Using raw data fallback for calendar items.");
         setRows(data as ContentRow[]);
       }
     } catch (err) {
@@ -114,18 +107,11 @@ export default function CalendarPage() {
   }, [fetchProfile, fetchContent]);
 
   const events = useMemo<EventInput[]>(() => {
-    // If currentUserName is missing, events won't show.
-    // Check if the profile API changed its response fields.
     if (!session || !currentUserName) {
-      console.warn("Calendar hidden: Missing session or username", {
-        session,
-        currentUserName,
-      });
       return [];
     }
 
     return rows.reduce((acc: EventInput[], row) => {
-      // Ensure row and expiration_time exist
       if (!row || !row.expiration_time) return acc;
 
       const isOwner =
@@ -137,7 +123,6 @@ export default function CalendarPage() {
         const originalExpDate = new Date(row.expiration_time);
         if (isNaN(originalExpDate.getTime())) return acc;
 
-        // Logic to prevent "Midnight Spill" in Day View
         let startTime = new Date(originalExpDate);
         const endTime = new Date(originalExpDate);
 
@@ -157,7 +142,7 @@ export default function CalendarPage() {
 
         acc.push({
           id: `${isOwner ? "owner" : "checkout"}-${row.uuid}`,
-          title: `${isOwner ? "📄" : "👁️"} ${row.title} (${timeString})`,
+          title: `${isOwner ? "📓" : "👁️"} ${row.title} (${timeString})`,
           start: startTime,
           end: endTime,
           allDay: false,
@@ -178,11 +163,7 @@ export default function CalendarPage() {
   }));
 
   return (
-    <Box
-      sx={{
-        width: "100%",
-      }}
-    >
+    <Box sx={{ width: "100%" }}>
       <StyledToolbar
         sx={{
           background:
@@ -226,36 +207,25 @@ export default function CalendarPage() {
           p: 3,
           backgroundColor: "#ffffff",
           minWidth: 0,
-          width: "165vh",
+          width: "178vh",
           overflowX: "auto",
+          minHeight: "calc(100vh - 128px)",
         }}
       >
         {loading ?
           <Typography>Loading calendar…</Typography>
         : <>
-            {/*<style>{`*/}
-            {/*  .fc-event {*/}
-            {/*    border: 1px solid #000 !important;*/}
-            {/*    box-sizing: border-box;*/}
-            {/*    border-radius: 6px;*/}
-            {/*  }*/}
+            <style>{`
+              .fc,
+              .fc-toolbar-title,
+              .fc-col-header-cell,
+              .fc-daygrid-day-number,
+              .fc-event,
+              .fc-button {
+                font-family: 'Rubik', sans-serif !important;
+              }
+            `}</style>
 
-            {/*  .fc {*/}
-            {/*    max-width: 100%;*/}
-            {/*  }*/}
-
-            {/*  .fc-toolbar-title {*/}
-            {/*    color: #111827 !important;*/}
-            {/*  }*/}
-
-            {/*  .fc-view-harness {*/}
-            {/*    min-width: 0 !important;*/}
-            {/*  }*/}
-
-            {/*  .fc-scrollgrid {*/}
-            {/*    width: 100% !important;*/}
-            {/*  }*/}
-            {/*`}</style>*/}
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -271,11 +241,21 @@ export default function CalendarPage() {
                     }
                   },
                 },
+                weekToday: {
+                  text: "Week",
+                  click: () => {
+                    const calendarApi = calendarRef.current?.getApi();
+                    if (calendarApi) {
+                      calendarApi.today();
+                      calendarApi.changeView("timeGridWeek");
+                    }
+                  },
+                },
               }}
               headerToolbar={{
                 left: "prev,next",
                 center: "title",
-                right: "dayGridMonth,timeGridWeek,dayToday",
+                right: "dayGridMonth,weekToday,dayToday",
               }}
               events={events}
               forceEventDuration={true}
@@ -286,12 +266,7 @@ export default function CalendarPage() {
                 hour12: true,
               }}
               height="auto"
-              eventClick={(info) => {
-                const row = info.event.extendedProps.row;
-                alert(
-                  `${row.title}\nExpires: ${new Date(row.expiration_time).toLocaleString()}`,
-                );
-              }}
+              eventClick={() => {}}
             />
           </>
         }
