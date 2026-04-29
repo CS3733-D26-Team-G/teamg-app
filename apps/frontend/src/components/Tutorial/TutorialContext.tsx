@@ -80,6 +80,16 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     navigationHint: "Click 'Employees' under Management in the sidebar →",
   },
   {
+    id: "approvals",
+    title: "Approvals Queue",
+    description:
+      "The Approvals Queue is where you make final decisions on insurance claims. After an underwriter has reviewed a claim and cleared the risk, it lands here for your approval. You can read the full claim details, review any attached content, and either Approve or Deny the claim. Approved claims are marked as resolved; denied claims are sent back with a record of your decision. Click 'Approvals' in the sidebar to see the queue.",
+    targetSelector: "a[href='/approvals']",
+    position: "right",
+    requiresNavigation: true,
+    navigationHint: "Click 'Approvals' in the sidebar →",
+  },
+  {
     id: "activity",
     title: "Activity Log",
     description:

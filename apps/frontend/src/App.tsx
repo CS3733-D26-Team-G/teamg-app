@@ -22,6 +22,8 @@ import LoginPopUp from "./pages/LoginPopUp.tsx";
 import AboutUs from "./pages/About.tsx";
 import ApprovalPage from "./pages/approval.tsx";
 import RiskReviewPage from "./pages/risk-review.tsx";
+
+import ClaimPage from "./pages/claims.tsx";
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
 import CalPage from "./pages/CalendarPage.tsx";
@@ -193,6 +195,14 @@ function AppLayout() {
             element={<RiskReviewPage />}
           />
 
+          <Route
+            path="/claims"
+            element={
+              <ProtectedRoute>
+                <ClaimPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/calendar"
             element={

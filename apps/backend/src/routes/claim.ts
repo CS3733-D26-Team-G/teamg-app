@@ -89,6 +89,7 @@ function getClaimVisibilityWhere(auth: Auth): Prisma.InsuranceClaimWhereInput {
   };
 }
 
+// ── KEY FIX: status is now included in the serialized output ──────────────────
 function serializeClaim(claim: ClaimWithRelations) {
   return {
     uuid: claim.uuid,
@@ -96,6 +97,7 @@ function serializeClaim(claim: ClaimWithRelations) {
     incident_date: claim.incident_date,
     claim_type: claim.claim_type,
     incident_description: claim.incident_description,
+    status: claim.status, // was missing — caused both queue pages to fail
     createdAt: claim.createdAt,
     updatedAt: claim.updatedAt,
     requestor: claim.requestor,
