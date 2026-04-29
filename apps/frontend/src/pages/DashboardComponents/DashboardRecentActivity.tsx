@@ -53,7 +53,7 @@ export default function DashboardRecentActivity({
       }}
     >
       <CardHeader
-        sx={{ py: 1.5, px: 2, paddingTop: "32px" }}
+        sx={{ py: 1.25, px: 2, paddingTop: "20px" }}
         title={
           <Typography
             variant="h6"
@@ -71,7 +71,9 @@ export default function DashboardRecentActivity({
 
       <CardContent
         sx={{
-          p: 2,
+          pt: 1.5,
+          px: 2,
+          pb: 2,
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",

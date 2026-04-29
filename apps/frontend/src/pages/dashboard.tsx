@@ -232,6 +232,34 @@ export default function Dashboard() {
     </Card>
   );
 
+  const popularContentSearchCard = (
+    <Card
+      className="outline-1 outline-gray-200"
+      sx={{ margin: 0 }}
+    >
+      <CardHeader
+        sx={{ py: 1.5, px: 2 }}
+        title={
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+          >
+            Popular Content Search
+          </Typography>
+        }
+      />
+      <Divider />
+      <CardContent className="p-6">
+        <Typography
+          variant="body2"
+          color="text.secondary"
+        >
+          No popular search data available yet.
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <Card className="flex flex-col h-auto min-h-[95vh] m-auto">
       {/* Header Section */}
@@ -257,7 +285,7 @@ export default function Dashboard() {
       <CardContent className="flex flex-col gap-8 p-8">
         <div className="flex flex-row gap-8 items-start">
           <Card
-            className="w-fit outline-1 outline-gray-200"
+            className="flex-1 outline-1 outline-gray-200"
             sx={{ margin: 0 }}
           >
             <CardHeader
@@ -281,7 +309,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {employeeDemographicsCard}
+          <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
+            {employeeDemographicsCard}
+            {popularContentSearchCard}
+          </div>
         </div>
 
         {session?.position === "ADMIN" && (
@@ -338,34 +369,6 @@ export default function Dashboard() {
               </Card>
             </div>
           )}
-
-          <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
-            <Card
-              className="outline-1 outline-gray-200"
-              sx={{ margin: 0 }}
-            >
-              <CardHeader
-                sx={{ py: 1.5, px: 2 }}
-                title={
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
-                  >
-                    Popular Content Search
-                  </Typography>
-                }
-              />
-              <Divider />
-              <CardContent className="p-6">
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  No popular search data available yet.
-                </Typography>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Recent Activity: Grows to fill width and matches height */}
           <div className="flex-1 min-w-[500px]">

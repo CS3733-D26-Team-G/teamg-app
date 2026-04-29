@@ -74,7 +74,7 @@ export default function TypeBarChart({ data }: ChartProps) {
     <BarChart
       dataset={chartData}
       height={240}
-      margin={{ top: 16, right: 16, bottom: 24, left: 40 }}
+      margin={{ top: 16, right: 18, bottom: 24, left: 14 }}
       xAxis={[
         {
           scaleType: "band",
