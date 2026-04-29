@@ -35,6 +35,7 @@ model Employee {
   contentLocks         ContentEditLock[]
   favoriteContents     FavoriteContent[]
   submittedClaims      InsuranceClaim[]
+  contentHits          ContentHit[]
 }
 
 model Content {
@@ -53,6 +54,7 @@ model Content {
   favoritedBy        FavoriteContent[]
   tagAssignments     ContentTagAssignment[]
   claimAssignments   ClaimContentAssignment[]
+  contentHits        ContentHit[]
 }
 
 model InsuranceClaim {
@@ -141,6 +143,16 @@ model Activity {
   employee     Employee      @relation(fields: [employeeUuid], references: [uuid])
 }
 
+model ContentHit {
+  uuid         String   @id @default(uuid()) @db.Uuid
+  contentUuid  String   @db.Uuid
+  employeeUuid String   @db.Uuid
+  action       HitType
+  timestamp    DateTime @default(now()) @db.Timestamp(6)
+  content      Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
+  employee     Employee @relation(fields: [employeeUuid], references: [uuid])
+}
+
 enum Department {
   OPERATION_TECHNOLOGY
   ACCOUNTING
@@ -193,4 +205,10 @@ enum InsuranceClaimType {
   HOME
   AUTO
   BUSINESS
+}
+
+enum HitType {
+  SEARCH
+  VIEW
+  ACCESS
 }

@@ -17,61 +17,95 @@ router.get("/", async (req, res) => {
     "CREATE_CONTENT",
     "EDIT_CONTENT",
     "DELETE_CONTENT",
-    "CREATE_CLAIM",
-    "EDIT_CLAIM",
-    "DELETE_CLAIM",
     "CHECK_OUT_CONTENT",
     "CHECK_IN_CONTENT",
   ];
+  const claimActions = ["CREATE_CLAIM", "EDIT_CLAIM", "DELETE_CLAIM"];
   const authActions = ["LOG_IN", "LOG_OUT"];
   const verboseContentActions = ["OWNERSHIP_CHANGE"];
 
-  let where = {};
-  switch (category) {
-    case "content":
-      where = {
-        action: { in: contentActions },
-      };
-      break;
+  try {
+    const accessibleContentUuids =
+      isAdmin(auth) ? undefined : (
+        (
+          await prisma.content.findMany({
+            where: { for_position: auth.position },
+            select: { uuid: true },
+          })
+        ).map((content) => content.uuid)
+      );
 
-    case "verbose":
-      where = {
-        action: { in: verboseContentActions },
-      };
-      break;
-
-    case "auth":
-      where = {
-        action: { in: authActions },
-        ...(!isAdmin(auth) ? { employeeUuid: auth.employeeUuid } : {}),
-      };
-      break;
-
-    case "all":
-      if (isAdmin(auth)) {
-        where = {};
-      } else {
-        where = {
+    const contentFilter =
+      isAdmin(auth) ?
+        {
+          action: { in: [...contentActions, ...claimActions] },
+        }
+      : {
           OR: [
-            { action: { in: contentActions } },
             {
-              action: { in: authActions },
+              action: { in: contentActions },
+              resource: "CONTENT",
+              resourceUuid: { in: accessibleContentUuids },
+            },
+            {
+              action: { in: claimActions },
               employeeUuid: auth.employeeUuid,
             },
           ],
         };
-      }
-      break;
 
-    default:
-      return res.status(400).json({ message: "Invalid category for activity" });
-  }
+    const verboseFilter =
+      isAdmin(auth) ?
+        {
+          action: { in: verboseContentActions },
+        }
+      : {
+          action: { in: verboseContentActions },
+          resource: "CONTENT",
+          resourceUuid: { in: accessibleContentUuids },
+        };
 
-  logger.verbose(
-    `Querying Activity table for last 50 records in ${category} category`,
-  );
+    const authFilter =
+      isAdmin(auth) ?
+        {
+          action: { in: authActions },
+        }
+      : {
+          action: { in: authActions },
+          employeeUuid: auth.employeeUuid,
+        };
 
-  try {
+    let where = {};
+    switch (category) {
+      case "content":
+        where = contentFilter;
+        break;
+
+      case "verbose":
+        where = verboseFilter;
+        break;
+
+      case "auth":
+        where = authFilter;
+        break;
+
+      case "all":
+        where =
+          isAdmin(auth) ?
+            {}
+          : { OR: [contentFilter, verboseFilter, authFilter] };
+        break;
+
+      default:
+        return res
+          .status(400)
+          .json({ message: "Invalid category for activity" });
+    }
+
+    logger.verbose(
+      `Querying Activity table for last 50 records in ${category} category`,
+    );
+
     const activities = await prisma.activity.findMany({
       where,
       orderBy: {
