@@ -181,14 +181,14 @@ export default function Credits() {
         variant="h5"
         fontWeight={500}
         mb={0.5}
-        sx={{ fontFamily: "'Rubik', sans-serif" }}
+        sx={{ fontFamily: "'Rubik', sans-serif", color: "white" }}
       >
         Credits
       </Typography>
 
       <Typography
         variant="body2"
-        color="text.secondary"
+        color="white"
         mb={3}
         sx={{ lineHeight: 1.8, fontFamily: "'Rubik', sans-serif" }}
       >
@@ -208,7 +208,7 @@ export default function Credits() {
         onClick={() => navigate("/")}
         variant="outlined"
         size="small"
-        sx={{ mb: 3, fontFamily: "'Rubik', sans-serif" }}
+        sx={{ mb: 3, fontFamily: "'Rubik', sans-serif", color: "white" }}
       >
         Return
       </Button>
@@ -217,7 +217,7 @@ export default function Credits() {
         variant="h6"
         fontWeight={500}
         mb={2}
-        sx={{ fontFamily: "'Rubik', sans-serif" }}
+        sx={{ fontFamily: "'Rubik', sans-serif", color: "white" }}
       >
         Libraries &amp; Dependencies
       </Typography>
