@@ -1159,23 +1159,8 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
       input.content_owner &&
       input.content_owner !== existingContent.content_owner
     ) {
-      const oldOwner = await prisma.employee.findUnique({
-        where: { uuid: existingContent.content_owner },
-        select: { first_name: true, last_name: true },
-      });
-      const newOwner = await prisma.employee.findUnique({
-        where: { uuid: String(input.content_owner) },
-        select: { first_name: true, last_name: true },
-      });
-
-      const oldOwnerName =
-        oldOwner ?
-          `${oldOwner.first_name} ${oldOwner.last_name}`
-        : existingContent.content_owner;
-      const newOwnerName =
-        newOwner ?
-          `${newOwner.first_name} ${newOwner.last_name}`
-        : input.content_owner;
+      const oldOwner = existingContent.content_owner;
+      const newOwner = input.content_owner;
 
       await prisma.activity.create({
         data: {
@@ -1183,9 +1168,21 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
           action: "OWNERSHIP_CHANGE",
           resource: "CONTENT",
           resourceUuid: updatedContent.uuid,
-          resourceName: `${updatedContent.title} (${oldOwnerName} → ${newOwnerName})`,
+          resourceName: `${updatedContent.title} (${oldOwner} → ${newOwner})`,
         },
       });
+      logger.verbose("changed owner");
+    } else {
+      await prisma.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "EDIT_CONTENT",
+          resource: "CONTENT",
+          resourceUuid: updatedContent.uuid,
+          resourceName: updatedContent.title,
+        },
+      });
+      logger.verbose("edit content");
     }
 
     const previousSupabasePath = existingContent.supabasePath;
@@ -1208,15 +1205,6 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
         );
       }
     }
-    await prisma.activity.create({
-      data: {
-        employeeUuid: auth.employeeUuid,
-        action: "EDIT_CONTENT",
-        resource: "CONTENT",
-        resourceUuid: updatedContent.uuid,
-        resourceName: updatedContent.title,
-      },
-    });
 
     logger.verbose(`Updated Content table record ${uuid}`);
     return res.status(200).json(updatedContent);

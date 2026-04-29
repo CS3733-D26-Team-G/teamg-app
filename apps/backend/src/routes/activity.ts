@@ -24,7 +24,7 @@ router.get("/", async (req, res) => {
     "CHECK_IN_CONTENT",
   ];
   const authActions = ["LOG_IN", "LOG_OUT"];
-  const verboseContentActions = ["OWNERSHIP_CHANGE", "EDIT_CONTENT"];
+  const verboseContentActions = ["OWNERSHIP_CHANGE"];
 
   let where = {};
   switch (category) {

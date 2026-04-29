@@ -8,9 +8,7 @@ import {
   getContentEdits,
   getOwnershipChanges,
 } from "./Notifications.ts";
-import { NotificationsActive } from "@mui/icons-material";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
-import { useNavigate } from "react-router-dom";
 import NotificationPage from "./NotificationPage.tsx";
 
 import {
@@ -21,11 +19,11 @@ import {
   List,
   ListItem,
   Typography,
-  Button,
   Chip,
   CircularProgress,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 
 interface ExpiringContent {
   uuid: string;
@@ -35,18 +33,6 @@ interface ExpiringContent {
   status: "active" | "expiring_soon" | "critical" | "expired";
   notification_message: string | null;
   formatted_time_remaining?: string;
-}
-
-interface ActivityNotification {
-  uuid: string;
-  action: string;
-  resourceUuid: string;
-  resourceName: string;
-  timestamp: string;
-  employee?: {
-    first_name: string;
-    last_name: string;
-  };
 }
 
 interface NotificationCounts {
@@ -78,9 +64,36 @@ function useContentInfo() {
   const [expiringContent, setExpiringContent] = useState<ExpiringContent[]>([]);
   const [expiredContent, setExpiredContent] = useState<ExpiringContent[]>([]);
   const [ownershipChanges, setOwnershipChanges] = useState<
-    ActivityNotification[]
+    Array<{
+      uuid: string;
+      action: string;
+      resourceUuid: string;
+      resourceName: string;
+      timestamp: string;
+      employee?: {
+        first_name: string;
+        last_name: string;
+      };
+      title: string;
+      notification_message: string;
+    }>
   >([]);
-  const [contentEdits, setContentEdits] = useState<ActivityNotification[]>([]);
+
+  const [contentEdits, setContentEdits] = useState<
+    Array<{
+      uuid: string;
+      action: string;
+      resourceUuid: string;
+      resourceName: string;
+      timestamp: string;
+      employee?: {
+        first_name: string;
+        last_name: string;
+      };
+      title: string;
+      notification_message: string;
+    }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<NotificationCounts>({
     critical: 0,
@@ -93,7 +106,6 @@ function useContentInfo() {
 
   const dismissAlert = useCallback(
     (uuid: string, type: string) => {
-      // Handle content expiration alerts (critical/expiring)
       if (type === "critical" || type === "expiring") {
         setAllContent((prev) => prev.filter((item) => item.uuid !== uuid));
         setCriticalContent((prev) => prev.filter((item) => item.uuid !== uuid));
@@ -111,7 +123,6 @@ function useContentInfo() {
         }));
       }
 
-      // Handle ownership change alerts
       if (type === "ownership") {
         setOwnershipChanges((prev) =>
           prev.filter((item) => item.uuid !== uuid),
@@ -123,7 +134,6 @@ function useContentInfo() {
         }));
       }
 
-      // Handle content edit alerts
       if (type === "edit") {
         setContentEdits((prev) => prev.filter((item) => item.uuid !== uuid));
         setCounts((prev) => ({
@@ -140,40 +150,62 @@ function useContentInfo() {
     try {
       setLoading(true);
 
-      // Fetch all data in parallel
       const [content, ownership, edits] = await Promise.all([
         getAllContent(),
         getOwnershipChanges(),
         getContentEdits(),
       ]);
 
-      // Calculate expiration data
       const expiring = getExpiringContent(content);
       const critical = getCriticalContent(content);
       const expired = getExpiredContent(content);
+
+      const formattedOwnership = ownership.map((change: any) => ({
+        uuid: change.uuid,
+        action: change.action,
+        resourceUuid: change.resourceUuid,
+        resourceName: change.resourceName,
+        timestamp: change.timestamp,
+        employee: change.employee,
+        title: change.resourceName.split(" (")[0],
+        notification_message: change.resourceName,
+      }));
+
+      const formattedEdits = edits.map((edit: any) => ({
+        uuid: edit.uuid,
+        action: edit.action,
+        resourceUuid: edit.resourceUuid,
+        resourceName: edit.resourceName,
+        timestamp: edit.timestamp,
+        employee: edit.employee,
+        title: edit.resourceName,
+        notification_message: `Content was edited${edit.employee ? ` by ${edit.employee.first_name} ${edit.employee.last_name}` : ""}`,
+      }));
 
       setAllContent(content);
       setCriticalContent(critical);
       setExpiringContent(expiring);
       setExpiredContent(expired);
-      setOwnershipChanges(ownership);
-      setContentEdits(edits);
+      setOwnershipChanges(formattedOwnership);
+      setContentEdits(formattedEdits);
 
-      // Calculate counts
       const expiringCount = expiring.filter((c) => {
         const seconds = getExpiresInSeconds(c.expiration_time);
         return seconds <= 432000 && seconds > 3600;
       }).length;
 
       const totalAlerts =
-        critical.length + expiringCount + ownership.length + edits.length;
+        critical.length +
+        expiringCount +
+        formattedOwnership.length +
+        formattedEdits.length;
 
       setCounts({
         critical: critical.length,
         expiring: expiringCount,
         expired: expired.length,
-        ownership: ownership.length,
-        edits: edits.length,
+        ownership: formattedOwnership.length,
+        edits: formattedEdits.length,
         total: totalAlerts,
       });
     } catch (error) {
@@ -211,7 +243,6 @@ export default function NotificationsBell() {
     contentEdits,
     counts,
     loading,
-    refresh,
     dismissAlert,
   } = useContentInfo();
 
@@ -230,16 +261,16 @@ export default function NotificationsBell() {
     ...expiringContent.map((c) => ({ ...c, alertType: "expiring" as const })),
     ...ownershipChanges.map((o) => ({
       uuid: o.uuid,
-      title: o.resourceName,
+      title: o.title,
       alertType: "ownership" as const,
-      notification_message: `Ownership changed${o.employee ? ` by ${o.employee.first_name} ${o.employee.last_name}` : ""}`,
+      notification_message: o.notification_message,
       expiration_time: null,
     })),
     ...contentEdits.map((e) => ({
       uuid: e.uuid,
-      title: e.resourceName,
+      title: e.title,
       alertType: "edit" as const,
-      notification_message: `Content was edited${e.employee ? ` by ${e.employee.first_name} ${e.employee.last_name}` : ""}`,
+      notification_message: e.notification_message,
       expiration_time: null,
     })),
   ];
@@ -268,7 +299,9 @@ export default function NotificationsBell() {
   };
 
   const getAlertIcon = () => {
-    return totalAlerts <= 0 ? <NotificationsIcon /> : <NotificationsActive />;
+    return totalAlerts <= 0 ?
+        <NotificationsIcon />
+      : <NotificationsActiveIcon />;
   };
 
   return (

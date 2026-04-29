@@ -65,9 +65,9 @@ export function getExpiredContent(content: any[]) {
   });
 }
 
-export async function getVerboseNotifications() {
+export async function getNormalEdit() {
   try {
-    const response = await fetch(`${API_ENDPOINTS.ACTIVITY}?category=verbose`, {
+    const response = await fetch(`${API_ENDPOINTS.ACTIVITY}?category=content`, {
       credentials: "include",
     });
 
@@ -84,12 +84,40 @@ export async function getVerboseNotifications() {
   }
 }
 
+export async function getVerboseNotifications() {
+  try {
+    const response = await fetch(`${API_ENDPOINTS.ACTIVITY}?category=verbose`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch verbose notifications: ${response.status}`,
+      );
+    }
+
+    const activities = await response.json();
+
+    return activities;
+  } catch (error) {
+    console.error("Error fetching verbose notifications:", error);
+    return [];
+  }
+}
+
 export async function getOwnershipChanges() {
   const activities = await getVerboseNotifications();
-  return activities.filter((item: any) => item.action === "OWNERSHIP_CHANGE");
+  return activities
+    .filter((item: any) => item.action === "OWNERSHIP_CHANGE")
+    .map((item: any) => ({
+      ...item,
+      action: "OWNERSHIP_CHANGE",
+
+      notification_message: item.resourceName,
+    }));
 }
 
 export async function getContentEdits() {
-  const activities = await getVerboseNotifications();
+  const activities = await getNormalEdit();
   return activities.filter((item: any) => item.action === "EDIT_CONTENT");
 }
