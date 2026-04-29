@@ -70,6 +70,12 @@ function AppLayout() {
   const isHeroPage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
 
+  console.log("AppLayout:", {
+    pathname: location.pathname,
+    hasSession: !!session,
+    showSidebar: !isHeroPage && !isLoginPage && session,
+  });
+
   return (
     <div
       style={{
