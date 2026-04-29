@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import {
   IconButton,
@@ -7,6 +13,7 @@ import {
   AppBar,
   Toolbar,
   styled,
+  Stack,
   Typography,
   Link,
   Chip,
@@ -20,22 +27,23 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Divider,
-  Stack,
+  Slide,
 } from "@mui/material";
+import type { TransitionProps } from "@mui/material/transitions";
 import { useTheme } from "@mui/material/styles";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DownloadIcon from "@mui/icons-material/Download";
+import EditIcon from "@mui/icons-material/Edit";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
 import FiberNewIcon from "@mui/icons-material/FiberNew";
+import CloseIcon from "@mui/icons-material/Close";
 import type { ContentStatus, Position } from "@repo/db";
 import { Heart } from "lucide-react";
 import ContentForm from "./ContentForm";
 import HeaderSearchBar from "./HeaderSearchBar";
-import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
-import "@cyntler/react-doc-viewer";
 import { API_ENDPOINTS } from "../../config";
 import { useAuth } from "../../auth/AuthContext";
 import "./ContentManagement.css";
@@ -49,8 +57,6 @@ import {
   getPositionChipColor,
   getPositionLabel,
 } from "../../utils/positionDisplay";
-import { param } from "framer-motion/m";
-import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
@@ -59,11 +65,30 @@ import HelpPopup from "../../components/HelpPopup";
 import DocPreviewer from "./DocPreviewer.tsx";
 import InfoPopup from "./ContentInfoPopup.tsx";
 import TagManagerPopup from "./TagManagerPopup.tsx";
+import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
   IN_USE: "In-Use",
   UNAVAILABLE: "Unavailable",
+};
+
+const fileTypeLabels: Record<string, string> = {
+  "application/pdf": ".PDF",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    ".DOCX",
+  "application/msword": ".DOC",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".XLSX",
+  "application/vnd.ms-excel": ".XLS",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+    ".PPTX",
+  "application/vnd.ms-powerpoint": ".PPT",
+  "text/plain": ".TXT",
+  "text/csv": ".CSV",
+  "image/png": ".PNG",
+  "image/jpeg": ".JPEG",
+  "application/json": ".JSON",
+  "video/mp4": "Video (.MP4)",
 };
 
 interface ContentManagementProps {
@@ -79,15 +104,25 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 128,
 }));
 
-{
-  /* Highlights new content based on what is different from start of session */
-}
+const SlideUpTransition = React.forwardRef(function SlideUpTransition(
+  props: TransitionProps & { children: React.ReactElement },
+  ref: React.Ref<unknown>,
+) {
+  return (
+    <Slide
+      direction="up"
+      ref={ref}
+      {...props}
+    />
+  );
+});
+
+/* Highlights new content based on what is different from start of session */
 function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const KEY = `new_content_ids_${userUuid}`;
   const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
   const SESSION_KEY = `session_id_${userUuid}`;
 
-  // Generate a session ID for this tab using sessionStorage
   if (!sessionStorage.getItem(SESSION_KEY)) {
     sessionStorage.setItem(SESSION_KEY, crypto.randomUUID());
   }
@@ -127,6 +162,11 @@ export default function ContentManagement({
   const isDark = theme.palette.mode === "dark";
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+  const skipLockReleaseRef = useRef(false);
+  const returningToEditorRef = useRef(false);
+
+  const displayFileType = (fileType: string) =>
+    fileTypeLabels[fileType] ?? fileType;
 
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
@@ -136,7 +176,7 @@ export default function ContentManagement({
     null,
   );
 
-  const [searchParams, setSearchParams] = useSearchParams(); // Add this
+  const [searchParams] = useSearchParams();
 
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,7 +186,9 @@ export default function ContentManagement({
   >({});
   const { session } = useAuth();
 
+  // Preview dialog (DocPreviewer — read-only viewer)
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Editor modal (DocumentEditorModal — full WebViewer, opened after checkout)
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
@@ -154,18 +196,39 @@ export default function ContentManagement({
     uuid: string;
     for_position: Position;
   } | null>(null);
+
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
   const [pendingSave, setPendingSave] = useState<FormData | null>(null);
+  const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.canManageAllContent ?? false;
+
+  // Form modal open state — derived from viewState
+  const formOpen = viewState !== null;
 
   useEffect(() => {
     const filterParam = searchParams.get("filter");
     if (filterParam) {
       setSearchQuery(filterParam);
+
+      // Auto-open the matched content row
+      const matched = rows.find(
+        (r) => r.title.toLowerCase() === filterParam.toLowerCase(),
+      );
+      if (matched) {
+        setSelectedDoc({
+          uri: API_ENDPOINTS.CONTENT.FILE(matched.uuid),
+          fileName: matched.title,
+          uuid: matched.uuid,
+          for_position: matched.for_position,
+        });
+        setPreviewOpen(true);
+      }
+    } else {
+      setSearchQuery("");
     }
-  }, [searchParams]);
+  }, [searchParams, rows]);
 
   const fetchRows = useCallback(async () => {
     try {
@@ -176,7 +239,6 @@ export default function ContentManagement({
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-
         return res.json();
       });
       const parsed = ContentRowsSchema.safeParse(data);
@@ -187,7 +249,12 @@ export default function ContentManagement({
         return;
       }
 
-      setRows(parsed.data);
+      setRows(
+        parsed.data.map((r) => ({
+          ...r,
+          isLocked: r.editLock != null,
+        })),
+      );
     } catch (error) {
       console.error(error);
       setRows([]);
@@ -198,10 +265,15 @@ export default function ContentManagement({
     void fetchRows();
   }, [fetchRows]);
 
+  useEffect(() => {
+    if (rows.length > 0 && session?.employeeUuid) {
+      setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
+    }
+  }, [rows, session?.employeeUuid]);
+
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        // Search Bar Filter Logic
         if (searchQuery.trim()) {
           const targetFields = [
             row.title,
@@ -214,13 +286,9 @@ export default function ContentManagement({
           const searchMatch = targetFields.some((field) =>
             field?.toLowerCase().includes(searchQuery.toLowerCase()),
           );
-
           if (!searchMatch) return false;
         }
 
-        //Filter Button Logic
-
-        //Position Filter
         if (
           positionFilters.length > 0 &&
           !positionFilters.includes(row.for_position)
@@ -228,7 +296,6 @@ export default function ContentManagement({
           return false;
         }
 
-        //File Type Filter
         if (
           fileTypeFilters.length > 0 &&
           !fileTypeFilters.includes(row.file_type ?? "")
@@ -242,39 +309,27 @@ export default function ContentManagement({
   );
 
   const togglePosition = (position: string) => {
-    //update the position filters array
-    setPositionFilters((currentPositionFilters) => {
-      //check if the current array already has the toggled position
-      if (currentPositionFilters.includes(position)) {
-        //clear selected filter
-        return currentPositionFilters.filter((pos) => pos !== position);
-      } else {
-        //add selected position filter
-        return currentPositionFilters.concat(position);
-      }
-    });
+    setPositionFilters((cur) =>
+      cur.includes(position) ?
+        cur.filter((pos) => pos !== position)
+      : cur.concat(position),
+    );
   };
 
   const toggleFileType = (fileType: string) => {
-    //update the file type filters array
-    setFileTypeFilters((currentFileTypeFilters) => {
-      //check if the current array already has the toggled file type
-      if (currentFileTypeFilters.includes(fileType)) {
-        //clear selected filter
-        return currentFileTypeFilters.filter((type) => type !== fileType);
-      } else {
-        return currentFileTypeFilters.concat(fileType);
-      }
-    });
+    setFileTypeFilters((cur) =>
+      cur.includes(fileType) ?
+        cur.filter((type) => type !== fileType)
+      : cur.concat(fileType),
+    );
   };
 
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
   };
+
   const confirmDelete = async () => {
-    if (!pendingDelete) {
-      return;
-    }
+    if (!pendingDelete) return;
 
     const rowToDelete = pendingDelete;
     setPendingDelete(null);
@@ -297,7 +352,7 @@ export default function ContentManagement({
     }
   };
 
-  const handleEditStart = async (row: ContentRow) => {
+  const handleCheckout = async (row: ContentRow) => {
     setLockMessage(null);
 
     try {
@@ -314,15 +369,42 @@ export default function ContentManagement({
       }
 
       if (!res.ok) {
-        setLockMessage("Unable to lock content");
+        setLockMessage("Unable to checkout content");
         return;
       }
 
-      setViewState(row);
+      setRows((prev) =>
+        prev.map((r) =>
+          r.uuid === row.uuid ?
+            {
+              ...r,
+              isLocked: true,
+              editLock: {
+                lockedByEmp: {
+                  uuid: session?.employeeUuid ?? "",
+                  first_name: "",
+                  last_name: "",
+                  avatar: null,
+                },
+              },
+            }
+          : r,
+        ),
+      );
     } catch (error) {
       console.error(error);
-      setLockMessage("Unable to lock content for editing.");
+      setLockMessage("Unable to checkout content for editing.");
     }
+  };
+
+  const handleOpenEditor = (row: ContentRow) => {
+    setSelectedDoc({
+      uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+      fileName: row.title,
+      uuid: row.uuid,
+      for_position: row.for_position,
+    });
+    setEditorOpen(true);
   };
 
   const releaseLock = async (uuid: string) => {
@@ -333,7 +415,9 @@ export default function ContentManagement({
       });
 
       setRows((prev) =>
-        prev.map((r) => (r.uuid === uuid ? { ...r, isLocked: false } : r)),
+        prev.map((r) =>
+          r.uuid === uuid ? { ...r, isLocked: false, editLock: null } : r,
+        ),
       );
     } catch (error) {
       console.error(error);
@@ -345,9 +429,7 @@ export default function ContentManagement({
   };
 
   const confirmSave = async () => {
-    if (!pendingSave) {
-      return;
-    }
+    if (!pendingSave) return;
 
     const payloadToSave = pendingSave;
     setPendingSave(null);
@@ -366,8 +448,11 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
-        if (isExisting) {
+        if (isExisting && !returningToEditorRef.current) {
           await releaseLock(uuid);
+        } else {
+          const data = (await res.json()) as { uuid: string };
+          setSessionNewIds((prev) => new Set([...prev, data.uuid]));
         }
         await fetchRows();
         setViewState(null);
@@ -377,13 +462,23 @@ export default function ContentManagement({
     }
   };
 
+  const handleCloseFormModal = async () => {
+    if (returningToEditorRef.current) {
+      returningToEditorRef.current = false;
+      setViewState(null);
+      setEditorOpen(true); // reopen editor without re-fetching
+      return;
+    }
+    if (viewState !== null && viewState !== "new") {
+      await releaseLock(viewState.uuid);
+    }
+    setViewState(null);
+  };
+
   const toggleFavorite = async (row: ContentRow) => {
     const nextIsFavorite = !row.is_favorite;
 
-    setFavoritePending((prev) => ({
-      ...prev,
-      [row.uuid]: true,
-    }));
+    setFavoritePending((prev) => ({ ...prev, [row.uuid]: true }));
 
     try {
       const res = await fetch(API_ENDPOINTS.CONTENT.FAVORITE(row.uuid), {
@@ -416,10 +511,7 @@ export default function ContentManagement({
     } catch (error) {
       console.error(error);
     } finally {
-      setFavoritePending((prev) => ({
-        ...prev,
-        [row.uuid]: false,
-      }));
+      setFavoritePending((prev) => ({ ...prev, [row.uuid]: false }));
     }
   };
 
@@ -439,6 +531,7 @@ export default function ContentManagement({
       console.error("Download failed:", error);
     }
   };
+
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElement(event.currentTarget);
   };
@@ -447,14 +540,7 @@ export default function ContentManagement({
     setAnchorElement(null);
   };
 
-  const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (rows.length > 0 && session?.employeeUuid) {
-      setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
-    }
-  }, [rows, session?.employeeUuid]);
-
+  // ── Confirmation dialogs ───────────────────────────────────────────────────
   const confirmationDialogs = (
     <>
       <Dialog
@@ -502,10 +588,13 @@ export default function ContentManagement({
     </>
   );
 
+  // ── Column definitions ─────────────────────────────────────────────────────
   const getColumns = (
-    onEdit: (row: ContentRow) => void,
     onPreview: (row: ContentRow) => void,
     onDownload: (row: ContentRow) => void,
+    onCheckOut: (row: ContentRow) => void,
+    onOpenEditor: (row: ContentRow) => void,
+    onCheckIn: (uuid: string) => void,
   ): GridColDef<ContentRow>[] => [
     {
       field: "favorite",
@@ -533,7 +622,7 @@ export default function ContentManagement({
       headerName: "Title",
       flex: 1,
       renderCell: (params) => (
-        <Box sx={{ display: "flex", gap: 0.5 }}>
+        <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
@@ -551,8 +640,15 @@ export default function ContentManagement({
           <InfoPopup
             url={params.row.url}
             author={params.row.content_owner}
-            position={params.row.for_position}
+            position={getPositionLabel(params.row.for_position) as Position}
             fileType={params.row.file_type}
+            editor={
+              params.row.editLock?.lockedByEmp ?
+                `${params.row.editLock.lockedByEmp.first_name} 
+              ${params.row.editLock.lockedByEmp.last_name}`
+              : ""
+            }
+            editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
           />
         </Box>
       ),
@@ -561,7 +657,7 @@ export default function ContentManagement({
       field: "last_modified_time",
       headerName: "Last Modified",
       type: "dateTime",
-      width: 130,
+      width: 160,
       valueGetter: (_value, row) =>
         row.last_modified_time ? new Date(row.last_modified_time) : null,
       renderCell: (params) => {
@@ -633,14 +729,14 @@ export default function ContentManagement({
     {
       field: "status",
       headerName: "Status",
-      width: 120,
+      width: 160,
       align: "center",
       renderCell: (params) => (
         <Chip
           label={statusLabels[params.value as ContentStatus]}
-          size="small"
-          variant="outlined"
-          sx={{ borderColor: "black" }}
+          size="medium"
+          variant="filled"
+          sx={{ width: 100, borderColor: "black", borderRadius: 1 }}
         />
       ),
     },
@@ -670,18 +766,34 @@ export default function ContentManagement({
       sortable: false,
       filterable: false,
       renderCell: (params) => {
+        const row = params.row;
         const hasPermission =
-          isSystemAdmin || userPosition === params.row.for_position;
-        const isCheckedOut = params.row.isLocked;
+          isSystemAdmin || userPosition === row.for_position;
+        const lockedByUuid = row.editLock?.lockedByEmp?.uuid;
+        const isCheckedOutByMe =
+          row.isLocked && lockedByUuid === session?.employeeUuid;
+        const isCheckedOutByOther = row.isLocked && !isCheckedOutByMe;
 
         return (
-          <>
-            <IconButton
-              color="primary"
-              onClick={() => onPreview(params.row)}
-            >
-              <VisibilityIcon />
-            </IconButton>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+              overflow: "hidden",
+            }}
+          >
+            {/* Preview */}
+            <Tooltip title="Preview">
+              <IconButton
+                color="primary"
+                onClick={() => onPreview(row)}
+              >
+                <VisibilityIcon />
+              </IconButton>
+            </Tooltip>
+
+            {/* Download */}
             <Tooltip
               title={
                 !hasPermission ?
@@ -692,67 +804,126 @@ export default function ContentManagement({
               <span>
                 <IconButton
                   color="primary"
-                  onClick={() => void onDownload(params.row)}
+                  onClick={() => void onDownload(row)}
                   disabled={!hasPermission}
                 >
                   <DownloadIcon />
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title={isCheckedOut ? "Content is checked out" : ""}>
-              <span>
-                <Button
-                  size="small"
-                  onClick={() => onEdit(params.row)}
-                  disabled={!hasPermission || isCheckedOut}
-                  sx={{ border: "0.5px solid" }}
+
+            {/* Check Out — only when not locked */}
+            {!row.isLocked && (
+              <Tooltip
+                title={
+                  !hasPermission ?
+                    "You don't have permission"
+                  : "Check Out to edit"
+                }
+              >
+                <span>
+                  <Button
+                    size="small"
+                    onClick={() => onCheckOut(row)}
+                    disabled={!hasPermission}
+                    sx={{ border: "0.5px solid" }}
+                  >
+                    CHECK OUT
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
+
+            {/* Edit — only when checked out by current user */}
+            {isCheckedOutByMe && (
+              <Tooltip
+                title={
+                  row.file_type?.startsWith("video/") ?
+                    "Video files cannot be edited"
+                  : "Open editor"
+                }
+              >
+                <span>
+                  <IconButton
+                    color="primary"
+                    onClick={() => onOpenEditor(row)}
+                    disabled={row.file_type?.startsWith("video/")}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+
+            {/* Check In — release lock, only when checked out by current user */}
+            {isCheckedOutByMe && (
+              <Tooltip title="Check In (release lock)">
+                <IconButton
+                  color="primary"
+                  onClick={() => void onCheckIn(row.uuid)}
                 >
-                  {" "}
-                  CHECK OUT
-                </Button>
-              </span>
-            </Tooltip>
-          </>
+                  <LockOpenIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+
+            {/* Locked by someone else */}
+            {isCheckedOutByOther && (
+              <Tooltip
+                title={`Checked out by ${row.editLock?.lockedByEmp.first_name} ${row.editLock?.lockedByEmp.last_name}`}
+              >
+                <span>
+                  <Button
+                    size="small"
+                    disabled
+                    sx={{ border: "0.5px solid" }}
+                  >
+                    LOCKED
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
+          </Box>
         );
       },
     },
   ];
 
-  if (viewState) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <ContentForm
-          initialData={viewState === "new" ? null : viewState}
-          onSave={handleSave}
-          onCancel={async () => {
-            if (viewState !== "new") {
-              await releaseLock(viewState.uuid);
-            }
-            setViewState(null);
-          }}
-          onDelete={
-            viewState !== "new" ? () => handleDelete(viewState) : undefined
-          }
-        />
-        {confirmationDialogs}
-      </Box>
-    );
-  }
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <Box sx={{ height: "auto", width: "100%" }}>
+      {/* ── Toolbar / header ────────────────────────────────────────────── */}
       <AppBar
         position="static"
         sx={{ backgroundColor: "background.paper", boxShadow: "none" }}
       >
-        <StyledToolbar>
+        <StyledToolbar
+          sx={{
+            background:
+              "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+            overflow: "hidden",
+          }}
+        >
           <Typography
             variant="h2"
-            sx={{ pb: 2, pt: 4, color: "text.primary", fontWeight: "bold" }}
+            sx={{ pb: 2, pt: 4, color: "White", fontWeight: "bold" }}
           >
             Content Management
           </Typography>
-
+          {[...Array(3)].map((_, i) => (
+            <Box
+              key={i}
+              sx={{
+                position: "absolute",
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.12)",
+                width: 120 + i * 80,
+                height: 120 + i * 80,
+                top: -40 - i * 30,
+                right: -40 - i * 30,
+              }}
+            />
+          ))}
           <Box
             sx={{
               display: "flex",
@@ -761,22 +932,39 @@ export default function ContentManagement({
               width: "100%",
             }}
           >
-            <Box sx={{ display: "flex", gap: 4 }}>
-              <Box>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+                <HeaderSearchBar setSearchQuery={setSearchQuery} />
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                {/* Filter button */}
                 <Button
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
                   aria-haspopup="true"
                   aria-expanded={anchorElement ? "true" : undefined}
-                  variant="outlined"
+                  variant="contained"
                   startIcon={<FilterAltIcon />}
-                  sx={{ border: "2px solid" }}
                 >
                   Filter
                 </Button>
+
+                {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      setPositionFilters([]);
+                      setFileTypeFilters([]);
+                    }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
               </Box>
 
-              {/*Filter Pop-up*/}
+              {/* Filter pop-up */}
               <Popover
                 open={Boolean(anchorElement)}
                 anchorEl={anchorElement}
@@ -784,14 +972,10 @@ export default function ContentManagement({
                 anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
                 slotProps={{
                   paper: {
-                    sx: {
-                      border: "1px solid",
-                      borderColor: "gray",
-                    },
+                    sx: { border: "1px solid", borderColor: "gray" },
                   },
                 }}
               >
-                {/*Position Item*/}
                 <MenuItem
                   onClick={(event) => {
                     setPositionAnchor(event.currentTarget);
@@ -801,8 +985,6 @@ export default function ContentManagement({
                   Position
                   <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
-
-                {/*File Type Item*/}
                 <MenuItem
                   onClick={(event) => {
                     setFileTypeAnchor(event.currentTarget);
@@ -814,7 +996,7 @@ export default function ContentManagement({
                 </MenuItem>
               </Popover>
 
-              {/*Position Sub-Pop-Up*/}
+              {/* Position sub-pop-up */}
               <Popover
                 open={Boolean(positionAnchor)}
                 anchorEl={positionAnchor}
@@ -823,15 +1005,11 @@ export default function ContentManagement({
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
                 slotProps={{
                   paper: {
-                    sx: {
-                      border: "1px solid",
-                      borderColor: "gray",
-                      ml: 1,
-                    },
+                    sx: { border: "1px solid", borderColor: "gray", ml: 1 },
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -887,7 +1065,7 @@ export default function ContentManagement({
                 </FormGroup>
               </Popover>
 
-              {/*File Type Sub-Pop-Up*/}
+              {/* File type sub-pop-up */}
               <Popover
                 open={Boolean(fileTypeAnchor)}
                 anchorEl={fileTypeAnchor}
@@ -896,15 +1074,11 @@ export default function ContentManagement({
                 transformOrigin={{ vertical: "top", horizontal: "left" }}
                 slotProps={{
                   paper: {
-                    sx: {
-                      border: "1px solid",
-                      borderColor: "gray",
-                      ml: 1,
-                    },
+                    sx: { border: "1px solid", borderColor: "gray", ml: 1 },
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -998,10 +1172,6 @@ export default function ContentManagement({
                   />
                 </FormGroup>
               </Popover>
-
-              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-                <HeaderSearchBar setSearchQuery={setSearchQuery} />
-              </Box>
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -1026,6 +1196,25 @@ export default function ContentManagement({
             </Box>
           </Box>
 
+          {(positionFilters.length > 0 || fileTypeFilters.length > 0) && (
+            <Box sx={{ display: "flex", flexWrap: "wrap", pt: 2, gap: 1 }}>
+              {positionFilters.map((position) => (
+                <Chip
+                  key={position}
+                  label={getPositionLabel(position as Position)}
+                  onDelete={() => togglePosition(position)}
+                />
+              ))}
+              {fileTypeFilters.map((fileType) => (
+                <Chip
+                  key={fileType}
+                  label={displayFileType(fileType)}
+                  onDelete={() => toggleFileType(fileType)}
+                />
+              ))}
+            </Box>
+          )}
+
           {lockMessage && (
             <Typography sx={{ pt: 1, color: "warning.main" }}>
               {lockMessage}
@@ -1034,11 +1223,11 @@ export default function ContentManagement({
         </StyledToolbar>
       </AppBar>
 
+      {/* ── Data grid ───────────────────────────────────────────────────── */}
       <DataGrid
         rows={filteredRows}
         getRowId={(row) => row.uuid}
         columns={getColumns(
-          handleEditStart,
           (row) => {
             const isExternalUrl =
               !row.supabasePath && !row.url.includes("supabase.co/storage");
@@ -1055,6 +1244,9 @@ export default function ContentManagement({
             setPreviewOpen(true);
           },
           handleDownload,
+          handleCheckout,
+          handleOpenEditor,
+          releaseLock,
         )}
         getRowClassName={(params) => {
           const hasPermission =
@@ -1102,7 +1294,7 @@ export default function ContentManagement({
             columnVisibilityModel: {
               "favorite": false,
               "url": false,
-              "author": false,
+              "content_owner": false,
               "edited-by": false,
               "for_position": false,
               "file_type": false,
@@ -1112,14 +1304,91 @@ export default function ContentManagement({
         pageSizeOptions={[5, 10]}
       />
 
-      {/* Preview Dialog */}
+      {/* ── Content Form Modal ───────────────────────────────────────────── */}
+      <Dialog
+        open={formOpen}
+        onClose={() => void handleCloseFormModal()}
+        TransitionComponent={SlideUpTransition}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "16px",
+            overflow: "hidden",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.25)",
+          },
+        }}
+      >
+        {/* Modal header */}
+        <Box
+          sx={{
+            background: "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
+            px: 3,
+            py: 2.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Typography
+            sx={{
+              color: "white",
+              fontWeight: 700,
+              fontSize: "1.15rem",
+              fontFamily: "Rubik, sans-serif",
+            }}
+          >
+            {viewState === "new" ? "Submit New Content" : "Edit Content"}
+          </Typography>
+          <IconButton
+            onClick={() => void handleCloseFormModal()}
+            size="small"
+            sx={{
+              "color": "rgba(255,255,255,0.8)",
+              "backgroundColor": "rgba(255,255,255,0.1)",
+              "borderRadius": "8px",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.2)",
+                color: "white",
+              },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        {/* Scrollable form body */}
+        <DialogContent
+          sx={{
+            "p": 0,
+            "&::-webkit-scrollbar": { width: 6 },
+            "&::-webkit-scrollbar-thumb": {
+              borderRadius: 3,
+              backgroundColor: "divider",
+            },
+          }}
+        >
+          <ContentForm
+            initialData={viewState === "new" ? null : viewState}
+            onSave={handleSave}
+            onCancel={() => void handleCloseFormModal()}
+            onDelete={
+              viewState !== null && viewState !== "new" ?
+                () => handleDelete(viewState)
+              : undefined
+            }
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Preview Dialog (DocPreviewer — read-only viewer) ────────────── */}
       <Dialog
         open={previewOpen}
         onClose={() => {
           setPreviewOpen(false);
           setSelectedDoc(null);
         }}
-        maxWidth="lg"
+        maxWidth="xl"
         fullWidth
         keepMounted
       >
@@ -1154,22 +1423,48 @@ export default function ContentManagement({
                 fileName={selectedDoc.fileName}
               />
             )}
+            {selectedDoc && rows.find((r) => r.uuid === selectedDoc.uuid) && (
+              <VersionHistoryPanel
+                contentUuid={selectedDoc.uuid}
+                contentRow={rows.find((r) => r.uuid === selectedDoc.uuid)!}
+              />
+            )}
           </Box>
         </Box>
       </Dialog>
 
-      {/* Document Editor Modal — opened via the Edit button when checked out */}
-      {editorOpen && selectedDoc && (
-        <DocumentEditorModal
-          open={editorOpen}
-          onClose={() => setEditorOpen(false)}
-          uri={selectedDoc.uri}
-          fileName={selectedDoc.fileName}
-          uuid={selectedDoc.uuid}
-          readOnly={false}
-        />
-      )}
-
+      {/* ── Document Editor Modal — opened via Edit button when checked out ── */}
+      {editorOpen &&
+        selectedDoc &&
+        (() => {
+          const editorRow = rows.find((r) => r.uuid === selectedDoc.uuid);
+          if (!editorRow) return null;
+          return (
+            <DocumentEditorModal
+              open={editorOpen}
+              onClose={() => {
+                if (!skipLockReleaseRef.current) {
+                  void releaseLock(selectedDoc.uuid);
+                }
+                skipLockReleaseRef.current = false;
+                setEditorOpen(false);
+              }}
+              uri={selectedDoc.uri}
+              fileName={selectedDoc.fileName}
+              uuid={selectedDoc.uuid}
+              contentRow={rows.find((r) => r.uuid === selectedDoc.uuid)!}
+              onSaved={() => void fetchRows()}
+              readOnly={false}
+              onDelete={() => editorRow && handleDelete(editorRow)}
+              onOpenForm={() => {
+                returningToEditorRef.current = true;
+                skipLockReleaseRef.current = true;
+                setEditorOpen(false);
+                setViewState(editorRow);
+              }}
+            />
+          );
+        })()}
       {confirmationDialogs}
     </Box>
   );

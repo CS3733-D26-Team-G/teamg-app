@@ -610,6 +610,7 @@ router.get("/", async (req, res) => {
                 uuid: true,
                 first_name: true,
                 last_name: true,
+                avatar: true,
               },
             },
           },
@@ -900,6 +901,7 @@ router.post("/lock/:uuid", async (req, res) => {
         action: "CHECK_OUT_CONTENT",
         resource: "CONTENT",
         resourceUuid: uuid,
+        resourceName: content.title,
       },
     });
 
@@ -951,6 +953,7 @@ router.delete("/lock/:uuid", async (req, res) => {
         action: "CHECK_IN_CONTENT",
         resource: "CONTENT",
         resourceUuid: uuid,
+        resourceName: content.title,
       },
     });
 
@@ -1143,6 +1146,7 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     url: urlResult.url,
     supabasePath: nextSupabasePath,
     file_type: nextFileType,
+    last_modified_time: new Date(),
   };
 
   logger.verbose(`Updating Content table record ${uuid}`);
@@ -1152,6 +1156,36 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
       where: { uuid },
       data,
     });
+
+    if (
+      input.content_owner &&
+      input.content_owner !== existingContent.content_owner
+    ) {
+      const oldOwner = existingContent.content_owner;
+      const newOwner = input.content_owner;
+
+      await prisma.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "OWNERSHIP_CHANGE",
+          resource: "CONTENT",
+          resourceUuid: updatedContent.uuid,
+          resourceName: `${updatedContent.title} (${oldOwner} → ${newOwner})`,
+        },
+      });
+      logger.verbose("changed owner");
+    } else {
+      await prisma.activity.create({
+        data: {
+          employeeUuid: auth.employeeUuid,
+          action: "EDIT_CONTENT",
+          resource: "CONTENT",
+          resourceUuid: updatedContent.uuid,
+          resourceName: updatedContent.title,
+        },
+      });
+      logger.verbose("edit content");
+    }
 
     const previousSupabasePath = existingContent.supabasePath;
     const shouldDeleteOldSupabaseObject =
@@ -1173,16 +1207,6 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
         );
       }
     }
-
-    await prisma.activity.create({
-      data: {
-        employeeUuid: auth.employeeUuid,
-        action: "EDIT_CONTENT",
-        resource: "CONTENT",
-        resourceUuid: updatedContent.uuid,
-        resourceName: updatedContent.title,
-      },
-    });
 
     logger.verbose(`Updated Content table record ${uuid}`);
     return res.status(200).json(updatedContent);
@@ -1260,6 +1284,7 @@ router.post("/regenerate-link/:uuid", async (req, res) => {
       data: {
         url: urlResult.url,
         expiration_time: parsed.data.expiration_time,
+        last_modified_time: new Date(),
       },
     });
 
@@ -1538,6 +1563,66 @@ router.get("/file/:uuid", async (req, res) => {
     return sendInternalError(
       res,
       `Failed to serve file for content ${uuid}`,
+      e,
+    );
+  }
+});
+
+router.get("/history/:uuid", async (req, res) => {
+  const uuid = parseContentUuid(req, res, "Invalid content UUID");
+  if (!uuid) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  try {
+    const content = await loadAccessibleContent(uuid, auth, res, {
+      notFoundStatus: 404,
+      notFoundMessage: "Content not found",
+      unauthorizedStatus: 401,
+      logUnauthorized: true,
+    });
+    if (!content) {
+      return;
+    }
+
+    logger.verbose(`Querying Activity table for content history ${uuid}`);
+
+    const activities = await prisma.activity.findMany({
+      where: {
+        resourceUuid: uuid,
+        resource: "CONTENT",
+        action: {
+          in: [
+            "CREATE_CONTENT",
+            "EDIT_CONTENT",
+            "CHECK_OUT_CONTENT",
+            "CHECK_IN_CONTENT",
+          ],
+        },
+      },
+      orderBy: { timestamp: "asc" },
+      include: {
+        employee: {
+          select: {
+            uuid: true,
+            first_name: true,
+            last_name: true,
+          },
+        },
+      },
+    });
+
+    logger.verbose(
+      `Queried Activity table for content history ${uuid}: found ${activities.length} record(s)`,
+    );
+
+    return res.status(200).json(activities);
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to query activity history for content ${uuid}`,
       e,
     );
   }
