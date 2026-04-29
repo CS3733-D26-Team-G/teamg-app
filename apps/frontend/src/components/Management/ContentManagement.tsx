@@ -312,6 +312,29 @@ export default function ContentManagement({
     void fetchRows();
   }, [fetchRows]);
 
+  const fetchTags = useCallback(async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        return;
+      }
+
+      const data: unknown = await res.json();
+      const parsed = ContentTagSummariesSchema.safeParse(data);
+      if (parsed.success) {
+        setAvailableTags(parsed.data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchTags();
+  }, [fetchTags]);
+
   useEffect(() => {
     const fetchTags = async () => {
       try {
@@ -1344,7 +1367,14 @@ export default function ContentManagement({
                 description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
                 infoOrHelp={true}
               />
-              {isSystemAdmin && <TagManagerPopup onTagsChanged={fetchRows} />}
+              {isSystemAdmin && (
+                <TagManagerPopup
+                  onTagsChanged={async () => {
+                    void fetchRows();
+                    void fetchTags();
+                  }}
+                />
+              )}
               <Button
                 onClick={() => setViewState("new")}
                 variant="contained"
@@ -1678,7 +1708,6 @@ export default function ContentManagement({
         }}
         maxWidth="xl"
         fullWidth
-        keepMounted
       >
         <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
           <Stack
