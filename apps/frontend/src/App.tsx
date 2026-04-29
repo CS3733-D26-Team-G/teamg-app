@@ -168,10 +168,6 @@ function AppLayout() {
             path="/credits"
             element={<Credits />}
           />
-          <Route
-            path="/NotificationPage"
-            element={<NotificationPage />}
-          />
         </Routes>
       </div>
 

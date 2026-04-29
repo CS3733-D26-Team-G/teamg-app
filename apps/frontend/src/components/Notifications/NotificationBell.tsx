@@ -11,6 +11,7 @@ import {
 import { NotificationsActive } from "@mui/icons-material";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
 import { useNavigate } from "react-router-dom";
+import NotificationPage from "./NotificationPage.tsx";
 
 import {
   Box,
@@ -213,7 +214,6 @@ export default function NotificationsBell() {
     refresh,
     dismissAlert,
   } = useContentInfo();
-  const navigate = useNavigate();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -318,13 +318,7 @@ export default function NotificationsBell() {
                 />
               )}
             </Typography>
-            <Button
-              variant="contained"
-              onClick={() => navigate("/NotificationPage")}
-              size="small"
-            >
-              More
-            </Button>
+            <NotificationPage />
           </Box>
 
           {loading ?
