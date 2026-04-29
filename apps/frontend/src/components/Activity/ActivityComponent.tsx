@@ -1,6 +1,6 @@
 import { Box, CircularProgress, Button } from "@mui/material";
 import ActivityTimeline from "./ActivityTimeline";
-import { type ActivityGroup } from "./activityData";
+import { type ActivityGroup, type ActivityItem } from "./activityData";
 import { useState, useEffect, useMemo } from "react";
 import SearchBar from "./HeaderSearchBar";
 import { API_ENDPOINTS } from "../../config";
@@ -96,7 +96,7 @@ export default function ActivityComponent() {
     return data
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => {
+        items: group.items.filter((item: ActivityItem) => {
           const q = searchQuery.toLowerCase();
           return (
             item.user.toLowerCase().includes(q) ||
@@ -129,7 +129,10 @@ export default function ActivityComponent() {
 
         {isAdmin && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <HelpPopup description="The Activity page shows a log of recent actions taken across the platform, including content views and updates." />
+            <HelpPopup
+              description="The Activity page shows a log of recent actions taken across the platform, including content views and updates."
+              infoOrHelp={false}
+            />
             {(["all", "content", "login"] as const).map((val) => (
               <Button
                 key={val}

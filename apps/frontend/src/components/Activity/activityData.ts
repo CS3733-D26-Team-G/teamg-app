@@ -19,6 +19,11 @@ export interface ActivityItem {
   employeeUuid?: string;
 }
 
+export interface ActivityGroup {
+  date: string;
+  items: ActivityItem[];
+}
+
 /**
  * Transforms raw backend activity logs into grouped data for the Timeline UI.
  * Handles "Invalid Date" errors by checking timestamp validity.
