@@ -344,7 +344,7 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <HelpPopup
                   description={
-                    "This graphic shows the fluctuation in content hints by role."
+                    "This graphic shows the fluctuation in content hits by role."
                   }
                   infoOrHelp={false}
                 />
