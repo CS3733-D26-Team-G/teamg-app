@@ -73,7 +73,13 @@ export default function AboutUs() {
           onClick={() => navigate("/")}
           variant="outlined"
           size="small"
-          sx={{ position: "absolute", left: 0, top: 0 }}
+          sx={{
+            color: "white",
+            border: "1px solid white",
+            position: "absolute",
+            left: 0,
+            top: 0,
+          }}
         >
           Return to Home
         </Button>
@@ -83,6 +89,7 @@ export default function AboutUs() {
             variant="h5"
             fontWeight={600}
             mb={0.5}
+            sx={{ color: "white" }}
           >
             WPI Computer Science Department
           </Typography>
@@ -90,6 +97,7 @@ export default function AboutUs() {
             variant="h6"
             fontWeight={500}
             mb={0.5}
+            sx={{ color: "white" }}
           >
             CS3733-D26 Software Engineering
           </Typography>
@@ -97,12 +105,14 @@ export default function AboutUs() {
             variant="body1"
             color="text.secondary"
             mb={0.25}
+            sx={{ color: "white" }}
           >
             Prof. Wilson Wong
           </Typography>
           <Typography
             variant="body1"
             color="text.secondary"
+            sx={{ color: "white" }}
           >
             Team Coach: Katherine Tse
           </Typography>
@@ -197,6 +207,8 @@ export default function AboutUs() {
         <Typography
           variant="body2"
           color="black"
+          align="center"
+          sx={{ color: "white" }}
         >
           Thank you to Hanover Insurance for the opportunity to develop real
           world full-stack web development experience by allowing us to use your

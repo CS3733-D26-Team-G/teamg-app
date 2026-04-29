@@ -31,7 +31,11 @@ export default function HelpPopup({ description, infoOrHelp }: HelpPopupProps) {
       >
         {infoOrHelp ?
           <HelpOutlineIcon fontSize="medium" />
-        : <InfoIcon fontSize="medium" />}
+        : <InfoIcon
+            fontSize="medium"
+            sx={{ color: "#A9A9A9" }}
+          />
+        }
       </IconButton>
 
       <Popover
