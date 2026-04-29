@@ -22,7 +22,7 @@ export default function CarouselBackground({
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % carouselImages.length);
-    }, 8000);
+    }, 6000);
     return () => clearInterval(timer);
   }, [current]);
 

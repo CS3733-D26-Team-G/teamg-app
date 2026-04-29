@@ -8,6 +8,7 @@ import {
   Box,
 } from "@mui/material";
 import { transformBackendData } from "./activityData.ts";
+import HelpPopup from "../../components/HelpPopup.tsx";
 
 interface DashboardRecentActivityProps {
   rawLogs: any[];
@@ -59,6 +60,10 @@ export default function DashboardRecentActivity({
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
             Recent Activity
+            <HelpPopup
+              description="The Recent Activity feed shows information about the four most recent actions taken across the application. This includes the user, the time, the date, and what they did. Go to the Activity page using the side bar for a longer time line of activity!"
+              infoOrHelp={false}
+            />
           </Typography>
         }
       />

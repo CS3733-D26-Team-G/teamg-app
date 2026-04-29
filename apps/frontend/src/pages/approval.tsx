@@ -192,7 +192,10 @@ export default function ApprovalPage() {
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-            <HelpPopup description="This page shows all content submitted for admin approval. Expand each card to review the document and underwriter comments, then approve or deny." />
+            <HelpPopup
+              description="This page shows all content submitted for admin approval. Expand each card to review the document and underwriter comments, then approve or deny."
+              infoOrHelp={true}
+            />
           </Box>
         </Stack>
 
