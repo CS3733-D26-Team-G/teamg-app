@@ -141,8 +141,6 @@ function getVisibleContentWhere(
   if (isAdmin(auth)) {
     return undefined;
   }
-
-  return { for_position: auth.position };
 }
 
 function parseExternalContentUrl(url: string) {
