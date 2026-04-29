@@ -765,7 +765,6 @@ export default function ContentManagement({
               : ""
             }
             editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
-            createdAt={params.row.created_at}
             updatedAt={params.row.last_modified_time}
           />
         </Box>
