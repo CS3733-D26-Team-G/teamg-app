@@ -267,7 +267,7 @@ export default function Dashboard() {
                   variant="h6"
                   sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
                 >
-                  Employee Demographics
+                  Employee Edits (per day)
                   <HelpPopup
                     description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
                     infoOrHelp={false}
