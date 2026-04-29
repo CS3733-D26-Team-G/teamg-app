@@ -13,6 +13,7 @@ import type {
   ActivityCategory,
   ActivityRow,
   DashboardBootstrapData,
+  FileTypeCount,
   PositionCounts,
 } from "../types/activity";
 
@@ -24,6 +25,13 @@ const ACTIVITY_CACHE_OPTIONS: CacheOptions<ActivityRow[]> = {
 };
 
 const COUNTS_CACHE_OPTIONS: CacheOptions<PositionCounts> = {
+  staleTimeMs: 60_000,
+  cacheTimeMs: 10 * 60_000,
+  persist: true,
+  scope: "user",
+};
+
+const FILE_TYPE_COUNTS_CACHE_OPTIONS: CacheOptions<FileTypeCount[]> = {
   staleTimeMs: 60_000,
   cacheTimeMs: 10 * 60_000,
   persist: true,
@@ -46,6 +54,7 @@ const CACHE_KEYS = {
   },
   dashboardBootstrap: "dashboard:bootstrap",
   contentPositionCounts: "stats:content:position",
+  contentFileTypeCounts: "stats:content:file-type",
   employeeCounts: "stats:employee:count",
 } as const;
 
@@ -84,6 +93,10 @@ async function fetchContentPositionCounts() {
   return fetchJson<PositionCounts>(API_ENDPOINTS.CONTENT.COUNT_POSITION);
 }
 
+async function fetchContentFileTypeCounts() {
+  return fetchJson<FileTypeCount[]>(API_ENDPOINTS.CONTENT.COUNT_FILE_TYPE);
+}
+
 async function fetchEmployeeCounts() {
   return fetchJson<PositionCounts>(
     `${API_ENDPOINTS.ACTIVITY.replace("/activity", "")}/stats/employee/count`,
@@ -96,6 +109,7 @@ async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
     activityContent,
     activityVerbose,
     contentCounts,
+    fileTypeCounts,
     employeeCounts,
     contentList,
   ] = await Promise.all([
@@ -103,6 +117,7 @@ async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
     loadActivity("content"),
     loadActivity("verbose"),
     loadContentPositionCounts(),
+    loadContentFileTypeCounts(),
     loadEmployeeCounts(),
     loadContentList(),
   ]);
@@ -112,6 +127,7 @@ async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
     activityContent,
     activityVerbose,
     contentCounts,
+    fileTypeCounts,
     employeeCounts,
     contentList,
   };
@@ -148,6 +164,14 @@ export async function loadContentPositionCounts(): Promise<PositionCounts> {
     CACHE_KEYS.contentPositionCounts,
     fetchContentPositionCounts,
     COUNTS_CACHE_OPTIONS,
+  );
+}
+
+export async function loadContentFileTypeCounts(): Promise<FileTypeCount[]> {
+  return fetchCachedQuery(
+    CACHE_KEYS.contentFileTypeCounts,
+    fetchContentFileTypeCounts,
+    FILE_TYPE_COUNTS_CACHE_OPTIONS,
   );
 }
 

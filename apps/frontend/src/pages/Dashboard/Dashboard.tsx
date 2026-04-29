@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import DashboardRecentActivity from "../../features/dashboard/components/DashboardRecentActivity.tsx";
 import SearchBar from "../../features/dashboard/components/SearchBar.tsx";
 import PieChart from "../../features/dashboard/components/PieChart.tsx";
 import TypeBarChart from "../../features/dashboard/components/BarChart.tsx";
-import NotificationsBell from "../../features/notifications/components/NotificationBell.tsx";
-import { AppBar, Box, styled, Toolbar, Typography } from "@mui/material";
+import NotificationBell from "../../features/notifications/components/NotificationBell.tsx";
+import { Box, styled, Toolbar, Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import { CardHeader, Divider } from "@mui/material";
 import { useAuth } from "../../auth/AuthContext.tsx";
 import HelpPopup from "../../components/HelpPopup";
-import theme from "../../theme.tsx";
 import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx";
+import AdminCards from "../../features/dashboard/components/AdminCards.tsx";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
 
@@ -22,6 +22,7 @@ export default function Dashboard() {
   const rawLogs = data?.activityAll ?? [];
   const analytics = (data?.contentCounts ?? {}) as Record<string, number>;
   const employeeCounts = (data?.employeeCounts ?? {}) as Record<string, number>;
+  const fileTypeCounts = data?.fileTypeCounts ?? [];
   const employeePieData = [
     {
       id: 0,
@@ -74,13 +75,12 @@ export default function Dashboard() {
       "Underwriter": "UNDERWRITER",
       "Actuarial Analyst": "ACTUARIAL_ANALYST",
       "EXL Operations": "EXL_OPERATIONS",
-      "Business Ops Team": "BUSINESS_OP_RATING", // Matches your console log!
+      "Business Ops Team": "BUSINESS_OP_RATING",
     };
 
     return mapping[role] || role.replace(/\s+/g, "_").toUpperCase();
   };
 
-  // Role-based help descriptions
   const helpDescriptions: Record<string, string> = {
     UNDERWRITER:
       "You are an UnderWriter, please give us time to give you help.",
@@ -109,6 +109,86 @@ export default function Dashboard() {
   }));
 
   const { profile } = useProfile();
+
+  const employeeDemographicsCard = (
+    <Card
+      className="w-[420px] min-w-[420px] outline-1 outline-gray-200"
+      sx={{ margin: 0, borderRadius: 3 }}
+    >
+      <CardHeader
+        sx={{ py: 1.5, px: 2 }}
+        title={
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+          >
+            Employee Demographics
+            <HelpPopup
+              description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
+              infoOrHelp={false}
+            />
+          </Typography>
+        }
+      />
+      <Divider />
+      <CardContent className="flex items-center justify-center p-6">
+        <div className="w-full">
+          <PieChart data={employeePieData} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const fileTypesCard = (
+    <Card
+      className="outline-1 outline-gray-200"
+      sx={{ margin: 0, borderRadius: 3 }}
+    >
+      <CardHeader
+        sx={{ py: 1.5, px: 2 }}
+        title={
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+          >
+            File Types
+          </Typography>
+        }
+      />
+      <Divider />
+      <CardContent className="p-6">
+        <TypeBarChart data={fileTypeCounts} />
+      </CardContent>
+    </Card>
+  );
+
+  const popularContentSearchCard = (
+    <Card
+      className="outline-1 outline-gray-200"
+      sx={{ margin: 0, borderRadius: 3 }}
+    >
+      <CardHeader
+        sx={{ py: 1.5, px: 2 }}
+        title={
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+          >
+            Popular Content Search
+          </Typography>
+        }
+      />
+      <Divider />
+      <CardContent className="p-6">
+        <Typography
+          variant="body2"
+          color="text.secondary"
+        >
+          No popular search data available yet.
+        </Typography>
+      </CardContent>
+    </Card>
+  );
 
   if (loading && !data) {
     return (
@@ -140,6 +220,7 @@ export default function Dashboard() {
           background:
             "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
           overflow: "hidden",
+          position: "relative",
         }}
       >
         <div className="flex justify-between items-center px-8 py-6">
@@ -168,7 +249,7 @@ export default function Dashboard() {
               description={helpText}
               infoOrHelp={true}
             />
-            <NotificationsBell />
+            <NotificationBell />
             <div className="w-80">
               <SearchBar setSearchQuery={setSearchQuery} />
             </div>
@@ -176,53 +257,23 @@ export default function Dashboard() {
         </div>
       </StyledToolbar>
       <Card
-        className="flex flex-col h-auto m-auto max-w-0.95 mr-2 mb-2"
+        className="m-auto mr-2 mb-2 flex h-auto min-h-[95vh] flex-col"
         sx={{ borderRadius: 3 }}
       >
         <CardContent
-          className="flex flex-col gap-5 bg-gray-100 mr-1"
+          className="mr-1 flex flex-col gap-5 bg-gray-100"
           sx={{ padding: 5, minHeight: "88vh" }}
         >
-          <div className="flex flex-row gap-5 items-stretch ">
-            <Card
-              className="flex-none w-fit outline-1 outline-gray-200 drop-shadow-lg"
-              sx={{
-                margin: 0,
-                borderRadius: 3,
-              }}
-            >
-              <CardHeader
-                className="bg-white"
-                sx={{ py: 1.5, px: 2 }}
-                title={
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
-                  >
-                    Employee Demographics
-                    <HelpPopup
-                      description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
-                      infoOrHelp={false}
-                    />
-                  </Typography>
-                }
-              />
-              <Divider />
-              <CardContent className="h-full flex items-contain justify-center p-6 bg-white">
-                <div className="w-100">
-                  <PieChart data={employeePieData} />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity: Grows to fill width and matches height */}
-            <div className="flex-1 min-w-125">
+          <div className="flex flex-row gap-8 items-start">
+            <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
+              {employeeDemographicsCard}
+            </div>
+            <div className="flex-1 min-w-[500px]">
               <DashboardRecentActivity rawLogs={rawLogs} />
             </div>
           </div>
 
-          {/* Second Row for Bar Chart */}
-          <div className="w-full flex flex-row gap-6">
+          <div className="flex flex-row gap-8 items-start">
             {roles.map((role) => {
               const key = getAnalyticsKey(role);
               const count = analytics[key] ?? 0;
@@ -230,8 +281,7 @@ export default function Dashboard() {
               return (
                 <Card
                   key={role}
-                  className="flex-1 drop-shadow-lg outline-1 outline-gray-200"
-                  onClick={() => console.log(analytics)}
+                  className="flex-1 outline-1 outline-gray-200"
                   sx={{ borderRadius: 3 }}
                 >
                   <CardContent className="p-4">
@@ -265,29 +315,50 @@ export default function Dashboard() {
             })}
           </div>
 
-          <div className="w-full flex flex-row gap-6">
+          {session?.position === "ADMIN" && (
+            <div className="flex flex-row gap-8 items-start">
+              <AdminCards />
+              <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
+                {fileTypesCard}
+                {popularContentSearchCard}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-row gap-8 items-start">
+            {session?.position !== "ADMIN" && (
+              <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
+                {fileTypesCard}
+                {popularContentSearchCard}
+              </div>
+            )}
+
             <Card
-              sx={{ borderRadius: 6 }}
-              className="flex-1 flex-col drop-shadow-lg"
+              className="flex-1 outline-1 outline-gray-200"
+              sx={{ margin: 0, borderRadius: 3 }}
             >
+              <CardHeader
+                sx={{ py: 1.5, px: 2 }}
+                title={
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+                  >
+                    Employee Edits By Day
+                    <HelpPopup
+                      description={
+                        "This graphic shows the fluctuation in content hits by role."
+                      }
+                      infoOrHelp={false}
+                    />
+                  </Typography>
+                }
+              />
+              <Divider />
               <CardContent className="p-6">
-                <HelpPopup
-                  description={
-                    "This graphic shows the fluctuation in content hits by role."
-                  }
-                  infoOrHelp={false}
-                />
                 <HitsLineChart />
               </CardContent>
             </Card>
-            {/*<Card*/}
-            {/*  sx={{ borderRadius: 6 }}*/}
-            {/*  className="flex-1 flex-col drop-shadow-lg"*/}
-            {/*>*/}
-            {/*  /!*<CardContent className="p-6">*!/*/}
-            {/*  /!*  <TypeBarChart/>*!/*/}
-            {/*  /!*</CardContent>*!/*/}
-            {/*</Card>*/}
           </div>
         </CardContent>
       </Card>

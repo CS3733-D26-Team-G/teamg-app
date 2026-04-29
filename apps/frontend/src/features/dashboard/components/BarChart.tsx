@@ -18,6 +18,7 @@ const FILE_TYPE_COLORS = [
   "#721b31",
   "#74414e",
 ];
+
 function normalizeFileType(
   type: string,
 ): (typeof FILE_TYPE_ORDER)[number] | null {
@@ -58,13 +59,14 @@ export default function TypeBarChart({ data }: ChartProps) {
       ppt: 0,
     },
   );
+
   for (const item of data) {
     const normalizedType = normalizeFileType(item.type);
-
     if (normalizedType) {
       totals[normalizedType] += item.count;
     }
   }
+
   const chartData = FILE_TYPE_ORDER.map((type) => ({
     type,
     count: totals[type],
@@ -74,14 +76,14 @@ export default function TypeBarChart({ data }: ChartProps) {
     <BarChart
       dataset={chartData}
       height={240}
-      margin={{ top: 16, right: 16, bottom: 24, left: 40 }}
+      margin={{ top: 16, right: 18, bottom: 24, left: 14 }}
       xAxis={[
         {
           scaleType: "band",
           dataKey: "type",
           colorMap: {
             type: "ordinal",
-            values: [20, 15, 30, 40, 20, 13],
+            values: [...FILE_TYPE_ORDER],
             colors: FILE_TYPE_COLORS,
           },
         },

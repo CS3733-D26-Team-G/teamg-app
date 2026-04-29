@@ -21,6 +21,9 @@ export const API_ENDPOINTS = {
     AVATAR: `${API_BASE_URL}/profile/avatar`,
   },
   ACCOUNT_SETTINGS: `${API_BASE_URL}/account-settings`,
+  STATS: {
+    ACTIVITY_ACTION_SUMMARY: `${API_BASE_URL}/stats/activity/action-summary`,
+  },
   EMPLOYEE: {
     ROOT: `${API_BASE_URL}/employee`,
     CREATE: `${API_BASE_URL}/employee/create`,
@@ -39,6 +42,8 @@ export const API_ENDPOINTS = {
     ROOT: `${API_BASE_URL}/content`,
     CREATE: `${API_BASE_URL}/content/create`,
     COUNT_POSITION: `${API_BASE_URL}/stats/content/count/position`,
+    COUNT_FILE_TYPE: `${API_BASE_URL}/stats/content/count/file-type`,
+    COUNT_EDIT_HITS_BY_ROLE: `${API_BASE_URL}/stats/content/edit-hits-by-role`,
     VIEW: (uuid: string) => `${API_BASE_URL}/content/view/${uuid}`,
     FAVORITE: (uuid: string) => `${API_BASE_URL}/content/favorite/${uuid}`,
     EDIT: (uuid: string) => `${API_BASE_URL}/content/edit/${uuid}`,

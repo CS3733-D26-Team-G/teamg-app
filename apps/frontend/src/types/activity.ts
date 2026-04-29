@@ -24,11 +24,17 @@ export interface ActivityRow {
 
 export type PositionCounts = Record<Position, number>;
 
+export interface FileTypeCount {
+  type: string;
+  count: number;
+}
+
 export interface DashboardBootstrapData {
   activityAll: ActivityRow[];
   activityContent: ActivityRow[];
   activityVerbose: ActivityRow[];
   contentCounts: PositionCounts;
+  fileTypeCounts: FileTypeCount[];
   employeeCounts: PositionCounts;
   contentList: ContentRow[];
 }
