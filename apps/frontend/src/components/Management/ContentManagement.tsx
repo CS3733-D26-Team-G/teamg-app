@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import {
   IconButton,
@@ -156,6 +162,8 @@ export default function ContentManagement({
   const isDark = theme.palette.mode === "dark";
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
+  const skipLockReleaseRef = useRef(false);
+  const returningToEditorRef = useRef(false);
 
   const displayFileType = (fileType: string) =>
     fileTypeLabels[fileType] ?? fileType;
@@ -439,7 +447,7 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
-        if (isExisting) {
+        if (isExisting && !returningToEditorRef.current) {
           await releaseLock(uuid);
         } else {
           const data = (await res.json()) as { uuid: string };
@@ -454,6 +462,12 @@ export default function ContentManagement({
   };
 
   const handleCloseFormModal = async () => {
+    if (returningToEditorRef.current) {
+      returningToEditorRef.current = false;
+      setViewState(null);
+      setEditorOpen(true); // reopen editor without re-fetching
+      return;
+    }
     if (viewState !== null && viewState !== "new") {
       await releaseLock(viewState.uuid);
     }
@@ -1409,18 +1423,37 @@ export default function ContentManagement({
       </Dialog>
 
       {/* ── Document Editor Modal — opened via Edit button when checked out ── */}
-      {editorOpen && selectedDoc && (
-        <DocumentEditorModal
-          open={editorOpen}
-          onClose={() => setEditorOpen(false)}
-          uri={selectedDoc.uri}
-          fileName={selectedDoc.fileName}
-          uuid={selectedDoc.uuid}
-          contentRow={rows.find((r) => r.uuid === selectedDoc.uuid)!}
-          onSaved={() => void fetchRows()}
-          readOnly={false}
-        />
-      )}
+      {editorOpen &&
+        selectedDoc &&
+        (() => {
+          const editorRow = rows.find((r) => r.uuid === selectedDoc.uuid);
+          if (!editorRow) return null;
+          return (
+            <DocumentEditorModal
+              open={editorOpen}
+              onClose={() => {
+                if (!skipLockReleaseRef.current) {
+                  void releaseLock(selectedDoc.uuid);
+                }
+                skipLockReleaseRef.current = false;
+                setEditorOpen(false);
+              }}
+              uri={selectedDoc.uri}
+              fileName={selectedDoc.fileName}
+              uuid={selectedDoc.uuid}
+              contentRow={rows.find((r) => r.uuid === selectedDoc.uuid)!}
+              onSaved={() => void fetchRows()}
+              readOnly={false}
+              onDelete={() => editorRow && handleDelete(editorRow)}
+              onOpenForm={() => {
+                returningToEditorRef.current = true;
+                skipLockReleaseRef.current = true;
+                setEditorOpen(false);
+                setViewState(editorRow);
+              }}
+            />
+          );
+        })()}
       {confirmationDialogs}
     </Box>
   );
