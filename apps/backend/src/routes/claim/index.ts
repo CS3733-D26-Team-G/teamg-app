@@ -1,158 +1,23 @@
 import express from "express";
-import { prisma, Prisma } from "@repo/db";
-import { Schemas } from "@repo/zod";
-import { z } from "zod";
-import { getAuth, isAdmin, sendInternalError } from "../lib/request.ts";
-import { logger } from "../logger.ts";
+import { prisma } from "@repo/db";
+import { getAuth, sendInternalError } from "../../lib/request.ts";
+import { logger } from "../../logger.ts";
+import {
+  ClaimCreateSchema,
+  ClaimUpdateSchema,
+  claimInclude,
+} from "./schemas.ts";
+import {
+  findAccessibleClaim,
+  findMissingContentUuids,
+  getClaimUpdateData,
+  getClaimVisibilityWhere,
+  normalizeContentUuids,
+  parseClaimUuid,
+  serializeClaim,
+} from "./utils.ts";
 
 const router = express.Router();
-
-const ClaimParamsSchema =
-  Schemas.InsuranceClaimWhereUniqueInputObjectZodSchema.extend({
-    uuid: z.uuid(),
-  });
-
-const ClaimCreateSchema =
-  Schemas.InsuranceClaimCreateManyInputObjectZodSchema.omit({
-    uuid: true,
-    requestorEmployeeUuid: true,
-    createdAt: true,
-    updatedAt: true,
-  }).extend({
-    contentUuids: z.array(z.uuid()).default([]),
-  });
-
-const ClaimUpdateSchema =
-  Schemas.InsuranceClaimUpdateManyMutationInputObjectZodSchema.omit({
-    uuid: true,
-    createdAt: true,
-    updatedAt: true,
-  }).extend({
-    contentUuids: z.array(z.uuid()).optional(),
-  });
-
-const claimInclude = {
-  requestor: {
-    select: {
-      uuid: true,
-      first_name: true,
-      last_name: true,
-      corporate_email: true,
-    },
-  },
-  contents: {
-    orderBy: {
-      createdAt: "asc",
-    },
-    include: {
-      content: {
-        select: {
-          uuid: true,
-          title: true,
-          url: true,
-          file_type: true,
-          content_type: true,
-          status: true,
-        },
-      },
-    },
-  },
-} satisfies Prisma.InsuranceClaimInclude;
-
-type Auth = NonNullable<Express.Request["auth"]>;
-type ClaimWithRelations = Prisma.InsuranceClaimGetPayload<{
-  include: typeof claimInclude;
-}>;
-type ClaimUpdatePayload = z.infer<typeof ClaimUpdateSchema>;
-
-function parseClaimUuid(
-  req: express.Request,
-  res: express.Response,
-  invalidMessage: string,
-) {
-  const params = ClaimParamsSchema.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ message: invalidMessage });
-    return null;
-  }
-
-  return params.data.uuid;
-}
-
-function getClaimVisibilityWhere(auth: Auth): Prisma.InsuranceClaimWhereInput {
-  if (isAdmin(auth)) {
-    return {};
-  }
-
-  return {
-    requestorEmployeeUuid: auth.employeeUuid,
-  };
-}
-
-// ── KEY FIX: status is now included in the serialized output ──────────────────
-function serializeClaim(claim: ClaimWithRelations) {
-  return {
-    uuid: claim.uuid,
-    requestorEmployeeUuid: claim.requestorEmployeeUuid,
-    incident_date: claim.incident_date,
-    claim_type: claim.claim_type,
-    incident_description: claim.incident_description,
-    status: claim.status, // was missing — caused both queue pages to fail
-    createdAt: claim.createdAt,
-    updatedAt: claim.updatedAt,
-    requestor: claim.requestor,
-    contents: claim.contents.map(({ content }) => content),
-  };
-}
-
-async function findMissingContentUuids(contentUuids: string[]) {
-  if (contentUuids.length === 0) {
-    return [];
-  }
-
-  const existingContents = await prisma.content.findMany({
-    where: {
-      uuid: {
-        in: contentUuids,
-      },
-    },
-    select: {
-      uuid: true,
-    },
-  });
-
-  const existingContentUuidSet = new Set(
-    existingContents.map(({ uuid }) => uuid),
-  );
-
-  return contentUuids.filter((uuid) => !existingContentUuidSet.has(uuid));
-}
-
-async function findAccessibleClaim(uuid: string, auth: Auth) {
-  const claim = await prisma.insuranceClaim.findUnique({
-    where: { uuid },
-    include: claimInclude,
-  });
-
-  if (!claim) {
-    return { kind: "missing" as const };
-  }
-
-  if (!isAdmin(auth) && claim.requestorEmployeeUuid !== auth.employeeUuid) {
-    return { kind: "forbidden" as const };
-  }
-
-  return { kind: "ok" as const, claim };
-}
-
-function normalizeContentUuids(contentUuids: string[]) {
-  return [...new Set(contentUuids)];
-}
-
-function getClaimUpdateData(payload: ClaimUpdatePayload) {
-  const { contentUuids: _contentUuids, ...data } = payload;
-  return data;
-}
 
 router.get("/", async (req, res) => {
   const auth = getAuth(req);

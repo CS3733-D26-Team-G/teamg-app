@@ -1,7 +1,7 @@
 import express from "express";
 import { prisma } from "@repo/db";
-import { logger } from "../logger.ts";
-import { getAuth, isAdmin, sendInternalError } from "../lib/request.ts";
+import { logger } from "../../logger.ts";
+import { getAuth, isAdmin, sendInternalError } from "../../lib/request.ts";
 
 const router = express.Router();
 /**

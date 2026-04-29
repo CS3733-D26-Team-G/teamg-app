@@ -1,11 +1,14 @@
 import express from "express";
 import { prisma } from "@repo/db";
-import { getAuth, sendInternalError } from "../lib/request.ts";
-import { logger } from "../logger.ts";
+import { getAuth, sendInternalError } from "../../lib/request.ts";
+import { logger } from "../../logger.ts";
 import multer from "multer";
 import mime from "mime-types";
-import { supabase } from "../lib/supabase.ts";
-import { buildAvatarPath, getAvatarBucketName } from "../lib/avatar-storage.ts";
+import { supabase } from "../../lib/supabase.ts";
+import {
+  buildAvatarPath,
+  getAvatarBucketName,
+} from "../../lib/avatar-storage.ts";
 
 const router = express.Router();
 const upload = multer({
@@ -37,8 +40,6 @@ router.get("/", async (req, res) => {
     );
   }
 });
-
-export default router;
 
 router.put("/avatar", upload.single("avatar"), async (req, res) => {
   const auth = getAuth(req);
@@ -132,3 +133,5 @@ router.put("/avatar", upload.single("avatar"), async (req, res) => {
     );
   }
 });
+
+export default router;

@@ -1,9 +1,9 @@
 import express from "express";
 import { prisma, Prisma } from "@repo/db";
 import { Schemas } from "@repo/zod";
-import { requireAdmin, sendInternalError } from "../lib/request.ts";
-import { logger } from "../logger.ts";
-import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import { requireAdmin, sendInternalError } from "../../lib/request.ts";
+import { logger } from "../../logger.ts";
+import { INTERNAL_ERROR_MESSAGE } from "../../config.ts";
 
 const router = express.Router();
 

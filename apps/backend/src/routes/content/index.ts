@@ -1,19 +1,42 @@
 import express from "express";
-import { Position, prisma, Prisma } from "@repo/db";
+import { prisma, Prisma } from "@repo/db";
 import multer from "multer";
-import { supabase } from "../lib/supabase.ts";
-import { Schemas } from "@repo/zod";
 import { randomUUID } from "crypto";
-import mime from "mime-types";
-import { z } from "zod";
-import { logger } from "../logger.ts";
-import { STORAGE_BUCKET, INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import { logger } from "../../logger.ts";
+import { STORAGE_BUCKET, INTERNAL_ERROR_MESSAGE } from "../../config.ts";
 import {
   canManagePosition,
   getAuth,
   isAdmin,
   sendInternalError,
-} from "../lib/request.ts";
+} from "../../lib/request.ts";
+import { supabase } from "../../lib/supabase.ts";
+import {
+  CreateContentSchema,
+  CreateTagSchema,
+  FavoriteContentSchema,
+  RegenerateContentLinkSchema,
+  UpdateContentSchema,
+} from "./schemas.ts";
+import {
+  createOrRefreshLock,
+  findActiveLock,
+  findContentByUuid,
+  findTagByUuid,
+  getVisibleContentWhere,
+  loadAccessibleContent,
+  normalizeTagName,
+  parseContentFilters,
+  parseContentUuid,
+  parseTagContentUuids,
+  parseTagUuid,
+  rejectIfLockedByAnotherUser,
+  resolveContentUrl,
+  resolvePositionValue,
+  serializeLock,
+  validateProvidedUrl,
+  validateTagUuids,
+} from "./utils.ts";
 
 const router = express.Router();
 
@@ -24,584 +47,6 @@ const upload = multer({
     files: 1,
   },
 });
-
-const ParamsSchema = Schemas.ContentWhereUniqueInputObjectZodSchema.extend({
-  uuid: z.uuid(),
-});
-
-const TagParamsSchema = z.object({
-  uuid: z.uuid(),
-});
-
-const TagContentParamsSchema = z.object({
-  tagUuid: z.uuid(),
-  contentUuid: z.uuid(),
-});
-
-const TagUuidListSchema = z
-  .preprocess((value) => {
-    if (typeof value === "undefined") {
-      return [];
-    }
-
-    return Array.isArray(value) ? value : [value];
-  }, z.array(z.uuid()))
-  .transform((tagUuids) => Array.from(new Set(tagUuids)));
-
-const CreateContentSchema = Schemas.ContentCreateInputObjectZodSchema.extend({
-  url: z.string().optional(),
-  tagUuids: TagUuidListSchema,
-});
-
-const UpdateContentSchema = Schemas.ContentUpdateInputObjectZodSchema.omit({
-  uuid: true,
-})
-  .partial()
-  .extend({
-    url: z.string().optional(),
-    tagUuids: TagUuidListSchema,
-  });
-
-const FavoriteContentSchema = z.object({
-  isFavorite: z.boolean(),
-});
-
-const RegenerateContentLinkSchema = z.object({
-  expiration_time: z.coerce.date(),
-});
-
-const CreateTagSchema = z.object({
-  name: z.string(),
-});
-
-const ContentFilterFieldSchema = z.enum([
-  "expiration_time",
-  "last_modified_time",
-  "status",
-  "content_type",
-  "for_position",
-  "title",
-  "content_owner",
-  "file_type",
-]);
-
-const ContentFilterOperatorSchema = z.enum([
-  "eq",
-  "neq",
-  "lt",
-  "lte",
-  "gt",
-  "gte",
-]);
-
-const ContentFilterSchema = z.object({
-  field: ContentFilterFieldSchema,
-  op: ContentFilterOperatorSchema,
-  value: z.unknown(),
-});
-
-const contentLockInclude = {
-  lockedByEmp: {
-    select: {
-      uuid: true,
-      first_name: true,
-      last_name: true,
-      corporate_email: true,
-    },
-  },
-} satisfies Prisma.ContentEditLockInclude;
-
-type UploadResult =
-  | { ok: true; url: string; supabasePath?: string }
-  | { ok: false; status: number; message: string };
-
-type ContentFilter = z.infer<typeof ContentFilterSchema>;
-type ContentFilterField = z.infer<typeof ContentFilterFieldSchema>;
-type SupportedContentField =
-  | "expiration_time"
-  | "last_modified_time"
-  | "status"
-  | "content_type"
-  | "for_position"
-  | "title"
-  | "content_owner"
-  | "file_type";
-
-const contentDateFilterFields = new Set<ContentFilterField>([
-  "expiration_time",
-  "last_modified_time",
-]);
-
-const contentFieldValueSchemas = {
-  expiration_time: z.coerce.date(),
-  last_modified_time: z.coerce.date(),
-  status: Schemas.ContentStatusSchema,
-  content_type: Schemas.ContentTypeSchema,
-  for_position: Schemas.PositionSchema,
-  title: z.string(),
-  content_owner: z.string(),
-  file_type: z.string(),
-} satisfies Record<SupportedContentField, z.ZodType>;
-
-function getExpiresInSeconds(expirationTime: Date): number {
-  return Math.floor((expirationTime.getTime() - Date.now()) / 1000);
-}
-
-function getVisibleContentWhere(
-  auth: NonNullable<Express.Request["auth"]>,
-): Prisma.ContentWhereInput | undefined {
-  if (isAdmin(auth)) {
-    return undefined;
-  }
-}
-
-function parseExternalContentUrl(url: string) {
-  const parsed = z
-    .url({
-      protocol: /^https?$/,
-      hostname: z.regexes.domain,
-    })
-    .safeParse(url);
-
-  if (!parsed.success) {
-    return null;
-  }
-
-  return new URL(parsed.data);
-}
-
-function validateProvidedUrl(url: string | undefined) {
-  if (!url) {
-    return { ok: true as const };
-  }
-
-  const parsedUrl = parseExternalContentUrl(url);
-  if (!parsedUrl) {
-    return {
-      ok: false as const,
-      message: "URL must be a valid HTTP or HTTPS URL",
-    };
-  }
-
-  return { ok: true as const, normalizedUrl: parsedUrl.toString() };
-}
-
-function resolvePositionValue(
-  position:
-    | Position
-    | Prisma.EnumPositionFieldUpdateOperationsInput
-    | undefined
-    | null,
-): Position | null {
-  if (!position) {
-    return null;
-  }
-
-  if (typeof position === "string") {
-    return position;
-  }
-
-  return position.set ?? null;
-}
-
-async function validateTagUuids(tagUuids: string[]) {
-  if (tagUuids.length === 0) {
-    return { ok: true as const, tagUuids };
-  }
-
-  const matchingTags = await prisma.contentTag.findMany({
-    where: {
-      uuid: {
-        in: tagUuids,
-      },
-    },
-    select: {
-      uuid: true,
-    },
-  });
-
-  if (matchingTags.length !== tagUuids.length) {
-    const validTagUuids = new Set(matchingTags.map((tag) => tag.uuid));
-    const missingTagUuids = tagUuids.filter(
-      (tagUuid) => !validTagUuids.has(tagUuid),
-    );
-
-    return {
-      ok: false as const,
-      missingTagUuids,
-    };
-  }
-
-  return { ok: true as const, tagUuids };
-}
-
-function serializeLock(lock: ActiveContentLock) {
-  return {
-    content_uuid: lock.contentUuid,
-    locked_by_emp_uuid: lock.lockedByEmpUuid,
-    locked_at: lock.lockedAt,
-    locked_by: {
-      uuid: lock.lockedByEmp.uuid,
-      first_name: lock.lockedByEmp.first_name,
-      last_name: lock.lockedByEmp.last_name,
-      corporate_email: lock.lockedByEmp.corporate_email,
-    },
-  };
-}
-
-function parseContentUuid(
-  req: express.Request,
-  res: express.Response,
-  invalidMessage: string,
-) {
-  const params = ParamsSchema.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ message: invalidMessage });
-    return null;
-  }
-
-  return params.data.uuid;
-}
-
-function parseTagUuid(
-  req: express.Request,
-  res: express.Response,
-  invalidMessage: string,
-) {
-  const params = TagParamsSchema.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ message: invalidMessage });
-    return null;
-  }
-
-  return params.data.uuid;
-}
-
-function parseTagContentUuids(req: express.Request, res: express.Response) {
-  const params = TagContentParamsSchema.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ message: "Invalid tag or content UUID" });
-    return null;
-  }
-
-  return params.data;
-}
-
-function normalizeTagName(name: string) {
-  const trimmedName = name.trim();
-  return {
-    name: trimmedName,
-    normalizedName: trimmedName.toLowerCase(),
-  };
-}
-
-async function findContentByUuid(uuid: string) {
-  return prisma.content.findUnique({
-    where: { uuid },
-  });
-}
-
-async function findTagByUuid(uuid: string) {
-  return prisma.contentTag.findUnique({
-    where: { uuid },
-  });
-}
-
-async function findActiveLock(uuid: string) {
-  return prisma.contentEditLock.findUnique({
-    where: { contentUuid: uuid },
-    include: contentLockInclude,
-  });
-}
-
-function parseContentFilters(
-  query: express.Request["query"],
-):
-  | { ok: true; filters: Prisma.ContentWhereInput[] }
-  | { ok: false; message: string } {
-  const rawFilters = query.filter;
-
-  if (typeof rawFilters === "undefined") {
-    return { ok: true, filters: [] };
-  }
-
-  const filterValues = Array.isArray(rawFilters) ? rawFilters : [rawFilters];
-  const filters: Prisma.ContentWhereInput[] = [];
-
-  for (const rawFilter of filterValues) {
-    if (typeof rawFilter !== "string") {
-      return {
-        ok: false,
-        message:
-          "Each filter query parameter must be a JSON stringified object",
-      };
-    }
-
-    let parsedJson: unknown;
-    try {
-      parsedJson = JSON.parse(rawFilter);
-    } catch {
-      return {
-        ok: false,
-        message: "Invalid filter JSON in query parameter",
-      };
-    }
-
-    const parsedFilter = ContentFilterSchema.safeParse(parsedJson);
-    if (!parsedFilter.success) {
-      return {
-        ok: false,
-        message: "Invalid content filter definition",
-      };
-    }
-
-    const clause = buildContentFilterClause(parsedFilter.data);
-    if (!clause.ok) {
-      return clause;
-    }
-
-    filters.push(clause.filter);
-  }
-
-  return { ok: true, filters };
-}
-
-function buildContentFilterClause(
-  filter: ContentFilter,
-):
-  | { ok: true; filter: Prisma.ContentWhereInput }
-  | { ok: false; message: string } {
-  if (
-    !contentDateFilterFields.has(filter.field) &&
-    ["lt", "lte", "gt", "gte"].includes(filter.op)
-  ) {
-    return {
-      ok: false,
-      message: `Operator ${filter.op} is only supported for date filters`,
-    };
-  }
-
-  const fieldSchema = contentFieldValueSchemas[filter.field];
-  const parsedValue = fieldSchema.safeParse(filter.value);
-  if (!parsedValue.success) {
-    return {
-      ok: false,
-      message: `Invalid value for content filter field ${filter.field}`,
-    };
-  }
-
-  const value = parsedValue.data;
-
-  switch (filter.op) {
-    case "eq":
-      return { ok: true, filter: { [filter.field]: value } };
-    case "neq":
-      return { ok: true, filter: { [filter.field]: { not: value } } };
-    case "lt":
-      return { ok: true, filter: { [filter.field]: { lt: value } } };
-    case "lte":
-      return { ok: true, filter: { [filter.field]: { lte: value } } };
-    case "gt":
-      return { ok: true, filter: { [filter.field]: { gt: value } } };
-    case "gte":
-      return { ok: true, filter: { [filter.field]: { gte: value } } };
-  }
-}
-
-type ActiveContentLock = NonNullable<
-  Awaited<ReturnType<typeof findActiveLock>>
->;
-
-async function loadAccessibleContent(
-  uuid: string,
-  auth: NonNullable<Express.Request["auth"]>,
-  res: express.Response,
-  options?: {
-    notFoundStatus?: number;
-    notFoundMessage?: string;
-    unauthorizedStatus?: number;
-    logUnauthorized?: boolean;
-  },
-) {
-  const content = await findContentByUuid(uuid);
-  if (!content) {
-    res
-      .status(options?.notFoundStatus ?? 400)
-      .json({ message: options?.notFoundMessage ?? "Invalid content UUID" });
-    return null;
-  }
-
-  if (!canManagePosition(auth, content.for_position)) {
-    if (options?.logUnauthorized) {
-      logger.warn(
-        `Rejected Content request for record ${uuid}: target position ${content.for_position}, user position ${auth.position}`,
-      );
-    }
-    res
-      .status(options?.unauthorizedStatus ?? 401)
-      .json({ message: "Unauthorized" });
-    return null;
-  }
-
-  return content;
-}
-
-async function rejectIfLockedByAnotherUser(
-  uuid: string,
-  auth: NonNullable<Express.Request["auth"]>,
-  res: express.Response,
-) {
-  const lock = await findActiveLock(uuid);
-  if (!lock || lock.lockedByEmpUuid === auth.employeeUuid || isAdmin(auth)) {
-    return false;
-  }
-
-  res.status(409).json({
-    message: "Content is currently locked by another user",
-    lock: serializeLock(lock),
-  });
-  return true;
-}
-
-async function createOrRefreshLock(
-  uuid: string,
-  auth: NonNullable<Express.Request["auth"]>,
-  existingLock: ActiveContentLock | null,
-) {
-  if (!existingLock) {
-    return prisma.contentEditLock.create({
-      data: {
-        contentUuid: uuid,
-        lockedByEmpUuid: auth.employeeUuid,
-      },
-      include: contentLockInclude,
-    });
-  }
-
-  return prisma.contentEditLock.update({
-    where: { contentUuid: uuid },
-    data: {
-      lockedByEmpUuid: auth.employeeUuid,
-      lockedAt: new Date(),
-    },
-    include: contentLockInclude,
-  });
-}
-
-async function resolveContentUrl({
-  file,
-  uuid,
-  expirationTime,
-  providedUrl,
-  fallbackUrl,
-  fallbackSupabasePath,
-  upsert,
-}: {
-  file?: Express.Multer.File;
-  uuid: string;
-  expirationTime: Date;
-  providedUrl?: string | null;
-  fallbackUrl?: string | null;
-  fallbackSupabasePath?: string | null;
-  upsert: boolean;
-}): Promise<UploadResult> {
-  if (!file) {
-    if (providedUrl) {
-      return { ok: true, url: providedUrl };
-    }
-
-    if (fallbackSupabasePath) {
-      const expiresIn = getExpiresInSeconds(expirationTime);
-      if (expiresIn < 0) {
-        return {
-          ok: false,
-          status: 400,
-          message: "Expiration time must be in the future!",
-        };
-      }
-
-      const signedUrlResult = await supabase.storage
-        .from(STORAGE_BUCKET)
-        .createSignedUrl(fallbackSupabasePath, expiresIn);
-
-      if (!signedUrlResult.data) {
-        logger.error(
-          `Failed to create signed URL for existing content ${uuid} at path ${fallbackSupabasePath}: ${signedUrlResult.error?.message}`,
-        );
-        return {
-          ok: false,
-          status: 500,
-          message: signedUrlResult.error?.message ?? INTERNAL_ERROR_MESSAGE,
-        };
-      }
-
-      return {
-        ok: true,
-        url: signedUrlResult.data.signedUrl,
-        supabasePath: fallbackSupabasePath,
-      };
-    }
-
-    const url = providedUrl ?? fallbackUrl;
-    if (!url) {
-      return {
-        ok: false,
-        status: 500,
-        message: INTERNAL_ERROR_MESSAGE,
-      };
-    }
-
-    return { ok: true, url };
-  }
-
-  const expiresIn = getExpiresInSeconds(expirationTime);
-  if (expiresIn < 0) {
-    return {
-      ok: false,
-      status: 400,
-      message: "Expiration time must be in the future!",
-    };
-  }
-
-  const uploadResult = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .upload(`content/${uuid}.${mime.extension(file.mimetype)}`, file.buffer, {
-      contentType: file.mimetype,
-      upsert,
-    });
-
-  if (!uploadResult.data) {
-    logger.error(
-      `Failed to upload file to Supabase Storage for content ${uuid}: ${uploadResult.error?.message}`,
-    );
-    return {
-      ok: false,
-      status: 500,
-      message: uploadResult.error?.message ?? INTERNAL_ERROR_MESSAGE,
-    };
-  }
-
-  const signedUrlResult = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .createSignedUrl(uploadResult.data.path, expiresIn);
-
-  if (!signedUrlResult.data) {
-    logger.error(
-      `Failed to create signed URL for content ${uuid} at path ${uploadResult.data.path}: ${signedUrlResult.error?.message}`,
-    );
-    return {
-      ok: false,
-      status: 500,
-      message: signedUrlResult.error?.message ?? INTERNAL_ERROR_MESSAGE,
-    };
-  }
-
-  return {
-    ok: true,
-    url: signedUrlResult.data.signedUrl,
-    supabasePath: uploadResult.data.path,
-  };
-}
 
 router.get("/", async (req, res) => {
   const auth = getAuth(req);
@@ -680,231 +125,6 @@ router.get("/", async (req, res) => {
     return sendInternalError(
       res,
       `Failed to query Content table for ${gettingContent} records`,
-      e,
-    );
-  }
-});
-
-router.get("/tag", async (req, res) => {
-  getAuth(req);
-
-  logger.verbose("Querying content tag table for all content tags");
-  const tags = await prisma.contentTag.findMany({
-    select: {
-      uuid: true,
-      name: true,
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
-  if (!tags) {
-    return sendInternalError(
-      res,
-      "Failed to query content tag table",
-      new Error(),
-    );
-  }
-  return res.status(200).json(tags);
-});
-
-router.post("/tag/create", async (req, res) => {
-  const auth = getAuth(req);
-  if (!isAdmin(auth)) {
-    logger.warn(
-      `Rejected content tag create request from user with position ${auth.position}`,
-    );
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const parsed = CreateTagSchema.safeParse(req.body);
-  if (!parsed.success) {
-    logger.verbose(
-      `Failed to parse Content tag create request body:\n${parsed.error.issues}`,
-    );
-    return res.status(400).json({ message: parsed.error.issues });
-  }
-
-  const normalizedTag = normalizeTagName(parsed.data.name);
-  if (!normalizedTag.name) {
-    return res.status(400).json({ message: "Tag name cannot be blank" });
-  }
-
-  try {
-    const tag = await prisma.contentTag.create({
-      data: normalizedTag,
-    });
-
-    return res.status(201).json(tag);
-  } catch (e) {
-    if (
-      e instanceof Prisma.PrismaClientKnownRequestError &&
-      e.code === "P2002"
-    ) {
-      return res.status(409).json({ message: "Tag name already exists" });
-    }
-
-    return sendInternalError(res, "Failed to create content tag", e);
-  }
-});
-
-router.post("/tag/delete/:uuid", async (req, res) => {
-  const uuid = parseTagUuid(req, res, "Invalid tag UUID");
-  if (!uuid) {
-    return;
-  }
-
-  const auth = getAuth(req);
-  if (!isAdmin(auth)) {
-    logger.warn(
-      `Rejected content tag delete request from user with position ${auth.position}`,
-    );
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    const tag = await prisma.contentTag.delete({
-      where: { uuid },
-    });
-
-    return res.status(200).json(tag);
-  } catch (e) {
-    if (
-      e instanceof Prisma.PrismaClientKnownRequestError &&
-      e.code === "P2025"
-    ) {
-      return res.status(404).json({ message: "Tag not found" });
-    }
-
-    return sendInternalError(res, `Failed to delete content tag ${uuid}`, e);
-  }
-});
-
-router.post("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
-  const params = parseTagContentUuids(req, res);
-  if (!params) {
-    return;
-  }
-
-  const auth = getAuth(req);
-
-  try {
-    const tag = await findTagByUuid(params.tagUuid);
-    if (!tag) {
-      return res.status(404).json({ message: "Tag not found" });
-    }
-
-    const content = await loadAccessibleContent(params.contentUuid, auth, res, {
-      notFoundStatus: 404,
-      notFoundMessage: "Content not found",
-      unauthorizedStatus: 401,
-      logUnauthorized: true,
-    });
-    if (!content) {
-      return;
-    }
-
-    const existingAssignment = await prisma.contentTagAssignment.findUnique({
-      where: {
-        contentUuid_tagUuid: {
-          contentUuid: params.contentUuid,
-          tagUuid: params.tagUuid,
-        },
-      },
-    });
-
-    if (existingAssignment) {
-      return res.status(200).json({
-        tagUuid: params.tagUuid,
-        contentUuid: params.contentUuid,
-        attached: true,
-        changed: false,
-      });
-    }
-
-    await prisma.contentTagAssignment.create({
-      data: {
-        contentUuid: params.contentUuid,
-        tagUuid: params.tagUuid,
-      },
-    });
-
-    return res.status(200).json({
-      tagUuid: params.tagUuid,
-      contentUuid: params.contentUuid,
-      attached: true,
-      changed: true,
-    });
-  } catch (e) {
-    return sendInternalError(
-      res,
-      `Failed to attach tag ${params.tagUuid} to content ${params.contentUuid}`,
-      e,
-    );
-  }
-});
-
-router.delete("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
-  const params = parseTagContentUuids(req, res);
-  if (!params) {
-    return;
-  }
-
-  const auth = getAuth(req);
-
-  try {
-    const tag = await findTagByUuid(params.tagUuid);
-    if (!tag) {
-      return res.status(404).json({ message: "Tag not found" });
-    }
-
-    const content = await loadAccessibleContent(params.contentUuid, auth, res, {
-      notFoundStatus: 404,
-      notFoundMessage: "Content not found",
-      unauthorizedStatus: 401,
-      logUnauthorized: true,
-    });
-    if (!content) {
-      return;
-    }
-
-    const existingAssignment = await prisma.contentTagAssignment.findUnique({
-      where: {
-        contentUuid_tagUuid: {
-          contentUuid: params.contentUuid,
-          tagUuid: params.tagUuid,
-        },
-      },
-    });
-
-    if (!existingAssignment) {
-      return res.status(200).json({
-        tagUuid: params.tagUuid,
-        contentUuid: params.contentUuid,
-        attached: false,
-        changed: false,
-      });
-    }
-
-    await prisma.contentTagAssignment.delete({
-      where: {
-        contentUuid_tagUuid: {
-          contentUuid: params.contentUuid,
-          tagUuid: params.tagUuid,
-        },
-      },
-    });
-
-    return res.status(200).json({
-      tagUuid: params.tagUuid,
-      contentUuid: params.contentUuid,
-      attached: false,
-      changed: true,
-    });
-  } catch (e) {
-    return sendInternalError(
-      res,
-      `Failed to remove tag ${params.tagUuid} from content ${params.contentUuid}`,
       e,
     );
   }
@@ -1762,6 +982,231 @@ router.post("/view/:uuid", async (req, res) => {
     return res.status(200).json({ message: "View recorded" });
   } catch (e) {
     return sendInternalError(res, "Failed to record view", e);
+  }
+});
+
+router.get("/tag", async (req, res) => {
+  getAuth(req);
+
+  logger.verbose("Querying content tag table for all content tags");
+  const tags = await prisma.contentTag.findMany({
+    select: {
+      uuid: true,
+      name: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+  if (!tags) {
+    return sendInternalError(
+      res,
+      "Failed to query content tag table",
+      new Error(),
+    );
+  }
+  return res.status(200).json(tags);
+});
+
+router.post("/tag/create", async (req, res) => {
+  const auth = getAuth(req);
+  if (!isAdmin(auth)) {
+    logger.warn(
+      `Rejected content tag create request from user with position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const parsed = CreateTagSchema.safeParse(req.body);
+  if (!parsed.success) {
+    logger.verbose(
+      `Failed to parse Content tag create request body:\n${parsed.error.issues}`,
+    );
+    return res.status(400).json({ message: parsed.error.issues });
+  }
+
+  const normalizedTag = normalizeTagName(parsed.data.name);
+  if (!normalizedTag.name) {
+    return res.status(400).json({ message: "Tag name cannot be blank" });
+  }
+
+  try {
+    const tag = await prisma.contentTag.create({
+      data: normalizedTag,
+    });
+
+    return res.status(201).json(tag);
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return res.status(409).json({ message: "Tag name already exists" });
+    }
+
+    return sendInternalError(res, "Failed to create content tag", e);
+  }
+});
+
+router.post("/tag/delete/:uuid", async (req, res) => {
+  const uuid = parseTagUuid(req, res, "Invalid tag UUID");
+  if (!uuid) {
+    return;
+  }
+
+  const auth = getAuth(req);
+  if (!isAdmin(auth)) {
+    logger.warn(
+      `Rejected content tag delete request from user with position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const tag = await prisma.contentTag.delete({
+      where: { uuid },
+    });
+
+    return res.status(200).json(tag);
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
+
+    return sendInternalError(res, `Failed to delete content tag ${uuid}`, e);
+  }
+});
+
+router.post("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
+  const params = parseTagContentUuids(req, res);
+  if (!params) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  try {
+    const tag = await findTagByUuid(params.tagUuid);
+    if (!tag) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
+
+    const content = await loadAccessibleContent(params.contentUuid, auth, res, {
+      notFoundStatus: 404,
+      notFoundMessage: "Content not found",
+      unauthorizedStatus: 401,
+      logUnauthorized: true,
+    });
+    if (!content) {
+      return;
+    }
+
+    const existingAssignment = await prisma.contentTagAssignment.findUnique({
+      where: {
+        contentUuid_tagUuid: {
+          contentUuid: params.contentUuid,
+          tagUuid: params.tagUuid,
+        },
+      },
+    });
+
+    if (existingAssignment) {
+      return res.status(200).json({
+        tagUuid: params.tagUuid,
+        contentUuid: params.contentUuid,
+        attached: true,
+        changed: false,
+      });
+    }
+
+    await prisma.contentTagAssignment.create({
+      data: {
+        contentUuid: params.contentUuid,
+        tagUuid: params.tagUuid,
+      },
+    });
+
+    return res.status(200).json({
+      tagUuid: params.tagUuid,
+      contentUuid: params.contentUuid,
+      attached: true,
+      changed: true,
+    });
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to attach tag ${params.tagUuid} to content ${params.contentUuid}`,
+      e,
+    );
+  }
+});
+
+router.delete("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
+  const params = parseTagContentUuids(req, res);
+  if (!params) {
+    return;
+  }
+
+  const auth = getAuth(req);
+
+  try {
+    const tag = await findTagByUuid(params.tagUuid);
+    if (!tag) {
+      return res.status(404).json({ message: "Tag not found" });
+    }
+
+    const content = await loadAccessibleContent(params.contentUuid, auth, res, {
+      notFoundStatus: 404,
+      notFoundMessage: "Content not found",
+      unauthorizedStatus: 401,
+      logUnauthorized: true,
+    });
+    if (!content) {
+      return;
+    }
+
+    const existingAssignment = await prisma.contentTagAssignment.findUnique({
+      where: {
+        contentUuid_tagUuid: {
+          contentUuid: params.contentUuid,
+          tagUuid: params.tagUuid,
+        },
+      },
+    });
+
+    if (!existingAssignment) {
+      return res.status(200).json({
+        tagUuid: params.tagUuid,
+        contentUuid: params.contentUuid,
+        attached: false,
+        changed: false,
+      });
+    }
+
+    await prisma.contentTagAssignment.delete({
+      where: {
+        contentUuid_tagUuid: {
+          contentUuid: params.contentUuid,
+          tagUuid: params.tagUuid,
+        },
+      },
+    });
+
+    return res.status(200).json({
+      tagUuid: params.tagUuid,
+      contentUuid: params.contentUuid,
+      attached: false,
+      changed: true,
+    });
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to remove tag ${params.tagUuid} from content ${params.contentUuid}`,
+      e,
+    );
   }
 });
 

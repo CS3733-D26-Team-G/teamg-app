@@ -5,22 +5,12 @@ import {
   AccountSettingsUpdateSchema,
   normalizeAccountSettings,
   serializeAccountSettingsUpdate,
-} from "../lib/account-settings.ts";
-import { getAuth, sendInternalError } from "../lib/request.ts";
-import { logger } from "../logger.ts";
+} from "../../lib/account-settings.ts";
+import { getAuth, sendInternalError } from "../../lib/request.ts";
+import { logger } from "../../logger.ts";
+import { findAccountUsername } from "./utils.ts";
 
 const router = express.Router();
-
-async function findAccountUsername(employeeUuid: string) {
-  logger.verbose(
-    `Querying Account table for employee ${employeeUuid} account settings`,
-  );
-
-  return prisma.account.findUnique({
-    where: { employeeUuid },
-    select: { username: true },
-  });
-}
 
 router.get("/", async (req, res) => {
   const auth = getAuth(req);

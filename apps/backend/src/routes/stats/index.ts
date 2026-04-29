@@ -1,24 +1,14 @@
 import express from "express";
-import { Position, Prisma, prisma } from "@repo/db";
+import { Position, prisma } from "@repo/db";
+import { getVisibleContentWhere } from "../../lib/content.ts";
 import {
   getAuth,
-  isAdmin,
   //requireAdmin,
   sendInternalError,
-} from "../lib/request.ts";
-import { logger } from "../logger.ts";
+} from "../../lib/request.ts";
+import { logger } from "../../logger.ts";
 
 const router = express.Router();
-
-function getVisibleContentWhere(
-  auth: NonNullable<Express.Request["auth"]>,
-): Prisma.ContentWhereInput | undefined {
-  if (isAdmin(auth)) {
-    return undefined;
-  }
-
-  return { for_position: auth.position };
-}
 
 router.get(
   "/employee/count",

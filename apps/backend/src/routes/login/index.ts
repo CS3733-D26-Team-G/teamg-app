@@ -2,13 +2,17 @@ import express from "express";
 import { prisma } from "@repo/db";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
-import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import { INTERNAL_ERROR_MESSAGE } from "../../config.ts";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptionsWithExpiration,
-} from "../lib/request.ts";
-import { logger } from "../logger.ts";
+} from "../../lib/request.ts";
+import { logger } from "../../logger.ts";
+import {
+  hashPassword,
+  isLegacyPlaintextPassword,
+  verifyPassword,
+} from "./utils.ts";
 
 const router = express.Router();
 
@@ -16,42 +20,6 @@ export const LoginSchema = z.object({
   username: z.string(),
   password: z.string(),
 });
-
-const PASSWORD_HASH_PREFIX = "scrypt";
-const SCRYPT_KEY_LENGTH = 64;
-
-function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const derivedKey = scryptSync(password, salt, SCRYPT_KEY_LENGTH).toString(
-    "hex",
-  );
-  return `${PASSWORD_HASH_PREFIX}$${salt}$${derivedKey}`;
-}
-
-function verifyPassword(password: string, storedPassword: string) {
-  const parts = storedPassword.split("$");
-  if (parts.length !== 3 || parts[0] !== PASSWORD_HASH_PREFIX) {
-    const providedBuffer = Buffer.from(password, "utf8");
-    const storedBuffer = Buffer.from(storedPassword, "utf8");
-    return (
-      providedBuffer.length === storedBuffer.length &&
-      timingSafeEqual(providedBuffer, storedBuffer)
-    );
-  }
-
-  const [, salt, expectedKey] = parts;
-  const derivedKey = scryptSync(password, salt, SCRYPT_KEY_LENGTH);
-  const expectedBuffer = Buffer.from(expectedKey, "hex");
-  return (
-    derivedKey.length === expectedBuffer.length &&
-    timingSafeEqual(derivedKey, expectedBuffer)
-  );
-}
-
-function isLegacyPlaintextPassword(storedPassword: string) {
-  const parts = storedPassword.split("$");
-  return parts.length !== 3 || parts[0] !== PASSWORD_HASH_PREFIX;
-}
 
 router.post("/", async (req, res) => {
   try {

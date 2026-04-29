@@ -53,16 +53,16 @@ app.get("/", (_req, res) => {
 });
 app.use(auth);
 
-import contentRouter from "./routes/content.ts";
-import claimRouter from "./routes/claim.ts";
-import employeeRouter from "./routes/employee.ts";
-import loginRouter from "./routes/login.ts";
-import logoutRouter from "./routes/logout.ts";
-import sessionRouter from "./routes/session.ts";
-import accountSettingsRouter from "./routes/account-settings.ts";
-import activityRouter from "./routes/activity.ts";
-import profileRouter from "./routes/profile.ts";
-import statsRouter from "./routes/stats.ts";
+import contentRouter from "./routes/content/index.ts";
+import claimRouter from "./routes/claim/index.ts";
+import employeeRouter from "./routes/employee/index.ts";
+import loginRouter from "./routes/login/index.ts";
+import logoutRouter from "./routes/logout/index.ts";
+import sessionRouter from "./routes/session/index.ts";
+import accountSettingsRouter from "./routes/account-settings/index.ts";
+import activityRouter from "./routes/activity/index.ts";
+import profileRouter from "./routes/profile/index.ts";
+import statsRouter from "./routes/stats/index.ts";
 
 const routeMap = {
   "account-settings": accountSettingsRouter,

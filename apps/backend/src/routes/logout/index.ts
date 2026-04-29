@@ -1,11 +1,11 @@
 import express from "express";
-import { INTERNAL_ERROR_MESSAGE } from "../config.ts";
+import { INTERNAL_ERROR_MESSAGE } from "../../config.ts";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptions,
   getAuth,
-} from "../lib/request.ts";
-import { logger } from "../logger.ts";
+} from "../../lib/request.ts";
+import { logger } from "../../logger.ts";
 import { prisma } from "@repo/db";
 
 const router = express.Router();
