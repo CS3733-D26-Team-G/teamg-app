@@ -68,6 +68,7 @@ export const ContentRowSchema = ContentRecordSchema.extend({
         uuid: z.string(),
         first_name: z.string(),
         last_name: z.string(),
+        avatar: z.string().nullable(),
       }),
     })
     .nullable(),

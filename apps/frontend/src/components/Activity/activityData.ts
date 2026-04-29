@@ -3,8 +3,9 @@ export interface ActivityItem {
   time: string;
   user: string;
   action: string;
-  resourceUuid?: string; // UUID for content or employees
-  resourceName?: string; // Name for content or employees
+  resourceUuid?: string;
+  resourceName?: string;
+  avatarUrl?: string;
 }
 
 export interface ActivityGroup {
@@ -60,8 +61,8 @@ export function transformBackendData(rawData: any): ActivityGroup[] {
         row.employee ?
           `${row.employee.first_name} ${row.employee.last_name}`
         : "System",
-      action: row.action?.replace(/_/g, " ") || "Action",
-      resourceName: row.resourceName || "System Resource",
+      action: row.action || "Action",
+      resourceName: row.resourceName || undefined,
       resourceUuid: row.resourceUuid,
     });
   });

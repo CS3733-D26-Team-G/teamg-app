@@ -1,0 +1,63 @@
+import type { InsuranceClaim, InsuranceClaimType } from "@repo/db";
+import { Schemas } from "@repo/zod";
+import { z } from "zod";
+
+export { type InsuranceClaimType };
+
+export const InsuranceClaimCreatePayloadSchema =
+  Schemas.InsuranceClaimCreateManyInputObjectZodSchema.omit({
+    uuid: true,
+    requestorEmployeeUuid: true,
+    createdAt: true,
+    updatedAt: true,
+  }).extend({
+    contentUuids: z.array(z.uuid()).default([]),
+  });
+
+export const InsuranceClaimUpdatePayloadSchema =
+  Schemas.InsuranceClaimUpdateManyMutationInputObjectZodSchema.omit({
+    uuid: true,
+    createdAt: true,
+    updatedAt: true,
+  }).extend({
+    contentUuids: z.array(z.uuid()).optional(),
+  });
+
+export type InsuranceClaimCreatePayload = z.infer<
+  typeof InsuranceClaimCreatePayloadSchema
+>;
+export type InsuranceClaimUpdatePayload = z.infer<
+  typeof InsuranceClaimUpdatePayloadSchema
+>;
+
+export const InsuranceClaimRequestorSchema = z.object({
+  uuid: z.string(),
+  first_name: z.string(),
+  last_name: z.string(),
+  corporate_email: z.string(),
+});
+
+export const InsuranceClaimContentSummarySchema =
+  Schemas.ContentCreateManyInputObjectZodSchema.pick({
+    title: true,
+    url: true,
+    content_type: true,
+    status: true,
+  }).extend({
+    uuid: z.string(),
+    file_type: z.string().nullable(),
+  });
+
+export const InsuranceClaimRecordSchema =
+  Schemas.InsuranceClaimCreateManyInputObjectZodSchema.extend({
+    uuid: z.string(),
+    requestor: InsuranceClaimRequestorSchema,
+    contents: z.array(InsuranceClaimContentSummarySchema),
+  });
+
+export type InsuranceClaimRecord = InsuranceClaim & {
+  requestor: z.infer<typeof InsuranceClaimRequestorSchema>;
+  contents: z.infer<typeof InsuranceClaimContentSummarySchema>[];
+};
+
+export const InsuranceClaimRecordsSchema = z.array(InsuranceClaimRecordSchema);

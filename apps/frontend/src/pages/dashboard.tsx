@@ -3,6 +3,7 @@ import DashboardRecentActivity from "./DashboardComponents/DashboardRecentActivi
 import SearchBar from "./DashboardComponents/SearchBar";
 import PieChart from "./DashboardComponents/PieChart";
 //import BarChart from "./DashboardComponents/BarChart";
+import NotificationBell from "../components/Notifications/NotificationBell.tsx";
 import { Typography } from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -197,6 +198,7 @@ export default function Dashboard() {
             description={helpText}
             infoOrHelp={true}
           />
+          <NotificationBell />
           <div className="w-80">
             <SearchBar setSearchQuery={setSearchQuery} />
           </div>
