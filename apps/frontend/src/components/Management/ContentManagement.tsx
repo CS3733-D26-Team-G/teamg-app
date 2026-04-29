@@ -1045,27 +1045,6 @@ export default function ContentManagement({
     },
   ];
 
-  if (viewState) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <ContentForm
-          initialData={viewState === "new" ? null : viewState}
-          onSave={handleSave}
-          onCancel={async () => {
-            if (viewState !== "new") {
-              await releaseLock(viewState.uuid);
-            }
-            setViewState(null);
-          }}
-          onDelete={
-            viewState !== "new" ? () => handleDelete(viewState) : undefined
-          }
-        />
-        {confirmationDialogs}
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ height: "auto", width: "100%" }}>
       {/* ── Toolbar / header ────────────────────────────────────────────── */}

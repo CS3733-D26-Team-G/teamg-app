@@ -453,7 +453,9 @@ export default function Dashboard() {
                   >
                     Employee Edits By Day
                     <HelpPopup
-                      description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
+                      description={
+                        "This graphic shows the fluctuation in content hits by role."
+                      }
                       infoOrHelp={false}
                     />
                   </Typography>

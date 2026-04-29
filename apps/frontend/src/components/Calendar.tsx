@@ -232,7 +232,7 @@ export default function CalendarPage() {
               initialView="dayGridMonth"
               customButtons={{
                 dayToday: {
-                  text: "Day",
+                  text: "day",
                   click: () => {
                     const calendarApi = calendarRef.current?.getApi();
                     if (calendarApi) {
@@ -242,7 +242,7 @@ export default function CalendarPage() {
                   },
                 },
                 weekToday: {
-                  text: "Week",
+                  text: "week",
                   click: () => {
                     const calendarApi = calendarRef.current?.getApi();
                     if (calendarApi) {
