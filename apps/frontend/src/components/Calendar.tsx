@@ -207,7 +207,7 @@ export default function CalendarPage() {
           p: 3,
           backgroundColor: "#ffffff",
           minWidth: 0,
-          width: "178vh",
+          width: "calc(100vw - 240px)",
           overflowX: "auto",
           minHeight: "calc(100vh - 128px)",
         }}
