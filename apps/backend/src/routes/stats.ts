@@ -123,4 +123,86 @@ router.get("/content/count/tags", async (req, res) => {
   }
 });
 
+router.get("/content/hits/top", async (req, res) => {
+  const auth = getAuth(req);
+
+  try {
+    const hits = await prisma.contentHit.groupBy({
+      by: ["contentUuid"],
+      where: {
+        content: getVisibleContentWhere(auth),
+      },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        _count: {
+          contentUuid: "desc",
+        },
+      },
+      take: 5,
+    });
+
+    const contents = await prisma.content.findMany({
+      where: {
+        uuid: {
+          in: hits.map((hit) => hit.contentUuid),
+        },
+      },
+      select: {
+        uuid: true,
+        title: true,
+        for_position: true,
+      },
+    });
+
+    const stats = hits.map((hit) => {
+      const content = contents.find((c) => c.uuid === hit.contentUuid);
+
+      return {
+        contentUuid: hit.contentUuid,
+        title: content?.title ?? "Unknown",
+        position: content?.for_position ?? null,
+        hits: hit._count._all,
+      };
+    });
+
+    return res.status(200).json(stats);
+  } catch (e) {
+    return sendInternalError(res, "Failed to retrieve content hit stats", e);
+  }
+});
+
+router.get("/content/hits/action", async (req, res) => {
+  const auth = getAuth(req);
+
+  try {
+    const groupedHits = await prisma.contentHit.groupBy({
+      by: ["action"],
+      where: {
+        content: getVisibleContentWhere(auth),
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const stats = {
+      VIEW: groupedHits.find((hit) => hit.action === "VIEW")?._count._all ?? 0,
+      ACCESS:
+        groupedHits.find((hit) => hit.action === "ACCESS")?._count._all ?? 0,
+      SEARCH:
+        groupedHits.find((hit) => hit.action === "SEARCH")?._count._all ?? 0,
+    };
+
+    return res.status(200).json(stats);
+  } catch (e) {
+    return sendInternalError(
+      res,
+      "Failed to retrieve content hit action stats",
+      e,
+    );
+  }
+});
+
 export default router;
