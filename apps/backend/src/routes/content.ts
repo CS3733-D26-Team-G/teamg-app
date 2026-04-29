@@ -610,6 +610,7 @@ router.get("/", async (req, res) => {
                 uuid: true,
                 first_name: true,
                 last_name: true,
+                avatar: true,
               },
             },
           },
