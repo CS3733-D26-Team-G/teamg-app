@@ -1,6 +1,14 @@
 import { API_ENDPOINTS } from "../config";
 import { loadContentList } from "./api-loaders";
-import { invalidateCached, loadCached } from "./async-cache";
+import {
+  fetchCachedQuery,
+  invalidateCached,
+  markCachedStale,
+  patchCachedData,
+  prefetchCachedQuery,
+  type CacheOptions,
+  useCachedQuery,
+} from "./async-cache";
 import type {
   ActivityCategory,
   ActivityRow,
@@ -8,7 +16,26 @@ import type {
   PositionCounts,
 } from "../types/activity";
 
-const CACHE_TTL_MS = 10_000;
+const ACTIVITY_CACHE_OPTIONS: CacheOptions<ActivityRow[]> = {
+  staleTimeMs: 30_000,
+  cacheTimeMs: 10 * 60_000,
+  persist: true,
+  scope: "user",
+};
+
+const COUNTS_CACHE_OPTIONS: CacheOptions<PositionCounts> = {
+  staleTimeMs: 60_000,
+  cacheTimeMs: 10 * 60_000,
+  persist: true,
+  scope: "user",
+};
+
+const DASHBOARD_CACHE_OPTIONS: CacheOptions<DashboardBootstrapData> = {
+  staleTimeMs: 60_000,
+  cacheTimeMs: 10 * 60_000,
+  persist: true,
+  scope: "user",
+};
 
 const CACHE_KEYS = {
   activity: {
@@ -42,72 +69,121 @@ async function fetchJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+function fetchActivity(category: ActivityCategory) {
+  return async (): Promise<ActivityRow[]> => {
+    const url =
+      category === "all" ?
+        API_ENDPOINTS.ACTIVITY
+      : `${API_ENDPOINTS.ACTIVITY}?category=${category}`;
+
+    return fetchJson<ActivityRow[]>(url);
+  };
+}
+
+async function fetchContentPositionCounts() {
+  return fetchJson<PositionCounts>(API_ENDPOINTS.CONTENT.COUNT_POSITION);
+}
+
+async function fetchEmployeeCounts() {
+  return fetchJson<PositionCounts>(
+    `${API_ENDPOINTS.ACTIVITY.replace("/activity", "")}/stats/employee/count`,
+  );
+}
+
+async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
+  const [
+    activityAll,
+    activityContent,
+    activityVerbose,
+    contentCounts,
+    employeeCounts,
+    contentList,
+  ] = await Promise.all([
+    loadActivity("all"),
+    loadActivity("content"),
+    loadActivity("verbose"),
+    loadContentPositionCounts(),
+    loadEmployeeCounts(),
+    loadContentList(),
+  ]);
+
+  return {
+    activityAll,
+    activityContent,
+    activityVerbose,
+    contentCounts,
+    employeeCounts,
+    contentList,
+  };
+}
+
 export async function loadActivity(
   category: ActivityCategory,
 ): Promise<ActivityRow[]> {
-  return loadCached(
+  return fetchCachedQuery(
     getActivityCacheKey(category),
-    async () => {
-      const url =
-        category === "all" ?
-          API_ENDPOINTS.ACTIVITY
-        : `${API_ENDPOINTS.ACTIVITY}?category=${category}`;
+    fetchActivity(category),
+    ACTIVITY_CACHE_OPTIONS,
+  );
+}
 
-      return fetchJson<ActivityRow[]>(url);
-    },
-    { ttlMs: CACHE_TTL_MS },
+export function useActivityQuery(category: ActivityCategory) {
+  return useCachedQuery(
+    getActivityCacheKey(category),
+    fetchActivity(category),
+    ACTIVITY_CACHE_OPTIONS,
+  );
+}
+
+export function prefetchActivity(category: ActivityCategory) {
+  return prefetchCachedQuery(
+    getActivityCacheKey(category),
+    fetchActivity(category),
+    ACTIVITY_CACHE_OPTIONS,
   );
 }
 
 export async function loadContentPositionCounts(): Promise<PositionCounts> {
-  return loadCached(
+  return fetchCachedQuery(
     CACHE_KEYS.contentPositionCounts,
-    () => fetchJson<PositionCounts>(API_ENDPOINTS.CONTENT.COUNT_POSITION),
-    { ttlMs: CACHE_TTL_MS },
+    fetchContentPositionCounts,
+    COUNTS_CACHE_OPTIONS,
   );
 }
 
 export async function loadEmployeeCounts(): Promise<PositionCounts> {
-  return loadCached(
+  return fetchCachedQuery(
     CACHE_KEYS.employeeCounts,
-    () =>
-      fetchJson<PositionCounts>(
-        `${API_ENDPOINTS.ACTIVITY.replace("/activity", "")}/stats/employee/count`,
-      ),
-    { ttlMs: CACHE_TTL_MS },
+    fetchEmployeeCounts,
+    COUNTS_CACHE_OPTIONS,
   );
 }
 
 export async function loadDashboardBootstrap(): Promise<DashboardBootstrapData> {
-  return loadCached(
+  return fetchCachedQuery(
     CACHE_KEYS.dashboardBootstrap,
-    async () => {
-      const [
-        activityAll,
-        activityContent,
-        activityVerbose,
-        contentCounts,
-        employeeCounts,
-        contentList,
-      ] = await Promise.all([
-        loadActivity("all"),
-        loadActivity("content"),
-        loadActivity("verbose"),
-        loadContentPositionCounts(),
-        loadEmployeeCounts(),
-        loadContentList(),
-      ]);
+    fetchDashboardBootstrap,
+    DASHBOARD_CACHE_OPTIONS,
+  );
+}
 
-      return {
-        activityAll,
-        activityContent,
-        activityVerbose,
-        contentCounts,
-        employeeCounts,
-        contentList,
-      };
-    },
-    { ttlMs: CACHE_TTL_MS },
+export function useDashboardBootstrapQuery() {
+  return useCachedQuery(
+    CACHE_KEYS.dashboardBootstrap,
+    fetchDashboardBootstrap,
+    DASHBOARD_CACHE_OPTIONS,
+  );
+}
+
+export function patchDashboardBootstrap(
+  updater: (
+    data: DashboardBootstrapData | undefined,
+  ) => DashboardBootstrapData | undefined,
+) {
+  patchCachedData(
+    CACHE_KEYS.dashboardBootstrap,
+    updater,
+    DASHBOARD_CACHE_OPTIONS,
   );
 }
 
@@ -123,9 +199,32 @@ export function invalidateActivity(category?: ActivityCategory) {
   invalidateCached(CACHE_KEYS.activity.auth);
 }
 
+export function markActivityStale(category?: ActivityCategory) {
+  if (category) {
+    markCachedStale(getActivityCacheKey(category));
+    return;
+  }
+
+  markCachedStale(CACHE_KEYS.activity.all);
+  markCachedStale(CACHE_KEYS.activity.content);
+  markCachedStale(CACHE_KEYS.activity.verbose);
+  markCachedStale(CACHE_KEYS.activity.auth);
+}
+
 export function invalidateDashboardBootstrap() {
   invalidateCached(CACHE_KEYS.dashboardBootstrap);
-  invalidateActivity();
+}
+
+export function markDashboardBootstrapStale() {
+  markCachedStale(CACHE_KEYS.dashboardBootstrap);
+}
+
+export function invalidateDashboardStats() {
   invalidateCached(CACHE_KEYS.contentPositionCounts);
   invalidateCached(CACHE_KEYS.employeeCounts);
+}
+
+export function markDashboardStatsStale() {
+  markCachedStale(CACHE_KEYS.contentPositionCounts);
+  markCachedStale(CACHE_KEYS.employeeCounts);
 }

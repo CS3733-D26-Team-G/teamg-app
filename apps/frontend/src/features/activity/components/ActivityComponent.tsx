@@ -1,42 +1,29 @@
 import { Box, CircularProgress, Button } from "@mui/material";
 import ActivityTimeline from "./ActivityTimeline";
 import { type ActivityGroup, type ActivityItem } from "./activityData"; // Import the type, not the const
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SearchBar from "./HeaderSearchBar";
 import HelpPopup from "../../../components/HelpPopup.tsx";
 import { useAuth } from "../../../auth/AuthContext";
-import { loadActivity } from "../../../lib/activity-loaders.ts";
+import { useActivityQuery } from "../../../lib/activity-loaders.ts";
+import { prefetchContentList } from "../../../lib/api-loaders.ts";
 
 export default function ActivityComponent() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [data, setData] = useState<ActivityGroup[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "content" | "login">("all");
   const { session } = useAuth();
   const isAdmin = session?.permissions.can_manage_all_content ?? false;
+  const category =
+    filter === "content" ? "content"
+    : filter === "login" ? "auth"
+    : "all";
+  const activityQuery = useActivityQuery(category);
 
   useEffect(() => {
-    setLoading(true);
-    const getActivity = async () => {
-      try {
-        const category =
-          filter === "content" ? "content"
-          : filter === "login" ? "auth"
-          : "all";
-        const rawRows = await loadActivity(category);
-        const grouped = groupDataByDate(rawRows);
-        setData(grouped);
-      } catch (error) {
-        console.error("Fetch error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    void prefetchContentList();
+  }, []);
 
-    getActivity();
-  }, [filter]);
-
-  const groupDataByDate = (rows: any[]): ActivityGroup[] => {
+  function groupDataByDate(rows: any[]): ActivityGroup[] {
     const groups: { [key: string]: any[] } = {};
 
     rows.forEach((row) => {
@@ -84,11 +71,16 @@ export default function ActivityComponent() {
     });
 
     return Object.entries(groups).map(([date, items]) => ({ date, items }));
-  };
+  }
+
+  const groupedData = useMemo(
+    () => groupDataByDate(activityQuery.data ?? []),
+    [activityQuery.data],
+  );
 
   const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return data;
-    return data
+    if (!searchQuery.trim()) return groupedData;
+    return groupedData
       .map((group) => ({
         ...group,
         items: group.items.filter((item: ActivityItem) => {
@@ -101,7 +93,7 @@ export default function ActivityComponent() {
         }),
       }))
       .filter((group) => group.items.length > 0);
-  }, [data, searchQuery]);
+  }, [groupedData, searchQuery]);
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -150,7 +142,7 @@ export default function ActivityComponent() {
         )}
       </Box>
 
-      {loading ?
+      {activityQuery.loading && groupedData.length === 0 ?
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
         </Box>

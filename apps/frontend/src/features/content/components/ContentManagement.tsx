@@ -49,8 +49,6 @@ import { useAuth } from "../../../auth/AuthContext";
 import "./ContentManagement.css";
 import {
   ContentFavoriteResponseSchema,
-  ContentRowsSchema,
-  ContentTagSummariesSchema,
   type ContentRow,
   type ContentTagSummary,
 } from "../../../types/content";
@@ -72,10 +70,19 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
-  invalidateContentList,
-  loadContentList,
-  loadContentTags,
+  markContentListStale,
+  patchContentRow,
+  removeContentRow,
+  useContentListQuery,
+  useContentTagsQuery,
 } from "../../../lib/api-loaders";
+import {
+  markActivityStale,
+  markDashboardBootstrapStale,
+  markDashboardStatsStale,
+  patchDashboardBootstrap,
+  prefetchActivity,
+} from "../../../lib/activity-loaders";
 
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
@@ -210,9 +217,10 @@ export default function ContentManagement({
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
   const [tagFilters, setTagFilters] = useState<ContentTagSummary[]>([]);
-  const [availableTags, setAvailableTags] = useState<ContentTagSummary[]>([]);
   const skipLockReleaseRef = useRef(false);
   const returningToEditorRef = useRef(false);
+  const contentListQuery = useContentListQuery();
+  const contentTagsQuery = useContentTagsQuery();
 
   const displayFileType = (fileType: string) =>
     fileTypeLabels[fileType] ?? fileType;
@@ -228,7 +236,9 @@ export default function ContentManagement({
 
   const [searchParams] = useSearchParams();
 
-  const [rows, setRows] = useState<ContentRow[]>([]);
+  const [rows, setRows] = useState<ContentRow[]>(
+    () => contentListQuery.data ?? [],
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [lockMessage, setLockMessage] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState<
@@ -250,6 +260,7 @@ export default function ContentManagement({
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
   const [pendingSave, setPendingSave] = useState<FormData | null>(null);
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
+  const availableTags = contentTagsQuery.data ?? [];
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.can_manage_all_content ?? false;
@@ -280,37 +291,21 @@ export default function ContentManagement({
     }
   }, [searchParams, rows]);
 
-  const fetchRows = useCallback(async () => {
-    try {
-      const data = await loadContentList();
-      setRows(
-        data.map((r) => ({
-          ...r,
-          isLocked: r.editLock != null,
-        })),
-      );
-    } catch (error) {
-      console.error(error);
+  useEffect(() => {
+    if (contentListQuery.data) {
+      setRows(contentListQuery.data);
+      return;
+    }
+
+    if (contentListQuery.error) {
+      console.error(contentListQuery.error);
       setRows([]);
     }
-  }, []);
+  }, [contentListQuery.data, contentListQuery.error]);
 
   useEffect(() => {
-    void fetchRows();
-  }, [fetchRows]);
-
-  const fetchTags = useCallback(async () => {
-    try {
-      setAvailableTags(await loadContentTags());
-    } catch (error) {
-      console.error(error);
-      setAvailableTags([]);
-    }
+    void prefetchActivity("content");
   }, []);
-
-  useEffect(() => {
-    void fetchTags();
-  }, [fetchTags]);
 
   useEffect(() => {
     if (rows.length > 0 && session?.employeeUuid) {
@@ -418,6 +413,42 @@ export default function ContentManagement({
     setPendingDelete(row);
   };
 
+  const patchBootstrapContentRow = useCallback(
+    (uuid: string, updater: (row: ContentRow) => ContentRow) => {
+      patchDashboardBootstrap((data) =>
+        data ?
+          {
+            ...data,
+            contentList: data.contentList.map((row) =>
+              row.uuid === uuid ? updater(row) : row,
+            ),
+          }
+        : data,
+      );
+    },
+    [],
+  );
+
+  const removeBootstrapContentRow = useCallback((uuid: string) => {
+    patchDashboardBootstrap((data) =>
+      data ?
+        {
+          ...data,
+          contentList: data.contentList.filter((row) => row.uuid !== uuid),
+        }
+      : data,
+    );
+  }, []);
+
+  const markRelatedActivityStale = useCallback((includeStats = false) => {
+    markActivityStale("content");
+    markActivityStale("all");
+    markDashboardBootstrapStale();
+    if (includeStats) {
+      markDashboardStatsStale();
+    }
+  }, []);
+
   const confirmDelete = async () => {
     if (!pendingDelete) return;
 
@@ -430,8 +461,9 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
-        invalidateContentList();
-        setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
+        removeContentRow(rowToDelete.uuid);
+        removeBootstrapContentRow(rowToDelete.uuid);
+        markRelatedActivityStale(true);
         setViewState((current) =>
           current !== "new" && current?.uuid === rowToDelete.uuid ?
             null
@@ -453,9 +485,14 @@ export default function ContentManagement({
       });
 
       if (res.status === 409) {
-        setRows((prev) =>
-          prev.map((r) => (r.uuid === row.uuid ? { ...r, isLocked: true } : r)),
-        );
+        patchContentRow(row.uuid, (currentRow) => ({
+          ...currentRow,
+          isLocked: true,
+        }));
+        patchBootstrapContentRow(row.uuid, (currentRow) => ({
+          ...currentRow,
+          isLocked: true,
+        }));
         return;
       }
 
@@ -464,25 +501,31 @@ export default function ContentManagement({
         return;
       }
 
-      invalidateContentList();
-      setRows((prev) =>
-        prev.map((r) =>
-          r.uuid === row.uuid ?
-            {
-              ...r,
-              isLocked: true,
-              editLock: {
-                lockedByEmp: {
-                  uuid: session?.employeeUuid ?? "",
-                  firstName: "",
-                  lastName: "",
-                  avatar: null,
-                },
-              },
-            }
-          : r,
-        ),
-      );
+      patchContentRow(row.uuid, (currentRow) => ({
+        ...currentRow,
+        isLocked: true,
+        editLock: {
+          lockedByEmp: {
+            uuid: session?.employeeUuid ?? "",
+            firstName: "",
+            lastName: "",
+            avatar: null,
+          },
+        },
+      }));
+      patchBootstrapContentRow(row.uuid, (currentRow) => ({
+        ...currentRow,
+        isLocked: true,
+        editLock: {
+          lockedByEmp: {
+            uuid: session?.employeeUuid ?? "",
+            firstName: "",
+            lastName: "",
+            avatar: null,
+          },
+        },
+      }));
+      markRelatedActivityStale();
     } catch (error) {
       console.error(error);
       setLockMessage("Unable to checkout content for editing.");
@@ -506,12 +549,17 @@ export default function ContentManagement({
         credentials: "include",
       });
 
-      invalidateContentList();
-      setRows((prev) =>
-        prev.map((r) =>
-          r.uuid === uuid ? { ...r, isLocked: false, editLock: null } : r,
-        ),
-      );
+      patchContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      patchBootstrapContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      markRelatedActivityStale();
     } catch (error) {
       console.error(error);
     }
@@ -541,7 +589,6 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
-        invalidateContentList();
         if (isExisting) {
           if (!returningToEditorRef.current) {
             await releaseLock(uuid);
@@ -551,7 +598,9 @@ export default function ContentManagement({
           const data = (await res.json()) as { uuid: string };
           setSessionNewIds((prev) => new Set([...prev, data.uuid]));
         }
-        await fetchRows();
+        markContentListStale();
+        markRelatedActivityStale(true);
+        await contentListQuery.refresh();
         setViewState(null);
       }
     } catch (error) {
@@ -594,19 +643,27 @@ export default function ContentManagement({
 
       if (!parsed.success) {
         console.error(parsed.error);
-        invalidateContentList();
-        await fetchRows();
+        markContentListStale();
+        await contentListQuery.refresh();
         return;
       }
 
-      invalidateContentList();
-      setRows((prevRows) =>
-        prevRows.map((r) =>
-          r.uuid === parsed.data.contentUuid ?
-            { ...r, is_favorite: parsed.data.is_favorite }
-          : r,
+      patchContentRow(parsed.data.contentUuid, (row) => ({
+        ...row,
+        is_favorite: parsed.data.is_favorite,
+        favorite_count: Math.max(
+          0,
+          row.favorite_count + (parsed.data.is_favorite ? 1 : -1),
         ),
-      );
+      }));
+      patchBootstrapContentRow(parsed.data.contentUuid, (row) => ({
+        ...row,
+        is_favorite: parsed.data.is_favorite,
+        favorite_count: Math.max(
+          0,
+          row.favorite_count + (parsed.data.is_favorite ? 1 : -1),
+        ),
+      }));
     } catch (error) {
       console.error(error);
     } finally {
@@ -1346,8 +1403,7 @@ export default function ContentManagement({
                 <TagManagerPopup
                   availableTags={availableTags}
                   onTagsChanged={async () => {
-                    await fetchTags();
-                    return await loadContentTags();
+                    return (await contentTagsQuery.refresh()) ?? [];
                   }}
                 />
               )}
@@ -1754,7 +1810,10 @@ export default function ContentManagement({
               fileName={selectedDoc.fileName}
               uuid={selectedDoc.uuid}
               contentRow={rows.find((r) => r.uuid === selectedDoc.uuid)!}
-              onSaved={() => void fetchRows()}
+              onSaved={() => {
+                markContentListStale();
+                markRelatedActivityStale(true);
+              }}
               readOnly={false}
               onDelete={() => editorRow && handleDelete(editorRow)}
               onOpenForm={() => {

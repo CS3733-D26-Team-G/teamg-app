@@ -1,72 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo } from "react";
 
-import { loadDashboardBootstrap } from "../../lib/activity-loaders";
-import type { DashboardBootstrapData } from "../../types/activity";
+import { useDashboardBootstrapQuery } from "../../lib/activity-loaders";
 
 interface UseDashboardBootstrapResult {
-  data: DashboardBootstrapData | null;
+  data: ReturnType<typeof useDashboardBootstrapQuery>["data"] | null;
   error: string | null;
   loading: boolean;
   refresh: () => Promise<void>;
 }
 
 export function useDashboardBootstrap(): UseDashboardBootstrapResult {
-  const [data, setData] = useState<DashboardBootstrapData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const query = useDashboardBootstrapQuery();
 
-  const refresh = useCallback(async () => {
-    try {
-      setLoading(true);
-      const nextData = await loadDashboardBootstrap();
-      setData(nextData);
-      setError(null);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load dashboard data";
-      setError(message);
-      console.error("Failed to load dashboard bootstrap:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        const nextData = await loadDashboardBootstrap();
-
-        if (cancelled) {
-          return;
-        }
-
-        setData(nextData);
-        setError(null);
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-
-        const message =
-          err instanceof Error ? err.message : "Failed to load dashboard data";
-        setError(message);
-        console.error("Failed to load dashboard bootstrap:", err);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { data, error, loading, refresh };
+  return useMemo(
+    () => ({
+      data: query.data ?? null,
+      error: query.error?.message ?? null,
+      loading: query.loading,
+      refresh: () => query.refresh().then(() => undefined),
+    }),
+    [query],
+  );
 }

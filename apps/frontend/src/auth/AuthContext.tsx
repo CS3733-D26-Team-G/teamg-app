@@ -7,7 +7,7 @@ import {
 } from "react";
 import { API_ENDPOINTS } from "../config";
 import { SessionSchema, type Session } from "../types/auth";
-import { dedupeAsync } from "../lib/async-cache";
+import { dedupeAsync, setCacheIdentity } from "../lib/async-cache";
 import { invalidateDashboardBootstrap } from "../lib/activity-loaders";
 
 interface AuthContextValue {
@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshSession = async () => {
     try {
       const nextSession = await fetchSession();
+      setCacheIdentity(nextSession?.employeeUuid ?? null);
       if (session?.employeeUuid !== nextSession?.employeeUuid) {
         invalidateDashboardBootstrap();
       }
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const clearSession = () => {
+    setCacheIdentity(null);
     invalidateDashboardBootstrap();
     setSession(null);
     setIsLoading(false);
