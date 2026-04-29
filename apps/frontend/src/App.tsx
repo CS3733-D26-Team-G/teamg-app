@@ -20,11 +20,11 @@ import Profile from "./pages/profile.tsx";
 import Credits from "./pages/Credits.tsx";
 import LoginPopUp from "./pages/LoginPopUp.tsx";
 import AboutUs from "./pages/About.tsx";
-import CalendarPage from "./pages/Calendar.tsx";
 import ApprovalPage from "./pages/approval.tsx";
 import RiskReviewPage from "./pages/risk-review.tsx";
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
+import CalPage from "./pages/CalendarPage.tsx";
 import NotificationPage from "./components/Notifications/NotificationPage.tsx";
 
 function ProtectedRoute({ children }: { children: ReactElement }) {
@@ -69,6 +69,12 @@ function AppLayout() {
   const { session } = useAuth();
   const isHeroPage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
+
+  console.log("AppLayout:", {
+    pathname: location.pathname,
+    hasSession: !!session,
+    showSidebar: !isHeroPage && !isLoginPage && session,
+  });
 
   return (
     <div
@@ -186,10 +192,16 @@ function AppLayout() {
             path="/risk-review"
             element={<RiskReviewPage />}
           />
+
           <Route
             path="/calendar"
-            element={<CalendarPage />}
+            element={
+              <ProtectedRoute>
+                <CalPage />
+              </ProtectedRoute>
+            }
           />
+
           <Route
             path="/aboutus"
             element={<AboutUs />}

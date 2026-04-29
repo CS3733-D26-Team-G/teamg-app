@@ -181,7 +181,7 @@ export default function Credits() {
         variant="h5"
         fontWeight={500}
         mb={0.5}
-        sx={{ fontFamily: "'Rubik', sans-serif" }}
+        sx={{ color: "white", fontFamily: "'Rubik', sans-serif" }}
       >
         Credits
       </Typography>
@@ -190,7 +190,11 @@ export default function Credits() {
         variant="body2"
         color="text.secondary"
         mb={3}
-        sx={{ lineHeight: 1.8, fontFamily: "'Rubik', sans-serif" }}
+        sx={{
+          color: "white",
+          lineHeight: 1.8,
+          fontFamily: "'Rubik', sans-serif",
+        }}
       >
         This website was developed using the <strong>PERN stack</strong>, which
         consists of <strong>PostgreSQL</strong>, a powerful open-source
@@ -208,7 +212,12 @@ export default function Credits() {
         onClick={() => navigate("/")}
         variant="outlined"
         size="small"
-        sx={{ mb: 3, fontFamily: "'Rubik', sans-serif" }}
+        sx={{
+          color: "white",
+          mb: 3,
+          fontFamily: "'Rubik', sans-serif",
+          border: "1px solid white",
+        }}
       >
         Return
       </Button>
@@ -217,7 +226,7 @@ export default function Credits() {
         variant="h6"
         fontWeight={500}
         mb={2}
-        sx={{ fontFamily: "'Rubik', sans-serif" }}
+        sx={{ color: "white", fontFamily: "'Rubik', sans-serif" }}
       >
         Libraries &amp; Dependencies
       </Typography>

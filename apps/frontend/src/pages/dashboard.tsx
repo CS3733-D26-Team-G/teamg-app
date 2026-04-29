@@ -14,6 +14,7 @@ import { dedupeAsync } from "../lib/async-cache";
 import HelpPopup from "../components/HelpPopup";
 import theme from "../theme.tsx";
 import HitsLineChart from "./DashboardComponents/HitsLineChart.tsx";
+import { useProfile } from "../profile/ProfileContext.tsx";
 
 export function useActivityData() {
   const [rawLogs, setRawLogs] = useState<any[]>([]);
@@ -23,6 +24,7 @@ export function useActivityData() {
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>(
     {},
   );
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -193,6 +195,8 @@ export default function Dashboard() {
     minHeight: 128,
   }));
 
+  const { profile } = useProfile();
+
   return (
     <Box
       sx={{
@@ -214,7 +218,7 @@ export default function Dashboard() {
             variant="h2"
             sx={{ fontWeight: "bold", color: "white" }}
           >
-            Welcome Back {(session?.position ?? "employee").toLowerCase()}!
+            Welcome Back {profile?.first_name}!
           </Typography>
           {[...Array(3)].map((_, i) => (
             <Box
@@ -222,7 +226,7 @@ export default function Dashboard() {
               sx={{
                 position: "absolute",
                 borderRadius: "50%",
-                border: "1px solid rgba(255,255,255,0.12)",
+                border: "1px solid rgba(238, 31, 31, 0.12)",
                 width: 120 + i * 80,
                 height: 120 + i * 80,
                 top: -40 - i * 30,
@@ -338,6 +342,12 @@ export default function Dashboard() {
               className="flex-1 flex-col drop-shadow-lg"
             >
               <CardContent className="p-6">
+                <HelpPopup
+                  description={
+                    "This graphic shows the fluctuation in content hints by role."
+                  }
+                  infoOrHelp={false}
+                />
                 <HitsLineChart />
               </CardContent>
             </Card>
