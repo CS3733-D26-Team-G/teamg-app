@@ -1,6 +1,5 @@
 import ActivityComponent from "../components/Activity/ActivityComponent";
 import { Typography, Box } from "@mui/material";
-import HelpPopup from "../components/HelpPopup.tsx";
 
 function Activity() {
   return (
