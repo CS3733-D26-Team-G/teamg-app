@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { BarChart } from "@mui/x-charts/BarChart";
 import {
-  Alert,
   Box,
   Card,
   CardContent,
@@ -15,7 +14,6 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import type { Position as PositionType } from "@repo/db";
-import { API_ENDPOINTS } from "../../config";
 import { getPositionLabel } from "../../utils/positionDisplay";
 
 interface EmployeeOption {
@@ -25,7 +23,7 @@ interface EmployeeOption {
   position: PositionType;
 }
 
-interface ActivitySummaryResponse {
+interface ActivitySummary {
   edited: number;
   checkedOut: number;
   deleted: number;
@@ -48,99 +46,115 @@ const POSITION_OPTIONS: PositionType[] = [
   "BUSINESS_OP_RATING",
 ];
 
+const MOCK_EMPLOYEES: EmployeeOption[] = [
+  {
+    uuid: "emp-1",
+    first_name: "Avery",
+    last_name: "Stone",
+    position: "UNDERWRITER",
+  },
+  {
+    uuid: "emp-2",
+    first_name: "Maya",
+    last_name: "Cole",
+    position: "BUSINESS_ANALYST",
+  },
+  {
+    uuid: "emp-3",
+    first_name: "Jordan",
+    last_name: "Price",
+    position: "ACTUARIAL_ANALYST",
+  },
+  {
+    uuid: "emp-4",
+    first_name: "Riley",
+    last_name: "Nguyen",
+    position: "EXL_OPERATIONS",
+  },
+  {
+    uuid: "emp-5",
+    first_name: "Casey",
+    last_name: "Brooks",
+    position: "BUSINESS_OP_RATING",
+  },
+  {
+    uuid: "emp-6",
+    first_name: "Taylor",
+    last_name: "Morgan",
+    position: "ADMIN",
+  },
+];
+
+const MOCK_ACTIVITY_BY_EMPLOYEE: Record<string, ActivitySummary> = {
+  "emp-1": { edited: 18, checkedOut: 11, deleted: 2 },
+  "emp-2": { edited: 14, checkedOut: 8, deleted: 1 },
+  "emp-3": { edited: 10, checkedOut: 6, deleted: 2 },
+  "emp-4": { edited: 7, checkedOut: 9, deleted: 1 },
+  "emp-5": { edited: 12, checkedOut: 7, deleted: 3 },
+  "emp-6": { edited: 9, checkedOut: 4, deleted: 4 },
+};
+
+function addSummary(
+  acc: ActivitySummary,
+  next: ActivitySummary,
+): ActivitySummary {
+  return {
+    edited: acc.edited + next.edited,
+    checkedOut: acc.checkedOut + next.checkedOut,
+    deleted: acc.deleted + next.deleted,
+  };
+}
+
 export default function AdminCards() {
   const [employeeType, setEmployeeType] = useState("");
   const [employeeUuid, setEmployeeUuid] = useState("");
-  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
-  const [summary, setSummary] = useState<ActivitySummaryResponse>({
-    edited: 0,
-    checkedOut: 0,
-    deleted: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const res = await fetch(API_ENDPOINTS.EMPLOYEE.ROOT, {
-          credentials: "include",
-        });
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch employees: ${res.status}`);
-        }
-
-        const data = await res.json();
-        setEmployees(Array.isArray(data) ? data : []);
-      } catch (err: any) {
-        setError(err.message ?? "Failed to fetch employees");
-      }
-    };
-
-    void fetchEmployees();
-  }, []);
 
   const filteredEmployees = useMemo(() => {
     if (!employeeType) {
-      return employees;
+      return MOCK_EMPLOYEES;
     }
 
-    return employees.filter((employee) => employee.position === employeeType);
-  }, [employeeType, employees]);
+    return MOCK_EMPLOYEES.filter(
+      (employee) => employee.position === employeeType,
+    );
+  }, [employeeType]);
 
-  useEffect(() => {
-    if (
+  const normalizedEmployeeUuid =
+    (
       employeeUuid &&
-      !filteredEmployees.some((employee) => employee.uuid === employeeUuid)
-    ) {
-      setEmployeeUuid("");
+      filteredEmployees.some((employee) => employee.uuid === employeeUuid)
+    ) ?
+      employeeUuid
+    : "";
+
+  const summary = useMemo(() => {
+    if (normalizedEmployeeUuid) {
+      return (
+        MOCK_ACTIVITY_BY_EMPLOYEE[normalizedEmployeeUuid] ?? {
+          edited: 0,
+          checkedOut: 0,
+          deleted: 0,
+        }
+      );
     }
-  }, [employeeUuid, filteredEmployees]);
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams();
-
-        if (employeeType) {
-          params.set("position", employeeType);
-        }
-
-        if (employeeUuid) {
-          params.set("employeeUuid", employeeUuid);
-        }
-
-        const url =
-          params.size > 0 ?
-            `${API_ENDPOINTS.STATS.ACTIVITY_ACTION_SUMMARY}?${params.toString()}`
-          : API_ENDPOINTS.STATS.ACTIVITY_ACTION_SUMMARY;
-
-        const res = await fetch(url, {
-          credentials: "include",
-        });
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch activity summary: ${res.status}`);
-        }
-
-        const data = await res.json();
-        setSummary({
-          edited: Number(data.edited ?? 0),
-          checkedOut: Number(data.checkedOut ?? 0),
-          deleted: Number(data.deleted ?? 0),
-        });
-        setError(null);
-      } catch (err: any) {
-        setError(err.message ?? "Failed to fetch activity summary");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void fetchSummary();
-  }, [employeeType, employeeUuid]);
+    return filteredEmployees.reduce<ActivitySummary>(
+      (acc, employee) =>
+        addSummary(
+          acc,
+          MOCK_ACTIVITY_BY_EMPLOYEE[employee.uuid] ?? {
+            edited: 0,
+            checkedOut: 0,
+            deleted: 0,
+          },
+        ),
+      {
+        edited: 0,
+        checkedOut: 0,
+        deleted: 0,
+      },
+    );
+  }, [filteredEmployees, normalizedEmployeeUuid]);
 
   const chartData = ACTION_LABELS.map((action) => ({
     label: action.label,
@@ -229,15 +243,6 @@ export default function AdminCards() {
           </FormControl>
         </Box>
 
-        {error && (
-          <Alert
-            severity="error"
-            sx={{ mb: 2 }}
-          >
-            {error}
-          </Alert>
-        )}
-
         <BarChart
           dataset={chartData}
           layout="horizontal"
@@ -278,7 +283,6 @@ export default function AdminCards() {
           hideLegend
           grid={{ vertical: true }}
           borderRadius={6}
-          loading={loading}
           sx={{ width: "80%", mr: "auto" }}
         />
       </CardContent>
