@@ -1100,7 +1100,11 @@ export default function ContentManagement({
                       setFileTypeFilters([]);
                       setTagFilters([]);
                     }}
-                    sx={{ borderRadius: 2 }}
+                    sx={{
+                      color: "white",
+                      borderRadius: 2,
+                      border: "1px solid white",
+                    }}
                   >
                     Clear Filters
                   </Button>
@@ -1395,6 +1399,7 @@ export default function ContentManagement({
                   key={position}
                   label={getPositionLabel(position as Position)}
                   onDelete={() => togglePosition(position)}
+                  sx={{ bgcolor: "white", color: "black" }}
                 />
               ))}
               {fileTypeFilters.map((fileType) => (
@@ -1402,6 +1407,7 @@ export default function ContentManagement({
                   key={fileType}
                   label={displayFileType(fileType)}
                   onDelete={() => toggleFileType(fileType)}
+                  sx={{ bgcolor: "white", color: "black" }}
                 />
               ))}
               {tagFilters.map((tag) => (
@@ -1409,6 +1415,7 @@ export default function ContentManagement({
                   key={tag.uuid}
                   label={tag.name}
                   onDelete={() => toggleTag(tag)}
+                  sx={{ bgcolor: "white", color: "black" }}
                 />
               ))}
             </Box>

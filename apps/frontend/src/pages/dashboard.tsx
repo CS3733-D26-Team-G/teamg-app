@@ -14,6 +14,7 @@ import { dedupeAsync } from "../lib/async-cache";
 import HelpPopup from "../components/HelpPopup";
 import theme from "../theme.tsx";
 import HitsLineChart from "./DashboardComponents/HitsLineChart.tsx";
+import { useProfile } from "../profile/ProfileContext.tsx";
 
 export function useActivityData() {
   const [rawLogs, setRawLogs] = useState<any[]>([]);
@@ -23,6 +24,7 @@ export function useActivityData() {
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>(
     {},
   );
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -193,6 +195,8 @@ export default function Dashboard() {
     minHeight: 128,
   }));
 
+  const { profile } = useProfile();
+
   return (
     <Box
       sx={{
@@ -214,7 +218,7 @@ export default function Dashboard() {
             variant="h2"
             sx={{ fontWeight: "bold", color: "white" }}
           >
-            Welcome Back {(session?.position ?? "employee").toLowerCase()}!
+            Welcome Back {profile?.first_name}!
           </Typography>
           {[...Array(3)].map((_, i) => (
             <Box
