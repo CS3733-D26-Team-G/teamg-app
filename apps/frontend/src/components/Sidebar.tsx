@@ -303,6 +303,26 @@ export default function Sidebar() {
           </>
         : null}
 
+        {!isUnderwriter && !isAdmin ?
+          <>
+            <ListItemButton
+              component={Link}
+              to="/claims"
+              sx={{ ...itemHoverSx, px: 2 }}
+            >
+              <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+                <WarningIcon sx={iconSx} />
+              </ListItemIcon>
+              {isOpen && (
+                <ListItemText
+                  primary="Make a Claim"
+                  slotProps={{ primary: { sx: textSx } }}
+                />
+              )}
+            </ListItemButton>
+          </>
+        : null}
+
         {/* Activity */}
         <ListItemButton
           component={Link}

@@ -22,6 +22,7 @@ import ApprovalPage from "./pages/approval.tsx";
 import RiskReviewPage from "./pages/risk-review.tsx";
 import AboutUs from "./pages/About.tsx";
 
+import ClaimPage from "./pages/claims.tsx";
 import EmployeeManagement from "./pages/employee-management.tsx";
 import EmployeeFormPage from "./pages/employees-form.tsx";
 
@@ -172,6 +173,14 @@ function AppLayout() {
           <Route
             path="/risk-review"
             element={<RiskReviewPage />}
+          />
+          <Route
+            path="/claims"
+            element={
+              <ProtectedRoute>
+                <ClaimPage />
+              </ProtectedRoute>
+            }
           />
 
           <Route

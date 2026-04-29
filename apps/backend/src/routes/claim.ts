@@ -4,8 +4,10 @@ import { Schemas } from "@repo/zod";
 import { z } from "zod";
 import { getAuth, isAdmin, sendInternalError } from "../lib/request.ts";
 import { logger } from "../logger.ts";
+import multer from "multer";
 
 const router = express.Router();
+const upload = multer();
 
 const ClaimParamsSchema =
   Schemas.InsuranceClaimWhereUniqueInputObjectZodSchema.extend({
@@ -217,7 +219,7 @@ router.get("/:uuid", async (req, res) => {
   }
 });
 
-router.post("/create", async (req, res) => {
+router.post("/create", upload.none(), async (req, res) => {
   const auth = getAuth(req);
   const body = ClaimCreateSchema.safeParse(req.body);
 
