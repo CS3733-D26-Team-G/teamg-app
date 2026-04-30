@@ -40,11 +40,12 @@ model Employee {
 
 model Content {
   uuid             String                   @id @default(uuid()) @db.Uuid
+  createdAt        DateTime                 @map("created_at") @default(now()) @db.Timestamptz()
   title            String
   url              String
   contentOwner     String                   @map("content_owner")
-  lastModifiedTime DateTime                 @map("last_modified_time") @db.Timestamp(6)
-  expirationTime   DateTime                 @map("expiration_time") @db.Timestamp(6)
+  lastModifiedTime DateTime                 @map("last_modified_time") @db.Timestamptz()
+  expirationTime   DateTime                 @map("expiration_time") @db.Timestamptz()
   contentType      ContentType              @map("content_type")
   status           ContentStatus
   forPosition      Position                 @map("for_position")
@@ -58,15 +59,15 @@ model Content {
 }
 
 model InsuranceClaim {
-  uuid                  String               @id @default(uuid()) @db.Uuid
-  requestorEmployeeUuid String               @map("requestor_employee_uuid") @db.Uuid
-  incidentDate          DateTime             @map("incident_date") @db.Date
-  claimType             InsuranceClaimType   @map("claim_type")
-  incidentDescription   String               @map("incident_description")
-  status                InsuranceClaimStatus @default(PENDING)
-  createdAt             DateTime             @map("created_at") @default(now()) @db.Timestamp(6)
-  updatedAt             DateTime             @map("updated_at") @updatedAt @db.Timestamp(6)
-  requestor             Employee             @relation(fields: [requestorEmployeeUuid], references: [uuid])
+  uuid                  String                   @id @default(uuid()) @db.Uuid
+  requestorEmployeeUuid String                   @map("requestor_employee_uuid") @db.Uuid
+  incidentDate          DateTime                 @map("incident_date") @db.Date
+  claimType             InsuranceClaimType       @map("claim_type")
+  incidentDescription   String                   @map("incident_description")
+  status                InsuranceClaimStatus     @default(PENDING)
+  createdAt             DateTime                 @map("created_at") @default(now()) @db.Timestamptz()
+  updatedAt             DateTime                 @map("updated_at") @updatedAt @db.Timestamptz()
+  requestor             Employee                 @relation(fields: [requestorEmployeeUuid], references: [uuid])
   contents              ClaimContentAssignment[]
 }
 
@@ -95,7 +96,7 @@ model FavoriteContent {
 model ContentEditLock {
   contentUuid     String   @id @map("content_uuid") @db.Uuid
   lockedByEmpUuid String   @map("locked_by_emp_uuid") @db.Uuid
-  lockedAt        DateTime @map("locked_at") @default(now()) @db.Timestamp(6)
+  lockedAt        DateTime @map("locked_at") @default(now()) @db.Timestamptz()
   content         Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
   lockedByEmp     Employee @relation(fields: [lockedByEmpUuid], references: [uuid], onDelete: Cascade)
 }
@@ -140,7 +141,7 @@ model Activity {
   resource     ResourceType?
   resourceUuid String?       @map("resource_uuid") @db.Uuid
   resourceName String?       @map("resource_name")
-  timestamp    DateTime      @default(now()) @db.Timestamp(6)
+  timestamp    DateTime      @default(now()) @db.Timestamptz()
   employee     Employee      @relation(fields: [employeeUuid], references: [uuid])
 }
 
@@ -149,7 +150,7 @@ model ContentHit {
   contentUuid  String   @map("content_uuid") @db.Uuid
   employeeUuid String   @map("employee_uuid") @db.Uuid
   action       HitType
-  timestamp    DateTime @default(now()) @db.Timestamp(6)
+  timestamp    DateTime @default(now()) @db.Timestamptz()
   content      Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
   employee     Employee @relation(fields: [employeeUuid], references: [uuid])
 }
