@@ -1,5 +1,5 @@
 import express from "express";
-import { prisma, Prisma } from "@repo/db";
+import { Position, prisma, Prisma } from "@repo/db";
 import multer from "multer";
 import { randomUUID } from "crypto";
 import { logger } from "../../logger.ts";
@@ -50,7 +50,8 @@ const upload = multer({
 
 router.get("/", async (req, res) => {
   const auth = getAuth(req);
-  const gettingContent = auth.position === "ADMIN" ? "all" : auth.position;
+  const gettingContent =
+    auth.position === Position.ADMIN ? "all" : auth.position;
   logger.verbose(`Querying Content table for ${gettingContent} records`);
 
   const parsedFilters = parseContentFilters(req.query);
