@@ -7,6 +7,4 @@ export function getVisibleContentWhere(
   if (isAdmin(auth)) {
     return undefined;
   }
-
-  return { forPosition: auth.position };
 }

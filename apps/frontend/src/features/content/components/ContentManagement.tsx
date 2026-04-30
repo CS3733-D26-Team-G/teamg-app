@@ -817,7 +817,6 @@ export default function ContentManagement({
               : ""
             }
             editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
-            updatedAt={params.row.lastModifiedTime}
           />
         </Box>
       ),
@@ -1538,6 +1537,7 @@ export default function ContentManagement({
                       sx={{
                         color: "rgba(255,255,255,0.8)",
                         borderColor: "rgba(255,255,255,0.4)",
+                        border: "1px solid transparent",
                       }}
                     />
                   )}
