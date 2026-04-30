@@ -11,7 +11,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "generated"
   ],
   "scripts": {
     "prebuild": "node ./scripts/patch-generated-imports.mjs",
