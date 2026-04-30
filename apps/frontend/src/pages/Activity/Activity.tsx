@@ -3,7 +3,7 @@ import { Typography, Box } from "@mui/material";
 
 function Activity() {
   return (
-    <Box sx={{ backgroundColor: "background.paper" }}>
+    <Box sx={{ backgroundColor: "background.paper", overflowX: "hidden" }}>
       <Box
         className="activity-header"
         sx={{

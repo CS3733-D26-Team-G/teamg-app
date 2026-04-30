@@ -12,6 +12,8 @@ function AppShell() {
   const { session } = useAuth();
   const isHeroPage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
+  const isAboutPage = location.pathname === "/aboutus";
+  const isCreditsPage = location.pathname === "/credits";
 
   return (
     <div
@@ -22,7 +24,11 @@ function AppShell() {
           "linear-gradient(180deg, #1A1E4B 0%, #222847 35%, #263056 70%, #2c3a6a 100%)",
       }}
     >
-      {!isHeroPage && !isLoginPage && session && <Sidebar />}
+      {!isHeroPage &&
+        !isLoginPage &&
+        !isAboutPage &&
+        !isCreditsPage &&
+        session && <Sidebar />}
 
       <div style={{ flexGrow: 1, minWidth: 0 }}>
         <Outlet />
