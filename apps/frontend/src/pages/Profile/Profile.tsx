@@ -24,7 +24,6 @@ import { API_ENDPOINTS } from "../../config.ts";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 
 function Profile() {
-  const [_searchQuery, setSearchQuery] = useState("");
   const today = new Date();
   const formattedDate = today.toLocaleDateString("en-US", {
     weekday: "long",
@@ -157,7 +156,7 @@ function Profile() {
               sx={{
                 display: "flex",
                 flexDirection: "row",
-                gap: 3,
+                gap: 2,
                 p: 2,
               }}
             >
@@ -178,7 +177,6 @@ function Profile() {
               >
                 <NotificationsIcon />
               </IconButton>
-              <SearchBar setSearchQuery={setSearchQuery}></SearchBar>
             </Box>
           </Box>
 
@@ -208,8 +206,9 @@ function Profile() {
                   <Avatar
                     src={profile.avatar ?? undefined}
                     sx={{
-                      width: 180,
-                      height: 180,
+                      width: 160,
+                      height: 160,
+                      color: "grey.600",
                     }}
                   />
                 </IconButton>

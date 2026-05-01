@@ -431,6 +431,9 @@ export async function resolveContentUrl({
     };
   }
 
+  logger.verbose(
+    `Uploading ${uuid}.${mime.extension(file.mimetype)} to ${STORAGE_BUCKET}`,
+  );
   const uploadResult = await supabase.storage
     .from(STORAGE_BUCKET)
     .upload(`content/${uuid}.${mime.extension(file.mimetype)}`, file.buffer, {

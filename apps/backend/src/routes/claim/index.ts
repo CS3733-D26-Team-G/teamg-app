@@ -119,6 +119,7 @@ router.post("/create", async (req, res) => {
       const claim = await tx.insuranceClaim.create({
         data: {
           ...data,
+          status: "PENDING", // Force initial status to PENDING
           requestorEmployeeUuid: auth.employeeUuid,
         },
       });
