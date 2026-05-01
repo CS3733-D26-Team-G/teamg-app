@@ -33,29 +33,29 @@ model Employee {
   account            Account?
   activities         Activity[]
   contentLocks       ContentEditLock[]
+  contentHits        ContentHit[]
   favoriteContents   FavoriteContent[]
   submittedClaims    InsuranceClaim[]
-  contentHits        ContentHit[]
 }
 
 model Content {
   uuid             String                   @id @default(uuid()) @db.Uuid
-  createdAt        DateTime                 @map("created_at") @default(now()) @db.Timestamptz()
   title            String
   url              String
   contentOwner     String                   @map("content_owner")
-  lastModifiedTime DateTime                 @map("last_modified_time") @db.Timestamptz()
-  expirationTime   DateTime                 @map("expiration_time") @db.Timestamptz()
+  lastModifiedTime DateTime                 @map("last_modified_time") @db.Timestamptz(6)
+  expirationTime   DateTime                 @map("expiration_time") @db.Timestamptz(6)
   contentType      ContentType              @map("content_type")
   status           ContentStatus
   forPosition      Position                 @map("for_position")
   supabasePath     String?                  @map("supabase_path")
   fileType         String?                  @map("file_type")
-  editLock         ContentEditLock?
-  favoritedBy      FavoriteContent[]
-  tagAssignments   ContentTagAssignment[]
+  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   claimAssignments ClaimContentAssignment[]
+  editLock         ContentEditLock?
   contentHits      ContentHit[]
+  tagAssignments   ContentTagAssignment[]
+  favoritedBy      FavoriteContent[]
 }
 
 model InsuranceClaim {
@@ -64,17 +64,17 @@ model InsuranceClaim {
   incidentDate          DateTime                 @map("incident_date") @db.Date
   claimType             InsuranceClaimType       @map("claim_type")
   incidentDescription   String                   @map("incident_description")
+  createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
   status                InsuranceClaimStatus     @default(PENDING)
-  createdAt             DateTime                 @map("created_at") @default(now()) @db.Timestamptz()
-  updatedAt             DateTime                 @map("updated_at") @updatedAt @db.Timestamptz()
-  requestor             Employee                 @relation(fields: [requestorEmployeeUuid], references: [uuid])
   contents              ClaimContentAssignment[]
+  requestor             Employee                 @relation(fields: [requestorEmployeeUuid], references: [uuid])
 }
 
 model ClaimContentAssignment {
   claimUuid   String         @map("claim_uuid") @db.Uuid
   contentUuid String         @map("content_uuid") @db.Uuid
-  createdAt   DateTime       @map("created_at") @default(now())
+  createdAt   DateTime       @default(now()) @map("created_at")
   claim       InsuranceClaim @relation(fields: [claimUuid], references: [uuid], onDelete: Cascade)
   content     Content        @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
 
@@ -85,7 +85,7 @@ model ClaimContentAssignment {
 model FavoriteContent {
   employeeUuid String   @map("employee_uuid") @db.Uuid
   contentUuid  String   @map("content_uuid") @db.Uuid
-  createdAt    DateTime @map("created_at") @default(now())
+  createdAt    DateTime @default(now()) @map("created_at")
   content      Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
   employee     Employee @relation(fields: [employeeUuid], references: [uuid], onDelete: Cascade)
 
@@ -96,7 +96,7 @@ model FavoriteContent {
 model ContentEditLock {
   contentUuid     String   @id @map("content_uuid") @db.Uuid
   lockedByEmpUuid String   @map("locked_by_emp_uuid") @db.Uuid
-  lockedAt        DateTime @map("locked_at") @default(now()) @db.Timestamptz()
+  lockedAt        DateTime @default(now()) @map("locked_at") @db.Timestamptz(6)
   content         Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
   lockedByEmp     Employee @relation(fields: [lockedByEmpUuid], references: [uuid], onDelete: Cascade)
 }
@@ -104,15 +104,15 @@ model ContentEditLock {
 model ContentTag {
   uuid           String                 @id @default(uuid()) @db.Uuid
   name           String
-  normalizedName String                 @map("normalized_name") @unique
-  createdAt      DateTime               @map("created_at") @default(now())
+  normalizedName String                 @unique @map("normalized_name")
+  createdAt      DateTime               @default(now()) @map("created_at")
   assignments    ContentTagAssignment[]
 }
 
 model ContentTagAssignment {
   contentUuid String     @map("content_uuid") @db.Uuid
   tagUuid     String     @map("tag_uuid") @db.Uuid
-  createdAt   DateTime   @map("created_at") @default(now())
+  createdAt   DateTime   @default(now()) @map("created_at")
   content     Content    @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
   tag         ContentTag @relation(fields: [tagUuid], references: [uuid], onDelete: Cascade)
 
@@ -121,7 +121,7 @@ model ContentTagAssignment {
 }
 
 model Account {
-  employeeUuid String           @map("employee_uuid") @unique @db.Uuid
+  employeeUuid String           @unique @map("employee_uuid") @db.Uuid
   username     String           @id @unique
   password     String
   employee     Employee         @relation(fields: [employeeUuid], references: [uuid])
@@ -141,7 +141,7 @@ model Activity {
   resource     ResourceType?
   resourceUuid String?       @map("resource_uuid") @db.Uuid
   resourceName String?       @map("resource_name")
-  timestamp    DateTime      @default(now()) @db.Timestamptz()
+  timestamp    DateTime      @default(now()) @db.Timestamptz(6)
   employee     Employee      @relation(fields: [employeeUuid], references: [uuid])
 }
 
@@ -150,7 +150,7 @@ model ContentHit {
   contentUuid  String   @map("content_uuid") @db.Uuid
   employeeUuid String   @map("employee_uuid") @db.Uuid
   action       HitType
-  timestamp    DateTime @default(now()) @db.Timestamptz()
+  timestamp    DateTime @default(now()) @db.Timestamptz(6)
   content      Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
   employee     Employee @relation(fields: [employeeUuid], references: [uuid])
 }
@@ -186,15 +186,15 @@ enum ActionType {
   CREATE_CONTENT
   EDIT_CONTENT
   DELETE_CONTENT
-  CREATE_CLAIM
-  EDIT_CLAIM
-  DELETE_CLAIM
   CREATE_EMPLOYEE
   EDIT_EMPLOYEE
   DELETE_EMPLOYEE
   CHECK_OUT_CONTENT
   CHECK_IN_CONTENT
   OWNERSHIP_CHANGE
+  CREATE_CLAIM
+  EDIT_CLAIM
+  DELETE_CLAIM
 }
 
 enum ResourceType {

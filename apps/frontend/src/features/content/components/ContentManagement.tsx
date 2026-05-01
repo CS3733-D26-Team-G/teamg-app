@@ -90,6 +90,12 @@ const statusLabels: Record<ContentStatus, string> = {
   UNAVAILABLE: "Unavailable",
 };
 
+const statusColorMap: Record<ContentStatus, "success" | "warning" | "error"> = {
+  AVAILABLE: "success",
+  IN_USE: "warning",
+  UNAVAILABLE: "error",
+};
+
 const POSITION_CONFIG: {
   key: string;
   label: string;
@@ -907,6 +913,7 @@ export default function ContentManagement({
       renderCell: (params) => (
         <Chip
           label={statusLabels[params.value as ContentStatus]}
+          color={statusColorMap[params.value as ContentStatus]}
           size="medium"
           variant="filled"
           sx={{ width: 100, borderColor: "black", borderRadius: 1 }}
@@ -1496,7 +1503,7 @@ export default function ContentManagement({
               }}
             >
               <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
+                expandIcon={<ExpandMoreIcon sx={{ color: "white" }} />}
                 sx={{
                   background:
                     "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
