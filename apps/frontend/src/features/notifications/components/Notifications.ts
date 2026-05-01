@@ -12,6 +12,10 @@ export interface NotificationActivity {
   notificationMessage: string;
 }
 
+export async function getAllContent(): Promise<ContentRow[]> {
+  throw new Error("Not implemented");
+}
+
 export function getExpiresInSeconds(
   expirationTime: string | Date | null,
 ): number {
@@ -31,7 +35,9 @@ export function getExpiringContent(content: ContentRow[]) {
       expiresInSeconds: getExpiresInSeconds(item.expirationTime),
       expiresAt: new Date(item.expirationTime),
       isExpired: false,
-      status: getExpirationStatus(getExpiresInSeconds(item.expirationTime)),
+      expirationStatus: getExpirationStatus(
+        getExpiresInSeconds(item.expirationTime),
+      ), // Changed to expirationStatus
     }))
     .sort((a, b) => a.expiresInSeconds - b.expiresInSeconds);
 }
