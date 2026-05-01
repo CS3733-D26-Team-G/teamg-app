@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -26,10 +26,9 @@ import HelpPopup from "../../components/HelpPopup";
 import { API_ENDPOINTS } from "../../config";
 import {
   CLAIM_TYPE_LABELS,
-  type ReviewClaimContent,
   type ReviewClaimRecord,
 } from "../../features/claims/types";
-import { invalidateClaimsList, loadClaimsList } from "../../lib/api-loaders";
+import { invalidateClaimsList } from "../../lib/api-loaders";
 
 type RiskStatus = "RISK_CLEARED" | "RISK_FLAGGED" | null;
 
@@ -43,15 +42,36 @@ interface RiskCard {
 export default function RiskReviewPage() {
   const [cards, setCards] = useState<RiskCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const fetchClaims = useCallback(async () => {
+  const fetchClaims = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const all = await loadClaimsList<ReviewClaimRecord>();
+      const res = await fetch(API_ENDPOINTS.CLAIM.ROOT, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const all: ReviewClaimRecord[] = await res.json();
+
+      // DEBUG: log every claim so we can see what status values are returned
+      console.log(
+        "All claims from API:",
+        all.map((c) => ({
+          uuid: c.uuid,
+          status: c.status,
+          claimType: c.claimType,
+        })),
+      );
 
       const pending = all.filter((claim) => claim.status === "PENDING");
+      console.log(`Pending after filter: ${pending.length} of ${all.length}`);
 
       setCards(
         pending.map((claim) => ({
@@ -62,16 +82,16 @@ export default function RiskReviewPage() {
         })),
       );
     } catch (err) {
-      console.error(err);
-      setCards([]);
+      console.error("Failed to fetch claims:", err);
+      setError(String(err));
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     void fetchClaims();
-  }, [fetchClaims]);
+  }, []);
 
   const toggleExpanded = (uuid: string) =>
     setCards((prev) =>
@@ -121,7 +141,7 @@ export default function RiskReviewPage() {
   const pendingCount = cards.filter((c) => c.status === null).length;
 
   return (
-    <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
+    <Box sx={{ minHeight: "100vh", backgroundColor: "white" }}>
       <Box
         sx={{
           background:
@@ -178,7 +198,7 @@ export default function RiskReviewPage() {
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
             <HelpPopup
-              description="This queue shows all claims with PENDING status filed by agents. Expand each card to read the incident details and attached evidence, write your risk assessment notes, then clear or flag before submitting."
+              description="This queue shows all PENDING claims. Expand each card to read the details, write your risk notes, then clear or flag."
               infoOrHelp={true}
             />
           </Box>
@@ -230,10 +250,34 @@ export default function RiskReviewPage() {
         )}
       </Box>
 
-      <Box sx={{ px: 4, py: 3, maxWidth: 960, mx: "auto" }}>
+      <Box
+        sx={{ px: 4, py: 3, maxWidth: 960, mx: "auto", borderRadius: "14px" }}
+      >
         {loading ?
           <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
             <CircularProgress />
+          </Box>
+        : error ?
+          <Box sx={{ textAlign: "center", mt: 10 }}>
+            <Typography
+              color="error"
+              variant="h6"
+            >
+              Failed to load claims
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ mt: 1, color: "text.secondary" }}
+            >
+              {error}
+            </Typography>
+            <Button
+              sx={{ mt: 2 }}
+              variant="outlined"
+              onClick={() => void fetchClaims()}
+            >
+              Retry
+            </Button>
           </Box>
         : cards.length === 0 ?
           <Box sx={{ textAlign: "center", mt: 10, color: "text.secondary" }}>
@@ -245,8 +289,16 @@ export default function RiskReviewPage() {
               Queue is clear
             </Typography>
             <Typography variant="body2">
-              No claims are pending risk review right now.
+              No PENDING claims found. Open the browser console (F12) to see
+              what statuses the API returned.
             </Typography>
+            <Button
+              sx={{ mt: 2 }}
+              variant="outlined"
+              onClick={() => void fetchClaims()}
+            >
+              Refresh
+            </Button>
           </Box>
         : submitted ?
           <Box
@@ -348,7 +400,6 @@ export default function RiskReviewPage() {
                       "boxShadow": "0 4px 16px rgba(26,30,75,0.35)",
                       "&:hover": {
                         background: "linear-gradient(135deg, #0f1230, #2d4060)",
-                        boxShadow: "0 6px 20px rgba(26,30,75,0.5)",
                       },
                     }}
                   >
@@ -413,7 +464,6 @@ function RiskCardComponent({
           : "0 2px 8px rgba(0,0,0,0.06)",
       }}
     >
-      {/* Header */}
       <Box
         onClick={status === null ? onToggle : undefined}
         sx={{
@@ -427,7 +477,7 @@ function RiskCardComponent({
           "&:hover": status === null ? { backgroundColor: "action.hover" } : {},
         }}
       >
-        <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+        <Box sx={{ flexShrink: 0 }}>
           {status === "RISK_CLEARED" ?
             <CheckCircleIcon sx={{ color: "success.main", fontSize: 28 }} />
           : status === "RISK_FLAGGED" ?
@@ -484,6 +534,13 @@ function RiskCardComponent({
                 {claim.contents.length !== 1 ? "s" : ""}
               </Typography>
             )}
+            {/* DEBUG: show raw DB status on the card */}
+            <Typography
+              variant="caption"
+              sx={{ color: "orange", fontWeight: 700 }}
+            >
+              · DB: "{claim.status}"
+            </Typography>
           </Stack>
         </Box>
         <Stack
@@ -508,7 +565,6 @@ function RiskCardComponent({
         </Stack>
       </Box>
 
-      {/* Body */}
       <Collapse
         in={expanded}
         timeout={280}
@@ -517,7 +573,6 @@ function RiskCardComponent({
         <Box
           sx={{ p: 2.5, display: "flex", flexDirection: "column", gap: 2.5 }}
         >
-          {/* Incident description */}
           <Box>
             <Typography
               variant="subtitle2"
@@ -550,7 +605,6 @@ function RiskCardComponent({
             </Box>
           </Box>
 
-          {/* Attachments */}
           {claim.contents.length > 0 && (
             <Box>
               <Typography
@@ -634,7 +688,6 @@ function RiskCardComponent({
             </Box>
           )}
 
-          {/* Risk notes */}
           <Box>
             <Typography
               variant="subtitle2"
@@ -650,7 +703,7 @@ function RiskCardComponent({
               Risk Assessment Notes
             </Typography>
             <TextField
-              placeholder="Summarise your risk evaluation — note any concerns, eligibility issues, compliance flags, or conditions…"
+              placeholder="Summarise your risk evaluation…"
               fullWidth
               multiline
               minRows={3}
@@ -667,7 +720,6 @@ function RiskCardComponent({
             />
           </Box>
 
-          {/* Action buttons */}
           <Stack
             direction="row"
             spacing={1.5}
@@ -686,10 +738,8 @@ function RiskCardComponent({
                 "py": 1.2,
                 "background": "linear-gradient(135deg, #1b5e20, #2e7d32)",
                 "color": "white",
-                "boxShadow": "0 4px 14px rgba(46,125,50,0.3)",
                 "&:hover": {
                   background: "linear-gradient(135deg, #14471a, #245c27)",
-                  boxShadow: "0 6px 18px rgba(46,125,50,0.45)",
                 },
               }}
             >
@@ -709,10 +759,8 @@ function RiskCardComponent({
                 "py": 1.2,
                 "background": "linear-gradient(135deg, #e65100, #f57c00)",
                 "color": "white",
-                "boxShadow": "0 4px 14px rgba(230,81,0,0.3)",
                 "&:hover": {
                   background: "linear-gradient(135deg, #bf360c, #d84315)",
-                  boxShadow: "0 6px 18px rgba(230,81,0,0.45)",
                 },
               }}
             >
