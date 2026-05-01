@@ -8,45 +8,69 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { FormatItalicSharp } from "@mui/icons-material";
+import { Italic } from "lucide-react";
 
 const teamMembers = [
   {
     name: "Myer Cheng",
     position: "Lead Software Engineer",
     photo: "/Myer.png",
+    quote: "I stink",
   },
-  { name: "Tj Elysee", position: "Product Owner", photo: "/Tj.jpg" },
+  {
+    name: "Tj Elysee",
+    position: "Product Owner",
+    photo: "/Tj.jpg",
+    quote: "I stink",
+  },
   {
     name: "Shriya Kulkarni",
     position: "Lead Back-End Developer",
     photo: "/Shriya.jpg",
+    quote: "I stink",
   },
   {
     name: "Justin Gauthier",
     position: "Project Manager",
     photo: "/Justin.jpg",
+    quote: "I stink",
   },
   {
     name: "Colin Truong",
     position: "Lead Front-End Developer",
     photo: "/Colin.jpg",
+    quote: "I stink",
   },
-  { name: "Isaac Gonzalez", position: "Documentation", photo: "/Isaac.png" },
+  {
+    name: "Isaac Gonzalez",
+    position: "Documentation",
+    photo: "/Isaac.png",
+    quote: `"Keep Moving Forward." - Lewis Robinson`,
+  },
   {
     name: "Jillian Chee",
     position: "Full-Time Software Engineer",
     photo: "/Jillian.png",
+    quote: `"Just be a rock." - Joy Wang Everything Everywhere All At Once`,
   },
-  { name: "Thomas Gilbert", position: "Scrum Master", photo: "/Thomas.jpg" },
+  {
+    name: "Thomas Gilbert",
+    position: "Scrum Master",
+    photo: "/Thomas.jpg",
+    quote: `"I wish there was a way to know you're in the good old days before you've actually left them." - Andy Bernard`,
+  },
   {
     name: "Sam Rodrigues",
     position: "Full-Time Software Engineer",
     photo: "/Sam.png",
+    quote: `"If you don't like something, change it. If you can't change it, change your attitude." - Maya Angelou`,
   },
   {
     name: "Ronan Heatley",
     position: "Full-Time Software Engineer",
     photo: "/Ronan.png",
+    quote: "I stink",
   },
 ];
 
@@ -187,6 +211,12 @@ export default function AboutUs() {
                   >
                     {member.position}
                   </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    <i>{member.quote}</i>
+                  </Typography>
                 </Stack>
               </Stack>
             </CardContent>
@@ -208,7 +238,12 @@ export default function AboutUs() {
           variant="body2"
           color="black"
           align="center"
-          sx={{ color: "white" }}
+          sx={{
+            color: "white",
+            fontSize: 25,
+            fontFamily: '"Rubik", sans-serif',
+            fontweight: 10,
+          }}
         >
           Thank you to Hanover Insurance for the opportunity to develop real
           world full-stack web development experience by allowing us to use your
