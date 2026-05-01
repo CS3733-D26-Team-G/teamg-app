@@ -507,7 +507,6 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
           resourceName: `${updatedContent.title} (${oldOwner} → ${newOwner})`,
         },
       });
-      logger.verbose("changed owner");
     } else {
       await prisma.activity.create({
         data: {
@@ -518,7 +517,6 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
           resourceName: updatedContent.title,
         },
       });
-      logger.verbose("edit content");
     }
 
     const previousSupabasePath = existingContent.supabasePath;
