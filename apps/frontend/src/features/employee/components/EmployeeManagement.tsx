@@ -260,8 +260,9 @@ export default function EmployeeManagement() {
                 sx={{
                   width: 32,
                   height: 32,
-                  bgcolor: avatar ? "transparent" : "primary.main",
+                  bgcolor: avatar ? "transparent" : "#616161",
                   fontSize: "0.875rem",
+                  color: "white",
                 }}
               >
                 {initials}
@@ -443,7 +444,7 @@ export default function EmployeeManagement() {
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   {[
                     ["UNDERWRITER", "Underwriter"],
                     ["BUSINESS_ANALYST", "Business Analysis"],
@@ -477,7 +478,7 @@ export default function EmployeeManagement() {
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   {[
                     ["OPERATION_TECHNOLOGY", "Operation Technology"],
                     ["ACCOUNTING", "Accounting"],
