@@ -28,10 +28,12 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import { API_ENDPOINTS } from "../../config";
 import {
   CLAIM_TYPE_LABELS,
-  type ReviewClaimContent,
   type ReviewClaimRecord,
 } from "../../features/claims/types";
-import { invalidateClaimsList, loadClaimsList } from "../../lib/api-loaders";
+import {
+  invalidateClaimsList,
+  useClaimsListQuery,
+} from "../../lib/api-loaders";
 
 type ApprovalStatus = "APPROVED" | "DENIED" | null;
 
@@ -43,39 +45,35 @@ interface ApprovalCard {
 }
 
 export default function ApprovalPage() {
+  const claimsQuery = useClaimsListQuery<ReviewClaimRecord>();
   const [cards, setCards] = useState<ApprovalCard[]>([]);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const fetchClaims = useCallback(async () => {
-    try {
-      setLoading(true);
-      const all = await loadClaimsList<ReviewClaimRecord>();
-
-      // Admins see all claims; show only those cleared by underwriters
-      const cleared = all; // filter disabled — showing all claims
-      // const underReview = all.filter((claim) => claim.status === "UNDER_REVIEW");
-
-      setCards(
-        cleared.map((claim) => ({
-          claim,
-          expanded: false,
-          status: null,
-          reviewComment: "",
-        })),
-      );
-    } catch (err) {
-      console.error(err);
-      setCards([]);
-    } finally {
-      setLoading(false);
-    }
+  // Refresh on mount so we always get the latest statuses
+  useEffect(() => {
+    void claimsQuery.refresh();
   }, []);
 
+  // Sync cards when query data arrives
   useEffect(() => {
-    void fetchClaims();
-  }, [fetchClaims]);
+    if (!claimsQuery.data) return;
+
+    const all = (claimsQuery.data as ReviewClaimRecord[]).filter(
+      (claim) => claim.status === "UNDER_REVIEW",
+    );
+
+    setCards((prev) => {
+      const prevMap = new Map(prev.map((c) => [c.claim.uuid, c]));
+      return all.map((claim) =>
+        prevMap.has(claim.uuid) ?
+          { ...prevMap.get(claim.uuid)!, claim }
+        : { claim, expanded: false, status: null, reviewComment: "" },
+      );
+    });
+  }, [claimsQuery.data]);
+
+  const loading = claimsQuery.loading && !claimsQuery.data;
 
   const toggleExpanded = (uuid: string) =>
     setCards((prev) =>
@@ -109,7 +107,7 @@ export default function ApprovalPage() {
             method: "PUT",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: card.status }), // "APPROVED" or "DENIED"
+            body: JSON.stringify({ status: card.status }),
           }),
         ),
       );
@@ -175,7 +173,7 @@ export default function ApprovalPage() {
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
             <HelpPopup
-              description="This page shows all claims that have been risk-cleared by an underwriter. Expand each card to review the incident details, attached evidence, and the underwriter's assessment, then approve or deny."
+              description="This page shows all claims. Expand each card to review the incident details, attached evidence, then approve or deny."
               infoOrHelp={true}
             />
           </Box>
@@ -234,6 +232,17 @@ export default function ApprovalPage() {
           <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
             <CircularProgress />
           </Box>
+        : claimsQuery.error ?
+          <Box sx={{ textAlign: "center", mt: 10, color: "error.main" }}>
+            <Typography variant="h6">Failed to load claims.</Typography>
+            <Button
+              sx={{ mt: 2 }}
+              variant="outlined"
+              onClick={() => void claimsQuery.refresh()}
+            >
+              Retry
+            </Button>
+          </Box>
         : cards.length === 0 ?
           <Box sx={{ textAlign: "center", mt: 10, color: "text.secondary" }}>
             <CheckCircleIcon sx={{ fontSize: 56, mb: 2, opacity: 0.25 }} />
@@ -244,7 +253,7 @@ export default function ApprovalPage() {
               Queue is empty
             </Typography>
             <Typography variant="body2">
-              No risk-cleared claims are awaiting admin approval right now.
+              No claims are awaiting admin approval right now.
             </Typography>
           </Box>
         : submitted ?
@@ -273,7 +282,8 @@ export default function ApprovalPage() {
               variant="outlined"
               onClick={() => {
                 setSubmitted(false);
-                void fetchClaims();
+                invalidateClaimsList();
+                void claimsQuery.refresh();
               }}
             >
               Refresh Queue
@@ -392,34 +402,16 @@ export default function ApprovalPage() {
                     sx={{ lineHeight: 1.7 }}
                   >
                     As the admin and approver{" "}
-                    <strong>you are the final line of defense</strong>
-                    be sure to reiew each and every claim that is submitted and
-                    evaluate whether or not to approve it. For additional help,
-                    consult the following resources:
-                    <br />
-                    <strong>Auto Claims</strong>:{" "}
-                    <a href="https://lnjury.com/auto-accident/?q_type=Drunk%20Driver&SRC=lnjury_msn&q_publisher=bing&q_creative=77584482985770&q_device=c&q_matchtype=bb&q_network=o&q_campaign=355450726&q_adgroup=1241349632743167&q_criteria=77584681472476&q_target=kwd-77584681472476:loc-190&q_keyword=hit%20by%20drunk%20driver&q_query=what%20makes%20a%20risk%20free%20auto%20insurance%20claim&utm_source=bing&utm_medium=cpc&utm_term=hit%20by%20drunk%20driver&utm_campaign=campaignname&msclkid=5d601f01d07816b2d4f076f228d4a40a">
-                      Resource
-                    </a>
-                    <br />
-                    <strong>Medical Claims</strong>:{" "}
-                    <a href="https://lnjury.com/auto-accident/?q_type=Drunk%20Driver&SRC=lnjury_msn&q_publisher=bing&q_creative=77584482985770&q_device=c&q_matchtype=bb&q_network=o&q_campaign=355450726&q_adgroup=1241349632743167&q_criteria=77584681472476&q_target=kwd-77584681472476:loc-190&q_keyword=hit%20by%20drunk%20driver&q_query=what%20makes%20a%20risk%20free%20auto%20insurance%20claim&utm_source=bing&utm_medium=cpc&utm_term=hit%20by%20drunk%20driver&utm_campaign=campaignname&msclkid=5d601f01d07816b2d4f076f228d4a40a">
-                      Resource
-                    </a>
-                    <br />
-                    <strong>Legal Claims</strong>:{" "}
-                    <a href="https://lnjury.com/auto-accident/?q_type=Drunk%20Driver&SRC=lnjury_msn&q_publisher=bing&q_creative=77584482985770&q_device=c&q_matchtype=bb&q_network=o&q_campaign=355450726&q_adgroup=1241349632743167&q_criteria=77584681472476&q_target=kwd-77584681472476:loc-190&q_keyword=hit%20by%20drunk%20driver&q_query=what%20makes%20a%20risk%20free%20auto%20insurance%20claim&utm_source=bing&utm_medium=cpc&utm_term=hit%20by%20drunk%20driver&utm_campaign=campaignname&msclkid=5d601f01d07816b2d4f076f228d4a40a">
-                      Resource
-                    </a>
-                    <br />
+                    <strong>you are the final line of defense</strong> — be sure
+                    to review each claim and evaluate whether to approve or deny
+                    it.
                   </Typography>
                 </Paper>
               </Stack>
+
               <Box
                 className="approval-cards"
-                sx={{
-                  flex: 1,
-                }}
+                sx={{ flex: 1 }}
               >
                 <Stack spacing={1.5}>
                   <AnimatePresence>
@@ -637,9 +629,16 @@ function ApprovalCardComponent({
               </Typography>
             )}
             <Chip
-              label="Risk Cleared"
+              label={claim.status?.replace(/_/g, " ") ?? "PENDING"}
               size="small"
-              color="success"
+              color={
+                claim.status === "APPROVED" ? "success"
+                : claim.status === "DENIED" ?
+                  "error"
+                : claim.status === "UNDER_REVIEW" ?
+                  "info"
+                : "warning"
+              }
               variant="outlined"
               sx={{ height: 16, fontSize: "0.6rem" }}
             />
