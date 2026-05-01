@@ -5,11 +5,10 @@ import {
   CardContent,
   Stack,
   Button,
+  Tooltip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { FormatItalicSharp } from "@mui/icons-material";
-import { Italic } from "lucide-react";
 
 const teamMembers = [
   {
@@ -18,54 +17,63 @@ const teamMembers = [
     photo: "/Myer.png",
     quote: "I stink",
   },
+
   {
     name: "Tj Elysee",
     position: "Product Owner",
     photo: "/Tj.jpg",
     quote: "I stink",
   },
+
   {
     name: "Shriya Kulkarni",
     position: "Lead Back-End Developer",
     photo: "/Shriya.jpg",
     quote: "I stink",
   },
+
   {
     name: "Justin Gauthier",
     position: "Project Manager",
     photo: "/Justin.jpg",
     quote: "I stink",
   },
+
   {
     name: "Colin Truong",
     position: "Lead Front-End Developer",
     photo: "/Colin.jpg",
     quote: "I stink",
   },
+
   {
     name: "Isaac Gonzalez",
     position: "Documentation",
     photo: "/Isaac.png",
-    quote: `"Keep Moving Forward." - Lewis Robinson`,
+    quote: `"Keep Moving Forward."\n- Lewis Robinson`,
   },
+
   {
     name: "Jillian Chee",
     position: "Full-Time Software Engineer",
     photo: "/Jillian.png",
-    quote: `"Just be a rock." - Joy Wang Everything Everywhere All At Once`,
+    quote: `"Just be a rock."\n- Joy Wang Everything Everywhere All At Once`,
   },
+
   {
     name: "Thomas Gilbert",
     position: "Scrum Master",
     photo: "/Thomas.jpg",
-    quote: `"I wish there was a way to know you're in the good old days before you've actually left them." - Andy Bernard`,
+    quote: `"I wish there was a way to know you're in the good old days before you've actually left them."\n- Andy Bernard`,
   },
+
   {
     name: "Sam Rodrigues",
     position: "Full-Time Software Engineer",
     photo: "/Sam.png",
     quote: `"If you don't like something, change it. If you can't change it, change your attitude." - Maya Angelou`,
   },
+
   {
     name: "Ronan Heatley",
     position: "Full-Time Software Engineer",
@@ -79,10 +87,7 @@ export default function AboutUs() {
 
   return (
     <Box sx={{ p: 4, fontFamily: "'Rubik', sans-serif" }}>
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap');
-        * { font-family: 'Rubik', sans-serif !important; }`}
-      </style>
+      <style></style>
 
       <Box
         sx={{
@@ -127,7 +132,6 @@ export default function AboutUs() {
           </Typography>
           <Typography
             variant="body1"
-            color="text.secondary"
             mb={0.25}
             sx={{ color: "white" }}
           >
@@ -135,7 +139,6 @@ export default function AboutUs() {
           </Typography>
           <Typography
             variant="body1"
-            color="text.secondary"
             sx={{ color: "white" }}
           >
             Team Coach: Katherine Tse
@@ -144,11 +147,7 @@ export default function AboutUs() {
       </Box>
 
       <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: 2,
-        }}
+        sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}
       >
         {teamMembers.map((member, index) => (
           <Card
@@ -163,18 +162,42 @@ export default function AboutUs() {
                 alignItems="center"
               >
                 {member.photo ?
-                  <Box
-                    component="img"
-                    src={member.photo}
-                    alt={member.name}
-                    sx={{
-                      width: 90,
-                      height: 90,
-                      borderRadius: 2,
-                      objectFit: "cover",
-                      flexShrink: 0,
+                  <Tooltip
+                    title={member.quote}
+                    arrow
+                    placement="bottom"
+                    componentsProps={{
+                      tooltip: {
+                        sx: {
+                          fontSize: "1rem",
+                          maxWidth: 400,
+                          p: 1.5,
+                          whiteSpace: "pre-line",
+                          textAlign: "center",
+                        },
+                      },
                     }}
-                  />
+                  >
+                    <Box
+                      component="img"
+                      src={member.photo}
+                      alt={member.name}
+                      sx={{
+                        "width": 90,
+                        "height": 90,
+                        "borderRadius": 2,
+                        "objectFit": "cover",
+                        "flexShrink": 0,
+                        "cursor": "pointer",
+                        "transition":
+                          "transform 0.15s ease, box-shadow 0.15s ease",
+                        "&:hover": {
+                          transform: "scale(1.06)",
+                        },
+                        "&:active": { transform: "scale(0.97)" },
+                      }}
+                    />
+                  </Tooltip>
                 : <Box
                     sx={{
                       width: 90,
@@ -191,7 +214,7 @@ export default function AboutUs() {
                   >
                     <Typography
                       variant="caption"
-                      color="text.disabled"
+                      color="black"
                     >
                       Photo
                     </Typography>
@@ -210,12 +233,6 @@ export default function AboutUs() {
                     color="text.secondary"
                   >
                     {member.position}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    <i>{member.quote}</i>
                   </Typography>
                 </Stack>
               </Stack>
@@ -236,13 +253,11 @@ export default function AboutUs() {
       >
         <Typography
           variant="body2"
-          color="black"
           align="center"
           sx={{
             color: "white",
             fontSize: 25,
             fontFamily: '"Rubik", sans-serif',
-            fontweight: 10,
           }}
         >
           Thank you to Hanover Insurance for the opportunity to develop real
