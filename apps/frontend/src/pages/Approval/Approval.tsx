@@ -55,6 +55,7 @@ export default function ApprovalPage() {
 
       // Admins see all claims; show only those cleared by underwriters
       const cleared = all; // filter disabled — showing all claims
+      // const underReview = all.filter((claim) => claim.status === "UNDER_REVIEW");
 
       setCards(
         cleared.map((claim) => ({
@@ -228,7 +229,7 @@ export default function ApprovalPage() {
       </Box>
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
-      <Box sx={{ px: 4, py: 3, maxWidth: 1080 }}>
+      <Box sx={{ px: 4, py: 3, width: "auto", borderRadius: "14px" }}>
         {loading ?
           <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
             <CircularProgress />
@@ -298,6 +299,7 @@ export default function ApprovalPage() {
                     p: 2.5,
                     borderRadius: "14px",
                     minWidth: "350px",
+                    maxWidth: "400px",
                     maxHeight: "200px",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                   }}
@@ -351,6 +353,7 @@ export default function ApprovalPage() {
                     p: 2.5,
                     borderRadius: "14px",
                     minWidth: "350px",
+                    maxWidth: "400px",
                     maxHeight: "300px",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                   }}
@@ -412,7 +415,12 @@ export default function ApprovalPage() {
                   </Typography>
                 </Paper>
               </Stack>
-              <Box>
+              <Box
+                className="approval-cards"
+                sx={{
+                  flex: 1,
+                }}
+              >
                 <Stack spacing={1.5}>
                   <AnimatePresence>
                     {cards.map((card, index) => (
@@ -539,10 +547,11 @@ function ApprovalCardComponent({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
+      onClick={() => console.log(status)}
       sx={{
         borderRadius: "14px",
-        minWidth: "50vw",
         overflow: "hidden",
+        width: "auto",
         border: "1.5px solid",
         borderColor:
           status === "APPROVED" ? "success.main"

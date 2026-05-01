@@ -101,5 +101,6 @@ export function normalizeContentUuids(contentUuids: string[]) {
 
 export function getClaimUpdateData(payload: ClaimUpdatePayload) {
   const { contentUuids: _contentUuids, ...data } = payload;
+
   return data;
 }
