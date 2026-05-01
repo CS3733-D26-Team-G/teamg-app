@@ -135,6 +135,9 @@ export default function DocumentEditorModal({
   /** True once WebViewer's .then() resolves; used to gate theme sync effects. */
   const [viewerReady, setViewerReady] = useState(false);
 
+  /** True while the edited document bytes are uploading. */
+  const [saving, setSaving] = useState(false);
+
   // ─── Effects ───────────────────────────────────────────────────────────────
 
   /**
@@ -260,44 +263,62 @@ export default function DocumentEditorModal({
   // ─── Save handler ─────────────────────────────────────────────────────────
 
   const handleSave = async () => {
+    if (saving) return;
     const instance = instanceRef.current;
     if (!instance) return;
-    const doc = instance.Core.documentViewer.getDocument();
 
-    const extFromName =
-      fileName.includes(".") ?
-        (fileName.split(".").pop()?.toLowerCase() ?? "pdf")
-      : "pdf";
+    setSaving(true);
+    try {
+      const { annotationManager, documentViewer } = instance.Core;
+      const doc = documentViewer.getDocument();
 
-    const extToMime: Record<string, string> = {
-      pdf: "application/pdf",
-      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      ppt: "application/vnd.ms-powerpoint",
-      png: "image/png",
-      jpg: "image/jpeg",
-      jpeg: "image/jpeg",
-    };
+      const extFromName =
+        fileName.includes(".") ?
+          (fileName.split(".").pop()?.toLowerCase() ?? "pdf")
+        : "pdf";
 
-    const mimeType = extToMime[extFromName] ?? "application/pdf";
+      const extToMime: Record<string, string> = {
+        pdf: "application/pdf",
+        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ppt: "application/vnd.ms-powerpoint",
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+      };
 
-    const data = await doc.getFileData({});
-    const blob = new Blob([data], { type: mimeType });
-    const formData = new FormData();
-    formData.append("file", blob, fileName);
+      const mimeType = extToMime[extFromName] ?? "application/pdf";
 
-    await fetch(API_ENDPOINTS.CONTENT.EDIT(uuid), {
-      method: "PUT",
-      credentials: "include",
-      body: formData,
-    });
-    markContentListStale();
+      const xfdfString = await annotationManager.exportAnnotations();
+      const data = await doc.getFileData({ xfdfString });
+      const blob = new Blob([data], { type: mimeType });
+      const formData = new FormData();
+      formData.append("file", blob, fileName);
 
-    // Reset URI cache so the next open re-fetches the updated file
-    currentUriRef.current = "";
-    onSaved?.();
-    onClose();
+      const res = await fetch(API_ENDPOINTS.CONTENT.EDIT(uuid), {
+        method: "PUT",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        console.error("Document save failed:", error ?? res.statusText);
+        return;
+      }
+
+      markContentListStale();
+
+      // Reset URI cache so the next open re-fetches the updated file
+      currentUriRef.current = "";
+      onSaved?.();
+      onClose();
+    } catch (error) {
+      console.error("Document save failed:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -367,6 +388,7 @@ export default function DocumentEditorModal({
                   onClick={() => void handleSave()}
                   size="small"
                   color="primary"
+                  disabled={saving}
                 >
                   <SaveIcon />
                 </IconButton>

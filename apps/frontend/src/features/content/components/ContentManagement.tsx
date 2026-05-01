@@ -320,7 +320,12 @@ export default function ContentManagement({
   }, [rows, session?.employeeUuid]);
 
   const [expandedPositions, setExpandedPositions] = useState<Set<string>>(
-    () => new Set(POSITION_CONFIG.map((p) => p.key)), // all open by default
+    () =>
+      new Set(
+        userPosition ? [userPosition]
+        : POSITION_CONFIG[0] ? [POSITION_CONFIG[0].key]
+        : [],
+      ),
   );
 
   const toggleAccordion = (key: string) => {

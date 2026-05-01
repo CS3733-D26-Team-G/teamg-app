@@ -507,7 +507,6 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
           resourceName: `${updatedContent.title} (${oldOwner} → ${newOwner})`,
         },
       });
-      logger.verbose("changed owner");
     } else {
       await prisma.activity.create({
         data: {
@@ -518,7 +517,6 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
           resourceName: updatedContent.title,
         },
       });
-      logger.verbose("edit content");
     }
 
     const previousSupabasePath = existingContent.supabasePath;
@@ -855,14 +853,9 @@ router.get("/file/:uuid", async (req, res) => {
   const auth = getAuth(req);
 
   try {
-    const content = await loadAccessibleContent(uuid, auth, res, {
-      notFoundStatus: 404,
-      notFoundMessage: "Content not found",
-      unauthorizedStatus: 401,
-      logUnauthorized: true,
-    });
+    const content = await findContentByUuid(uuid);
     if (!content) {
-      return;
+      return res.status(404).json({ message: "Content not found" });
     }
 
     logger.info(`Serving content file ${uuid}`);
