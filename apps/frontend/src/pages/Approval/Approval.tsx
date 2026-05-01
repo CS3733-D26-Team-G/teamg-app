@@ -10,10 +10,12 @@ import {
   Divider,
   Stack,
   Tooltip,
+  Paper,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import GavelIcon from "@mui/icons-material/Gavel";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -22,6 +24,7 @@ import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import PublishIcon from "@mui/icons-material/Publish";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import HelpPopup from "../../components/HelpPopup";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import { API_ENDPOINTS } from "../../config";
 import {
   CLAIM_TYPE_LABELS,
@@ -52,6 +55,7 @@ export default function ApprovalPage() {
 
       // Admins see all claims; show only those cleared by underwriters
       const cleared = all; // filter disabled — showing all claims
+      // const underReview = all.filter((claim) => claim.status === "UNDER_REVIEW");
 
       setCards(
         cleared.map((claim) => ({
@@ -225,7 +229,7 @@ export default function ApprovalPage() {
       </Box>
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
-      <Box sx={{ px: 4, py: 3, maxWidth: 960, mx: "auto" }}>
+      <Box sx={{ px: 4, py: 3, width: "auto", borderRadius: "14px" }}>
         {loading ?
           <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
             <CircularProgress />
@@ -276,83 +280,232 @@ export default function ApprovalPage() {
             </Button>
           </Box>
         : <>
-            <Stack spacing={1.5}>
-              <AnimatePresence>
-                {cards.map((card, index) => (
-                  <ApprovalCardComponent
-                    key={card.claim.uuid}
-                    card={card}
-                    index={index}
-                    onToggle={() => toggleExpanded(card.claim.uuid)}
-                    onApprove={() => setStatus(card.claim.uuid, "APPROVED")}
-                    onDeny={() => setStatus(card.claim.uuid, "DENIED")}
-                    onCommentChange={(val) => setComment(card.claim.uuid, val)}
-                  />
-                ))}
-              </AnimatePresence>
-            </Stack>
             <Box
-              component={motion.div}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
               sx={{
-                mt: 4,
-                pt: 3,
-                borderTop: "1px solid",
-                borderColor: "divider",
                 display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-                gap: 2,
+                flexDirection: "row",
+                gap: "3rem",
               }}
             >
-              <Typography
-                variant="body2"
-                color="text.secondary"
-              >
-                {approvedCount + deniedCount} of {cards.length} reviewed
-              </Typography>
-              <Tooltip
-                title={
-                  approvedCount + deniedCount === 0 ?
-                    "Review at least one item first"
-                  : ""
-                }
-              >
-                <span>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={
-                      submitting ?
-                        <CircularProgress
-                          size={18}
-                          color="inherit"
-                        />
-                      : <PublishIcon />
-                    }
-                    disabled={submitting || approvedCount + deniedCount === 0}
-                    onClick={() => void handleSubmitApprovals()}
-                    sx={{
-                      "background": "linear-gradient(135deg, #1A1E4B, #395176)",
-                      "fontWeight": 700,
-                      "px": 4,
-                      "py": 1.4,
-                      "borderRadius": "12px",
-                      "textTransform": "none",
-                      "fontSize": "1rem",
-                      "boxShadow": "0 4px 16px rgba(26,30,75,0.35)",
-                      "&:hover": {
-                        background: "linear-gradient(135deg, #0f1230, #2d4060)",
-                        boxShadow: "0 6px 20px rgba(26,30,75,0.5)",
-                      },
-                    }}
+              <Stack spacing={3}>
+                <Paper
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0 }}
+                  variant="outlined"
+                  sx={{
+                    flex: 1,
+                    p: 2.5,
+                    borderRadius: "14px",
+                    minWidth: "350px",
+                    maxWidth: "400px",
+                    maxHeight: "200px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    sx={{ mb: 1.5 }}
                   >
-                    Submit Approvals
-                  </Button>
-                </span>
-              </Tooltip>
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "10px",
+                        background: "linear-gradient(135deg, #503817, #e7af5b)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <AssignmentIcon sx={{ color: "white", fontSize: 18 }} />
+                    </Box>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 700 }}
+                    >
+                      Claims
+                    </Typography>
+                  </Stack>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ lineHeight: 1.7 }}
+                  >
+                    Every claim starts with <strong>when</strong> the event
+                    happened, the <strong>type of claim</strong> (auto,
+                    property, medical, etc.), and a clear{" "}
+                    <strong>written description</strong> of what occurred.
+                  </Typography>
+                </Paper>
+                <Paper
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0 }}
+                  variant="outlined"
+                  sx={{
+                    flex: 1,
+                    p: 2.5,
+                    borderRadius: "14px",
+                    minWidth: "350px",
+                    maxWidth: "400px",
+                    maxHeight: "300px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    sx={{ mb: 1.5 }}
+                  >
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "10px",
+                        background: "linear-gradient(135deg, #13331d, #64ea9e)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      }}
+                    >
+                      <GavelIcon sx={{ color: "white", fontSize: 18 }} />
+                    </Box>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 700 }}
+                    >
+                      Approvals vs. Rejections
+                    </Typography>
+                  </Stack>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ lineHeight: 1.7 }}
+                  >
+                    As the admin and approver{" "}
+                    <strong>you are the final line of defense</strong>
+                    be sure to reiew each and every claim that is submitted and
+                    evaluate whether or not to approve it. For additional help,
+                    consult the following resources:
+                    <br />
+                    <strong>Auto Claims</strong>:{" "}
+                    <a href="https://lnjury.com/auto-accident/?q_type=Drunk%20Driver&SRC=lnjury_msn&q_publisher=bing&q_creative=77584482985770&q_device=c&q_matchtype=bb&q_network=o&q_campaign=355450726&q_adgroup=1241349632743167&q_criteria=77584681472476&q_target=kwd-77584681472476:loc-190&q_keyword=hit%20by%20drunk%20driver&q_query=what%20makes%20a%20risk%20free%20auto%20insurance%20claim&utm_source=bing&utm_medium=cpc&utm_term=hit%20by%20drunk%20driver&utm_campaign=campaignname&msclkid=5d601f01d07816b2d4f076f228d4a40a">
+                      Resource
+                    </a>
+                    <br />
+                    <strong>Medical Claims</strong>:{" "}
+                    <a href="https://lnjury.com/auto-accident/?q_type=Drunk%20Driver&SRC=lnjury_msn&q_publisher=bing&q_creative=77584482985770&q_device=c&q_matchtype=bb&q_network=o&q_campaign=355450726&q_adgroup=1241349632743167&q_criteria=77584681472476&q_target=kwd-77584681472476:loc-190&q_keyword=hit%20by%20drunk%20driver&q_query=what%20makes%20a%20risk%20free%20auto%20insurance%20claim&utm_source=bing&utm_medium=cpc&utm_term=hit%20by%20drunk%20driver&utm_campaign=campaignname&msclkid=5d601f01d07816b2d4f076f228d4a40a">
+                      Resource
+                    </a>
+                    <br />
+                    <strong>Legal Claims</strong>:{" "}
+                    <a href="https://lnjury.com/auto-accident/?q_type=Drunk%20Driver&SRC=lnjury_msn&q_publisher=bing&q_creative=77584482985770&q_device=c&q_matchtype=bb&q_network=o&q_campaign=355450726&q_adgroup=1241349632743167&q_criteria=77584681472476&q_target=kwd-77584681472476:loc-190&q_keyword=hit%20by%20drunk%20driver&q_query=what%20makes%20a%20risk%20free%20auto%20insurance%20claim&utm_source=bing&utm_medium=cpc&utm_term=hit%20by%20drunk%20driver&utm_campaign=campaignname&msclkid=5d601f01d07816b2d4f076f228d4a40a">
+                      Resource
+                    </a>
+                    <br />
+                  </Typography>
+                </Paper>
+              </Stack>
+              <Box
+                className="approval-cards"
+                sx={{
+                  flex: 1,
+                }}
+              >
+                <Stack spacing={1.5}>
+                  <AnimatePresence>
+                    {cards.map((card, index) => (
+                      <ApprovalCardComponent
+                        key={card.claim.uuid}
+                        card={card}
+                        index={index}
+                        onToggle={() => toggleExpanded(card.claim.uuid)}
+                        onApprove={() => setStatus(card.claim.uuid, "APPROVED")}
+                        onDeny={() => setStatus(card.claim.uuid, "DENIED")}
+                        onCommentChange={(val) =>
+                          setComment(card.claim.uuid, val)
+                        }
+                      />
+                    ))}
+                  </AnimatePresence>
+                </Stack>
+                <Box
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  sx={{
+                    mt: 4,
+                    pt: 3,
+                    borderTop: "1px solid",
+                    borderColor: "divider",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: 2,
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {approvedCount + deniedCount} of {cards.length} reviewed
+                  </Typography>
+                  <Tooltip
+                    title={
+                      approvedCount + deniedCount === 0 ?
+                        "Review at least one item first"
+                      : ""
+                    }
+                  >
+                    <span>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        startIcon={
+                          submitting ?
+                            <CircularProgress
+                              size={18}
+                              color="inherit"
+                            />
+                          : <PublishIcon />
+                        }
+                        disabled={
+                          submitting || approvedCount + deniedCount === 0
+                        }
+                        onClick={() => void handleSubmitApprovals()}
+                        sx={{
+                          "background":
+                            "linear-gradient(135deg, #1A1E4B, #395176)",
+                          "fontWeight": 700,
+                          "px": 4,
+                          "py": 1.4,
+                          "borderRadius": "12px",
+                          "textTransform": "none",
+                          "fontSize": "1rem",
+                          "boxShadow": "0 4px 16px rgba(26,30,75,0.35)",
+                          "&:hover": {
+                            background:
+                              "linear-gradient(135deg, #0f1230, #2d4060)",
+                            boxShadow: "0 6px 20px rgba(26,30,75,0.5)",
+                          },
+                        }}
+                      >
+                        Submit Approvals
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </Box>
+              </Box>
             </Box>
           </>
         }
@@ -394,9 +547,11 @@ function ApprovalCardComponent({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
+      onClick={() => console.log(status)}
       sx={{
         borderRadius: "14px",
         overflow: "hidden",
+        width: "auto",
         border: "1.5px solid",
         borderColor:
           status === "APPROVED" ? "success.main"

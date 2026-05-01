@@ -50,7 +50,9 @@ export default function RiskReviewPage() {
     try {
       setLoading(true);
       const all = await loadClaimsList<ReviewClaimRecord>();
-      const pending = all; // filter disabled — showing all claims
+
+      const pending = all.filter((claim) => claim.status === "PENDING");
+
       setCards(
         pending.map((claim) => ({
           claim,
@@ -101,7 +103,7 @@ export default function RiskReviewPage() {
             method: "PUT",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: card.status }),
+            body: JSON.stringify({ status: "UNDER_REVIEW" }),
           }),
         ),
       );
