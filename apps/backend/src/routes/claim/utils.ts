@@ -31,10 +31,17 @@ export function parseClaimUuid(
 export function getClaimVisibilityWhere(
   auth: Auth,
 ): Prisma.InsuranceClaimWhereInput {
+  // Admins see everything
   if (isAdmin(auth)) {
     return {};
   }
 
+  // Underwriters see all PENDING claims so they can perform risk review
+  if (auth.position === "UNDERWRITER") {
+    return {};
+  }
+
+  // All other roles (agents) only see their own claims
   return {
     requestorEmployeeUuid: auth.employeeUuid,
   };
@@ -88,7 +95,13 @@ export async function findAccessibleClaim(uuid: string, auth: Auth) {
     return { kind: "missing" as const };
   }
 
-  if (!isAdmin(auth) && claim.requestorEmployeeUuid !== auth.employeeUuid) {
+  // Admins and underwriters can access any claim
+  if (isAdmin(auth) || auth.position === "UNDERWRITER") {
+    return { kind: "ok" as const, claim };
+  }
+
+  // Other roles can only access their own claims
+  if (claim.requestorEmployeeUuid !== auth.employeeUuid) {
     return { kind: "forbidden" as const };
   }
 
