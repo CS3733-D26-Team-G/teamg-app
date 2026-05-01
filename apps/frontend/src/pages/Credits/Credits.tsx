@@ -165,6 +165,15 @@ const dependencies = [
     logo: "/envLogo.png",
     url: "https://github.com/motdotla/dotenv",
   },
+  {
+    name: "FullCalendar",
+    version: "17.4.0",
+    tag: "Tooling",
+    blurb:
+      "Loads environment variables from a .env file into process.env, keeping secrets and config out of source code.",
+    logo: "/FullCalendar.png",
+    url: "https://fullcalendar.io/docs/react",
+  },
 ];
 
 export default function Credits() {
