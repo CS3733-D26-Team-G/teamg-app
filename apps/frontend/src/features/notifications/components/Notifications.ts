@@ -110,3 +110,43 @@ export function getContentEdits(
       }`,
     }));
 }
+
+function getClaimNotification(
+  action: string,
+  employee?: { firstName: string; lastName: string },
+): string {
+  const employeeInfo =
+    employee ? ` by ${employee.firstName} ${employee.lastName}` : "";
+  let notificationMessage = "";
+
+  switch (action) {
+    case "CREATE_CLAIM":
+      notificationMessage = `Claim was created${employeeInfo}`;
+      break;
+    case "EDIT_CONTENT":
+      notificationMessage = `Content was edited${employeeInfo}`;
+      break;
+    case "DELETE_CLAIM":
+      notificationMessage = `Claim was deleted${employeeInfo}`;
+      break;
+    default:
+      notificationMessage = `Action ${action} performed${employeeInfo}`;
+  }
+
+  return notificationMessage;
+}
+
+export function getClaimActions(
+  activities: ActivityRow[],
+): NotificationActivity[] {
+  return activities.map((item) => ({
+    uuid: item.uuid,
+    action: item.action,
+    resourceUuid: item.resourceUuid ?? "",
+    resourceName: item.resourceName ?? "",
+    timestamp: item.timestamp,
+    employee: item.employee,
+    title: item.resourceName ?? "",
+    notificationMessage: getClaimNotification(item.action),
+  }));
+}
