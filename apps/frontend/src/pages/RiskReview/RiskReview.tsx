@@ -141,7 +141,7 @@ export default function RiskReviewPage() {
   const pendingCount = cards.filter((c) => c.status === null).length;
 
   return (
-    <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
+    <Box sx={{ minHeight: "100vh", backgroundColor: "white" }}>
       <Box
         sx={{
           background:
@@ -250,7 +250,9 @@ export default function RiskReviewPage() {
         )}
       </Box>
 
-      <Box sx={{ px: 4, py: 3, maxWidth: 960, mx: "auto" }}>
+      <Box
+        sx={{ px: 4, py: 3, maxWidth: 960, mx: "auto", borderRadius: "14px" }}
+      >
         {loading ?
           <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
             <CircularProgress />
