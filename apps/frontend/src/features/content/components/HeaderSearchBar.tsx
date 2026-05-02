@@ -23,8 +23,18 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
           setSearchQuery(e.target.value);
         }}
         sx={{
-          backgroundColor: "white",
-          borderRadius: "4px", // Matches default MUI radius
+          "backgroundColor": "background.paper",
+          "borderRadius": "4px",
+          "& .MuiInputBase-input": {
+            color: "text.primary", // uses white in dark mode, black in light mode
+          },
+          "& .MuiInputBase-input::placeholder": {
+            color: "text.secondary",
+            opacity: 1,
+          },
+          "& .MuiSvgIcon-root": {
+            color: "text.secondary", // search icon color
+          },
         }}
         slotProps={{
           input: {

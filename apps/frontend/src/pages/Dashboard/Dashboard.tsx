@@ -394,8 +394,6 @@ export default function Dashboard() {
       sx={{
         height: "auto",
         width: "100%",
-        background:
-          "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
       }}
     >
       <StyledToolbar
@@ -444,8 +442,12 @@ export default function Dashboard() {
         sx={{ borderRadius: 3 }}
       >
         <CardContent
-          className="mr-1 bg-gray-100"
-          sx={{ padding: 5, minHeight: "88vh" }}
+          className="mr-1 flex flex-col gap-5"
+          sx={{
+            padding: 5,
+            minHeight: "88vh",
+            backgroundColor: "background.default",
+          }}
         >
           <DndContext
             sensors={sensors}
