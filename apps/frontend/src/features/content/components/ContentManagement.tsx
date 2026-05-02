@@ -51,6 +51,7 @@ import { useAuth } from "../../../auth/AuthContext";
 import "./ContentManagement.css";
 import {
   ContentFavoriteResponseSchema,
+  ContentRowsSchema,
   type ContentRow,
   type ContentTagSummary,
 } from "../../../types/content";
@@ -191,7 +192,7 @@ const SlideUpTransition = React.forwardRef(function SlideUpTransition(
   );
 });
 
-// returns UUIDs of rows added after the current browser session started so they can be highlighted
+/* Highlights new content based on what is different from start of session */
 function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const KEY = `new_content_ids_${userUuid}`;
   const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
@@ -272,7 +273,9 @@ export default function ContentManagement({
     () => contentListQuery.data ?? [],
   );
   const [searchQuery, setSearchQuery] = useState("");
-  const [lockMessage, setLockMessage] = useState<string | null>(null); // inline warning when checkout fails
+  const [searchRows, setSearchRows] = useState<ContentRow[] | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [lockMessage, setLockMessage] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState<
     Record<string, boolean>
   >({}); // tracks in-flight favorite requests
@@ -300,7 +303,7 @@ export default function ContentManagement({
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.can_manage_all_content ?? false;
 
-  // form modal is open whenever viewState is non-null
+  // Form modal open state — derived from viewState
   const formOpen = viewState !== null;
 
   // if the page loads with ?filter=, pre-fill the search box and auto-open the matching doc
@@ -363,6 +366,94 @@ export default function ContentManagement({
   );
 
   // toggles a single accordion open or closed
+  const fetchSearchResults = useCallback(
+    async (query: string) => {
+      const trimmedQuery = query.trim();
+      if (!trimmedQuery) {
+        setSearchRows(null);
+        setSearchError(null);
+        return;
+      }
+
+      const params = new URLSearchParams({ q: trimmedQuery });
+      positionFilters.forEach((position) =>
+        params.append("position", position),
+      );
+      fileTypeFilters.forEach((fileType) =>
+        params.append("fileType", fileType),
+      );
+      tagFilters.forEach((tag) => params.append("tagUuid", tag.uuid));
+
+      try {
+        setSearchError(null);
+        const res = await fetch(`${API_ENDPOINTS.CONTENT.SEARCH}?${params}`, {
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          throw new Error(`Search failed: ${res.status}`);
+        }
+
+        const data: unknown = await res.json();
+        const parsed = ContentRowsSchema.safeParse(data);
+        if (!parsed.success) {
+          throw parsed.error;
+        }
+
+        setSearchRows(
+          parsed.data.map((row) => ({
+            ...row,
+            isLocked: row.editLock != null,
+          })),
+        );
+      } catch (error) {
+        console.error(error);
+        setSearchRows([]);
+        setSearchError("Unable to search content");
+      }
+    },
+    [fileTypeFilters, positionFilters, tagFilters],
+  );
+
+  const handleSearch = useCallback((query: string) => {
+    const trimmedQuery = query.trim();
+    setSearchQuery(trimmedQuery);
+
+    if (!trimmedQuery) {
+      setSearchRows(null);
+      setSearchError(null);
+      return;
+    }
+
+    setSearchRows([]);
+  }, []);
+
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    if (filterParam) {
+      handleSearch(filterParam);
+
+      const matched = rows.find(
+        (r) => r.title.toLowerCase() === filterParam.toLowerCase(),
+      );
+      if (matched) {
+        setSelectedDoc({
+          uri: API_ENDPOINTS.CONTENT.FILE(matched.uuid),
+          fileName: matched.title,
+          uuid: matched.uuid,
+          forPosition: matched.forPosition,
+        });
+        setPreviewOpen(true);
+      }
+    }
+  }, [handleSearch, rows, searchParams]);
+
+  useEffect(() => {
+    if (searchQuery) {
+      void fetchSearchResults(searchQuery);
+    }
+  }, [fetchSearchResults, searchQuery]);
+
   const toggleAccordion = (key: string) => {
     setExpandedPositions((prev) => {
       const next = new Set(prev);
@@ -389,20 +480,9 @@ export default function ContentManagement({
   // applies text search + position / file-type / tag filters to the full row list
   const filteredRows = useMemo(
     () =>
-      rows.filter((row) => {
-        if (searchQuery.trim()) {
-          const targetFields = [
-            row.title,
-            row.status,
-            row.url,
-            row.contentOwner,
-            row.forPosition,
-            row.fileType,
-          ];
-          const searchMatch = targetFields.some((field) =>
-            field?.toLowerCase().includes(searchQuery.toLowerCase()),
-          );
-          if (!searchMatch) return false;
+      (searchRows ?? rows).filter((row) => {
+        if (searchRows) {
+          return true;
         }
 
         if (
@@ -430,7 +510,7 @@ export default function ContentManagement({
 
         return true;
       }),
-    [rows, searchQuery, positionFilters, fileTypeFilters, tagFilters],
+    [rows, searchRows, positionFilters, fileTypeFilters, tagFilters],
   );
 
   // adds or removes a position from the active filters
@@ -1081,7 +1161,7 @@ export default function ContentManagement({
               </IconButton>
             </Tooltip>
 
-            {/* gated on position permission */}
+            {/* Download */}
             <Tooltip
               title={
                 !hasPermission ?
@@ -1282,7 +1362,10 @@ export default function ContentManagement({
           >
             <Box sx={{ display: "flex", gap: 2 }}>
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-                <HeaderSearchBar setSearchQuery={setSearchQuery} />
+                <HeaderSearchBar
+                  searchQuery={searchQuery}
+                  onSearch={handleSearch}
+                />
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Button
@@ -1664,6 +1747,11 @@ export default function ContentManagement({
           {lockMessage && (
             <Typography sx={{ pt: 1, color: "warning.main" }}>
               {lockMessage}
+            </Typography>
+          )}
+          {searchError && (
+            <Typography sx={{ pt: 1, color: "warning.main" }}>
+              {searchError}
             </Typography>
           )}
         </StyledToolbar>
