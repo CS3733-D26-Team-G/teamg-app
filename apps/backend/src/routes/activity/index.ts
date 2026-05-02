@@ -11,7 +11,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   const auth = getAuth(req);
 
-  const category = (req.query.category as string) ?? "content";
+  const category = (req.query.category as string) ?? "all";
 
   const contentActions = [
     "CREATE_CONTENT",

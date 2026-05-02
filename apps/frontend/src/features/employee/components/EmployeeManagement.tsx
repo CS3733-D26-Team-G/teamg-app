@@ -17,6 +17,7 @@ import {
   Dialog,
   DialogContent,
   Slide,
+  Stack,
 } from "@mui/material";
 import type { TransitionProps } from "@mui/material/transitions";
 import AddIcon from "@mui/icons-material/Add";
@@ -260,8 +261,9 @@ export default function EmployeeManagement() {
                 sx={{
                   width: 32,
                   height: 32,
-                  bgcolor: avatar ? "transparent" : "primary.main",
+                  bgcolor: avatar ? "transparent" : "#616161",
                   fontSize: "0.875rem",
+                  color: "white",
                 }}
               >
                 {initials}
@@ -338,25 +340,83 @@ export default function EmployeeManagement() {
           boxSizing: "border-box",
           backgroundColor: "transparent",
           boxShadow: "none",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          p: 0,
         }}
       >
         <StyledToolbar
           sx={{
             width: "100%",
             px: 0,
-            background:
-              "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+            p: "0 !important",
+            background: "transparent",
             overflow: "hidden",
           }}
         >
-          <Typography
+          {/* <Typography
             variant="h2"
             sx={{ pb: 2, pt: 4, color: "White", fontWeight: "bold" }}
           >
             {" "}
             Employee Management
-          </Typography>
+          </Typography> */}
+          <Box
+            className="employee-header"
+            sx={{
+              px: 4,
+              pt: 5,
+
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <Stack
+              direction="row"
+              alignItems="flex-start"
+              justifyContent="space-between"
+            >
+              <Box>
+                <Typography
+                  variant="h2"
+                  sx={{ color: "white", mb: 0.5 }}
+                >
+                  Employee Management
+                </Typography>
+                <Typography
+                  sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
+                >
+                  A central hub for staff records, role assignments, and
+                  department oversight.
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mt: 0.5,
+                  zIndex: 10,
+                }}
+              >
+                <HelpPopup
+                  description="The employee management page allows admins to add, manage, and delete any employee within iBank's database."
+                  infoOrHelp={true}
+                />
+              </Box>
+            </Stack>
+            <Box
+              sx={{
+                background: "transparent",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 2,
+                pt: 2,
+                flexWrap: "wrap",
+                position: "relative",
+                zIndex: 1000,
+              }}
+            ></Box>
+          </Box>
           {[...Array(3)].map((_, i) => (
             <Box
               key={i}
@@ -378,9 +438,14 @@ export default function EmployeeManagement() {
               alignItems: "center",
               justifyContent: "space-between",
               width: "100%",
+              pb: 3,
+              px: 4,
             }}
           >
-            <Box sx={{ display: "flex", gap: 4 }}>
+            <Box
+              className="app-bar"
+              sx={{ display: "flex", gap: 4 }}
+            >
               <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
@@ -443,7 +508,7 @@ export default function EmployeeManagement() {
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   {[
                     ["UNDERWRITER", "Underwriter"],
                     ["BUSINESS_ANALYST", "Business Analysis"],
@@ -477,7 +542,7 @@ export default function EmployeeManagement() {
                   },
                 }}
               >
-                <FormGroup>
+                <FormGroup sx={{ pl: 1 }}>
                   {[
                     ["OPERATION_TECHNOLOGY", "Operation Technology"],
                     ["ACCOUNTING", "Accounting"],
@@ -497,7 +562,7 @@ export default function EmployeeManagement() {
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <HelpPopup
-                description="The Employee Management page lets you view, add, edit, and delete employees. You can filter by position or department and search by name."
+                description="Add, filter, or search for specific employees within the database."
                 infoOrHelp={true}
               />
               <Button
@@ -522,6 +587,11 @@ export default function EmployeeManagement() {
         pageSizeOptions={[5, 10]}
         initialState={{
           pagination: { paginationModel: { pageSize: 10 } },
+        }}
+        sx={{
+          height: "calc(100vh - 200px)",
+          width: "95%",
+          mx: "auto",
         }}
       />
 

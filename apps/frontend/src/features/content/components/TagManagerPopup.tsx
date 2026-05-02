@@ -11,13 +11,16 @@ import {
   ListItemText,
   Divider,
   TextField,
+  Chip,
 } from "@mui/material";
 import Button from "@mui/material/Button";
+import EditIcon from "@mui/icons-material/Edit";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import { API_ENDPOINTS } from "../../../config.ts";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
+import HeaderSearchBar from "./HeaderSearchBar";
 import {
   ContentTagSummariesSchema,
   type ContentTagSummary,
@@ -37,6 +40,11 @@ export default function TagManagerPopup({
   const [newTag, setNewTag] = useState("");
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
   const [localTags, setLocalTags] = useState<ContentTagSummary[]>([]);
+  const [hoveredTag, setHoveredTag] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredTags = localTags.filter((tag) =>
+    tag.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   useEffect(() => {
     setLocalTags(availableTags);
@@ -119,16 +127,38 @@ export default function TagManagerPopup({
       <Dialog
         open={open}
         onClose={handleClose}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Manage Content Tags</DialogTitle>
+        <DialogTitle>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography sx={{ fontSize: 16 }}>
+                <b>Manage Content Tags</b>
+              </Typography>
+              <Chip
+                label={`${availableTags.length} tags`}
+                size="small"
+              />
+            </Box>
+            <HeaderSearchBar setSearchQuery={setSearchQuery} />
+          </Box>
+        </DialogTitle>
         <DialogContent
           dividers
           sx={{
             border: "1px solid black",
             borderRadius: 1,
             margin: 1.5,
+            pl: 0.75,
+            pr: 0,
+            py: 1.25,
           }}
         >
           {/*List of tags structure*/}
@@ -144,10 +174,17 @@ export default function TagManagerPopup({
                 No Tags in the System
               </Typography>
             )}
-            {localTags.map((tag, index) => (
+            {filteredTags.map((tag, index) => (
               <Box key={tag.uuid}>
                 <ListItem
                   disablePadding
+                  onMouseEnter={() => setHoveredTag(tag.uuid)}
+                  onMouseLeave={() => setHoveredTag(null)}
+                  sx={{
+                    "&:hover": { backgroundColor: "action.hover" },
+                    "py": 0.75,
+                    "borderRadius": 1,
+                  }}
                   secondaryAction={
                     pendingDeleteTag === tag.uuid ?
                       <Box
@@ -157,7 +194,7 @@ export default function TagManagerPopup({
                           gap: 1,
                         }}
                       >
-                        <Typography>Delete</Typography>
+                        <Typography>Delete?</Typography>
                         <Button
                           size="small"
                           variant="contained"
@@ -178,22 +215,38 @@ export default function TagManagerPopup({
                           No
                         </Button>
                       </Box>
-                    : <IconButton
-                        size="small"
-                        onClick={() => {
-                          setPendingDeleteTag(tag.uuid);
-                        }}
-                      >
-                        <DeleteIcon
-                          fontSize="small"
-                          sx={{ color: "#ef5350" }}
-                        />
-                      </IconButton>
+                    : <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <IconButton size="small">
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setPendingDeleteTag(tag.uuid);
+                          }}
+                        >
+                          <DeleteIcon
+                            fontSize="small"
+                            sx={{ color: "#ef5350" }}
+                          />
+                        </IconButton>
+                      </Box>
                   }
                 >
-                  <ListItemText primary={tag.name} />
+                  <ListItemText
+                    sx={{ pl: 1 }}
+                    primary={
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <LocalOfferOutlinedIcon
+                          sx={{ fontSize: 18, color: "text.secondary" }}
+                        />
+                        {tag.name}
+                      </Box>
+                    }
+                  />
                 </ListItem>
-                {index < localTags.length - 1 && <Divider />}
               </Box>
             ))}
           </List>
@@ -221,6 +274,7 @@ export default function TagManagerPopup({
               fullWidth
             />
             <Button
+              size="small"
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => {

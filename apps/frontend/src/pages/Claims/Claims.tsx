@@ -83,15 +83,15 @@ interface ClaimRecord {
     lastName: string;
     corporateEmail: string;
   };
-  contents?: Array<{
-    content: {
-      uuid: string;
-      title: string;
-      url: string;
-      fileType: string | null;
-      status: string;
-    };
-  }>;
+  contents?: ClaimContentSummary[];
+}
+
+interface ClaimContentSummary {
+  uuid: string;
+  title: string;
+  url: string;
+  fileType: string | null;
+  status: string;
 }
 
 interface ClaimFormData {
@@ -1033,7 +1033,8 @@ function ClaimHistoryCard({
   claim: ClaimRecord;
   index: number;
 }) {
-  const attachmentCount = claim.contents?.length ?? 0;
+  const attachments = claim.contents ?? [];
+  const attachmentCount = attachments.length;
 
   return (
     <Box
@@ -1110,7 +1111,7 @@ function ClaimHistoryCard({
             {claim.incidentDescription}
           </Typography>
 
-          {claim.contents && claim.contents.length > 0 && (
+          {attachmentCount > 0 && (
             <>
               <Typography
                 variant="subtitle2"
@@ -1126,7 +1127,7 @@ function ClaimHistoryCard({
                 Attachments
               </Typography>
               <Stack spacing={0.5}>
-                {claim.contents.map(({ content }) => (
+                {attachments.map((content) => (
                   <Stack
                     key={content.uuid}
                     direction="row"

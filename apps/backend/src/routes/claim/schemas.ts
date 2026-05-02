@@ -1,6 +1,10 @@
 import { Prisma } from "@repo/db";
 import { Schemas } from "@repo/zod";
 import { z } from "zod";
+import { InsuranceClaimStatus } from "@repo/db"; // Import the actual Prisma Enum
+
+// Define an Enum to match your Prisma schema for type safety
+const ClaimStatusEnum = z.nativeEnum(InsuranceClaimStatus);
 
 export const ClaimParamsSchema =
   Schemas.InsuranceClaimWhereUniqueInputObjectZodSchema.extend({
@@ -13,8 +17,10 @@ export const ClaimCreateSchema =
     requestorEmployeeUuid: true,
     createdAt: true,
     updatedAt: true,
+    status: true, // Omit so we can set a default via the extend below
   }).extend({
     contentUuids: z.array(z.uuid()).default([]),
+    status: ClaimStatusEnum.default("PENDING"), // Defaulting to PENDING ensures a "Reduced Mental Load"
   });
 
 export const ClaimUpdateSchema =
@@ -24,6 +30,8 @@ export const ClaimUpdateSchema =
     updatedAt: true,
   }).extend({
     contentUuids: z.array(z.uuid()).optional(),
+    status: ClaimStatusEnum.optional(), // Now perfectly matches Prisma's expectations
+    comment: z.string().optional().nullable(), // <--- ADD THIS
   });
 
 export const claimInclude = {

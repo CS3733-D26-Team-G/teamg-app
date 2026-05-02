@@ -42,6 +42,19 @@ const AGENT_POSITIONS: Position[] = [
   "BUSINESS_OP_RATING",
 ];
 
+// human-readable labels for each content type
+const contentTypeLabels: Record<ContentType, string> = {
+  REFERENCE: "Reference",
+  WORKFLOW: "Workflow",
+};
+
+// human-readable labels for each content status
+const statusLabels: Record<ContentStatus, string> = {
+  AVAILABLE: "Available",
+  IN_USE: "In-Use",
+  UNAVAILABLE: "Unavailable",
+};
+
 type ContentFormInitialData = ContentRecord & {
   tags?: ContentTagSummary[];
 };
@@ -393,7 +406,7 @@ export default function ContentForm({
               key={contentType}
               value={contentType}
             >
-              {contentType}
+              {contentTypeLabels[contentType as ContentType]}
             </MenuItem>
           ))}
         </Select>
@@ -450,7 +463,7 @@ export default function ContentForm({
               key={status}
               value={status}
             >
-              {status}
+              {statusLabels[status as ContentStatus]}
             </MenuItem>
           ))}
         </Select>

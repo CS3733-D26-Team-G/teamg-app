@@ -17,7 +17,6 @@ interface InfoButtonProps {
   editor?: string;
   editorAvatar?: string | null;
   createdAt?: Date | string | null;
-  updatedAt?: Date | string | null;
 }
 
 function formatFileType(mime: string | null): string {
@@ -62,7 +61,6 @@ export default function InfoPopup({
   editor,
   editorAvatar,
   createdAt,
-  updatedAt,
 }: InfoButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [copied, setCopied] = useState(false);
@@ -160,20 +158,17 @@ export default function InfoPopup({
               <Typography>{editor}</Typography>
             </Box>
           )}
-          <Typography>
-            <b>Position:</b> {position}
-          </Typography>
-
-          <Typography>
-            <b>File Type:</b> {formatFileType(fileType)}
-          </Typography>
 
           <Typography>
             <b>Created:</b> {formatDate(createdAt)}
           </Typography>
 
           <Typography>
-            <b>Last Updated:</b> {formatDate(updatedAt)}
+            <b>Position:</b> {position}
+          </Typography>
+
+          <Typography>
+            <b>File Type:</b> {formatFileType(fileType)}
           </Typography>
 
           <Typography>
