@@ -22,12 +22,14 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Divider,
   Tooltip,
   Popover,
   FormGroup,
   FormControlLabel,
   Checkbox,
   Slide,
+  Switch,
 } from "@mui/material";
 import type { TransitionProps } from "@mui/material/transitions";
 import { useTheme } from "@mui/material/styles";
@@ -58,6 +60,10 @@ import {
   getPositionLabel,
 } from "../../../utils/positionDisplay";
 import MenuItem from "@mui/material/MenuItem";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import ViewModuleIcon from "@mui/icons-material/ViewModule";
+import TableRowsIcon from "@mui/icons-material/TableRows";
 import mime from "mime-types";
 import DocumentEditorModal from "./DocumentEditorModal.tsx";
 import HelpPopup from "../../../components/HelpPopup";
@@ -83,6 +89,7 @@ import {
   patchDashboardBootstrap,
   prefetchActivity,
 } from "../../../lib/activity-loaders";
+import { ContentTabs, SPECIAL_TABS } from "./ContentTabs.tsx";
 
 // human-readable labels for each content status
 const statusLabels: Record<ContentStatus, string> = {
@@ -285,6 +292,7 @@ export default function ContentManagement({
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null); // row staged for the delete confirmation dialog
   const [pendingSave, setPendingSave] = useState<FormData | null>(null); // payload staged for the save confirmation dialog
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set()); // UUIDs added this session, used for "new" row highlighting
+  const [showAllCheckedOut, setShowAllCheckedOut] = useState(true); // controls admins viewing of their own checked-out file or all checked-out files
 
   const availableTags = contentTagsQuery.data ?? [];
 
@@ -758,6 +766,39 @@ export default function ContentManagement({
   const handleClose = () => {
     setAnchorElement(null);
   };
+
+  // Tab System for Content Manager
+  const {
+    viewMode,
+    setViewMode,
+    activeTab,
+    setActiveTab,
+    specialTabRows,
+    activeRows,
+    isSpecialTab,
+  } = ContentTabs({
+    filteredRows,
+    employeeUuid: session?.employeeUuid,
+    userPosition,
+    isSystemAdmin,
+  });
+
+  // control display of checked-out tab for admins
+  const displayRows = useMemo(() => {
+    if (isSystemAdmin && activeTab === "checked-out" && !showAllCheckedOut) {
+      return activeRows.filter(
+        (r) => r.editLock?.lockedByEmp?.uuid === session?.employeeUuid,
+      );
+    }
+    return activeRows;
+  }, [
+    activeRows,
+    activeTab,
+    isSpecialTab,
+    isSystemAdmin,
+    showAllCheckedOut,
+    session,
+  ]);
 
   // save and delete confirmation dialogs
   const confirmationDialogs = (
@@ -1525,6 +1566,36 @@ export default function ContentManagement({
 
             {/* tag manager is admin-only */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Tooltip
+                title={
+                  viewMode === "accordion" ?
+                    "Switch to Tabs view"
+                  : "Switch to Accordion view"
+                }
+              >
+                <IconButton
+                  onClick={() =>
+                    setViewMode((m) =>
+                      m === "accordion" ? "tabs" : "accordion",
+                    )
+                  }
+                  size="small"
+                  sx={{
+                    "color": "rgba(255,255,255,0.85)",
+                    "backgroundColor": "rgba(255,255,255,0.12)",
+                    "borderRadius": "8px",
+                    "border": "1px solid rgba(255,255,255,0.2)",
+                    "&:hover": {
+                      backgroundColor: "rgba(255,255,255,0.22)",
+                      color: "white",
+                    },
+                  }}
+                >
+                  {viewMode === "accordion" ?
+                    <ViewModuleIcon fontSize="small" />
+                  : <TableRowsIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
               <HelpPopup
                 description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
                 infoOrHelp={true}
@@ -1588,212 +1659,478 @@ export default function ContentManagement({
         </StyledToolbar>
       </AppBar>
 
-      {/* ── Accordion Data grids ───────────────────────────────────────────────────── */}
-      <Box sx={{ width: "95%", mx: "auto" }}>
-        {orderedPositions.map(({ key, label, chipSx }) => {
-          const positionRows = filteredRows.filter(
-            (r) => r.forPosition === key,
-          );
-          const favoriteCount = positionRows.filter(
-            (r) => r.is_favorite,
-          ).length;
-          const isExpanded = expandedPositions.has(key);
-
-          return (
-            <Accordion
-              key={key}
-              expanded={isExpanded}
-              onChange={() => toggleAccordion(key)}
-              disableGutters
-              elevation={0}
+      {/* ── Content Data Grids (Accordion or Tabs) ────────────────────────────────── */}
+      <Box sx={{ width: "100%" }}>
+        {/* ── TABS VIEW ─────────────────────────────────────────────────────── */}
+        {viewMode === "tabs" && (
+          <Box
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "8px",
+              overflow: "hidden",
+            }}
+          >
+            <Box
               sx={{
-                "mb": 1.5,
-                "overflow": "hidden",
-                "border": "1px solid",
-                "borderColor": "divider",
-                "&:before": { display: "none" },
-                "borderRadius": "8px !important",
-                "& .MuiAccordion-root": { borderRadius: "8px !important" },
-                "& .MuiPaper-root": { borderRadius: "8px !important" },
-                "& .MuiAccordionDetails-root": {
-                  borderBottomLeftRadius: "8px",
-                  borderBottomRightRadius: "8px",
-                  overflow: "hidden",
-                },
+                background: "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
+                px: 1,
+                pt: 1,
               }}
             >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon sx={{ color: "white" }} />}
+              <Tabs
+                value={activeTab}
+                onChange={(_e, val: string) => setActiveTab(val)}
+                variant="scrollable"
+                scrollButtons="auto"
+                TabIndicatorProps={{
+                  style: {
+                    backgroundColor: "white",
+                    height: 3,
+                    borderRadius: "2px 2px 0 0",
+                  },
+                }}
                 sx={{
-                  background:
-                    "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
-                  minHeight: 52,
-                  px: 2,
+                  "minHeight": 44,
+                  "& .MuiTab-root": {
+                    "color": "rgba(255,255,255,0.6)",
+                    "fontWeight": 600,
+                    "fontSize": "0.85rem",
+                    "minHeight": 44,
+                    "textTransform": "none",
+                    "px": 2,
+                    "&.Mui-selected": { color: "white" },
+                  },
                 }}
               >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  gap={1.5}
-                  sx={{ width: "100%" }}
-                >
-                  <Typography
+                {SPECIAL_TABS.map(({ key, label }) => (
+                  <Tab
+                    key={key}
+                    value={key}
+                    label={
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        gap={0.75}
+                      >
+                        <span>{label}</span>
+                        <Chip
+                          label={specialTabRows[key].length}
+                          size="small"
+                          sx={{
+                            "height": 18,
+                            "fontSize": "0.7rem",
+                            "fontWeight": 700,
+                            "backgroundColor": "rgba(255,255,255,0.2)",
+                            "color": "white",
+                            "& .MuiChip-label": { px: 0.75 },
+                          }}
+                        />
+                      </Stack>
+                    }
+                  />
+                ))}
+
+                <Divider
+                  orientation="vertical"
+                  flexItem
+                  sx={{ mx: 0.5, borderColor: "rgba(255,255,255,0.2)" }}
+                />
+
+                {orderedPositions.map(({ key, label }) => {
+                  const count = filteredRows.filter(
+                    (r: ContentRow) => r.forPosition === key,
+                  ).length;
+                  const favs = filteredRows.filter(
+                    (r: ContentRow) => r.forPosition === key && r.is_favorite,
+                  ).length;
+                  return (
+                    <Tab
+                      key={key}
+                      value={key}
+                      label={
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          gap={0.75}
+                        >
+                          <span>{label}</span>
+                          <Chip
+                            label={count}
+                            size="small"
+                            sx={{
+                              "height": 18,
+                              "fontSize": "0.7rem",
+                              "fontWeight": 700,
+                              "backgroundColor": "rgba(255,255,255,0.2)",
+                              "color": "white",
+                              "& .MuiChip-label": { px: 0.75 },
+                            }}
+                          />
+                          {favs > 0 && (
+                            <Heart
+                              size={11}
+                              fill="#e50000"
+                              color="#e50000"
+                            />
+                          )}
+                        </Stack>
+                      }
+                    />
+                  );
+                })}
+              </Tabs>
+            </Box>
+
+            <Box>
+              {isSystemAdmin &&
+                isSpecialTab(activeTab) &&
+                activeTab === "checked-out" && (
+                  <Box
                     sx={{
-                      color: "white",
-                      fontWeight: 600,
-                      fontSize: "0.95rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      px: 2,
+                      py: 0.75,
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                      backgroundColor: "action.hover",
                     }}
                   >
-                    {label}
-                  </Typography>
-                  <Chip
-                    label={`${positionRows.length} file${positionRows.length !== 1 ? "s" : ""}`}
-                    size="small"
-                    sx={{
-                      fontWeight: 500,
-                      ...chipSx,
-                    }}
-                  />
-                  {/* only shown when at least one row is favorited */}
-                  {favoriteCount > 0 && (
-                    <Chip
-                      icon={
-                        <Heart
-                          size={12}
-                          fill="#e50000"
-                          color="#e50000"
-                        />
-                      }
-                      label={favoriteCount}
+                    <Switch
                       size="small"
-                      variant="outlined"
+                      checked={showAllCheckedOut}
+                      onChange={(e) => setShowAllCheckedOut(e.target.checked)}
+                    />
+                    <Typography
+                      variant="body2"
                       sx={{
-                        color: "rgba(255,255,255,0.8)",
-                        borderColor: "rgba(255,255,255,0.4)",
-                        border: "1px solid transparent",
+                        color: "rgba(255,255,255,0.85)",
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      {showAllCheckedOut ?
+                        "Showing all checked-out items"
+                      : "Showing only my checked-out items"}
+                    </Typography>
+                  </Box>
+                )}
+              {displayRows.length === 0 ?
+                <Typography
+                  sx={{
+                    p: 3,
+                    color: "text.secondary",
+                    fontSize: "0.875rem",
+                    textAlign: "center",
+                  }}
+                >
+                  No content
+                  {(
+                    searchQuery ||
+                    positionFilters.length ||
+                    fileTypeFilters.length
+                  ) ?
+                    " matching current filters"
+                  : ""}
+                  .
+                </Typography>
+              : <DataGrid
+                  rows={displayRows}
+                  getRowId={(row) => row.uuid}
+                  columns={getColumns(
+                    (row) => {
+                      void recordContentView(row.uuid);
+                      const isExternalUrl =
+                        !row.supabasePath &&
+                        !row.url.includes("supabase.co/storage");
+                      if (isExternalUrl) {
+                        window.open(row.url, "_blank");
+                        return;
+                      }
+                      setSelectedDoc({
+                        uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+                        fileName: row.title,
+                        uuid: row.uuid,
+                        forPosition: row.forPosition,
+                      });
+                      setPreviewOpen(true);
+                    },
+                    handleDownload,
+                    handleCheckout,
+                    handleOpenEditor,
+                    releaseLock,
+                  )}
+                  getRowClassName={(params) => {
+                    const hasPermission =
+                      isSystemAdmin || userPosition === params.row.forPosition;
+                    const isNew = sessionNewIds.has(params.row.uuid);
+                    const classes: string[] = [];
+                    if (!hasPermission) classes.push("row-locked");
+                    if (isNew) classes.push("row-new");
+                    return classes.join(" ");
+                  }}
+                  autoHeight
+                  hideFooterPagination={activeRows.length <= 10}
+                  pageSizeOptions={[10, 25]}
+                  initialState={{
+                    pagination: { paginationModel: { pageSize: 10 } },
+                    sorting: {
+                      sortModel: [{ field: "favorite", sort: "desc" }],
+                    },
+                    columns: {
+                      columnVisibilityModel: {
+                        "favorite": false,
+                        "url": false,
+                        "contentOwner": false,
+                        "edited-by": false,
+                        "forPosition": false,
+                        "fileType": false,
+                      },
+                    },
+                  }}
+                  sx={{
+                    "borderRadius": 0,
+                    "& .row-locked": {
+                      backgroundColor:
+                        isDark ?
+                          "rgba(255,255,255,0.12)"
+                        : "rgba(245,245,245,1)",
+                      color: "text.disabled",
+                      cursor: "not-allowed",
+                    },
+                    "& .row-locked a": {
+                      color: "inherit",
+                      pointerEvents: "none",
+                      textDecoration: "none",
+                    },
+                    "& .row-new": {
+                      backgroundColor:
+                        isDark ?
+                          `${theme.palette.primary.main}1F`
+                        : `${theme.palette.primary.light}80`,
+                      borderLeft: "3px solid",
+                      borderLeftColor: theme.palette.primary.main,
+                    },
+                    "& .row-new:hover": {
+                      backgroundColor:
+                        isDark ?
+                          `${theme.palette.primary.main}38`
+                        : `${theme.palette.primary.light}D9`,
+                    },
+                  }}
+                />
+              }
+            </Box>
+          </Box>
+        )}
+
+        {/* ── ACCORDION VIEW ────────────────────────────────────────────────── */}
+        {viewMode === "accordion" &&
+          orderedPositions.map(({ key, label, chipSx }) => {
+            const positionRows = filteredRows.filter(
+              (r) => r.forPosition === key,
+            );
+            const favoriteCount = positionRows.filter(
+              (r) => r.is_favorite,
+            ).length;
+            const isExpanded = expandedPositions.has(key);
+
+            return (
+              <Accordion
+                key={key}
+                expanded={isExpanded}
+                onChange={() => toggleAccordion(key)}
+                disableGutters
+                elevation={0}
+                sx={{
+                  "mb": 1.5,
+                  "overflow": "hidden",
+                  "border": "1px solid",
+                  "borderColor": "divider",
+                  "&:before": { display: "none" },
+                  "borderRadius": "8px !important",
+                  "& .MuiAccordion-root": { borderRadius: "8px !important" },
+                  "& .MuiPaper-root": { borderRadius: "8px !important" },
+                  "& .MuiAccordionDetails-root": {
+                    borderBottomLeftRadius: "8px",
+                    borderBottomRightRadius: "8px",
+                    overflow: "hidden",
+                  },
+                }}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon sx={{ color: "white" }} />}
+                  sx={{
+                    background:
+                      "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
+                    minHeight: 52,
+                    px: 2,
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap={1.5}
+                    sx={{ width: "100%" }}
+                  >
+                    <Typography
+                      sx={{
+                        color: "white",
+                        fontWeight: 600,
+                        fontSize: "0.95rem",
+                      }}
+                    >
+                      {label}
+                    </Typography>
+                    <Chip
+                      label={`${positionRows.length} file${positionRows.length !== 1 ? "s" : ""}`}
+                      size="small"
+                      sx={{
+                        fontWeight: 500,
+                        ...chipSx,
                       }}
                     />
-                  )}
-                </Stack>
-              </AccordionSummary>
-
-              <AccordionDetails sx={{ p: 0 }}>
-                {positionRows.length === 0 ?
-                  // empty state — mentions active filters if any are set
-                  <Typography
-                    sx={{
-                      p: 3,
-                      color: "text.secondary",
-                      fontSize: "0.875rem",
-                      textAlign: "center",
-                    }}
-                  >
-                    No content for this position
-                    {(
-                      searchQuery ||
-                      positionFilters.length ||
-                      fileTypeFilters.length
-                    ) ?
-                      " matching current filters"
-                    : ""}
-                    .
-                  </Typography>
-                : <DataGrid
-                    rows={positionRows}
-                    getRowId={(row) => row.uuid}
-                    columns={getColumns(
-                      (row) => {
-                        void recordContentView(row.uuid);
-
-                        // external URLs open in a new tab instead of the previewer
-                        const isExternalUrl =
-                          !row.supabasePath &&
-                          !row.url.includes("supabase.co/storage");
-
-                        if (isExternalUrl) {
-                          window.open(row.url, "_blank");
-                          return;
+                    {/* only shown when at least one row is favorited */}
+                    {favoriteCount > 0 && (
+                      <Chip
+                        icon={
+                          <Heart
+                            size={12}
+                            fill="#e50000"
+                            color="#e50000"
+                          />
                         }
-
-                        setSelectedDoc({
-                          uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
-                          fileName: row.title,
-                          uuid: row.uuid,
-                          forPosition: row.forPosition,
-                        });
-                        setPreviewOpen(true);
-                      },
-                      handleDownload,
-                      handleCheckout,
-                      handleOpenEditor,
-                      releaseLock,
+                        label={favoriteCount}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          color: "rgba(255,255,255,0.8)",
+                          borderColor: "rgba(255,255,255,0.4)",
+                          border: "1px solid transparent",
+                        }}
+                      />
                     )}
-                    getRowClassName={(params) => {
-                      const hasPermission =
-                        isSystemAdmin ||
-                        userPosition === params.row.forPosition;
-                      const isNew = sessionNewIds.has(params.row.uuid);
-                      const classes: string[] = [];
-                      if (!hasPermission) classes.push("row-locked"); // dims rows the user can't interact with
-                      if (isNew) classes.push("row-new"); // highlights rows added this session
-                      return classes.join(" ");
-                    }}
-                    autoHeight
-                    hideFooterPagination={positionRows.length <= 10}
-                    pageSizeOptions={[10, 25]}
-                    initialState={{
-                      pagination: { paginationModel: { pageSize: 10 } },
-                      sorting: {
-                        sortModel: [{ field: "favorite", sort: "desc" }], // favorites on top by default
-                      },
-                      columns: {
-                        columnVisibilityModel: {
-                          "favorite": false,
-                          "url": false,
-                          "contentOwner": false,
-                          "edited-by": false,
-                          "forPosition": false, // redundant inside its own position section
-                          "fileType": false,
+                  </Stack>
+                </AccordionSummary>
+
+                <AccordionDetails sx={{ p: 0 }}>
+                  {positionRows.length === 0 ?
+                    // empty state — mentions active filters if any are set
+                    <Typography
+                      sx={{
+                        p: 3,
+                        color: "text.secondary",
+                        fontSize: "0.875rem",
+                        textAlign: "center",
+                      }}
+                    >
+                      No content for this position
+                      {(
+                        searchQuery ||
+                        positionFilters.length ||
+                        fileTypeFilters.length
+                      ) ?
+                        " matching current filters"
+                      : ""}
+                      .
+                    </Typography>
+                  : <DataGrid
+                      rows={positionRows}
+                      getRowId={(row) => row.uuid}
+                      columns={getColumns(
+                        (row) => {
+                          void recordContentView(row.uuid);
+
+                          // external URLs open in a new tab instead of the previewer
+                          const isExternalUrl =
+                            !row.supabasePath &&
+                            !row.url.includes("supabase.co/storage");
+
+                          if (isExternalUrl) {
+                            window.open(row.url, "_blank");
+                            return;
+                          }
+
+                          setSelectedDoc({
+                            uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+                            fileName: row.title,
+                            uuid: row.uuid,
+                            forPosition: row.forPosition,
+                          });
+                          setPreviewOpen(true);
                         },
-                      },
-                    }}
-                    sx={{
-                      "borderRadius": "0 0 8px 8px",
-                      "overflow": "hidden",
-                      "& .row-locked": {
-                        backgroundColor:
-                          isDark ?
-                            "rgba(255,255,255,0.12)"
-                          : "rgba(245,245,245,1)",
-                        color: "text.disabled",
-                        cursor: "not-allowed",
-                      },
-                      "& .row-locked a": {
-                        color: "inherit",
-                        pointerEvents: "none",
-                        textDecoration: "none",
-                      },
-                      "& .row-new": {
-                        backgroundColor:
-                          isDark ?
-                            `${theme.palette.primary.main}1F`
-                          : `${theme.palette.primary.light}80`,
-                        borderLeft: "3px solid",
-                        borderLeftColor: theme.palette.primary.main,
-                      },
-                      "& .row-new:hover": {
-                        backgroundColor:
-                          isDark ?
-                            `${theme.palette.primary.main}38`
-                          : `${theme.palette.primary.light}D9`,
-                      },
-                    }}
-                  />
-                }
-              </AccordionDetails>
-            </Accordion>
-          );
-        })}
+                        handleDownload,
+                        handleCheckout,
+                        handleOpenEditor,
+                        releaseLock,
+                      )}
+                      getRowClassName={(params) => {
+                        const hasPermission =
+                          isSystemAdmin ||
+                          userPosition === params.row.forPosition;
+                        const isNew = sessionNewIds.has(params.row.uuid);
+                        const classes: string[] = [];
+                        if (!hasPermission) classes.push("row-locked"); // dims rows the user can't interact with
+                        if (isNew) classes.push("row-new"); // highlights rows added this session
+                        return classes.join(" ");
+                      }}
+                      autoHeight
+                      hideFooterPagination={positionRows.length <= 10}
+                      pageSizeOptions={[10, 25]}
+                      initialState={{
+                        pagination: { paginationModel: { pageSize: 10 } },
+                        sorting: {
+                          sortModel: [{ field: "favorite", sort: "desc" }], // favorites on top by default
+                        },
+                        columns: {
+                          columnVisibilityModel: {
+                            "favorite": false,
+                            "url": false,
+                            "contentOwner": false,
+                            "edited-by": false,
+                            "forPosition": false, // redundant inside its own position section
+                            "fileType": false,
+                          },
+                        },
+                      }}
+                      sx={{
+                        "borderRadius": "0 0 8px 8px",
+                        "overflow": "hidden",
+                        "& .row-locked": {
+                          backgroundColor:
+                            isDark ?
+                              "rgba(255,255,255,0.12)"
+                            : "rgba(245,245,245,1)",
+                          color: "text.disabled",
+                          cursor: "not-allowed",
+                        },
+                        "& .row-locked a": {
+                          color: "inherit",
+                          pointerEvents: "none",
+                          textDecoration: "none",
+                        },
+                        "& .row-new": {
+                          backgroundColor:
+                            isDark ?
+                              `${theme.palette.primary.main}1F`
+                            : `${theme.palette.primary.light}80`,
+                          borderLeft: "3px solid",
+                          borderLeftColor: theme.palette.primary.main,
+                        },
+                        "& .row-new:hover": {
+                          backgroundColor:
+                            isDark ?
+                              `${theme.palette.primary.main}38`
+                            : `${theme.palette.primary.light}D9`,
+                        },
+                      }}
+                    />
+                  }
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
       </Box>
 
       {/* content form modal — used for both creating and editing */}
