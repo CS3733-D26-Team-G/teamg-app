@@ -1,321 +1,428 @@
-import type { ActivityRow } from "../../types/activity.ts";
+import { useState, useEffect, useCallback } from "react";
+import {
+  getExpiredContent,
+  getAllContent,
+  getExpiresInSeconds,
+  getExpiringContent,
+  getCriticalContent,
+  getContentEdits,
+  getOwnershipChanges,
+  getClaimActions,
+} from "../../features/notifications/components/Notifications.ts";
 import type { ContentRow } from "../../types/content.ts";
-import type { InsuranceClaimType } from "@repo/db";
-import type {
-  InsuranceClaimCreatePayload,
-  InsuranceClaimRecord,
-} from "../../types/claim.ts";
+import type { ActivityRow } from "../../types/activity.ts";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 
-export interface NotificationActivity {
+interface ExpiringContentItem extends ContentRow {
+  expiresInSeconds: number;
+  expiresAt: Date;
+  isExpired: boolean;
+  expirationStatus: "critical" | "warning" | "info" | "expired";
+}
+
+interface FormattedNotification {
   uuid: string;
   action: string;
   resourceUuid: string;
   resourceName: string;
   timestamp: string;
-  employee?: ActivityRow["employee"];
+  employee?: {
+    first_name: string;
+    last_name: string;
+  };
   title: string;
-  notificationMessage: string;
+  notification_message: string;
 }
 
-export async function getAllContent(): Promise<ContentRow[]> {
-  throw new Error("Not implemented");
+interface NotificationCounts {
+  critical: number;
+  expiring: number;
+  expired: number;
+  ownership: number;
+  edits: number;
+  claims: number;
+  total: number;
 }
 
-export function getExpiresInSeconds(
-  expirationTime: string | Date | null,
-): number {
-  if (!expirationTime) return -1;
-  return Math.floor((new Date(expirationTime).getTime() - Date.now()) / 1000);
-}
+// Key for localStorage
+const DISMISSED_NOTIFICATIONS_KEY = "dismissed_notifications";
 
-export function getExpiringContent(content: ContentRow[]) {
-  return content
-    .filter((item) => {
-      if (!item.expirationTime) return false;
-      const expiresInSeconds = getExpiresInSeconds(item.expirationTime);
-      return expiresInSeconds <= 432000 && expiresInSeconds > 0;
-    })
-    .map((item) => ({
-      ...item,
-      expiresInSeconds: getExpiresInSeconds(item.expirationTime),
-      expiresAt: new Date(item.expirationTime),
-      isExpired: false,
-      expirationStatus: getExpirationStatus(
-        getExpiresInSeconds(item.expirationTime),
-      ),
-    }))
-    .sort((a, b) => a.expiresInSeconds - b.expiresInSeconds);
-}
+function getNotificationMessage(title: string, expirationTime: string): string {
+  const seconds = getExpiresInSeconds(expirationTime);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const days = Math.floor(seconds / 86400);
 
-export function getExpirationStatus(
-  expiresInSeconds: number,
-): "critical" | "warning" | "info" | "expired" {
-  if (expiresInSeconds <= 0) return "expired";
-  if (expiresInSeconds <= 3600) return "critical";
-  if (expiresInSeconds <= 86400) return "warning";
-  if (expiresInSeconds <= 432000) return "info";
-  return "info";
-}
-
-export function getCriticalContent(content: ContentRow[]) {
-  const now = new Date();
-  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-
-  return content.filter((item) => {
-    if (!item.expirationTime) return false;
-    const expiresAt = new Date(item.expirationTime);
-    return expiresAt > now && expiresAt <= oneHourLater;
-  });
-}
-
-export function getExpiredContent(content: ContentRow[]) {
-  const now = new Date();
-
-  return content.filter((item) => {
-    if (!item.expirationTime) return false;
-    const expiresAt = new Date(item.expirationTime);
-    return expiresAt <= now;
-  });
-}
-
-export function getOwnershipChanges(
-  activities: ActivityRow[],
-): NotificationActivity[] {
-  return activities
-    .filter((item) => item.action === "OWNERSHIP_CHANGE")
-    .map((item) => ({
-      uuid: item.uuid,
-      action: "OWNERSHIP_CHANGE",
-      resourceUuid: item.resourceUuid ?? "",
-      resourceName: item.resourceName ?? "",
-      timestamp: item.timestamp,
-      employee: item.employee,
-      title: (item.resourceName ?? "").split(" (")[0] ?? "",
-      notificationMessage: item.resourceName ?? "",
-    }));
-}
-
-export function getContentEdits(
-  activities: ActivityRow[],
-): NotificationActivity[] {
-  return activities
-    .filter((item) => item.action === "EDIT_CONTENT")
-    .map((item) => ({
-      uuid: item.uuid,
-      action: item.action,
-      resourceUuid: item.resourceUuid ?? "",
-      resourceName: item.resourceName ?? "",
-      timestamp: item.timestamp,
-      employee: item.employee,
-      title: item.resourceName ?? "",
-      notificationMessage: `Content was edited${
-        item.employee ?
-          ` by ${item.employee.firstName} ${item.employee.lastName}`
-        : ""
-      }`,
-    }));
+  if (seconds <= 0) return `"${title}" has expired`;
+  if (seconds <= 3600)
+    return `URGENT: "${title}" expires in ${minutes} minutes!`;
+  if (seconds <= 86400) return `"${title}" expires in ${hours} hours`;
+  if (seconds <= 432000) return `"${title}" expires in ${days} days`;
+  return `"${title}" expires soon`;
 }
 
 function getClaimNotificationMessage(
   action: string,
   employee?: { firstName: string; lastName: string },
-  claimType?: string,
 ): string {
   const employeeInfo =
     employee ? ` by ${employee.firstName} ${employee.lastName}` : "";
-  const claimTypeInfo =
-    claimType ? ` ${claimType.toLowerCase()} claim` : " claim";
 
   switch (action) {
     case "CREATE_CLAIM":
-      return `${claimTypeInfo.charAt(0).toUpperCase() + claimTypeInfo.slice(1)} was created${employeeInfo}`;
+      return `Claim was created${employeeInfo}`;
     case "EDIT_CLAIM":
-      return `${claimTypeInfo.charAt(0).toUpperCase() + claimTypeInfo.slice(1)} was edited${employeeInfo}`;
+      return `Claim was edited${employeeInfo}`;
     case "DELETE_CLAIM":
-      return `${claimTypeInfo.charAt(0).toUpperCase() + claimTypeInfo.slice(1)} was deleted${employeeInfo}`;
-    case "UPDATE_CLAIM_STATUS":
-      return `${claimTypeInfo.charAt(0).toUpperCase() + claimTypeInfo.slice(1)} status was updated${employeeInfo}`;
+      return `Claim was deleted${employeeInfo}`;
     default:
       return `Claim action ${action} performed${employeeInfo}`;
   }
 }
 
-export function getClaimActions(
-  claims: InsuranceClaimRecord[],
-  previousClaims?: InsuranceClaimRecord[],
-): NotificationActivity[] {
-  const notifications: NotificationActivity[] = [];
-
-  // Handle new claims (created)
-  if (previousClaims) {
-    // Find newly created claims
-    const newClaims = claims.filter(
-      (claim) => !previousClaims.some((prev) => prev.uuid === claim.uuid),
-    );
-
-    newClaims.forEach((claim) => {
-      notifications.push({
-        uuid: claim.uuid,
-        action: "CREATE_CLAIM",
-        resourceUuid: claim.uuid,
-        resourceName: `Claim #${claim.uuid.slice(0, 8)} - ${claim.claimType || "Insurance"}`,
-        timestamp: String(claim.createdAt || new Date().toISOString()),
-        employee:
-          claim.requestor ?
-            {
-              firstName: claim.requestor.firstName,
-              lastName: claim.requestor.lastName,
-              uuid: claim.requestor.uuid,
-              avatar: null,
-            }
-          : undefined,
-        title: `New ${claim.claimType || "Insurance"} Claim - ${claim.requestor?.firstName} ${claim.requestor?.lastName}`,
-        notificationMessage: getClaimNotificationMessage(
-          "CREATE_CLAIM",
-          claim.requestor,
-          claim.claimType,
-        ),
-      });
-    });
-
-    // Find updated claims (existing claims with changes)
-    const updatedClaims = claims.filter((claim) => {
-      const prevClaim = previousClaims.find((prev) => prev.uuid === claim.uuid);
-      if (!prevClaim) return false;
-
-      // Check if claim has been modified
-      return (
-        JSON.stringify(claim.contents) !== JSON.stringify(prevClaim.contents) ||
-        claim.status !== prevClaim.status ||
-        claim.incidentDescription !== prevClaim.incidentDescription ||
-        claim.incidentDate !== prevClaim.incidentDate
-      );
-    });
-
-    updatedClaims.forEach((claim) => {
-      const prevClaim = previousClaims.find((prev) => prev.uuid === claim.uuid);
-      const isStatusUpdate = prevClaim && claim.status !== prevClaim.status;
-      const action = isStatusUpdate ? "UPDATE_CLAIM_STATUS" : "EDIT_CLAIM";
-
-      notifications.push({
-        uuid: claim.uuid,
-        action: action,
-        resourceUuid: claim.uuid,
-        resourceName: `Claim #${claim.uuid.slice(0, 8)} - ${claim.claimType || "Insurance"}`,
-        timestamp: String(claim.updatedAt || new Date().toISOString()),
-        employee:
-          claim.requestor ?
-            {
-              firstName: claim.requestor.firstName,
-              lastName: claim.requestor.lastName,
-              uuid: claim.requestor.uuid,
-              avatar: null,
-            }
-          : undefined,
-        title: `${claim.claimType || "Insurance"} Claim ${isStatusUpdate ? "Status Update" : "Updated"} - ${claim.requestor?.firstName} ${claim.requestor?.lastName}`,
-        notificationMessage: getClaimNotificationMessage(
-          action,
-          claim.requestor,
-          claim.claimType,
-        ),
-      });
-    });
-
-    // Find deleted claims
-    const deletedClaims = previousClaims.filter(
-      (prev) => !claims.some((claim) => claim.uuid === prev.uuid),
-    );
-
-    deletedClaims.forEach((claim) => {
-      notifications.push({
-        uuid: claim.uuid,
-        action: "DELETE_CLAIM",
-        resourceUuid: claim.uuid,
-        resourceName: `Claim #${claim.uuid.slice(0, 8)} - ${claim.claimType || "Insurance"}`,
-        timestamp: new Date().toISOString(),
-        employee:
-          claim.requestor ?
-            {
-              firstName: claim.requestor.firstName,
-              lastName: claim.requestor.lastName,
-              uuid: claim.requestor.uuid,
-              avatar: null,
-            }
-          : undefined,
-        title: `Deleted ${claim.claimType || "Insurance"} Claim - ${claim.requestor?.firstName} ${claim.requestor?.lastName}`,
-        notificationMessage: getClaimNotificationMessage(
-          "DELETE_CLAIM",
-          claim.requestor,
-          claim.claimType,
-        ),
-      });
-    });
-  } else {
-    // If no previous claims provided, treat all as new
-    claims.forEach((claim) => {
-      notifications.push({
-        uuid: claim.uuid,
-        action: "CREATE_CLAIM",
-        resourceUuid: claim.uuid,
-        resourceName: `Claim #${claim.uuid.slice(0, 8)} - ${claim.claimType || "Insurance"}`,
-        timestamp: String(claim.createdAt || new Date().toISOString()),
-        employee:
-          claim.requestor ?
-            {
-              firstName: claim.requestor.firstName,
-              lastName: claim.requestor.lastName,
-              uuid: claim.requestor.uuid,
-              avatar: null,
-            }
-          : undefined,
-        title: `${claim.claimType || "Insurance"} Claim - ${claim.requestor?.firstName} ${claim.requestor?.lastName}`,
-        notificationMessage: getClaimNotificationMessage(
-          "CREATE_CLAIM",
-          claim.requestor,
-          claim.claimType,
-        ),
-      });
-    });
-  }
-
-  // Sort notifications by timestamp (newest first)
-  return notifications.sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+function useContentInfo() {
+  const [allContent, setAllContent] = useState<ContentRow[]>([]);
+  const [criticalContent, setCriticalContent] = useState<ContentRow[]>([]);
+  const [expiringContent, setExpiringContent] = useState<ExpiringContentItem[]>(
+    [],
   );
-}
+  const [expiredContent, setExpiredContent] = useState<ContentRow[]>([]);
+  const [ownershipChanges, setOwnershipChanges] = useState<
+    FormattedNotification[]
+  >([]);
+  const [contentEdits, setContentEdits] = useState<FormattedNotification[]>([]);
+  const [claimActivities, setClaimActivities] = useState<
+    FormattedNotification[]
+  >([]);
+  const [loading, setLoading] = useState(true);
 
-// Alternative version that works with ActivityRow (if you store claim actions as activities)
-export function getClaimActionsFromActivities(
-  activities: ActivityRow[],
-): NotificationActivity[] {
-  return activities
-    .filter(
-      (item) =>
-        item.action === "CREATE_CLAIM" ||
-        item.action === "EDIT_CLAIM" ||
-        item.action === "DELETE_CLAIM" ||
-        item.action === "UPDATE_CLAIM_STATUS",
-    )
-    .map((item) => {
-      // Extract claim type from resourceName if available
-      const claimType =
-        item.resourceName?.includes("-") ?
-          item.resourceName.split("-")[1]?.trim()
-        : "Insurance";
+  // Load dismissed notifications from localStorage on init
+  const [dismissedNotifications, setDismissedNotifications] = useState<
+    Set<string>
+  >(() => {
+    const saved = localStorage.getItem(DISMISSED_NOTIFICATIONS_KEY);
+    if (saved) {
+      return new Set(JSON.parse(saved));
+    }
+    return new Set();
+  });
 
-      return {
-        uuid: item.uuid,
-        action: item.action,
-        resourceUuid: item.resourceUuid ?? "",
-        resourceName: item.resourceName ?? "",
-        timestamp: item.timestamp,
-        employee: item.employee,
-        title: `${claimType} Claim ${item.action.replace("_CLAIM", "").toLowerCase()}d`,
-        notificationMessage: getClaimNotificationMessage(
-          item.action,
-          item.employee || undefined,
-          claimType,
+  const [counts, setCounts] = useState<NotificationCounts>({
+    critical: 0,
+    expiring: 0,
+    expired: 0,
+    ownership: 0,
+    edits: 0,
+    claims: 0,
+    total: 0,
+  });
+
+  // Save dismissed notifications to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(
+      DISMISSED_NOTIFICATIONS_KEY,
+      JSON.stringify(Array.from(dismissedNotifications)),
+    );
+  }, [dismissedNotifications]);
+
+  const dismissAlert = useCallback(
+    (uuid: string, type: string) => {
+      // Add to dismissed set
+      setDismissedNotifications((prev) => new Set(prev).add(`${type}:${uuid}`));
+
+      if (type === "critical" || type === "expiring") {
+        setAllContent((prev) => prev.filter((item) => item.uuid !== uuid));
+        setCriticalContent((prev) => prev.filter((item) => item.uuid !== uuid));
+        setExpiringContent((prev) => prev.filter((item) => item.uuid !== uuid));
+
+        setCounts((prev) => ({
+          ...prev,
+          critical:
+            prev.critical -
+            (criticalContent.find((item) => item.uuid === uuid) ? 1 : 0),
+          expiring:
+            prev.expiring -
+            (expiringContent.find((item) => item.uuid === uuid) ? 1 : 0),
+          total: prev.total - 1,
+        }));
+      }
+
+      if (type === "ownership") {
+        setOwnershipChanges((prev) =>
+          prev.filter((item) => item.uuid !== uuid),
+        );
+        setCounts((prev) => ({
+          ...prev,
+          ownership: prev.ownership - 1,
+          total: prev.total - 1,
+        }));
+      }
+
+      if (type === "edit") {
+        setContentEdits((prev) => prev.filter((item) => item.uuid !== uuid));
+        setCounts((prev) => ({
+          ...prev,
+          edits: prev.edits - 1,
+          total: prev.total - 1,
+        }));
+      }
+
+      if (type === "claim") {
+        setClaimActivities((prev) => prev.filter((item) => item.uuid !== uuid));
+        setCounts((prev) => ({
+          ...prev,
+          claims: prev.claims - 1,
+          total: prev.total - 1,
+        }));
+      }
+    },
+    [criticalContent, expiringContent],
+  );
+
+  // Function to filter out dismissed notifications
+  const filterDismissed = useCallback(
+    <T extends { uuid: string }>(items: T[], type: string): T[] => {
+      return items.filter((item) => {
+        const key = `${type}:${item.uuid}`;
+        return !dismissedNotifications.has(key);
+      });
+    },
+    [dismissedNotifications],
+  );
+
+  const fetchContent = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const [content, ownership, edits, claims] = await Promise.all([
+        getAllContent(),
+        getOwnershipChanges([] as ActivityRow[]),
+        getContentEdits([] as ActivityRow[]),
+        getClaimActions([] as ActivityRow[]),
+      ]);
+
+      // Ensure content is an array
+      const contentArray = Array.isArray(content) ? content : [];
+
+      let expiring = getExpiringContent(contentArray);
+      let critical = getCriticalContent(contentArray);
+      const expired = getExpiredContent(contentArray);
+
+      let formattedOwnership: FormattedNotification[] = ownership.map(
+        (change) => ({
+          uuid: change.uuid,
+          action: change.action,
+          resourceUuid: change.resourceUuid,
+          resourceName: change.resourceName,
+          timestamp: change.timestamp,
+          employee:
+            change.employee ?
+              {
+                first_name: change.employee.firstName,
+                last_name: change.employee.lastName,
+              }
+            : undefined,
+          title: change.resourceName.split(" (")[0],
+          notification_message: change.resourceName,
+        }),
+      );
+
+      let formattedEdits: FormattedNotification[] = edits.map((edit) => ({
+        uuid: edit.uuid,
+        action: edit.action,
+        resourceUuid: edit.resourceUuid,
+        resourceName: edit.resourceName,
+        timestamp: edit.timestamp,
+        employee:
+          edit.employee ?
+            {
+              first_name: edit.employee.firstName,
+              last_name: edit.employee.lastName,
+            }
+          : undefined,
+        title: edit.resourceName,
+        notification_message: `Content was edited${edit.employee ? ` by ${edit.employee.firstName} ${edit.employee.lastName}` : ""}`,
+      }));
+
+      let formattedClaims: FormattedNotification[] = claims.map((claim) => ({
+        uuid: claim.uuid,
+        action: claim.action,
+        resourceUuid: claim.resourceUuid,
+        resourceName: claim.resourceName,
+        timestamp: claim.timestamp,
+        employee:
+          claim.employee ?
+            {
+              first_name: claim.employee.firstName,
+              last_name: claim.employee.lastName,
+            }
+          : undefined,
+        title: claim.resourceName || "Claim",
+        notification_message: getClaimNotificationMessage(
+          claim.action,
+          claim.employee || undefined,
         ),
-      };
-    });
+      }));
+
+      // Apply dismissal filters
+      critical = filterDismissed(critical, "critical");
+      expiring = filterDismissed(expiring, "expiring");
+      formattedOwnership = filterDismissed(formattedOwnership, "ownership");
+      formattedEdits = filterDismissed(formattedEdits, "edit");
+      formattedClaims = filterDismissed(formattedClaims, "claim");
+
+      setAllContent(contentArray);
+      setCriticalContent(critical);
+      setExpiringContent(expiring);
+      setExpiredContent(expired);
+      setOwnershipChanges(formattedOwnership);
+      setContentEdits(formattedEdits);
+      setClaimActivities(formattedClaims);
+
+      const expiringCount = expiring.filter((c) => {
+        const seconds = c.expiresInSeconds;
+        return seconds <= 432000 && seconds > 3600;
+      }).length;
+
+      const totalAlerts =
+        critical.length +
+        expiringCount +
+        formattedOwnership.length +
+        formattedEdits.length +
+        formattedClaims.length;
+
+      setCounts({
+        critical: critical.length,
+        expiring: expiringCount,
+        expired: expired.length,
+        ownership: formattedOwnership.length,
+        edits: formattedEdits.length,
+        claims: formattedClaims.length,
+        total: totalAlerts,
+      });
+    } catch (error) {
+      console.error("Failed to fetch content:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [filterDismissed]);
+
+  useEffect(() => {
+    fetchContent();
+    const interval = setInterval(fetchContent, 3600000);
+    return () => clearInterval(interval);
+  }, [fetchContent]);
+
+  return {
+    allContent,
+    criticalContent,
+    expiringContent,
+    expiredContent,
+    ownershipChanges,
+    contentEdits,
+    claimActivities,
+    counts,
+    loading,
+    dismissAlert,
+    refresh: fetchContent,
+  };
 }
+
+// export default function ContentBar() {
+//   const {
+//     criticalContent,
+//     expiringContent,
+//     ownershipChanges,
+//     contentEdits,
+//     claimActivities,
+//     counts,
+//     loading,
+//     dismissAlert,
+//   } = useContentInfo();
+//
+//   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+//
+//   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+//     setAnchorEl(event.currentTarget);
+//   };
+//
+//   const handleClose = () => {
+//     setAnchorEl(null);
+//   };
+//
+//   const allAlerts = [
+//     ...criticalContent.map((c) => ({
+//       uuid: c.uuid,
+//       title: c.title || c.contentOwner || "",
+//       alertType: "critical" as const,
+//       notification_message: getNotificationMessage(
+//         c.title || c.contentOwner || "",
+//         String(c.expirationTime) || "",
+//       ),
+//       expiration_time: c.expirationTime,
+//     })),
+//     ...expiringContent.map((c) => ({
+//       uuid: c.uuid,
+//       title: c.title || c.contentOwner || "",
+//       alertType: "expiring" as const,
+//       notification_message: getNotificationMessage(
+//         c.title || c.contentOwner || "",
+//         String(c.expirationTime) || "",
+//       ),
+//       expiration_time: c.expirationTime,
+//     })),
+//     ...ownershipChanges.map((o) => ({
+//       uuid: o.uuid,
+//       title: o.title,
+//       alertType: "ownership" as const,
+//       notification_message: o.notification_message,
+//       expiration_time: null,
+//     })),
+//     ...contentEdits.map((e) => ({
+//       uuid: e.uuid,
+//       title: e.title,
+//       alertType: "edit" as const,
+//       notification_message: e.notification_message,
+//       expiration_time: null,
+//     })),
+//     ...claimActivities.map((c) => ({
+//       uuid: c.uuid,
+//       title: c.title,
+//       alertType: "claim" as const,
+//       notification_message: c.notification_message,
+//       expiration_time: null,
+//     })),
+//   ];
+//
+//   const open = Boolean(anchorEl);
+//   const totalAlerts = counts.total;
+//
+//   const handleDismiss = (uuid: string, title: string, alertType: string) => {
+//     dismissAlert(uuid, alertType);
+//     console.log(`"${title}" alert dismissed.`);
+//   };
+//
+//   const getAlertColor = (alertType: string) => {
+//     switch (alertType) {
+//       case "critical":
+//         return "error";
+//       case "expiring":
+//         return "warning";
+//       case "ownership":
+//         return "info";
+//       case "edit":
+//         return "secondary";
+//       case "claim":
+//         return "primary";
+//       default:
+//         return "default";
+//     }
+//   };
+//
+//   // const getAlertIcon = () => {
+//   //   return totalAlerts <= 0 ?
+//   //     <NotificationsIcon />
+//   //     : <NotificationsActiveIcon />;
+//   // };
+// }

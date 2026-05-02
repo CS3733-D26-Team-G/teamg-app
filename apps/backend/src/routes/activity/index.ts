@@ -75,6 +75,16 @@ router.get("/", async (req, res) => {
           employeeUuid: auth.employeeUuid,
         };
 
+    const claimFilter =
+      isAdmin(auth) ?
+        {
+          action: { in: claimActions },
+        }
+      : {
+          action: { in: claimActions },
+          employeeUuid: auth.employeeUuid,
+        };
+
     let where = {};
     switch (category) {
       case "content":
@@ -87,6 +97,10 @@ router.get("/", async (req, res) => {
 
       case "auth":
         where = authFilter;
+        break;
+
+      case "claim":
+        where = claimFilter;
         break;
 
       case "all":

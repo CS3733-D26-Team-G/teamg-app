@@ -118,26 +118,35 @@ export function getContentEdits(
 export function getClaimActions(
   activities: ActivityRow[],
 ): NotificationActivity[] {
-  return activities
-    .filter(
-      (item) =>
-        item.action === "CREATE_CLAIM" ||
-        item.action === "EDIT_CLAIM" ||
-        item.action === "DELETE_CLAIM",
-    )
-    .map((item) => ({
-      uuid: item.uuid,
-      action: item.action,
-      resourceUuid: item.resourceUuid ?? "",
-      resourceName: item.resourceName ?? "",
-      timestamp: item.timestamp,
-      employee: item.employee,
-      title: item.resourceName ?? "Claim",
-      notificationMessage: getClaimNotificationMessage(
-        item.action,
-        item.employee || undefined,
-      ),
-    }));
+  // Check for claim actions in the activity data
+  const claimActivities = activities.filter((item) => {
+    const action = item.action?.toUpperCase() || "";
+    return (
+      action === "CREATE_CLAIM" ||
+      action === "EDIT_CLAIM" ||
+      action === "DELETE_CLAIM"
+    );
+  });
+
+  console.log(
+    "Claim activities found:",
+    claimActivities.length,
+    claimActivities,
+  );
+
+  return claimActivities.map((item) => ({
+    uuid: item.uuid,
+    action: item.action,
+    resourceUuid: item.resourceUuid ?? "",
+    resourceName: item.resourceName ?? "Claim",
+    timestamp: item.timestamp,
+    employee: item.employee,
+    title: item.resourceName?.replace(/_/g, " ") ?? "Claim",
+    notificationMessage: getClaimNotificationMessage(
+      item.action,
+      item.employee || undefined,
+    ),
+  }));
 }
 
 function getClaimNotificationMessage(

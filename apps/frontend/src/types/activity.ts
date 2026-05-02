@@ -2,7 +2,7 @@ import type { Position } from "@repo/db";
 
 import type { ContentRow } from "./content";
 
-export type ActivityCategory = "all" | "content" | "verbose" | "auth";
+export type ActivityCategory = "all" | "content" | "verbose" | "auth" | "claim";
 
 export interface ActivityEmployee {
   uuid: string;
@@ -33,6 +33,7 @@ export interface DashboardBootstrapData {
   activityAll: ActivityRow[];
   activityContent: ActivityRow[];
   activityVerbose: ActivityRow[];
+  activityClaim: ActivityRow[];
   contentCounts: PositionCounts;
   fileTypeCounts: FileTypeCount[];
   employeeCounts: PositionCounts;

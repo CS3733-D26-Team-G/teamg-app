@@ -6,9 +6,9 @@ import {
   getCriticalContent,
   getContentEdits,
   getOwnershipChanges,
+  getClaimActions,
 } from "./Notifications.ts";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
-import NotificationPage from "./NotificationPage.tsx";
 
 import {
   Box,
@@ -20,20 +20,11 @@ import {
   Typography,
   Chip,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import { useDashboardBootstrap } from "../../dashboard/useDashboardBootstrap.ts";
-
-interface ExpiringContent {
-  uuid: string;
-  title: string;
-  expirationTime: string | Date;
-  expiresInSeconds?: number;
-  status?: string;
-  notificationMessage?: string | null;
-  formatted_time_remaining?: string;
-}
 
 interface NotificationCounts {
   critical: number;
@@ -41,16 +32,19 @@ interface NotificationCounts {
   expired: number;
   ownership: number;
   edits: number;
+  claims: number;
   total: number;
 }
 
 interface AlertItem {
   uuid: string;
   title: string;
-  alertType: "critical" | "expiring" | "ownership" | "edit";
-  notificationMessage?: string | null;
+  alertType: "critical" | "expiring" | "ownership" | "edit" | "claim";
+  notificationMessage: string;
   expirationTime: string | Date | null;
 }
+
+const DISMISSED_NOTIFICATIONS_KEY = "dismissed_notifications";
 
 function getNotificationMessage(
   title: string,
@@ -69,14 +63,48 @@ function getNotificationMessage(
   return `"${title}" expires soon`;
 }
 
+function formatClaimTitle(resourceName: string, action: string): string {
+  if (resourceName && resourceName !== "Claim") {
+    return resourceName;
+  }
+
+  switch (action) {
+    case "CREATE_CLAIM":
+      return "New Claim Created";
+    case "EDIT_CLAIM":
+      return "Claim Updated";
+    case "DELETE_CLAIM":
+      return "Claim Deleted";
+    default:
+      return "Claim Activity";
+  }
+}
+
 function useContentInfo() {
   const { data, loading, refresh } = useDashboardBootstrap();
-  const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
+
+  // Load dismissed notifications from localStorage on init
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem(DISMISSED_NOTIFICATIONS_KEY);
+    if (saved) {
+      return new Set(JSON.parse(saved));
+    }
+    return new Set();
+  });
+
+  // Save dismissed notifications to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(
+      DISMISSED_NOTIFICATIONS_KEY,
+      JSON.stringify(Array.from(dismissedAlerts)),
+    );
+  }, [dismissedAlerts]);
 
   const dismissAlert = useCallback((uuid: string, type: string) => {
     setDismissedAlerts((prev) => {
-      const key = `${type}:${uuid}`;
-      return prev.includes(key) ? prev : [...prev, key];
+      const newSet = new Set(prev);
+      newSet.add(`${type}:${uuid}`);
+      return newSet;
     });
   }, []);
 
@@ -87,10 +115,7 @@ function useContentInfo() {
     return () => clearInterval(interval);
   }, [refresh]);
 
-  const allContent = useMemo(
-    () => (data?.contentList ?? []) as unknown as ExpiringContent[],
-    [data?.contentList],
-  );
+  // Get raw data from different activity categories
   const criticalContent = useMemo(
     () => getCriticalContent(data?.contentList ?? []),
     [data?.contentList],
@@ -103,43 +128,91 @@ function useContentInfo() {
     () => getExpiredContent(data?.contentList ?? []),
     [data?.contentList],
   );
+
+  // Activity data from different categories
+  // activityVerbose includes OWNERSHIP_CHANGE actions
   const ownershipChanges = useMemo(
     () => getOwnershipChanges(data?.activityVerbose ?? []),
     [data?.activityVerbose],
   );
+
+  // activityContent includes content edits
   const contentEdits = useMemo(
     () => getContentEdits(data?.activityContent ?? []),
     [data?.activityContent],
   );
 
+  const claimActions = useMemo(
+    () => getContentEdits(data?.activityContent ?? []),
+    [data?.activityContent],
+  );
+  //   () => {
+  //   const claimActivities =
+  //     (data as any)?.activityClaim ?? // If separate claim activity exists
+  //     data?.activityAll ?? // Fall back to all activities
+  //     [];
+  //
+  //   console.log("Processing claim actions from:", claimActivities.length, "activities");
+  //   return getClaimActions(claimActivities);
+  // }, [data]);
+
+  // Filter out dismissed alerts
   const visibleCriticalContent = useMemo(
     () =>
       criticalContent.filter(
-        (item) => !dismissedAlerts.includes(`critical:${item.uuid}`),
+        (item) => !dismissedAlerts.has(`critical:${item.uuid}`),
       ),
     [criticalContent, dismissedAlerts],
   );
   const visibleExpiringContent = useMemo(
     () =>
       expiringContent.filter(
-        (item) => !dismissedAlerts.includes(`expiring:${item.uuid}`),
+        (item) => !dismissedAlerts.has(`expiring:${item.uuid}`),
       ),
     [dismissedAlerts, expiringContent],
   );
   const visibleOwnershipChanges = useMemo(
     () =>
       ownershipChanges.filter(
-        (item) => !dismissedAlerts.includes(`ownership:${item.uuid}`),
+        (item) => !dismissedAlerts.has(`ownership:${item.uuid}`),
       ),
     [dismissedAlerts, ownershipChanges],
   );
   const visibleContentEdits = useMemo(
     () =>
-      contentEdits.filter(
-        (item) => !dismissedAlerts.includes(`edit:${item.uuid}`),
-      ),
+      contentEdits.filter((item) => !dismissedAlerts.has(`edit:${item.uuid}`)),
     [contentEdits, dismissedAlerts],
   );
+  const visibleClaimActions = useMemo(
+    () =>
+      claimActions.filter((item) => !dismissedAlerts.has(`claim:${item.uuid}`)),
+    [claimActions, dismissedAlerts],
+  );
+
+  // Dismiss all visible alerts
+  const dismissAllAlerts = useCallback(() => {
+    setDismissedAlerts((prev) => {
+      const newSet = new Set(prev);
+      visibleCriticalContent.forEach((item) =>
+        newSet.add(`critical:${item.uuid}`),
+      );
+      visibleExpiringContent.forEach((item) =>
+        newSet.add(`expiring:${item.uuid}`),
+      );
+      visibleOwnershipChanges.forEach((item) =>
+        newSet.add(`ownership:${item.uuid}`),
+      );
+      visibleContentEdits.forEach((item) => newSet.add(`edit:${item.uuid}`));
+      visibleClaimActions.forEach((item) => newSet.add(`claim:${item.uuid}`));
+      return newSet;
+    });
+  }, [
+    visibleCriticalContent,
+    visibleExpiringContent,
+    visibleOwnershipChanges,
+    visibleContentEdits,
+    visibleClaimActions,
+  ]);
 
   const counts = useMemo<NotificationCounts>(() => {
     const expiringCount = visibleExpiringContent.filter((content) => {
@@ -153,11 +226,13 @@ function useContentInfo() {
       expired: expiredContent.length,
       ownership: visibleOwnershipChanges.length,
       edits: visibleContentEdits.length,
+      claims: visibleClaimActions.length,
       total:
         visibleCriticalContent.length +
         expiringCount +
         visibleOwnershipChanges.length +
-        visibleContentEdits.length,
+        visibleContentEdits.length +
+        visibleClaimActions.length,
     };
   }, [
     expiredContent.length,
@@ -165,31 +240,33 @@ function useContentInfo() {
     visibleCriticalContent.length,
     visibleExpiringContent,
     visibleOwnershipChanges.length,
+    visibleClaimActions.length,
   ]);
 
   return {
-    allContent,
-    criticalContent: visibleCriticalContent,
-    expiringContent: visibleExpiringContent,
-    expiredContent,
-    ownershipChanges: visibleOwnershipChanges,
-    contentEdits: visibleContentEdits,
+    visibleCriticalContent,
+    visibleExpiringContent,
+    visibleOwnershipChanges,
+    visibleContentEdits,
+    visibleClaimActions,
     counts,
     loading,
     dismissAlert,
-    refresh,
+    dismissAllAlerts,
   };
 }
 
 export default function NotificationsBell() {
   const {
-    criticalContent,
-    expiringContent,
-    ownershipChanges,
-    contentEdits,
+    visibleCriticalContent,
+    visibleExpiringContent,
+    visibleOwnershipChanges,
+    visibleContentEdits,
+    visibleClaimActions,
     counts,
     loading,
     dismissAlert,
+    dismissAllAlerts,
   } = useContentInfo();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -203,20 +280,45 @@ export default function NotificationsBell() {
   };
 
   const allAlerts: AlertItem[] = [
-    ...criticalContent.map((c) => ({ ...c, alertType: "critical" as const })),
-    ...expiringContent.map((c) => ({ ...c, alertType: "expiring" as const })),
-    ...ownershipChanges.map((o) => ({
+    ...visibleCriticalContent.map((c) => ({
+      uuid: c.uuid,
+      title: c.title || "",
+      alertType: "critical" as const,
+      notificationMessage: getNotificationMessage(
+        c.title || "",
+        c.expirationTime,
+      ),
+      expirationTime: c.expirationTime,
+    })),
+    ...visibleExpiringContent.map((c) => ({
+      uuid: c.uuid,
+      title: c.title || "",
+      alertType: "expiring" as const,
+      notificationMessage: getNotificationMessage(
+        c.title || "",
+        c.expirationTime,
+      ),
+      expirationTime: c.expirationTime,
+    })),
+    ...visibleOwnershipChanges.map((o) => ({
       uuid: o.uuid,
       title: o.title,
       alertType: "ownership" as const,
       notificationMessage: o.notificationMessage,
       expirationTime: null,
     })),
-    ...contentEdits.map((e) => ({
+    ...visibleContentEdits.map((e) => ({
       uuid: e.uuid,
       title: e.title,
       alertType: "edit" as const,
       notificationMessage: e.notificationMessage,
+      expirationTime: null,
+    })),
+    ...visibleClaimActions.map((c) => ({
+      uuid: c.uuid,
+      title: c.title,
+      alertType: "claim" as const,
+      notificationMessage: c.notificationMessage,
       expirationTime: null,
     })),
   ];
@@ -229,6 +331,11 @@ export default function NotificationsBell() {
     console.log(`"${title}" alert dismissed.`);
   };
 
+  const handleDismissAll = () => {
+    dismissAllAlerts();
+    console.log("All notifications dismissed.");
+  };
+
   const getAlertColor = (alertType: string) => {
     switch (alertType) {
       case "critical":
@@ -239,6 +346,8 @@ export default function NotificationsBell() {
         return "info";
       case "edit":
         return "secondary";
+      case "claim":
+        return "primary";
       default:
         return "default";
     }
@@ -297,7 +406,15 @@ export default function NotificationsBell() {
                 />
               )}
             </Typography>
-            {/*<NotificationPage />*/}
+            {totalAlerts > 0 && (
+              <Button
+                size="small"
+                onClick={handleDismissAll}
+                sx={{ textTransform: "none" }}
+              >
+                Dismiss All
+              </Button>
+            )}
           </Box>
 
           {loading ?
@@ -320,22 +437,33 @@ export default function NotificationsBell() {
                     alignItems: "flex-start",
                     borderBottom: "1px solid #e0e0e0",
                     py: 2,
+                    px: 2,
                   }}
                 >
                   <Box
                     display="flex"
                     width="100%"
                     justifyContent="space-between"
-                    alignItems="center"
+                    alignItems="flex-start"
+                    gap={1}
+                    sx={{ minHeight: 32 }}
                   >
                     <Box
                       display="flex"
                       alignItems="center"
                       gap={1}
+                      flex={1}
+                      minWidth={0}
                     >
                       <Typography
                         variant="subtitle2"
                         fontWeight="bold"
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          flex: 1,
+                        }}
                       >
                         {alert.title}
                       </Typography>
@@ -344,6 +472,7 @@ export default function NotificationsBell() {
                         size="small"
                         color={getAlertColor(alert.alertType) as any}
                         variant="outlined"
+                        sx={{ flexShrink: 0 }}
                       />
                     </Box>
                     <IconButton
@@ -352,21 +481,20 @@ export default function NotificationsBell() {
                       }
                       size="small"
                       sx={{
-                        "&:hover": {
-                          backgroundColor: "#e0e0e0",
-                        },
+                        "flexShrink": 0,
+                        "ml": 1,
+                        "&:hover": { backgroundColor: "#e0e0e0" },
                       }}
                     >
-                      <ClearOutlinedIcon />
+                      <ClearOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Box>
                   <Typography
                     variant="caption"
                     color="textSecondary"
-                    sx={{ mt: 0.5 }}
+                    sx={{ mt: 0.5, width: "100%" }}
                   >
-                    {alert.notificationMessage ??
-                      getNotificationMessage(alert.title, alert.expirationTime)}
+                    {alert.notificationMessage}
                   </Typography>
                 </ListItem>
               ))}
