@@ -29,6 +29,7 @@ import {
   FormControlLabel,
   Checkbox,
   Slide,
+  Switch,
 } from "@mui/material";
 import type { TransitionProps } from "@mui/material/transitions";
 import { useTheme } from "@mui/material/styles";
@@ -291,6 +292,7 @@ export default function ContentManagement({
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null); // row staged for the delete confirmation dialog
   const [pendingSave, setPendingSave] = useState<FormData | null>(null); // payload staged for the save confirmation dialog
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set()); // UUIDs added this session, used for "new" row highlighting
+  const [showAllCheckedOut, setShowAllCheckedOut] = useState(true); // controls admins viewing of their own checked-out file or all checked-out files
 
   const availableTags = contentTagsQuery.data ?? [];
 
@@ -780,6 +782,23 @@ export default function ContentManagement({
     userPosition,
     isSystemAdmin,
   });
+
+  // control display of checked-out tab for admins
+  const displayRows = useMemo(() => {
+    if (isSystemAdmin && activeTab === "checked-out" && !showAllCheckedOut) {
+      return activeRows.filter(
+        (r) => r.editLock?.lockedByEmp?.uuid === session?.employeeUuid,
+      );
+    }
+    return activeRows;
+  }, [
+    activeRows,
+    activeTab,
+    isSpecialTab,
+    isSystemAdmin,
+    showAllCheckedOut,
+    session,
+  ]);
 
   // save and delete confirmation dialogs
   const confirmationDialogs = (
@@ -1764,7 +1783,40 @@ export default function ContentManagement({
             </Box>
 
             <Box>
-              {activeRows.length === 0 ?
+              {isSystemAdmin &&
+                isSpecialTab(activeTab) &&
+                activeTab === "checked-out" && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      px: 2,
+                      py: 0.75,
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                      backgroundColor: "action.hover",
+                    }}
+                  >
+                    <Switch
+                      size="small"
+                      checked={showAllCheckedOut}
+                      onChange={(e) => setShowAllCheckedOut(e.target.checked)}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "rgba(255,255,255,0.85)",
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      {showAllCheckedOut ?
+                        "Showing all checked-out items"
+                      : "Showing only my checked-out items"}
+                    </Typography>
+                  </Box>
+                )}
+              {displayRows.length === 0 ?
                 <Typography
                   sx={{
                     p: 3,
@@ -1784,7 +1836,7 @@ export default function ContentManagement({
                   .
                 </Typography>
               : <DataGrid
-                  rows={activeRows}
+                  rows={displayRows}
                   getRowId={(row) => row.uuid}
                   columns={getColumns(
                     (row) => {
