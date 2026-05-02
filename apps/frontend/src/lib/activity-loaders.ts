@@ -108,15 +108,28 @@ async function fetchActivityActionSummary(params?: {
   position?: string;
   employeeUuid?: string;
 }) {
-  const query = new URLSearchParams(
-    params as Record<string, string>,
-  ).toString();
+  const query = new URLSearchParams();
+
+  if (params?.position) {
+    query.set("position", params.position);
+  }
+  if (params?.employeeUuid) {
+    query.set("employeeUuid", params.employeeUuid);
+  }
+
+  const queryString = query.toString();
+
   return fetchJson<ActivitySummary>(
-    `${API_ENDPOINTS.STATS.ACTIVITY_ACTION_SUMMARY}?${query}`,
+    `${API_ENDPOINTS.STATS.ACTIVITY_ACTION_SUMMARY}${
+      queryString ? `?${queryString}` : ""
+    }`,
   );
 }
 
-async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
+async function fetchDashboardBootstrap(params?: {
+  position?: string;
+  employeeUuid?: string;
+}): Promise<DashboardBootstrapData> {
   const [
     activityAll,
     activityContent,
@@ -134,7 +147,7 @@ async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
     loadContentFileTypeCounts(),
     loadEmployeeCounts(),
     loadContentList(),
-    loadActivityActionSummary(),
+    loadActivityActionSummary(params),
   ]);
 
   return {
@@ -204,30 +217,50 @@ export async function loadActivityActionSummary(params?: {
   position?: string;
   employeeUuid?: string;
 }): Promise<ActivitySummary> {
-  return fetchCachedQuery(
+  const cacheKey = [
     "stats:activity:action-summary",
-    () => fetchActivityActionSummary(params),
-    {
-      staleTimeMs: 60_000,
-      cacheTimeMs: 10 * 60_000,
-      persist: true,
-      scope: "user",
-    },
-  );
+    params?.position ?? "all-positions",
+    params?.employeeUuid ?? "all-employees",
+  ].join(":");
+
+  return fetchCachedQuery(cacheKey, () => fetchActivityActionSummary(params), {
+    staleTimeMs: 30_000,
+    cacheTimeMs: 10 * 60_000,
+    persist: true,
+    scope: "user",
+  });
 }
 
-export async function loadDashboardBootstrap(): Promise<DashboardBootstrapData> {
-  return fetchCachedQuery(
+export async function loadDashboardBootstrap(params?: {
+  position?: string;
+  employeeUuid?: string;
+}): Promise<DashboardBootstrapData> {
+  const cacheKey = [
     CACHE_KEYS.dashboardBootstrap,
-    fetchDashboardBootstrap,
+    params?.position ?? "all-positions",
+    params?.employeeUuid ?? "all-employees",
+  ].join(":");
+
+  return fetchCachedQuery(
+    cacheKey,
+    () => fetchDashboardBootstrap(params),
     DASHBOARD_CACHE_OPTIONS,
   );
 }
 
-export function useDashboardBootstrapQuery() {
-  return useCachedQuery(
+export function useDashboardBootstrapQuery(params?: {
+  position?: string;
+  employeeUuid?: string;
+}) {
+  const cacheKey = [
     CACHE_KEYS.dashboardBootstrap,
-    fetchDashboardBootstrap,
+    params?.position ?? "all-positions",
+    params?.employeeUuid ?? "all-employees",
+  ].join(":");
+
+  return useCachedQuery(
+    cacheKey,
+    () => fetchDashboardBootstrap(params),
     DASHBOARD_CACHE_OPTIONS,
   );
 }

@@ -63,6 +63,7 @@ function addSummary(
 export default function AdminCards() {
   const [employeeType, setEmployeeType] = useState("");
   const [employeeUuid, setEmployeeUuid] = useState("");
+  const [employeeTypeTouched, setEmployeeTypeTouched] = useState(false);
 
   const filteredEmployees = useMemo(() => {
     if (!employeeType) {
@@ -80,8 +81,12 @@ export default function AdminCards() {
       employeeUuid
     : "";
 
-  const { data } = useDashboardBootstrapQuery();
+  const { data } = useDashboardBootstrapQuery({
+    position: employeeType || undefined,
+    employeeUuid: employeeUuid || undefined,
+  });
 
+  //Needed later
   const summary = data?.activitySummary ?? {
     edited: 0,
     checkedOut: 0,
@@ -128,8 +133,20 @@ export default function AdminCards() {
               labelId="employee-type-filter-label"
               value={employeeType}
               label="Employee Type"
+              displayEmpty
+              renderValue={(selected) => {
+                if (!employeeTypeTouched) {
+                  return "";
+                }
+
+                return selected ?
+                    getPositionLabel(selected as PositionType)
+                  : "All Employee Types";
+              }}
               onChange={(event: SelectChangeEvent) => {
+                setEmployeeTypeTouched(true);
                 setEmployeeType(event.target.value);
+                setEmployeeUuid("");
               }}
             >
               <MenuItem value="">All Employee Types</MenuItem>
