@@ -1230,11 +1230,15 @@ export default function ContentManagement({
             }}
           >
             <Box sx={{ display: "flex", gap: 2 }}>
-              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+              <Box
+                className="content-search-bar"
+                sx={{ flexGrow: 1, maxWidth: "70%" }}
+              >
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Button
+                  className="content-filter-button"
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
                   aria-haspopup="true"
@@ -1538,6 +1542,7 @@ export default function ContentManagement({
                 />
               )}
               <Button
+                className="content-upload-button"
                 onClick={() => setViewState("new")}
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -1589,7 +1594,10 @@ export default function ContentManagement({
       </AppBar>
 
       {/* ── Accordion Data grids ───────────────────────────────────────────────────── */}
-      <Box sx={{ width: "95%", mx: "auto" }}>
+      <Box
+        className="content-table"
+        sx={{ width: "95%", mx: "auto" }}
+      >
         {orderedPositions.map(({ key, label, chipSx }) => {
           const positionRows = filteredRows.filter(
             (r) => r.forPosition === key,

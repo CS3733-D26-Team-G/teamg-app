@@ -183,6 +183,7 @@ export default function ApprovalPage() {
         </Stack>
         {!loading && cards.length > 0 && (
           <Stack
+            className="approvals-action-buttons"
             direction="row"
             spacing={1.5}
             sx={{ mt: 2.5 }}
@@ -424,7 +425,7 @@ export default function ApprovalPage() {
               </Stack>
 
               <Box
-                className="approval-cards"
+                className="approvals-list"
                 sx={{ flex: 1 }}
               >
                 <Stack spacing={1.5}>
