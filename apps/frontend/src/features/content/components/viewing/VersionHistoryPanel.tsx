@@ -32,8 +32,8 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import { API_BASE_URL } from "../../../config";
-import type { ContentRow } from "../../../types/content";
+import { API_BASE_URL } from "../../../../config.ts";
+import type { ContentRow } from "../../../../types/content.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

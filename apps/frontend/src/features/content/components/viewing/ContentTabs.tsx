@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
-import type { ContentRow } from "../../../types/content";
+import { useMemo, useState, useEffect } from "react";
+import type { ContentRow } from "../../../../types/content.ts";
 import type { Position } from "@repo/db";
+import { getRecentlyViewed } from "./RecentlyViewed.tsx";
 
 type SpecialTab = "favorites" | "recent" | "checked-out";
 export type TabKey = string | SpecialTab;
@@ -34,24 +35,40 @@ export function ContentTabs({
     () => userPosition ?? "favorites",
   );
 
+  // re-read localStorage whenever the tab becomes active so the list stays fresh
+  const [recentEntries, setRecentEntries] = useState(() =>
+    employeeUuid ? getRecentlyViewed(employeeUuid) : [],
+  );
+
+  useEffect(() => {
+    if (activeTab === "recent" && employeeUuid) {
+      setRecentEntries(getRecentlyViewed(employeeUuid));
+    }
+  }, [activeTab, employeeUuid]);
+
   const specialTabRows = useMemo<Record<SpecialTab, ContentRow[]>>(
     () => ({
       "favorites": filteredRows.filter((r: ContentRow) => r.is_favorite),
-      "recent": filteredRows
-        .filter((r: ContentRow) => r.lastModifiedTime)
-        .sort(
-          (a: ContentRow, b: ContentRow) =>
-            new Date(b.lastModifiedTime!).getTime() -
-            new Date(a.lastModifiedTime!).getTime(),
-        )
-        .slice(0, 25),
+      "recent": (() => {
+        if (!employeeUuid || recentEntries.length === 0) return [];
+        const viewedAtMap = new Map(
+          recentEntries.map((e) => [e.uuid, e.viewedAt]),
+        );
+        return filteredRows
+          .filter((r: ContentRow) => viewedAtMap.has(r.uuid))
+          .sort(
+            (a, b) =>
+              (viewedAtMap.get(b.uuid) ?? 0) - (viewedAtMap.get(a.uuid) ?? 0),
+          )
+          .slice(0, 25);
+      })(),
       "checked-out": filteredRows.filter((r: ContentRow) =>
         isSystemAdmin ?
-          r.isLocked // admins see all locked files
+          r.isLocked
         : r.isLocked && r.editLock?.lockedByEmp?.uuid === employeeUuid,
       ),
     }),
-    [filteredRows, employeeUuid],
+    [filteredRows, employeeUuid, recentEntries],
   );
 
   const isSpecialTab = (key: TabKey): key is SpecialTab =>
