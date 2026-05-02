@@ -31,6 +31,16 @@ export type ActivitySummary = {
   deleted: number;
 };
 
+export interface EditHitsRow {
+  date: string;
+  UNDERWRITER?: number;
+  BUSINESS_ANALYST?: number;
+  ACTUARIAL_ANALYST?: number;
+  EXL_OPERATIONS?: number;
+  BUSINESS_OP_RATING?: number;
+  ADMIN?: number;
+}
+
 export type PositionCounts = Record<Position, number>;
 
 export interface FileTypeCount {
@@ -48,4 +58,5 @@ export interface DashboardBootstrapData {
   contentList: ContentRow[];
   activitySummary: ActivitySummary;
   employees: EmployeeRecord[];
+  editHitsByRole: EditHitsRow[];
 }

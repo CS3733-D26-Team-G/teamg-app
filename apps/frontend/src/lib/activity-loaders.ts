@@ -14,6 +14,7 @@ import type {
   ActivityRow,
   ActivitySummary,
   DashboardBootstrapData,
+  EditHitsRow,
   FileTypeCount,
   PositionCounts,
 } from "../types/activity";
@@ -131,9 +132,19 @@ async function fetchActivityActionSummary(params?: {
   );
 }
 
+// Fetches the edits by position
+async function fetchEditHitsByRole(days?: number): Promise<EditHitsRow[]> {
+  const query = days ? `?days=${days}` : "";
+
+  return fetchJson<EditHitsRow[]>(
+    `${API_ENDPOINTS.STATS.CONTENT_EDIT_HITS_BY_ROLE}${query}`,
+  );
+}
+
 async function fetchDashboardBootstrap(params?: {
   position?: string;
   employeeUuid?: string;
+  days?: number;
 }): Promise<DashboardBootstrapData> {
   const [
     activityAll,
@@ -145,6 +156,7 @@ async function fetchDashboardBootstrap(params?: {
     contentList,
     employees,
     activitySummary,
+    editHitsByRole,
   ] = await Promise.all([
     loadActivity("all"),
     loadActivity("content"),
@@ -155,6 +167,7 @@ async function fetchDashboardBootstrap(params?: {
     loadContentList(),
     loadEmployees(),
     loadActivityActionSummary(params),
+    loadEditHitsByRole(params?.days ?? 7),
   ]);
 
   return {
@@ -167,6 +180,7 @@ async function fetchDashboardBootstrap(params?: {
     contentList,
     employees,
     activitySummary,
+    editHitsByRole,
   };
 }
 
@@ -249,14 +263,30 @@ export async function loadActivityActionSummary(params?: {
   });
 }
 
+// Loads fetched edits by position
+export async function loadEditHitsByRole(
+  days?: number,
+): Promise<EditHitsRow[]> {
+  const cacheKey = `stats:content:edit-hits-by-role:${days ?? "all"}`;
+
+  return fetchCachedQuery(cacheKey, () => fetchEditHitsByRole(days), {
+    staleTimeMs: 60_000,
+    cacheTimeMs: 10 * 60_000,
+    persist: true,
+    scope: "user",
+  });
+}
+
 export async function loadDashboardBootstrap(params?: {
   position?: string;
   employeeUuid?: string;
+  days?: number;
 }): Promise<DashboardBootstrapData> {
   const cacheKey = [
     CACHE_KEYS.dashboardBootstrap,
     params?.position ?? "all-positions",
     params?.employeeUuid ?? "all-employees",
+    params?.days ?? "all-days",
   ].join(":");
 
   return fetchCachedQuery(
@@ -269,11 +299,13 @@ export async function loadDashboardBootstrap(params?: {
 export function useDashboardBootstrapQuery(params?: {
   position?: string;
   employeeUuid?: string;
+  days?: number;
 }) {
   const cacheKey = [
     CACHE_KEYS.dashboardBootstrap,
     params?.position ?? "all-positions",
     params?.employeeUuid ?? "all-employees",
+    params?.days ?? "all-days",
   ].join(":");
 
   return useCachedQuery(
