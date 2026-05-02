@@ -1830,7 +1830,7 @@ export default function ContentManagement({
                 <Typography
                   sx={{
                     p: 3,
-                    color: "text.secondary",
+                    color: "rgba(255,255,255,0.85)",
                     fontSize: "0.875rem",
                     textAlign: "center",
                   }}
@@ -2016,8 +2016,7 @@ export default function ContentManagement({
                         variant="outlined"
                         sx={{
                           color: "rgba(255,255,255,0.8)",
-                          borderColor: "rgba(255,255,255,0.4)",
-                          border: "1px solid transparent",
+                          border: "none",
                         }}
                       />
                     )}
