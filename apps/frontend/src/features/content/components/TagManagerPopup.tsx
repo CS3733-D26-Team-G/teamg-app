@@ -14,6 +14,7 @@ import {
   Chip,
 } from "@mui/material";
 import Button from "@mui/material/Button";
+import EditIcon from "@mui/icons-material/Edit";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import { API_ENDPOINTS } from "../../../config.ts";
@@ -214,17 +215,22 @@ export default function TagManagerPopup({
                           No
                         </Button>
                       </Box>
-                    : <IconButton
-                        size="small"
-                        onClick={() => {
-                          setPendingDeleteTag(tag.uuid);
-                        }}
-                      >
-                        <DeleteIcon
-                          fontSize="small"
-                          sx={{ color: "#ef5350" }}
-                        />
-                      </IconButton>
+                    : <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <IconButton size="small">
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setPendingDeleteTag(tag.uuid);
+                          }}
+                        >
+                          <DeleteIcon
+                            fontSize="small"
+                            sx={{ color: "#ef5350" }}
+                          />
+                        </IconButton>
+                      </Box>
                   }
                 >
                   <ListItemText

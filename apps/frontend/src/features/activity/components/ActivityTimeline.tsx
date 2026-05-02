@@ -40,14 +40,31 @@ export default function ActivityTimeline({ data }: ActivityTimelineProps) {
 
   return (
     <>
-      <Box sx={{ height: "calc(100vh - 200px)", overflowY: "auto" }}>
+      <Box
+        sx={{
+          "height": "calc(100vh - 200px)",
+          "overflowY": "auto",
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
+
+          // Hide scrollbar for Firefox
+          "scrollbarWidth": "none",
+
+          // Hide scrollbar for IE and Edge
+          "msOverflowStyle": "none",
+
+          "pl": "40px",
+          "pr": "40px",
+        }}
+      >
         <Timeline
           position="right"
-          sx={{ p: 0, marginLeft: "8px" }}
+          sx={{ p: 0 }}
         >
           {data.map((group, index) => (
             <Fragment key={`${group.date}-${index}`}>
-              <Box sx={{ display: "flex", alignItems: "center", my: 2, px: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", my: 2 }}>
                 <Typography
                   variant="overline"
                   sx={{
