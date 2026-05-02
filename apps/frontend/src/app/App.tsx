@@ -30,7 +30,14 @@ function AppShell() {
         !isCreditsPage &&
         session && <Sidebar />}
 
-      <div style={{ flexGrow: 1, minWidth: 0 }}>
+      <div
+        style={{
+          flexGrow: 1,
+          minWidth: 0,
+          background:
+            "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+        }}
+      >
         <Outlet />
       </div>
 

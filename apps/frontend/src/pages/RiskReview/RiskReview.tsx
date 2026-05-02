@@ -123,7 +123,10 @@ export default function RiskReviewPage() {
             method: "PUT",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: "UNDER_REVIEW" }),
+            body: JSON.stringify({
+              status: "UNDER_REVIEW",
+              comment: card.riskNotes,
+            }),
           }),
         ),
       );

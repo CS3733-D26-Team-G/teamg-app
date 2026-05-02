@@ -17,20 +17,9 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
         variant="outlined"
         size="small"
         sx={{
-          "width": "90%",
-          "marginLeft": "24px",
-          "backgroundColor": "background.paper",
-          "borderRadius": "32px",
-          "& .MuiInputBase-input": {
-            color: "text.primary",
-          },
-          "& .MuiInputBase-input::placeholder": {
-            color: "text.secondary",
-            opacity: 1,
-          },
-          "& .MuiSvgIcon-root": {
-            color: "text.secondary",
-          },
+          width: "100%",
+          backgroundColor: "white",
+          borderRadius: "32px", // Matches default MUI radius
         }}
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
           setSearchQuery(e.target.value);
