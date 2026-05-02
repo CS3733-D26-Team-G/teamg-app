@@ -12,8 +12,6 @@ import {
 import {
   Box,
   IconButton,
-  Badge,
-  Popover,
   List,
   ListItem,
   Typography,
@@ -62,27 +60,9 @@ function getNotificationMessage(
   return `"${title}" expires soon`;
 }
 
-function formatClaimTitle(resourceName: string, action: string): string {
-  if (resourceName && resourceName !== "Claim") {
-    return resourceName;
-  }
-
-  switch (action) {
-    case "CREATE_CLAIM":
-      return "New Claim Created";
-    case "EDIT_CLAIM":
-      return "Claim Updated";
-    case "DELETE_CLAIM":
-      return "Claim Deleted";
-    default:
-      return "Claim Activity";
-  }
-}
-
 function useContentInfo() {
   const { data, loading, refresh } = useDashboardBootstrap();
 
-  // Load dismissed notifications from localStorage on init
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(DISMISSED_NOTIFICATIONS_KEY);
     if (saved) {
@@ -91,7 +71,6 @@ function useContentInfo() {
     return new Set();
   });
 
-  // Save dismissed notifications to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem(
       DISMISSED_NOTIFICATIONS_KEY,
@@ -114,7 +93,6 @@ function useContentInfo() {
     return () => clearInterval(interval);
   }, [refresh]);
 
-  // Get raw data from different activity categories
   const criticalContent = useMemo(
     () => getCriticalContent(data?.contentList ?? []),
     [data?.contentList],
@@ -127,35 +105,20 @@ function useContentInfo() {
     () => getExpiredContent(data?.contentList ?? []),
     [data?.contentList],
   );
-
-  // Activity data from different categories
-  // activityVerbose includes OWNERSHIP_CHANGE actions
   const ownershipChanges = useMemo(
     () => getOwnershipChanges(data?.activityVerbose ?? []),
     [data?.activityVerbose],
   );
-
-  // activityContent includes content edits
   const contentEdits = useMemo(
     () => getContentEdits(data?.activityContent ?? []),
     [data?.activityContent],
   );
-
   const claimActions = useMemo(() => {
     const claimActivities =
-      (data as any)?.activityClaim ?? // If separate claim activity exists
-      data?.activityAll ?? // Fall back to all activities
-      [];
-
-    console.log(
-      "Processing claim actions from:",
-      claimActivities.length,
-      "activities",
-    );
+      (data as any)?.activityClaim ?? data?.activityAll ?? [];
     return getClaimActions(claimActivities);
   }, [data]);
 
-  // Filter out dismissed alerts
   const visibleCriticalContent = useMemo(
     () =>
       criticalContent.filter(
@@ -188,7 +151,6 @@ function useContentInfo() {
     [claimActions, dismissedAlerts],
   );
 
-  // Dismiss all visible alerts
   const dismissAllAlerts = useCallback(() => {
     setDismissedAlerts((prev) => {
       const newSet = new Set(prev);
@@ -273,8 +235,6 @@ export default function NotificationBarComponent() {
     dismissAllAlerts,
   } = useContentInfo();
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
   const allAlerts: AlertItem[] = [
     ...visibleCriticalContent.map((c) => ({
       uuid: c.uuid,
@@ -319,8 +279,84 @@ export default function NotificationBarComponent() {
     })),
   ];
 
-  const open = Boolean(anchorEl);
+  const filterAlert = useCallback(
+    (type: string) => {
+      const alertMap: Record<string, AlertItem[]> = {
+        critical: visibleCriticalContent.map((c) => ({
+          uuid: c.uuid,
+          title: c.title || "",
+          alertType: "critical" as const,
+          notificationMessage: getNotificationMessage(
+            c.title || "",
+            c.expirationTime,
+          ),
+          expirationTime: c.expirationTime,
+        })),
+        expiring: [
+          ...visibleExpiringContent.map((c) => ({
+            uuid: c.uuid,
+            title: c.title || "",
+            alertType: "expiring" as const,
+            notificationMessage: getNotificationMessage(
+              c.title || "",
+              c.expirationTime,
+            ),
+            expirationTime: c.expirationTime,
+          })),
+          ...visibleCriticalContent.map((c) => ({
+            uuid: c.uuid,
+            title: c.title || "",
+            alertType: "critical" as const,
+            notificationMessage: getNotificationMessage(
+              c.title || "",
+              c.expirationTime,
+            ),
+            expirationTime: c.expirationTime,
+          })),
+        ],
+        claim: visibleClaimActions.map((c) => ({
+          uuid: c.uuid,
+          title: c.title,
+          alertType: "claim" as const,
+          notificationMessage: c.notificationMessage,
+          expirationTime: null,
+        })),
+        ownership: visibleOwnershipChanges.map((o) => ({
+          uuid: o.uuid,
+          title: o.title,
+          alertType: "ownership" as const,
+          notificationMessage: o.notificationMessage,
+          expirationTime: null,
+        })),
+        edit: visibleContentEdits.map((e) => ({
+          uuid: e.uuid,
+          title: e.title,
+          alertType: "edit" as const,
+          notificationMessage: e.notificationMessage,
+          expirationTime: null,
+        })),
+      };
+
+      return alertMap[type] || allAlerts;
+    },
+    [
+      visibleCriticalContent,
+      visibleExpiringContent,
+      visibleClaimActions,
+      visibleOwnershipChanges,
+      visibleContentEdits,
+      allAlerts,
+    ],
+  );
+
   const totalAlerts = counts.total;
+  const [currentFilter, setCurrentFilter] = useState<string>("all");
+  const [displayedAlerts, setDisplayedAlerts] = useState<AlertItem[]>([]);
+
+  useEffect(() => {
+    const filtered = filterAlert(currentFilter);
+    setDisplayedAlerts(filtered);
+  }, [currentFilter, filterAlert]);
 
   const handleDismiss = (uuid: string, title: string, alertType: string) => {
     dismissAlert(uuid, alertType);
@@ -350,7 +386,16 @@ export default function NotificationBarComponent() {
   };
 
   return (
-    <Box sx={{ height: "100%", width: "100%" }}>
+    <Box
+      sx={{
+        height: "100%",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        minWidth: 0, // Allow flex shrinking
+      }}
+    >
+      {/* Header - Centered */}
       <Box
         sx={{
           display: "flex",
@@ -359,9 +404,14 @@ export default function NotificationBarComponent() {
           mb: 2,
           mt: 2,
           mx: 2,
+          position: "relative",
+          minWidth: "100px",
         }}
       >
-        <Typography variant="h6">
+        <Typography
+          variant="h6"
+          sx={{ textAlign: "center" }}
+        >
           Notifications
           {totalAlerts > 0 && (
             <Chip
@@ -376,96 +426,163 @@ export default function NotificationBarComponent() {
           <Button
             size="small"
             onClick={handleDismissAll}
-            sx={{ textTransform: "none" }}
+            sx={{
+              textTransform: "none",
+              position: "absolute",
+              right: 0,
+            }}
           >
             Dismiss All
           </Button>
         )}
       </Box>
 
-      {loading ?
-        <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-          <CircularProgress />
-        </Box>
-      : allAlerts.length <= 0 ?
-        <Typography
-          sx={{ p: 2, textAlign: "center" }}
-          color="textSecondary"
+      {/* Filter Buttons - Centered and Wrapping */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          mb: 2,
+          flexWrap: "wrap",
+          gap: 1,
+          px: 1,
+        }}
+      >
+        <Button
+          size="small"
+          variant={currentFilter === "all" ? "contained" : "outlined"}
+          onClick={() => setCurrentFilter("all")}
         >
-          No current notifications
-        </Typography>
-      : <List sx={{ p: 0 }}>
-          {allAlerts.map((alert) => (
-            <ListItem
-              key={`${alert.alertType}-${alert.uuid}`}
-              sx={{
-                flexDirection: "column",
-                alignItems: "flex-start",
-                borderBottom: "1px solid #e0e0e0",
-                py: 2,
-                px: 2,
-              }}
-            >
-              <Box
-                display="flex"
-                width="100%"
-                justifyContent="space-between"
-                alignItems="flex-start"
-                gap={1}
-                sx={{ minHeight: 32 }}
+          All ({allAlerts.length})
+        </Button>
+        <Button
+          size="small"
+          variant={currentFilter === "critical" ? "contained" : "outlined"}
+          onClick={() => setCurrentFilter("critical")}
+          color="error"
+        >
+          Critical ({visibleCriticalContent.length})
+        </Button>
+        <Button
+          size="small"
+          variant={currentFilter === "expiring" ? "contained" : "outlined"}
+          onClick={() => setCurrentFilter("expiring")}
+          color="warning"
+        >
+          Expiring (
+          {visibleExpiringContent.length + visibleCriticalContent.length})
+        </Button>
+        <Button
+          size="small"
+          variant={currentFilter === "claim" ? "contained" : "outlined"}
+          onClick={() => setCurrentFilter("claim")}
+          color="primary"
+        >
+          Claims ({visibleClaimActions.length})
+        </Button>
+        <Button
+          size="small"
+          variant={currentFilter === "ownership" ? "contained" : "outlined"}
+          onClick={() => setCurrentFilter("ownership")}
+          color="info"
+        >
+          Ownership ({visibleOwnershipChanges.length})
+        </Button>
+        <Button
+          size="small"
+          variant={currentFilter === "edit" ? "contained" : "outlined"}
+          onClick={() => setCurrentFilter("edit")}
+          color="secondary"
+        >
+          Edits ({visibleContentEdits.length})
+        </Button>
+      </Box>
+
+      <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, px: 1 }}>
+        {loading ?
+          <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+            <CircularProgress />
+          </Box>
+        : displayedAlerts.length <= 0 ?
+          <Typography
+            sx={{ p: 2, textAlign: "center" }}
+            color="textSecondary"
+          >
+            No current notifications
+          </Typography>
+        : <List sx={{ p: 0 }}>
+            {displayedAlerts.map((alert) => (
+              <ListItem
+                key={`${alert.alertType}-${alert.uuid}`}
+                sx={{
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  borderBottom: "1px solid #e0e0e0",
+                  py: 2,
+                  px: 2,
+                }}
               >
                 <Box
                   display="flex"
-                  alignItems="center"
+                  width="100%"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
                   gap={1}
-                  flex={1}
-                  minWidth={0}
+                  sx={{ minHeight: 32 }}
                 >
-                  <Typography
-                    variant="subtitle2"
-                    fontWeight="bold"
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    flex={1}
+                    minWidth={0}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight="bold"
+                      sx={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        flex: 1,
+                      }}
+                    >
+                      {alert.title}
+                    </Typography>
+                    <Chip
+                      label={alert.alertType}
+                      size="small"
+                      color={getAlertColor(alert.alertType) as any}
+                      variant="outlined"
+                      sx={{ flexShrink: 0 }}
+                    />
+                  </Box>
+                  <IconButton
+                    onClick={() =>
+                      handleDismiss(alert.uuid, alert.title, alert.alertType)
+                    }
+                    size="small"
                     sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      flex: 1,
+                      "flexShrink": 0,
+                      "ml": 1,
+                      "&:hover": { backgroundColor: "#e0e0e0" },
                     }}
                   >
-                    {alert.title}
-                  </Typography>
-                  <Chip
-                    label={alert.alertType}
-                    size="small"
-                    color={getAlertColor(alert.alertType) as any}
-                    variant="outlined"
-                    sx={{ flexShrink: 0 }}
-                  />
+                    <ClearOutlinedIcon fontSize="small" />
+                  </IconButton>
                 </Box>
-                <IconButton
-                  onClick={() =>
-                    handleDismiss(alert.uuid, alert.title, alert.alertType)
-                  }
-                  size="small"
-                  sx={{
-                    "flexShrink": 0,
-                    "ml": 1,
-                    "&:hover": { backgroundColor: "#e0e0e0" },
-                  }}
+                <Typography
+                  variant="caption"
+                  color="textSecondary"
+                  sx={{ mt: 0.5, width: "100%" }}
                 >
-                  <ClearOutlinedIcon fontSize="small" />
-                </IconButton>
-              </Box>
-              <Typography
-                variant="caption"
-                color="textSecondary"
-                sx={{ mt: 0.5, width: "100%" }}
-              >
-                {alert.notificationMessage}
-              </Typography>
-            </ListItem>
-          ))}
-        </List>
-      }
+                  {alert.notificationMessage}
+                </Typography>
+              </ListItem>
+            ))}
+          </List>
+        }
+      </Box>
     </Box>
   );
 }
