@@ -104,13 +104,7 @@ export default function Sidebar() {
         transition: "width 0.3s",
         position: "sticky",
         top: 0,
-        // The sidebar uses the SAME gradient anchor colour (#1A1E4B) as the
-        // page headers, so the two surfaces read as one continuous band when
-        // placed side-by-side. The sidebar runs the gradient top-to-bottom
-        // (darkening slightly) while the header runs left-to-right; where they
-        // meet at the top-left corner the colours are identical.
-        background:
-          "linear-gradient(180deg, #1A1E4B 0%, #222847 35%, #263056 70%, #2c3a6a 100%)",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
       }}
@@ -131,9 +125,10 @@ export default function Sidebar() {
           alt="Hanover Logo"
           sx={{
             width: "140px",
+            mx: "auto",
+            my: 1,
             display: isOpen ? "block" : "none",
             imageRendering: "crisp-edges",
-            // Invert so the dark logo reads white on the dark sidebar
             filter: "brightness(0) invert(1)",
           }}
         />

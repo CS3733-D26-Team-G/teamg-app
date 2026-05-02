@@ -36,11 +36,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import WebViewer, { type WebViewerInstance } from "@pdftron/webviewer";
-import { API_ENDPOINTS } from "../../../config.ts";
+import { API_ENDPOINTS } from "../../../../config.ts";
 import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
-import type { ContentRow } from "../../../types/content.ts";
+import type { ContentRow } from "../../../../types/content.ts";
 import { useTheme } from "@mui/material/styles";
-import { markContentListStale } from "../../../lib/api-loaders.ts";
+import { markContentListStale } from "../../../../lib/api-loaders.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

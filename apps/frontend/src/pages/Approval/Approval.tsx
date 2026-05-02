@@ -99,6 +99,7 @@ export default function ApprovalPage() {
   const handleSubmitApprovals = async () => {
     const reviewed = cards.filter((c) => c.status !== null);
     if (reviewed.length === 0) return;
+
     setSubmitting(true);
     try {
       await Promise.all(
@@ -107,14 +108,17 @@ export default function ApprovalPage() {
             method: "PUT",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: card.status }),
+            body: JSON.stringify({
+              status: "FINISHED",
+            }),
           }),
         ),
       );
+
       invalidateClaimsList();
       setSubmitted(true);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to submit approvals:", err);
     } finally {
       setSubmitting(false);
     }
@@ -125,12 +129,11 @@ export default function ApprovalPage() {
   const pendingCount = cards.filter((c) => c.status === null).length;
 
   return (
-    <Box sx={{ minHeight: "100vh", backgroundColor: "white" }}>
+    <Box sx={{ minHeight: "100vh", backgroundColor: "transparent" }}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <Box
         sx={{
-          background:
-            "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+          background: "transparent",
           px: 4,
           pt: 5,
           pb: 3,
@@ -227,7 +230,18 @@ export default function ApprovalPage() {
       </Box>
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
-      <Box sx={{ px: 4, py: 3, width: "auto", borderRadius: "14px" }}>
+      <Box
+        sx={{
+          px: 4,
+          py: 3,
+          width: "95%",
+          mx: "auto",
+          mb: "2rem",
+          borderRadius: "14px",
+          backgroundColor: "white",
+          height: "calc(100vh - 200px)",
+        }}
+      >
         {loading ?
           <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
             <CircularProgress />
@@ -523,7 +537,7 @@ function ApprovalCardComponent({
   onDeny,
   onCommentChange,
 }: ApprovalCardProps) {
-  const { claim, expanded, status, reviewComment } = card;
+  const { claim, expanded, status } = card;
   const incidentDate =
     claim.incidentDate ?
       new Date(claim.incidentDate).toLocaleDateString(undefined, {
@@ -539,7 +553,7 @@ function ApprovalCardComponent({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      onClick={() => console.log(status)}
+      onClick={() => console.log(claim.comment)}
       sx={{
         borderRadius: "14px",
         overflow: "hidden",
@@ -792,7 +806,7 @@ function ApprovalCardComponent({
             </Box>
           )}
 
-          {/* Admin review comment */}
+          {/* Underwriter review comment */}
           <Box>
             <Typography
               variant="subtitle2"
@@ -805,9 +819,25 @@ function ApprovalCardComponent({
                 color: "text.secondary",
               }}
             >
-              Review Comment (optional)
+              Underwriter Review Comment
             </Typography>
-            <TextField
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: "10px",
+                backgroundColor: "action.hover",
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{ lineHeight: 1.7 }}
+              >
+                {claim.comment}
+              </Typography>
+            </Box>
+            {/* <TextField
               placeholder="Add a note about this approval or denial…"
               fullWidth
               multiline
@@ -822,7 +852,7 @@ function ApprovalCardComponent({
                   fontSize: "0.875rem",
                 },
               }}
-            />
+            /> */}
           </Box>
 
           {/* Approve / Deny */}

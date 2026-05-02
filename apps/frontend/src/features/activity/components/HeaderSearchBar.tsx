@@ -17,8 +17,7 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
         variant="outlined"
         size="small"
         sx={{
-          width: "90%",
-          marginLeft: "24px",
+          width: "100%",
           backgroundColor: "white",
           borderRadius: "32px", // Matches default MUI radius
         }}
