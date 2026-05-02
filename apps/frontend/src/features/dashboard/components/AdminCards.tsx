@@ -47,8 +47,6 @@ const POSITION_OPTIONS: PositionType[] = [
   "BUSINESS_OP_RATING",
 ];
 
-const employees: EmployeeOption[] = [];
-
 function addSummary(
   acc: ActivitySummary,
   next: ActivitySummary,
@@ -64,6 +62,20 @@ export default function AdminCards() {
   const [employeeType, setEmployeeType] = useState("");
   const [employeeUuid, setEmployeeUuid] = useState("");
   const [employeeTypeTouched, setEmployeeTypeTouched] = useState(false);
+  const [employeeTouched, setEmployeeTouched] = useState(false);
+
+  const { data } = useDashboardBootstrapQuery({
+    position: employeeType || undefined,
+    employeeUuid: employeeUuid || undefined,
+  });
+
+  const employees: EmployeeOption[] =
+    data?.employees.map((employee) => ({
+      uuid: employee.uuid,
+      first_name: employee.firstName,
+      last_name: employee.lastName,
+      position: employee.position,
+    })) ?? [];
 
   const filteredEmployees = useMemo(() => {
     if (!employeeType) {
@@ -80,11 +92,6 @@ export default function AdminCards() {
     ) ?
       employeeUuid
     : "";
-
-  const { data } = useDashboardBootstrapQuery({
-    position: employeeType || undefined,
-    employeeUuid: employeeUuid || undefined,
-  });
 
   //Needed later
   const summary = data?.activitySummary ?? {
@@ -126,7 +133,10 @@ export default function AdminCards() {
               "& .MuiMenuItem-root": { fontFamily: "inherit" },
             }}
           >
-            <InputLabel id="employee-type-filter-label">
+            <InputLabel
+              id="employee-type-filter-label"
+              shrink={employeeTypeTouched}
+            >
               Employee Type
             </InputLabel>
             <Select
@@ -147,6 +157,7 @@ export default function AdminCards() {
                 setEmployeeTypeTouched(true);
                 setEmployeeType(event.target.value);
                 setEmployeeUuid("");
+                setEmployeeTouched(false);
               }}
             >
               <MenuItem value="">All Employee Types</MenuItem>
@@ -170,12 +181,43 @@ export default function AdminCards() {
               "& .MuiMenuItem-root": { fontFamily: "inherit" },
             }}
           >
-            <InputLabel id="employee-filter-label">Employee</InputLabel>
+            <InputLabel
+              id="employee-filter-label"
+              shrink={employeeTouched}
+            >
+              Employee
+            </InputLabel>
             <Select
               labelId="employee-filter-label"
               value={employeeUuid}
               label="Employee"
+              displayEmpty
+              renderValue={(selected) => {
+                if (!employeeTouched) {
+                  return "";
+                }
+
+                if (!selected) {
+                  return "All Employees";
+                }
+
+                const selectedEmployee = employees.find(
+                  (employee) => employee.uuid === selected,
+                );
+
+                return selectedEmployee ?
+                    `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+                  : "All Employees";
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    maxHeight: 8 * 48 + 8,
+                  },
+                },
+              }}
               onChange={(event: SelectChangeEvent) => {
+                setEmployeeTouched(true);
                 setEmployeeUuid(event.target.value);
               }}
             >

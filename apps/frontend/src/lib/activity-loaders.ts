@@ -17,6 +17,7 @@ import type {
   FileTypeCount,
   PositionCounts,
 } from "../types/activity";
+import type { EmployeeRecord } from "../types/employee";
 
 const ACTIVITY_CACHE_OPTIONS: CacheOptions<ActivityRow[]> = {
   staleTimeMs: 30_000,
@@ -104,6 +105,10 @@ async function fetchEmployeeCounts() {
   );
 }
 
+async function fetchEmployees(): Promise<EmployeeRecord[]> {
+  return fetchJson<EmployeeRecord[]>(API_ENDPOINTS.EMPLOYEE.ROOT);
+}
+
 async function fetchActivityActionSummary(params?: {
   position?: string;
   employeeUuid?: string;
@@ -138,6 +143,7 @@ async function fetchDashboardBootstrap(params?: {
     fileTypeCounts,
     employeeCounts,
     contentList,
+    employees,
     activitySummary,
   ] = await Promise.all([
     loadActivity("all"),
@@ -147,6 +153,7 @@ async function fetchDashboardBootstrap(params?: {
     loadContentFileTypeCounts(),
     loadEmployeeCounts(),
     loadContentList(),
+    loadEmployees(),
     loadActivityActionSummary(params),
   ]);
 
@@ -158,6 +165,7 @@ async function fetchDashboardBootstrap(params?: {
     fileTypeCounts,
     employeeCounts,
     contentList,
+    employees,
     activitySummary,
   };
 }
@@ -210,6 +218,16 @@ export async function loadEmployeeCounts(): Promise<PositionCounts> {
     fetchEmployeeCounts,
     COUNTS_CACHE_OPTIONS,
   );
+}
+
+// Loads fetched data for all employees
+export async function loadEmployees(): Promise<EmployeeRecord[]> {
+  return fetchCachedQuery("employee:list", fetchEmployees, {
+    staleTimeMs: 60_000,
+    cacheTimeMs: 10 * 60_000,
+    persist: true,
+    scope: "user",
+  });
 }
 
 // Loads fetched data for "Employee activity" dashboard chart

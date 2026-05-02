@@ -2,6 +2,8 @@ import type { Position } from "@repo/db";
 
 import type { ContentRow } from "./content";
 
+import type { EmployeeRecord } from "./employee";
+
 export type ActivityCategory = "all" | "content" | "verbose" | "auth";
 
 export interface ActivityEmployee {
@@ -44,4 +46,6 @@ export interface DashboardBootstrapData {
   fileTypeCounts: FileTypeCount[];
   employeeCounts: PositionCounts;
   contentList: ContentRow[];
+  activitySummary: ActivitySummary;
+  employees: EmployeeRecord[];
 }
