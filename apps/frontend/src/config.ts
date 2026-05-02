@@ -52,11 +52,12 @@ export const API_ENDPOINTS = {
     LOCK: (uuid: string) => `${API_BASE_URL}/content/lock/${uuid}`,
     FILE: (uuid: string) => `${API_BASE_URL}/content/file/${uuid}`,
     TAG: {
+      ROOT: `${API_BASE_URL}/content/tag`,
       CREATE: `${API_BASE_URL}/content/tag/create`,
       DELETE: (uuid: string) => `${API_BASE_URL}/content/tag/delete/${uuid}`,
       UPDATE: (tagUuid: string, contentUuid: string) =>
         `${API_BASE_URL}/content/tag/update/${tagUuid}/${contentUuid}`,
-      GET_ALL: `${API_BASE_URL}/content/tag`,
+      EDIT: `${API_BASE_URL}/content/tag/edit`,
     },
   },
 };
