@@ -84,18 +84,21 @@ import {
   prefetchActivity,
 } from "../../../lib/activity-loaders";
 
+// human-readable labels for each content status
 const statusLabels: Record<ContentStatus, string> = {
   AVAILABLE: "Available",
   IN_USE: "In-Use",
   UNAVAILABLE: "Unavailable",
 };
 
+// maps each status to a MUI chip color
 const statusColorMap: Record<ContentStatus, "success" | "warning" | "error"> = {
   AVAILABLE: "success",
   IN_USE: "warning",
   UNAVAILABLE: "error",
 };
 
+// display config for each position — drives accordion headers and filter checkboxes
 const POSITION_CONFIG: {
   key: string;
   label: string;
@@ -133,6 +136,7 @@ const POSITION_CONFIG: {
   },
 ];
 
+// maps MIME types to short file extension labels shown in the UI
 const fileTypeLabels: Record<string, string> = {
   "application/pdf": ".PDF",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
@@ -152,10 +156,11 @@ const fileTypeLabels: Record<string, string> = {
 };
 
 interface ContentManagementProps {
-  viewState: ContentRow | "new" | null;
+  viewState: ContentRow | "new" | null; // the row being edited, "new" when creating, null when closed
   setViewState: React.Dispatch<React.SetStateAction<ContentRow | "new" | null>>;
 }
 
+// toolbar extended to two rows with extra vertical padding
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   flexDirection: "column",
   alignItems: "stretch",
@@ -164,6 +169,7 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 128,
 }));
 
+// slides the content form dialog up from the bottom instead of fading in
 const SlideUpTransition = React.forwardRef(function SlideUpTransition(
   props: TransitionProps & { children: React.ReactElement },
   ref: React.Ref<unknown>,
@@ -177,12 +183,13 @@ const SlideUpTransition = React.forwardRef(function SlideUpTransition(
   );
 });
 
-/* Highlights new content based on what is different from start of session */
+// returns UUIDs of rows added after the current browser session started so they can be highlighted
 function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const KEY = `new_content_ids_${userUuid}`;
   const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
   const SESSION_KEY = `session_id_${userUuid}`;
 
+  // create a unique session ID for this tab if one doesn't exist yet
   if (!sessionStorage.getItem(SESSION_KEY)) {
     sessionStorage.setItem(SESSION_KEY, crypto.randomUUID());
   }
@@ -191,6 +198,7 @@ function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const fullInitialKey = `${INITIAL_IDS_KEY}_${sessionId}`;
   const fullNewKey = `${KEY}_${sessionId}`;
 
+  // first visit this session — snapshot current IDs as the baseline and return empty
   if (!localStorage.getItem(fullInitialKey)) {
     const initialIds = rows.map((r) => r.uuid);
     localStorage.setItem(fullInitialKey, JSON.stringify(initialIds));
@@ -201,10 +209,12 @@ function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
     JSON.parse(localStorage.getItem(fullInitialKey)!) as string[],
   );
 
+  // find rows that weren't in the original snapshot
   const newIds = rows
     .filter((row) => !initialIds.has(row.uuid))
     .map((row) => row.uuid);
 
+  // merge with previously stored new IDs so highlights survive re-renders
   const existing = localStorage.getItem(fullNewKey);
   const storedIds: string[] =
     existing ? (JSON.parse(existing) as string[]) : [];
@@ -220,17 +230,25 @@ export default function ContentManagement({
 }: ContentManagementProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+
+  // active filter selections
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [fileTypeFilters, setFileTypeFilters] = useState<string[]>([]);
   const [tagFilters, setTagFilters] = useState<ContentTagSummary[]>([]);
+
+  // skip releasing the lock when the user navigates from the editor to the form
   const skipLockReleaseRef = useRef(false);
+  // true when the form was opened from the editor so we reopen it on close
   const returningToEditorRef = useRef(false);
+
   const contentListQuery = useContentListQuery();
   const contentTagsQuery = useContentTagsQuery();
 
+  // resolves a MIME type to its short display label e.g. ".PDF"
   const displayFileType = (fileType: string) =>
     fileTypeLabels[fileType] ?? fileType;
 
+  // anchor elements for each popover
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [positionAnchor, setPositionAnchor] = useState<null | HTMLElement>(
     null,
@@ -246,16 +264,17 @@ export default function ContentManagement({
     () => contentListQuery.data ?? [],
   );
   const [searchQuery, setSearchQuery] = useState("");
-  const [lockMessage, setLockMessage] = useState<string | null>(null);
+  const [lockMessage, setLockMessage] = useState<string | null>(null); // inline warning when checkout fails
   const [favoritePending, setFavoritePending] = useState<
     Record<string, boolean>
-  >({});
+  >({}); // tracks in-flight favorite requests
   const { session } = useAuth();
 
-  // Preview dialog (DocPreviewer — read-only viewer)
+  // controls the read-only doc previewer dialog
   const [previewOpen, setPreviewOpen] = useState(false);
-  // Editor modal (DocumentEditorModal — full WebViewer, opened after checkout)
+  // controls the full editor modal (requires checkout)
   const [editorOpen, setEditorOpen] = useState(false);
+  // document currently open in the previewer or editor
   const [selectedDoc, setSelectedDoc] = useState<{
     uri: string;
     fileName: string;
@@ -263,17 +282,19 @@ export default function ContentManagement({
     forPosition: Position;
   } | null>(null);
 
-  const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null);
-  const [pendingSave, setPendingSave] = useState<FormData | null>(null);
-  const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null); // row staged for the delete confirmation dialog
+  const [pendingSave, setPendingSave] = useState<FormData | null>(null); // payload staged for the save confirmation dialog
+  const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set()); // UUIDs added this session, used for "new" row highlighting
+
   const availableTags = contentTagsQuery.data ?? [];
 
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.can_manage_all_content ?? false;
 
-  // Form modal open state — derived from viewState
+  // form modal is open whenever viewState is non-null
   const formOpen = viewState !== null;
 
+  // if the page loads with ?filter=, pre-fill the search box and auto-open the matching doc
   useEffect(() => {
     const filterParam = searchParams.get("filter");
     if (filterParam) {
@@ -297,6 +318,7 @@ export default function ContentManagement({
     }
   }, [searchParams, rows]);
 
+  // keep local row state in sync with the remote query
   useEffect(() => {
     if (contentListQuery.data) {
       setRows(contentListQuery.data);
@@ -309,16 +331,19 @@ export default function ContentManagement({
     }
   }, [contentListQuery.data, contentListQuery.error]);
 
+  // warm the activity feed cache on mount
   useEffect(() => {
     void prefetchActivity("content");
   }, []);
 
+  // recompute which rows are "new" whenever the row list changes
   useEffect(() => {
     if (rows.length > 0 && session?.employeeUuid) {
       setSessionNewIds(getSessionNewIds(rows, session.employeeUuid));
     }
   }, [rows, session?.employeeUuid]);
 
+  // default to the current user's position accordion being open
   const [expandedPositions, setExpandedPositions] = useState<Set<string>>(
     () =>
       new Set(
@@ -328,6 +353,7 @@ export default function ContentManagement({
       ),
   );
 
+  // toggles a single accordion open or closed
   const toggleAccordion = (key: string) => {
     setExpandedPositions((prev) => {
       const next = new Set(prev);
@@ -342,6 +368,7 @@ export default function ContentManagement({
     });
   };
 
+  // puts the current user's position first so their content is immediately visible
   const orderedPositions = useMemo(() => {
     if (!userPosition) return POSITION_CONFIG;
     return [
@@ -350,6 +377,7 @@ export default function ContentManagement({
     ];
   }, [userPosition]);
 
+  // applies text search + position / file-type / tag filters to the full row list
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
@@ -396,6 +424,7 @@ export default function ContentManagement({
     [rows, searchQuery, positionFilters, fileTypeFilters, tagFilters],
   );
 
+  // adds or removes a position from the active filters
   const togglePosition = (position: string) => {
     setPositionFilters((cur) =>
       cur.includes(position) ?
@@ -404,6 +433,7 @@ export default function ContentManagement({
     );
   };
 
+  // adds or removes a file type from the active filters
   const toggleFileType = (fileType: string) => {
     setFileTypeFilters((cur) =>
       cur.includes(fileType) ?
@@ -412,6 +442,7 @@ export default function ContentManagement({
     );
   };
 
+  // adds or removes a tag from the active filters
   const toggleTag = (tag: ContentTagSummary) => {
     setTagFilters((cur) =>
       cur.some((t) => t.uuid === tag.uuid) ?
@@ -420,10 +451,12 @@ export default function ContentManagement({
     );
   };
 
+  // stages a row for deletion and opens the confirmation dialog
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
   };
 
+  // patches a single row inside the dashboard bootstrap cache
   const patchBootstrapContentRow = useCallback(
     (uuid: string, updater: (row: ContentRow) => ContentRow) => {
       patchDashboardBootstrap((data) =>
@@ -440,6 +473,7 @@ export default function ContentManagement({
     [],
   );
 
+  // removes a row from the dashboard bootstrap cache after deletion
   const removeBootstrapContentRow = useCallback((uuid: string) => {
     patchDashboardBootstrap((data) =>
       data ?
@@ -451,6 +485,7 @@ export default function ContentManagement({
     );
   }, []);
 
+  // marks activity caches stale after any mutation; pass true to also invalidate stats
   const markRelatedActivityStale = useCallback((includeStats = false) => {
     markActivityStale("content");
     markActivityStale("all");
@@ -460,6 +495,7 @@ export default function ContentManagement({
     }
   }, []);
 
+  // sends the delete request then removes the row from both caches
   const confirmDelete = async () => {
     if (!pendingDelete) return;
 
@@ -475,6 +511,7 @@ export default function ContentManagement({
         removeContentRow(rowToDelete.uuid);
         removeBootstrapContentRow(rowToDelete.uuid);
         markRelatedActivityStale(true);
+        // close the form if the deleted row was currently open
         setViewState((current) =>
           current !== "new" && current?.uuid === rowToDelete.uuid ?
             null
@@ -486,6 +523,7 @@ export default function ContentManagement({
     }
   };
 
+  // acquires the edit lock; 409 means someone else has it, other errors show a warning
   const handleCheckout = async (row: ContentRow) => {
     setLockMessage(null);
 
@@ -496,6 +534,7 @@ export default function ContentManagement({
       });
 
       if (res.status === 409) {
+        // another user holds the lock — update local state to reflect that
         patchContentRow(row.uuid, (currentRow) => ({
           ...currentRow,
           isLocked: true,
@@ -512,6 +551,7 @@ export default function ContentManagement({
         return;
       }
 
+      // optimistically mark the row as locked by the current user in both caches
       patchContentRow(row.uuid, (currentRow) => ({
         ...currentRow,
         isLocked: true,
@@ -543,6 +583,7 @@ export default function ContentManagement({
     }
   };
 
+  // sets the active document and opens the editor modal
   const handleOpenEditor = (row: ContentRow) => {
     setSelectedDoc({
       uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
@@ -553,6 +594,7 @@ export default function ContentManagement({
     setEditorOpen(true);
   };
 
+  // releases the edit lock and clears lock fields in both caches
   const releaseLock = async (uuid: string) => {
     try {
       await fetch(API_ENDPOINTS.CONTENT.LOCK(uuid), {
@@ -576,10 +618,12 @@ export default function ContentManagement({
     }
   };
 
+  // stages the form payload and opens the save confirmation dialog
   const handleSave = (payload: FormData) => {
     setPendingSave(payload);
   };
 
+  // sends the create or update request for the staged payload
   const confirmSave = async () => {
     if (!pendingSave) return;
 
@@ -601,11 +645,12 @@ export default function ContentManagement({
 
       if (res.ok) {
         if (isExisting) {
+          // keep the lock if the user is returning to the editor after editing metadata
           if (!returningToEditorRef.current) {
             await releaseLock(uuid);
           }
         } else {
-          // Only new content gets highlighted
+          // highlight the newly created row for the rest of this session
           const data = (await res.json()) as { uuid: string };
           setSessionNewIds((prev) => new Set([...prev, data.uuid]));
         }
@@ -619,6 +664,7 @@ export default function ContentManagement({
     }
   };
 
+  // closes the form; reopens the editor if the form was opened from within it
   const handleCloseFormModal = async () => {
     if (returningToEditorRef.current) {
       returningToEditorRef.current = false;
@@ -632,6 +678,7 @@ export default function ContentManagement({
     setViewState(null);
   };
 
+  // flips the favorite state optimistically then confirms with the API
   const toggleFavorite = async (row: ContentRow) => {
     const nextIsFavorite = !row.is_favorite;
 
@@ -653,12 +700,14 @@ export default function ContentManagement({
       const parsed = ContentFavoriteResponseSchema.safeParse(data);
 
       if (!parsed.success) {
+        // unexpected response shape — fall back to a full refresh
         console.error(parsed.error);
         markContentListStale();
         await contentListQuery.refresh();
         return;
       }
 
+      // update both caches with the confirmed favorite state and new count
       patchContentRow(parsed.data.contentUuid, (row) => ({
         ...row,
         is_favorite: parsed.data.is_favorite,
@@ -682,6 +731,7 @@ export default function ContentManagement({
     }
   };
 
+  // fetches the file as a blob and triggers a browser download
   const handleDownload = async (row: ContentRow) => {
     try {
       const response = await fetch(row.url);
@@ -693,21 +743,23 @@ export default function ContentManagement({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+      window.URL.revokeObjectURL(blobUrl); // free memory after clicking
     } catch (error) {
       console.error("Download failed:", error);
     }
   };
 
+  // opens the top-level filter popover
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElement(event.currentTarget);
   };
 
+  // closes the top-level filter popover
   const handleClose = () => {
     setAnchorElement(null);
   };
 
-  // ── Confirmation dialogs ───────────────────────────────────────────────────
+  // save and delete confirmation dialogs
   const confirmationDialogs = (
     <>
       <Dialog
@@ -755,6 +807,7 @@ export default function ContentManagement({
     </>
   );
 
+  // fires a view event for analytics; failures are non-critical
   const recordContentView = async (uuid: string) => {
     try {
       await fetch(API_ENDPOINTS.CONTENT.VIEW(uuid), {
@@ -766,7 +819,7 @@ export default function ContentManagement({
     }
   };
 
-  // ── Column definitions ─────────────────────────────────────────────────────
+  // builds the DataGrid column definitions; callbacks are passed in to avoid stale closures
   const getColumns = (
     onPreview: (row: ContentRow) => void,
     onDownload: (row: ContentRow) => void,
@@ -775,6 +828,7 @@ export default function ContentManagement({
     onCheckIn: (uuid: string) => void,
   ): GridColDef<ContentRow>[] => [
     {
+      // hidden numeric field used only for default sort (favorites first)
       field: "favorite",
       headerName: "",
       width: 70,
@@ -833,6 +887,7 @@ export default function ContentManagement({
       ),
     },
     {
+      // shows a "NEW" badge for rows added after the session started
       field: "lastModifiedTime",
       headerName: "Last Modified",
       type: "dateTime",
@@ -883,6 +938,7 @@ export default function ContentManagement({
       width: 140,
     },
     {
+      // derived from the editLock relation; empty when not checked out
       field: "edited-by",
       headerName: "Editor",
       width: 140,
@@ -921,6 +977,7 @@ export default function ContentManagement({
       ),
     },
     {
+      // derives the extension from the MIME type via mime-types
       field: "fileType",
       headerName: "File Type",
       width: 110,
@@ -937,6 +994,7 @@ export default function ContentManagement({
       },
     },
     {
+      // shows different controls depending on who (if anyone) holds the lock
       field: "actions",
       headerName: "Actions",
       width: 220,
@@ -962,7 +1020,7 @@ export default function ContentManagement({
               overflow: "hidden",
             }}
           >
-            {/* Preview */}
+            {/* always visible */}
             <Tooltip title="Preview">
               <IconButton
                 color="primary"
@@ -972,7 +1030,7 @@ export default function ContentManagement({
               </IconButton>
             </Tooltip>
 
-            {/* Download */}
+            {/* gated on position permission */}
             <Tooltip
               title={
                 !hasPermission ?
@@ -991,7 +1049,7 @@ export default function ContentManagement({
               </span>
             </Tooltip>
 
-            {/* Check Out — only when not locked */}
+            {/* only shown when the doc is not locked */}
             {!row.isLocked && (
               <Tooltip
                 title={
@@ -1013,7 +1071,7 @@ export default function ContentManagement({
               </Tooltip>
             )}
 
-            {/* Edit — only when checked out by current user */}
+            {/* only shown when the current user holds the lock */}
             {isCheckedOutByMe && (
               <Tooltip
                 title={
@@ -1034,7 +1092,7 @@ export default function ContentManagement({
               </Tooltip>
             )}
 
-            {/* Check In — release lock, only when checked out by current user */}
+            {/* releases the lock; only shown when current user holds it */}
             {isCheckedOutByMe && (
               <Tooltip title="Check In (release lock)">
                 <IconButton
@@ -1046,7 +1104,7 @@ export default function ContentManagement({
               </Tooltip>
             )}
 
-            {/* Locked by someone else */}
+            {/* shown when a different user holds the lock */}
             {isCheckedOutByOther && (
               <Tooltip
                 title={`Checked out by ${row.editLock?.lockedByEmp.firstName} ${row.editLock?.lockedByEmp.lastName}`}
@@ -1068,10 +1126,8 @@ export default function ContentManagement({
     },
   ];
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <Box sx={{ height: "auto", width: "100%" }}>
-      {/* ── Toolbar / header ────────────────────────────────────────────── */}
       <AppBar
         position="static"
         sx={{
@@ -1178,7 +1234,6 @@ export default function ContentManagement({
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                {/* Filter button */}
                 <Button
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
@@ -1190,6 +1245,7 @@ export default function ContentManagement({
                   Filter
                 </Button>
 
+                {/* only shown when at least one filter is active */}
                 {(positionFilters.length > 0 ||
                   fileTypeFilters.length > 0 ||
                   tagFilters.length > 0) && (
@@ -1212,7 +1268,7 @@ export default function ContentManagement({
                 )}
               </Box>
 
-              {/* Filter pop-up */}
+              {/* main filter popover — each item opens a sub-popover */}
               <Popover
                 open={Boolean(anchorElement)}
                 anchorEl={anchorElement}
@@ -1256,7 +1312,7 @@ export default function ContentManagement({
                 </MenuItem>
               </Popover>
 
-              {/* Position sub-pop-up */}
+              {/* position filter sub-popover */}
               <Popover
                 open={Boolean(positionAnchor)}
                 anchorEl={positionAnchor}
@@ -1325,7 +1381,7 @@ export default function ContentManagement({
                 </FormGroup>
               </Popover>
 
-              {/* File type sub-pop-up */}
+              {/* file type filter sub-popover */}
               <Popover
                 open={Boolean(fileTypeAnchor)}
                 anchorEl={fileTypeAnchor}
@@ -1433,7 +1489,7 @@ export default function ContentManagement({
                 </FormGroup>
               </Popover>
 
-              {/* Tags sub-pop-up */}
+              {/* tags filter sub-popover — dynamically built from available tags */}
               <Popover
                 open={Boolean(tagAnchor)}
                 anchorEl={tagAnchor}
@@ -1467,6 +1523,7 @@ export default function ContentManagement({
               </Popover>
             </Box>
 
+            {/* tag manager is admin-only */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <HelpPopup
                 description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
@@ -1491,6 +1548,7 @@ export default function ContentManagement({
             </Box>
           </Box>
 
+          {/* active filter chips shown below the toolbar */}
           {(positionFilters.length > 0 ||
             fileTypeFilters.length > 0 ||
             tagFilters.length > 0) && (
@@ -1596,6 +1654,7 @@ export default function ContentManagement({
                       ...chipSx,
                     }}
                   />
+                  {/* only shown when at least one row is favorited */}
                   {favoriteCount > 0 && (
                     <Chip
                       icon={
@@ -1620,6 +1679,7 @@ export default function ContentManagement({
 
               <AccordionDetails sx={{ p: 0 }}>
                 {positionRows.length === 0 ?
+                  // empty state — mentions active filters if any are set
                   <Typography
                     sx={{
                       p: 3,
@@ -1645,6 +1705,7 @@ export default function ContentManagement({
                       (row) => {
                         void recordContentView(row.uuid);
 
+                        // external URLs open in a new tab instead of the previewer
                         const isExternalUrl =
                           !row.supabasePath &&
                           !row.url.includes("supabase.co/storage");
@@ -1673,8 +1734,8 @@ export default function ContentManagement({
                         userPosition === params.row.forPosition;
                       const isNew = sessionNewIds.has(params.row.uuid);
                       const classes: string[] = [];
-                      if (!hasPermission) classes.push("row-locked");
-                      if (isNew) classes.push("row-new");
+                      if (!hasPermission) classes.push("row-locked"); // dims rows the user can't interact with
+                      if (isNew) classes.push("row-new"); // highlights rows added this session
                       return classes.join(" ");
                     }}
                     autoHeight
@@ -1683,7 +1744,7 @@ export default function ContentManagement({
                     initialState={{
                       pagination: { paginationModel: { pageSize: 10 } },
                       sorting: {
-                        sortModel: [{ field: "favorite", sort: "desc" }],
+                        sortModel: [{ field: "favorite", sort: "desc" }], // favorites on top by default
                       },
                       columns: {
                         columnVisibilityModel: {
@@ -1691,7 +1752,7 @@ export default function ContentManagement({
                           "url": false,
                           "contentOwner": false,
                           "edited-by": false,
-                          "forPosition": false, // redundant inside its own section
+                          "forPosition": false, // redundant inside its own position section
                           "fileType": false,
                         },
                       },
@@ -1735,7 +1796,7 @@ export default function ContentManagement({
         })}
       </Box>
 
-      {/* ── Content Form Modal ───────────────────────────────────────────── */}
+      {/* content form modal — used for both creating and editing */}
       <Dialog
         open={formOpen}
         onClose={() => void handleCloseFormModal()}
@@ -1750,7 +1811,6 @@ export default function ContentManagement({
           },
         }}
       >
-        {/* Modal header */}
         <Box
           sx={{
             background: "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
@@ -1788,7 +1848,6 @@ export default function ContentManagement({
           </IconButton>
         </Box>
 
-        {/* Scrollable form body */}
         <DialogContent
           sx={{
             "p": 0,
@@ -1805,6 +1864,7 @@ export default function ContentManagement({
             onSave={handleSave}
             onCancel={() => void handleCloseFormModal()}
             onDelete={
+              // delete only available when editing an existing row
               viewState !== null && viewState !== "new" ?
                 () => handleDelete(viewState)
               : undefined
@@ -1813,7 +1873,7 @@ export default function ContentManagement({
         </DialogContent>
       </Dialog>
 
-      {/* ── Preview Dialog (DocPreviewer — read-only viewer) ────────────── */}
+      {/* read-only document previewer */}
       <Dialog
         open={previewOpen}
         onClose={() => {
@@ -1849,6 +1909,7 @@ export default function ContentManagement({
               </IconButton>
             </Tooltip>
           </Stack>
+          {/* doc viewer and version history panel shown side by side */}
           <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
             {selectedDoc && (
               <DocPreviewer
@@ -1867,7 +1928,7 @@ export default function ContentManagement({
         </Box>
       </Dialog>
 
-      {/* ── Document Editor Modal — opened via Edit button when checked out ── */}
+      {/* full editor modal — conditionally rendered so WebViewer unmounts fully on close */}
       {editorOpen &&
         selectedDoc &&
         (() => {
@@ -1890,6 +1951,7 @@ export default function ContentManagement({
               }}
               readOnly={false}
               onDelete={() => editorRow && handleDelete(editorRow)}
+              // opens the metadata form while keeping the lock alive
               onOpenForm={() => {
                 returningToEditorRef.current = true;
                 skipLockReleaseRef.current = true;
