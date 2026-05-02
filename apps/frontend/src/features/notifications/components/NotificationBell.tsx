@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
-import NotificationBar, { totalAlerts } from "./NotificationBar";
+import NotificationBarComponent from "./NotificationBar";
 
 import {
   Box,
@@ -18,17 +18,40 @@ import {
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import { useDashboardBootstrap } from "../../dashboard/useDashboardBootstrap.ts";
+import { useContentInfo } from "./NotificationBar";
 
-const getAlertIcon = () => {
-  const counts = totalAlerts();
-  if (counts <= 0) {
-    return <NotificationsIcon />;
-  } else {
-    return <NotificationsActiveIcon />;
-  }
-};
+// Custom hook to get total alerts count for the bell
+function useTotalAlerts() {
+  const {
+    visibleCriticalContent,
+    visibleExpiringContent,
+    visibleOwnershipChanges,
+    visibleContentEdits,
+    visibleClaimActions,
+  } = useContentInfo();
+
+  const total = useMemo(() => {
+    return (
+      visibleCriticalContent.length +
+      visibleExpiringContent.length +
+      visibleOwnershipChanges.length +
+      visibleContentEdits.length +
+      visibleClaimActions.length
+    );
+  }, [
+    visibleCriticalContent.length,
+    visibleExpiringContent.length,
+    visibleOwnershipChanges.length,
+    visibleContentEdits.length,
+    visibleClaimActions.length,
+  ]);
+
+  return total;
+}
+
 export default function NotificationBell() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const totalAlertsCount = useTotalAlerts();
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -40,6 +63,14 @@ export default function NotificationBell() {
 
   const open = Boolean(anchorEl);
 
+  const getAlertIcon = () => {
+    if (totalAlertsCount <= 0) {
+      return <NotificationsIcon />;
+    } else {
+      return <NotificationsActiveIcon />;
+    }
+  };
+
   return (
     <>
       <IconButton
@@ -47,8 +78,8 @@ export default function NotificationBell() {
         sx={{ color: "white" }}
       >
         <Badge
-          badgeContent={totalAlerts()}
-          color={totalAlerts() > 0 ? "error" : "warning"}
+          badgeContent={totalAlertsCount}
+          color={totalAlertsCount > 0 ? "error" : "warning"}
         >
           {getAlertIcon()}
         </Badge>
@@ -66,12 +97,16 @@ export default function NotificationBell() {
           vertical: "top",
           horizontal: "right",
         }}
-        sx={{
-          width: "400px",
-          borderRadius: 20,
+        PaperProps={{
+          sx: {
+            width: "400px",
+            maxHeight: "500px",
+            borderRadius: 2,
+            overflow: "hidden",
+          },
         }}
       >
-        <NotificationBar />
+        <NotificationBarComponent />
       </Popover>
     </>
   );

@@ -18,8 +18,11 @@ import {
   Chip,
   CircularProgress,
   Button,
+  Badge,
 } from "@mui/material";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import FilterListOffIcon from "@mui/icons-material/FilterListOff";
 
 import { useDashboardBootstrap } from "../../dashboard/useDashboardBootstrap.ts";
 
@@ -39,6 +42,7 @@ interface AlertItem {
   alertType: "critical" | "expiring" | "ownership" | "edit" | "claim";
   notificationMessage: string;
   expirationTime: string | Date | null;
+  timestamp?: string;
 }
 
 const DISMISSED_NOTIFICATIONS_KEY = "dismissed_notifications";
@@ -60,7 +64,7 @@ function getNotificationMessage(
   return `"${title}" expires soon`;
 }
 
-function useContentInfo() {
+export function useContentInfo() {
   const { data, loading, refresh } = useDashboardBootstrap();
 
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(() => {
@@ -217,11 +221,36 @@ function useContentInfo() {
   };
 }
 
-export function totalAlerts() {
-  const { counts } = useContentInfo();
-  return counts.total;
-}
+export function useNotificationFilter() {
+  const [currentFilter, setCurrentFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
+  const toggleFilters = useCallback(() => {
+    setShowFilters((prev) => !prev);
+  }, []);
+
+  const setFilter = useCallback((filter: string) => {
+    setCurrentFilter(filter);
+  }, []);
+
+  const clearFilter = useCallback(() => {
+    setCurrentFilter("all");
+  }, []);
+
+  const closeFilters = useCallback(() => {
+    setShowFilters(false);
+  }, []);
+
+  return {
+    currentFilter,
+    showFilters,
+    setFilter,
+    toggleFilters,
+    clearFilter,
+    closeFilters,
+    isFiltering: currentFilter !== "all",
+  };
+}
 export default function NotificationBarComponent() {
   const {
     visibleCriticalContent,
@@ -235,6 +264,9 @@ export default function NotificationBarComponent() {
     dismissAllAlerts,
   } = useContentInfo();
 
+  // Use the filter hook
+  const { currentFilter, setFilter, isFiltering } = useNotificationFilter();
+
   const allAlerts: AlertItem[] = [
     ...visibleCriticalContent.map((c) => ({
       uuid: c.uuid,
@@ -245,6 +277,10 @@ export default function NotificationBarComponent() {
         c.expirationTime,
       ),
       expirationTime: c.expirationTime,
+      timestamp:
+        typeof c.expirationTime === "string" ?
+          c.expirationTime
+        : c.expirationTime?.toString(),
     })),
     ...visibleExpiringContent.map((c) => ({
       uuid: c.uuid,
@@ -255,6 +291,10 @@ export default function NotificationBarComponent() {
         c.expirationTime,
       ),
       expirationTime: c.expirationTime,
+      timestamp:
+        typeof c.expirationTime === "string" ?
+          c.expirationTime
+        : c.expirationTime?.toString(),
     })),
     ...visibleOwnershipChanges.map((o) => ({
       uuid: o.uuid,
@@ -262,6 +302,7 @@ export default function NotificationBarComponent() {
       alertType: "ownership" as const,
       notificationMessage: o.notificationMessage,
       expirationTime: null,
+      timestamp: o.timestamp,
     })),
     ...visibleContentEdits.map((e) => ({
       uuid: e.uuid,
@@ -269,6 +310,7 @@ export default function NotificationBarComponent() {
       alertType: "edit" as const,
       notificationMessage: e.notificationMessage,
       expirationTime: null,
+      timestamp: e.timestamp,
     })),
     ...visibleClaimActions.map((c) => ({
       uuid: c.uuid,
@@ -276,96 +318,40 @@ export default function NotificationBarComponent() {
       alertType: "claim" as const,
       notificationMessage: c.notificationMessage,
       expirationTime: null,
+      timestamp: c.timestamp,
     })),
   ];
 
-  const filterAlert = useCallback(
-    (type: string) => {
-      const alertMap: Record<string, AlertItem[]> = {
-        critical: visibleCriticalContent.map((c) => ({
-          uuid: c.uuid,
-          title: c.title || "",
-          alertType: "critical" as const,
-          notificationMessage: getNotificationMessage(
-            c.title || "",
-            c.expirationTime,
-          ),
-          expirationTime: c.expirationTime,
-        })),
-        expiring: [
-          ...visibleExpiringContent.map((c) => ({
-            uuid: c.uuid,
-            title: c.title || "",
-            alertType: "expiring" as const,
-            notificationMessage: getNotificationMessage(
-              c.title || "",
-              c.expirationTime,
-            ),
-            expirationTime: c.expirationTime,
-          })),
-          ...visibleCriticalContent.map((c) => ({
-            uuid: c.uuid,
-            title: c.title || "",
-            alertType: "critical" as const,
-            notificationMessage: getNotificationMessage(
-              c.title || "",
-              c.expirationTime,
-            ),
-            expirationTime: c.expirationTime,
-          })),
-        ],
-        claim: visibleClaimActions.map((c) => ({
-          uuid: c.uuid,
-          title: c.title,
-          alertType: "claim" as const,
-          notificationMessage: c.notificationMessage,
-          expirationTime: null,
-        })),
-        ownership: visibleOwnershipChanges.map((o) => ({
-          uuid: o.uuid,
-          title: o.title,
-          alertType: "ownership" as const,
-          notificationMessage: o.notificationMessage,
-          expirationTime: null,
-        })),
-        edit: visibleContentEdits.map((e) => ({
-          uuid: e.uuid,
-          title: e.title,
-          alertType: "edit" as const,
-          notificationMessage: e.notificationMessage,
-          expirationTime: null,
-        })),
-      };
+  // Filter alerts based on current filter
+  const getFilteredAlerts = useCallback(() => {
+    switch (currentFilter) {
+      case "critical":
+        return allAlerts.filter((alert) => alert.alertType === "critical");
+      case "expiring":
+        return allAlerts.filter(
+          (alert) =>
+            alert.alertType === "critical" || alert.alertType === "expiring",
+        );
+      case "claim":
+        return allAlerts.filter((alert) => alert.alertType === "claim");
+      case "ownership":
+        return allAlerts.filter((alert) => alert.alertType === "ownership");
+      case "edit":
+        return allAlerts.filter((alert) => alert.alertType === "edit");
+      default:
+        return allAlerts;
+    }
+  }, [allAlerts, currentFilter]);
 
-      return alertMap[type] || allAlerts;
-    },
-    [
-      visibleCriticalContent,
-      visibleExpiringContent,
-      visibleClaimActions,
-      visibleOwnershipChanges,
-      visibleContentEdits,
-      allAlerts,
-    ],
-  );
-
+  const displayedAlerts = getFilteredAlerts();
   const totalAlerts = counts.total;
-  const [currentFilter, setCurrentFilter] = useState<string>("all");
-  const [displayedAlerts, setDisplayedAlerts] = useState<AlertItem[]>([]);
-
-  useEffect(() => {
-    const filtered = filterAlert(currentFilter);
-    setDisplayedAlerts(filtered);
-  }, [currentFilter, filterAlert]);
 
   const handleDismiss = (uuid: string, title: string, alertType: string) => {
     dismissAlert(uuid, alertType);
-    console.log(`"${title}" alert dismissed.`);
   };
 
   const handleDismissAll = () => {
     dismissAllAlerts();
-    console.log("All notifications dismissed.");
   };
 
   const getAlertColor = (alertType: string) => {
@@ -392,10 +378,10 @@ export default function NotificationBarComponent() {
         width: "100%",
         display: "flex",
         flexDirection: "column",
-        minWidth: 0, // Allow flex shrinking
+        minWidth: 0,
       }}
     >
-      {/* Header - Centered */}
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -404,14 +390,10 @@ export default function NotificationBarComponent() {
           mb: 2,
           mt: 2,
           mx: 2,
-          position: "relative",
-          minWidth: "100px",
+          minWidth: 0,
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{ textAlign: "center" }}
-        >
+        <Typography variant="h6">
           Notifications
           {totalAlerts > 0 && (
             <Chip
@@ -422,22 +404,20 @@ export default function NotificationBarComponent() {
             />
           )}
         </Typography>
-        {totalAlerts > 0 && (
-          <Button
-            size="small"
-            onClick={handleDismissAll}
-            sx={{
-              textTransform: "none",
-              position: "absolute",
-              right: 0,
-            }}
-          >
-            Dismiss All
-          </Button>
-        )}
+        <Box sx={{ display: "flex", gap: 1 }}>
+          {totalAlerts > 0 && (
+            <Button
+              size="small"
+              onClick={handleDismissAll}
+              sx={{ textTransform: "none" }}
+            >
+              Dismiss All
+            </Button>
+          )}
+        </Box>
       </Box>
 
-      {/* Filter Buttons - Centered and Wrapping */}
+      {/* Filter Buttons */}
       <Box
         sx={{
           display: "flex",
@@ -451,14 +431,14 @@ export default function NotificationBarComponent() {
         <Button
           size="small"
           variant={currentFilter === "all" ? "contained" : "outlined"}
-          onClick={() => setCurrentFilter("all")}
+          onClick={() => setFilter("all")}
         >
           All ({allAlerts.length})
         </Button>
         <Button
           size="small"
           variant={currentFilter === "critical" ? "contained" : "outlined"}
-          onClick={() => setCurrentFilter("critical")}
+          onClick={() => setFilter("critical")}
           color="error"
         >
           Critical ({visibleCriticalContent.length})
@@ -466,7 +446,7 @@ export default function NotificationBarComponent() {
         <Button
           size="small"
           variant={currentFilter === "expiring" ? "contained" : "outlined"}
-          onClick={() => setCurrentFilter("expiring")}
+          onClick={() => setFilter("expiring")}
           color="warning"
         >
           Expiring (
@@ -475,7 +455,7 @@ export default function NotificationBarComponent() {
         <Button
           size="small"
           variant={currentFilter === "claim" ? "contained" : "outlined"}
-          onClick={() => setCurrentFilter("claim")}
+          onClick={() => setFilter("claim")}
           color="primary"
         >
           Claims ({visibleClaimActions.length})
@@ -483,7 +463,7 @@ export default function NotificationBarComponent() {
         <Button
           size="small"
           variant={currentFilter === "ownership" ? "contained" : "outlined"}
-          onClick={() => setCurrentFilter("ownership")}
+          onClick={() => setFilter("ownership")}
           color="info"
         >
           Ownership ({visibleOwnershipChanges.length})
@@ -491,13 +471,25 @@ export default function NotificationBarComponent() {
         <Button
           size="small"
           variant={currentFilter === "edit" ? "contained" : "outlined"}
-          onClick={() => setCurrentFilter("edit")}
+          onClick={() => setFilter("edit")}
           color="secondary"
         >
           Edits ({visibleContentEdits.length})
         </Button>
       </Box>
 
+      {/* Results Count */}
+      {isFiltering && displayedAlerts.length > 0 && (
+        <Typography
+          variant="caption"
+          color="textSecondary"
+          sx={{ mb: 1, px: 2 }}
+        >
+          Showing {displayedAlerts.length} of {allAlerts.length} notifications
+        </Typography>
+      )}
+
+      {/* Content Area */}
       <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, px: 1 }}>
         {loading ?
           <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
@@ -508,7 +500,9 @@ export default function NotificationBarComponent() {
             sx={{ p: 2, textAlign: "center" }}
             color="textSecondary"
           >
-            No current notifications
+            {isFiltering ?
+              "No matching notifications"
+            : "No current notifications"}
           </Typography>
         : <List sx={{ p: 0 }}>
             {displayedAlerts.map((alert) => (
@@ -578,6 +572,15 @@ export default function NotificationBarComponent() {
                 >
                   {alert.notificationMessage}
                 </Typography>
+                {alert.timestamp && (
+                  <Typography
+                    variant="caption"
+                    color="textSecondary"
+                    sx={{ mt: 0.5, fontSize: "10px" }}
+                  >
+                    {new Date(alert.timestamp).toLocaleString()}
+                  </Typography>
+                )}
               </ListItem>
             ))}
           </List>
