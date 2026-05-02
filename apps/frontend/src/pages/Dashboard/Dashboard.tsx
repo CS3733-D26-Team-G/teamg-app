@@ -1,13 +1,35 @@
 import { useState } from "react";
 import DashboardRecentActivity from "../../features/dashboard/components/DashboardRecentActivity.tsx";
+import EditableDashboardCard, {
+  type dashboardCardID,
+} from "../../features/dashboard/components/EditableDashboard.tsx";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensors,
+  useSensor,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
 import SearchBar from "../../features/dashboard/components/SearchBar.tsx";
 import PieChart from "../../features/dashboard/components/PieChart.tsx";
 import TypeBarChart from "../../features/dashboard/components/BarChart.tsx";
 import NotificationBell from "../../features/notifications/components/NotificationBell.tsx";
-import { Box, styled, Toolbar, Typography } from "@mui/material";
+import {
+  Box,
+  styled,
+  Toolbar,
+  Typography,
+  CardHeader,
+  Divider,
+} from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import { CardHeader, Divider } from "@mui/material";
 import { useAuth } from "../../auth/AuthContext.tsx";
 import HelpPopup from "../../components/HelpPopup";
 import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx";
@@ -17,6 +39,41 @@ import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBoot
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
+  const [cardOrder, setCardOrder] = useState<dashboardCardID[]>([
+    "employee-demographics",
+    "recent-activity",
+    "role-ba",
+    "role-uw",
+    "role-actuarial",
+    "role-exl",
+    "role-bus-ops",
+    "employee-activity",
+    "file-types",
+    "popular-content-search",
+    "employee-edits-by-day",
+  ]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  );
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+    setCardOrder((items) => {
+      const oldIndex = items.indexOf(active.id as dashboardCardID);
+      const newIndex = items.indexOf(over.id as dashboardCardID);
+      if (oldIndex === -1 || newIndex === -1) {
+        return items;
+      }
+      return arrayMove(items, oldIndex, newIndex);
+    });
+  };
+
   const { session } = useAuth();
   const { data, loading, error } = useDashboardBootstrap();
   const rawLogs = data?.activityAll ?? [];
@@ -68,7 +125,16 @@ export default function Dashboard() {
     "EXL Operations",
     "Business Ops Team",
   ];
-
+  const getRolecard = (role: string): dashboardCardID => {
+    const mapping: Record<string, dashboardCardID> = {
+      "Business Analyst": "role-ba",
+      "Underwriter": "role-uw",
+      "Actuarial Analyst": "role-actuarial",
+      "EXL Operations": "role-exl",
+      "Business Ops Team": "role-bus-ops",
+    };
+    return mapping[role];
+  };
   const getAnalyticsKey = (role: string) => {
     const mapping: Record<string, string> = {
       "Business Analyst": "BUSINESS_ANALYST",
@@ -112,7 +178,7 @@ export default function Dashboard() {
 
   const employeeDemographicsCard = (
     <Card
-      className="w-[420px] min-w-[420px] outline-1 outline-gray-200"
+      className="h-full w-full min-w-0 outline-1 outline-gray-200"
       sx={{ margin: 0, borderRadius: 3 }}
     >
       <CardHeader
@@ -190,6 +256,123 @@ export default function Dashboard() {
     </Card>
   );
 
+  const employeeEditsByDay = (
+    <Card
+      className="flex-1 outline-1 outline-gray-200"
+      sx={{ margin: 0, borderRadius: 3 }}
+    >
+      <CardHeader
+        sx={{ py: 1.5, px: 2 }}
+        title={
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+          >
+            Employee Edits By Day
+            <HelpPopup
+              description={
+                "This graphic shows the fluctuation in content hits by role."
+              }
+              infoOrHelp={false}
+            />
+          </Typography>
+        }
+      />
+      <Divider />
+      <CardContent className="p-6">
+        <HitsLineChart />
+      </CardContent>
+    </Card>
+  );
+
+  const buildroleCard = (role: string) => {
+    const key = getAnalyticsKey(role);
+    const count = analytics[key] ?? 0;
+    return (
+      <Card
+        className="h-full outline-1 outline-gray-200"
+        sx={{ borderRadius: 3 }}
+      >
+        <CardContent className="p-4">
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+            gutterBottom
+          >
+            {" "}
+            {role}
+          </Typography>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: "bold", fontSize: "2rem" }}
+          >
+            {" "}
+            {count}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="primary.main"
+            sx={{ fontWeight: "bold" }}
+          >
+            {" "}
+            Total Items
+            <HelpPopup
+              description={`This is the total amount of content accessible by ${role}s`}
+              infoOrHelp={false}
+            />
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const dashboardCards = [
+    {
+      id: "employee-demographics" as dashboardCardID,
+      node: employeeDemographicsCard,
+      className: "col-span-12 xl:col-span-4",
+    },
+    {
+      id: "recent-activity" as dashboardCardID,
+      node: <DashboardRecentActivity rawLogs={rawLogs} />,
+      className: "col-span-12 xl:col-span-8",
+    },
+    ...roles.map((role) => ({
+      id: getRolecard(role),
+      node: buildroleCard(role),
+      className: "col-span-12 sm:col-span-6 lg:col-span-4 xl:col-span-2",
+    })),
+    ...(session?.position === "ADMIN" ?
+      [
+        {
+          id: "employee-activity" as dashboardCardID,
+          node: <AdminCards />,
+          className: "col-span-12 lg:col-span-8",
+        },
+      ]
+    : []),
+    {
+      id: "file-types" as dashboardCardID,
+      node: fileTypesCard,
+      className: "col-span-12 lg:col-span-4",
+    },
+    {
+      id: "popular-content-search" as dashboardCardID,
+      node: popularContentSearchCard,
+      className: "col-span-12 lg:col-span-4",
+    },
+    {
+      id: "employee-edits-by-day" as dashboardCardID,
+      node: employeeEditsByDay,
+      className: "col-span-12 lg:col-span-8",
+    },
+  ];
+  const visibleCardIDs = dashboardCards.map((card) => card.id);
+  const orderedDashboardCards = cardOrder
+    .filter((id) => visibleCardIDs.includes(id))
+    .map((id) => dashboardCards.find((card) => card.id === id))
+    .filter((card): card is (typeof dashboardCards)[number] => Boolean(card));
+
   if (loading && !data) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
@@ -261,105 +444,32 @@ export default function Dashboard() {
         sx={{ borderRadius: 3 }}
       >
         <CardContent
-          className="mr-1 flex flex-col gap-5 bg-gray-100"
+          className="mr-1 bg-gray-100"
           sx={{ padding: 5, minHeight: "88vh" }}
         >
-          <div className="flex flex-row gap-8 items-start">
-            <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
-              {employeeDemographicsCard}
-            </div>
-            <div className="flex-1 min-w-[500px]">
-              <DashboardRecentActivity rawLogs={rawLogs} />
-            </div>
-          </div>
-
-          <div className="flex flex-row gap-8 items-start">
-            {roles.map((role) => {
-              const key = getAnalyticsKey(role);
-              const count = analytics[key] ?? 0;
-
-              return (
-                <Card
-                  key={role}
-                  className="flex-1 outline-1 outline-gray-200"
-                  sx={{ borderRadius: 3 }}
-                >
-                  <CardContent className="p-4">
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      {role}
-                    </Typography>
-                    <Typography
-                      variant="h4"
-                      sx={{ fontWeight: "bold", fontSize: "2rem" }}
-                    >
-                      {count}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="primary.main"
-                      sx={{ fontWeight: "bold" }}
-                    >
-                      Total Items
-                      <HelpPopup
-                        description={`This is the total amount of content accessible by ${role}s`}
-                        infoOrHelp={false}
-                      />
-                    </Typography>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {session?.position === "ADMIN" && (
-            <div className="flex flex-row gap-8 items-start">
-              <AdminCards />
-              <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
-                {fileTypesCard}
-                {popularContentSearchCard}
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-row gap-8 items-start">
-            {session?.position !== "ADMIN" && (
-              <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
-                {fileTypesCard}
-                {popularContentSearchCard}
-              </div>
-            )}
-
-            <Card
-              className="flex-1 outline-1 outline-gray-200"
-              sx={{ margin: 0, borderRadius: 3 }}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={orderedDashboardCards.map((card) => card.id)}
+              strategy={rectSortingStrategy}
             >
-              <CardHeader
-                sx={{ py: 1.5, px: 2 }}
-                title={
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
+              <div className="grid grid-cols-12 gap-8 items-start">
+                {orderedDashboardCards.map((card) => (
+                  <EditableDashboardCard
+                    key={card.id}
+                    id={card.id}
+                    className={card.className}
                   >
-                    Employee Edits By Day
-                    <HelpPopup
-                      description={
-                        "This graphic shows the fluctuation in content hits by role."
-                      }
-                      infoOrHelp={false}
-                    />
-                  </Typography>
-                }
-              />
-              <Divider />
-              <CardContent className="p-6">
-                <HitsLineChart />
-              </CardContent>
-            </Card>
-          </div>
+                    {" "}
+                    {card.node}
+                  </EditableDashboardCard>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </CardContent>
       </Card>
     </Box>

@@ -244,6 +244,7 @@ export default function AdminCards() {
         </Box>
 
         <BarChart
+          highlightedItem={null}
           dataset={chartData}
           layout="horizontal"
           height={250}
