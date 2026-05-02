@@ -13,6 +13,7 @@ import {
   Chip,
   CircularProgress,
   Button,
+  Card,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
@@ -64,6 +65,10 @@ export default function NotificationBell() {
         transformOrigin={{
           vertical: "top",
           horizontal: "right",
+        }}
+        sx={{
+          width: "400px",
+          borderRadius: 20,
         }}
       >
         <NotificationBar />

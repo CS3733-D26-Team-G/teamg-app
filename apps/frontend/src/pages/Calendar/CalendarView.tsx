@@ -19,6 +19,7 @@ import NotificationsBell from "../../features/notifications/components/Notificat
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { loadContentList } from "../../lib/api-loaders";
 import { useTheme } from "@mui/material/styles";
+import NotificationBarComponent from "../../features/notifications/components/NotificationBar.tsx";
 
 const CREATED_COLOR = "#4f46e5";
 const CHECKED_OUT_COLOR = "#d97706";
@@ -170,24 +171,40 @@ export default function CalendarPage() {
         </div>
       </StyledToolbar>
 
-      <Card
-        sx={{
-          p: 3,
-          backgroundColor: "background.paper",
-          minWidth: 0,
-          width: "calc(100vw - 240px)",
-          overflowX: "auto",
-          minHeight: "calc(100vh - 128px)",
-          border: "none",
-          boxShadow: "none",
-        }}
-      >
-        {loading ?
-          <Typography>Loading calendar…</Typography>
-        : <>
-            {/* dark mode styles — only injected when dark mode is active */}
-            {isDarkMode && (
-              <style>{`
+      <div className="flex justify-between items-center p-3 gap-2">
+        <Card
+          sx={{
+            p: 3,
+            backgroundColor: "background.paper",
+            width: "40%",
+            overflowX: "hidden",
+            height: "calc(100vh - 68px)",
+            border: "none",
+            boxShadow: "none",
+            objectFit: "contain",
+            overflowY: "auto",
+          }}
+        >
+          <NotificationBarComponent />
+        </Card>
+        <Card
+          sx={{
+            p: 3,
+            backgroundColor: "background.paper",
+            minWidth: 0,
+            width: "calc(100vw - 240px)",
+            overflowX: "auto",
+            minHeight: "calc(100vh - 128px)",
+            border: "none",
+            boxShadow: "none",
+          }}
+        >
+          {loading ?
+            <Typography>Loading calendar…</Typography>
+          : <>
+              {/* dark mode styles — only injected when dark mode is active */}
+              {isDarkMode && (
+                <style>{`
     .fc .fc-col-header-cell {
       background-color: #161B27 !important;
     }
@@ -235,10 +252,10 @@ export default function CalendarPage() {
       background-color: transparent !important;
     }
   `}</style>
-            )}
+              )}
 
-            {/* font family applies in both modes */}
-            <style>{`
+              {/* font family applies in both modes */}
+              <style>{`
               .fc,
               .fc-toolbar-title,
               .fc-col-header-cell,
@@ -249,51 +266,52 @@ export default function CalendarPage() {
               }
             `}</style>
 
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              customButtons={{
-                dayToday: {
-                  text: "day",
-                  click: () => {
-                    const calendarApi = calendarRef.current?.getApi();
-                    if (calendarApi) {
-                      calendarApi.today();
-                      calendarApi.changeView("timeGridDay");
-                    }
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialView="dayGridMonth"
+                customButtons={{
+                  dayToday: {
+                    text: "day",
+                    click: () => {
+                      const calendarApi = calendarRef.current?.getApi();
+                      if (calendarApi) {
+                        calendarApi.today();
+                        calendarApi.changeView("timeGridDay");
+                      }
+                    },
                   },
-                },
-                weekToday: {
-                  text: "week",
-                  click: () => {
-                    const calendarApi = calendarRef.current?.getApi();
-                    if (calendarApi) {
-                      calendarApi.today();
-                      calendarApi.changeView("timeGridWeek");
-                    }
+                  weekToday: {
+                    text: "week",
+                    click: () => {
+                      const calendarApi = calendarRef.current?.getApi();
+                      if (calendarApi) {
+                        calendarApi.today();
+                        calendarApi.changeView("timeGridWeek");
+                      }
+                    },
                   },
-                },
-              }}
-              headerToolbar={{
-                left: "prev,next",
-                center: "title",
-                right: "dayGridMonth,weekToday,dayToday",
-              }}
-              events={events}
-              forceEventDuration={true}
-              displayEventTime={true}
-              eventTimeFormat={{
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              }}
-              height="auto"
-              eventClick={() => {}}
-            />
-          </>
-        }
-      </Card>
+                }}
+                headerToolbar={{
+                  left: "prev,next",
+                  center: "title",
+                  right: "dayGridMonth,weekToday,dayToday",
+                }}
+                events={events}
+                forceEventDuration={true}
+                displayEventTime={true}
+                eventTimeFormat={{
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                }}
+                height="auto"
+                eventClick={() => {}}
+              />
+            </>
+          }
+        </Card>
+      </div>
     </Box>
   );
 }

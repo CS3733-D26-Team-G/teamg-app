@@ -350,13 +350,15 @@ export default function NotificationBarComponent() {
   };
 
   return (
-    <Box sx={{ p: 2, width: 400 }}>
+    <Box sx={{ height: "100%", width: "100%" }}>
       <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           mb: 2,
+          mt: 2,
+          mx: 2,
         }}
       >
         <Typography variant="h6">
@@ -393,7 +395,7 @@ export default function NotificationBarComponent() {
           No current notifications
         </Typography>
       : <List sx={{ p: 0 }}>
-          {allAlerts.slice(0, 10).map((alert) => (
+          {allAlerts.map((alert) => (
             <ListItem
               key={`${alert.alertType}-${alert.uuid}`}
               sx={{
@@ -462,15 +464,6 @@ export default function NotificationBarComponent() {
               </Typography>
             </ListItem>
           ))}
-          {allAlerts.length > 10 && (
-            <Typography
-              variant="caption"
-              color="textSecondary"
-              sx={{ p: 1, textAlign: "center", display: "block" }}
-            >
-              +{allAlerts.length - 10} more notifications
-            </Typography>
-          )}
         </List>
       }
     </Box>
