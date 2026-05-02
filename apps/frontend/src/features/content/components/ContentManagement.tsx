@@ -65,12 +65,12 @@ import Tab from "@mui/material/Tab";
 import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import TableRowsIcon from "@mui/icons-material/TableRows";
 import mime from "mime-types";
-import DocumentEditorModal from "./DocumentEditorModal.tsx";
+import DocumentEditorModal from "./viewing/DocumentEditorModal.tsx";
 import HelpPopup from "../../../components/HelpPopup";
-import DocPreviewer from "./DocPreviewer.tsx";
+import DocPreviewer from "./viewing/DocPreviewer.tsx";
 import InfoPopup from "./ContentInfoPopup.tsx";
 import TagManagerPopup from "./TagManagerPopup.tsx";
-import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
+import VersionHistoryPanel from "./viewing/VersionHistoryPanel.tsx";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
@@ -89,7 +89,8 @@ import {
   patchDashboardBootstrap,
   prefetchActivity,
 } from "../../../lib/activity-loaders";
-import { ContentTabs, SPECIAL_TABS } from "./ContentTabs.tsx";
+import { ContentTabs, SPECIAL_TABS } from "./viewing/ContentTabs.tsx";
+import { recordRecentlyViewed } from "./viewing/RecentlyViewed.tsx";
 
 // human-readable labels for each content status
 const statusLabels: Record<ContentStatus, string> = {
@@ -584,6 +585,11 @@ export default function ContentManagement({
           },
         },
       }));
+
+      if (session?.employeeUuid) {
+        recordRecentlyViewed(session.employeeUuid, row.uuid);
+      }
+
       markRelatedActivityStale();
     } catch (error) {
       console.error(error);
@@ -850,6 +856,10 @@ export default function ContentManagement({
 
   // fires a view event for analytics; failures are non-critical
   const recordContentView = async (uuid: string) => {
+    // record locally immediately so the recent tab updates without waiting for the API
+    if (session?.employeeUuid) {
+      recordRecentlyViewed(session.employeeUuid, uuid);
+    }
     try {
       await fetch(API_ENDPOINTS.CONTENT.VIEW(uuid), {
         method: "POST",
