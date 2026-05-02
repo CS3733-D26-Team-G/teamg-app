@@ -1,5 +1,10 @@
 import type { ActivityRow } from "../../../types/activity.ts";
 import type { ContentRow } from "../../../types/content.ts";
+import type { InsuranceClaimType } from "@repo/db";
+import type {
+  InsuranceClaimCreatePayload,
+  InsuranceClaimRecord,
+} from "../../../types/claim.ts";
 
 export interface NotificationActivity {
   uuid: string;
@@ -110,43 +115,46 @@ export function getContentEdits(
       }`,
     }));
 }
+export function getClaimActions(
+  activities: ActivityRow[],
+): NotificationActivity[] {
+  return activities
+    .filter(
+      (item) =>
+        item.action === "CREATE_CLAIM" ||
+        item.action === "EDIT_CLAIM" ||
+        item.action === "DELETE_CLAIM",
+    )
+    .map((item) => ({
+      uuid: item.uuid,
+      action: item.action,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: item.resourceName ?? "Claim",
+      notificationMessage: getClaimNotificationMessage(
+        item.action,
+        item.employee || undefined,
+      ),
+    }));
+}
 
-function getClaimNotification(
+function getClaimNotificationMessage(
   action: string,
   employee?: { firstName: string; lastName: string },
 ): string {
   const employeeInfo =
     employee ? ` by ${employee.firstName} ${employee.lastName}` : "";
-  let notificationMessage = "";
 
   switch (action) {
     case "CREATE_CLAIM":
-      notificationMessage = `Claim was created${employeeInfo}`;
-      break;
-    case "EDIT_CONTENT":
-      notificationMessage = `Content was edited${employeeInfo}`;
-      break;
+      return `Claim was created${employeeInfo}`;
+    case "EDIT_CLAIM":
+      return `Claim was edited${employeeInfo}`;
     case "DELETE_CLAIM":
-      notificationMessage = `Claim was deleted${employeeInfo}`;
-      break;
+      return `Claim was deleted${employeeInfo}`;
     default:
-      notificationMessage = `Action ${action} performed${employeeInfo}`;
+      return `Claim action ${action} performed${employeeInfo}`;
   }
-
-  return notificationMessage;
-}
-
-export function getClaimActions(
-  activities: ActivityRow[],
-): NotificationActivity[] {
-  return activities.map((item) => ({
-    uuid: item.uuid,
-    action: item.action,
-    resourceUuid: item.resourceUuid ?? "",
-    resourceName: item.resourceName ?? "",
-    timestamp: item.timestamp,
-    employee: item.employee,
-    title: item.resourceName ?? "",
-    notificationMessage: getClaimNotification(item.action),
-  }));
 }
