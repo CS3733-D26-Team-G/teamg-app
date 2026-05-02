@@ -1,6 +1,7 @@
 import { Position, Prisma } from "@repo/db";
 import { Schemas } from "@repo/zod";
 import { z } from "zod";
+import { getContentListInclude } from "./utils.ts";
 
 export const ParamsSchema =
   Schemas.ContentWhereUniqueInputObjectZodSchema.extend({
@@ -50,7 +51,7 @@ export const RegenerateContentLinkSchema = z.object({
   expirationTime: z.coerce.date(),
 });
 
-export const CreateTagSchema = z.object({
+export const CreateOrEditTagSchema = z.object({
   name: z.string(),
 });
 
@@ -128,3 +129,19 @@ export type PositionUpdateValue =
   | Prisma.EnumPositionFieldUpdateOperationsInput
   | undefined
   | null;
+
+export type ContentListItem = Prisma.ContentGetPayload<{
+  include: ReturnType<typeof getContentListInclude>;
+}>;
+
+export type SearchCandidate = {
+  uuid: string;
+  text_rank: number;
+  fuzzy_rank: number;
+};
+
+export enum TagAction {
+  CREATE,
+  DELETE,
+  INVALID,
+}
