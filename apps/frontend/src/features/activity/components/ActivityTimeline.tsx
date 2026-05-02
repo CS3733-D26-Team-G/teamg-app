@@ -3,7 +3,7 @@ import { Fragment, useState } from "react";
 import Timeline from "@mui/lab/Timeline";
 import ActivityTimelineItem from "./ActivityTimelineItem";
 import { type ActivityGroup, type ActivityItem } from "./activityData";
-import DocPreviewer from "../../content/components/DocPreviewer.tsx";
+import DocPreviewer from "../../content/components/viewing/DocPreviewer.tsx";
 import { API_ENDPOINTS } from "../../../config";
 
 interface ActivityTimelineProps {
