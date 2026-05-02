@@ -107,7 +107,7 @@ router.get("/", async (req, res) => {
         where =
           isAdmin(auth) ?
             {}
-          : { OR: [contentFilter, verboseFilter, authFilter] };
+          : { OR: [contentFilter, verboseFilter, authFilter, claimFilter] };
         break;
 
       default:

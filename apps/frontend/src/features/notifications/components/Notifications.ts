@@ -115,55 +115,24 @@ export function getContentEdits(
       }`,
     }));
 }
+
 export function getClaimActions(
   activities: ActivityRow[],
 ): NotificationActivity[] {
-  // Check for claim actions in the activity data
-  const claimActivities = activities.filter((item) => {
-    const action = item.action?.toUpperCase() || "";
-    return (
-      action === "CREATE_CLAIM" ||
-      action === "EDIT_CLAIM" ||
-      action === "DELETE_CLAIM"
-    );
-  });
-
-  console.log(
-    "Claim activities found:",
-    claimActivities.length,
-    claimActivities,
-  );
-
-  return claimActivities.map((item) => ({
-    uuid: item.uuid,
-    action: item.action,
-    resourceUuid: item.resourceUuid ?? "",
-    resourceName: item.resourceName ?? "Claim",
-    timestamp: item.timestamp,
-    employee: item.employee,
-    title: item.resourceName?.replace(/_/g, " ") ?? "Claim",
-    notificationMessage: getClaimNotificationMessage(
-      item.action,
-      item.employee || undefined,
-    ),
-  }));
-}
-
-function getClaimNotificationMessage(
-  action: string,
-  employee?: { firstName: string; lastName: string },
-): string {
-  const employeeInfo =
-    employee ? ` by ${employee.firstName} ${employee.lastName}` : "";
-
-  switch (action) {
-    case "CREATE_CLAIM":
-      return `Claim was created${employeeInfo}`;
-    case "EDIT_CLAIM":
-      return `Claim was edited${employeeInfo}`;
-    case "DELETE_CLAIM":
-      return `Claim was deleted${employeeInfo}`;
-    default:
-      return `Claim action ${action} performed${employeeInfo}`;
-  }
+  return activities
+    .filter((item) => item.action === "CREATE_CLAIM")
+    .map((item) => ({
+      uuid: item.uuid,
+      action: item.action,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: item.resourceName ?? "",
+      notificationMessage: `claim action by${
+        item.employee ?
+          ` by ${item.employee.firstName} ${item.employee.lastName}`
+        : ""
+      }`,
+    }));
 }

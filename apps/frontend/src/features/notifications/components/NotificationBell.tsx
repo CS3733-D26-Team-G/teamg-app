@@ -111,7 +111,7 @@ function useContentInfo() {
   useEffect(() => {
     const interval = setInterval(() => {
       void refresh();
-    }, 3600000);
+    }, 10000);
     return () => clearInterval(interval);
   }, [refresh]);
 
@@ -142,19 +142,19 @@ function useContentInfo() {
     [data?.activityContent],
   );
 
-  const claimActions = useMemo(
-    () => getContentEdits(data?.activityContent ?? []),
-    [data?.activityContent],
-  );
-  //   () => {
-  //   const claimActivities =
-  //     (data as any)?.activityClaim ?? // If separate claim activity exists
-  //     data?.activityAll ?? // Fall back to all activities
-  //     [];
-  //
-  //   console.log("Processing claim actions from:", claimActivities.length, "activities");
-  //   return getClaimActions(claimActivities);
-  // }, [data]);
+  const claimActions = useMemo(() => {
+    const claimActivities =
+      (data as any)?.activityClaim ?? // If separate claim activity exists
+      data?.activityAll ?? // Fall back to all activities
+      [];
+
+    console.log(
+      "Processing claim actions from:",
+      claimActivities.length,
+      "activities",
+    );
+    return getClaimActions(claimActivities);
+  }, [data]);
 
   // Filter out dismissed alerts
   const visibleCriticalContent = useMemo(
