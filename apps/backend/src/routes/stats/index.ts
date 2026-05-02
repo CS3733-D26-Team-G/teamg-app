@@ -148,6 +148,13 @@ router.get("/content/count/file-type", async (req, res) => {
 router.get("/content/edit-hits-by-role", async (req, res) => {
   const auth = getAuth(req);
 
+  const days = req.query.days ? Number(req.query.days) : undefined;
+
+  const startDate =
+    days && Number.isFinite(days) ?
+      new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    : undefined;
+
   try {
     const visibleContentWhere = getVisibleContentWhere(auth);
     const visibleContentUuids =
@@ -164,6 +171,7 @@ router.get("/content/edit-hits-by-role", async (req, res) => {
       where: {
         action: "EDIT_CONTENT",
         resource: "CONTENT",
+        ...(startDate ? { timestamp: { gte: startDate } } : {}),
         ...(visibleContentUuids ?
           {
             resourceUuid: {

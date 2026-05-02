@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
   ACCOUNT_SETTINGS: `${API_BASE_URL}/account-settings`,
   STATS: {
     ACTIVITY_ACTION_SUMMARY: `${API_BASE_URL}/stats/activity/action-summary`,
+    CONTENT_EDIT_HITS_BY_ROLE: `${API_BASE_URL}/stats/content/edit-hits-by-role`,
   },
   EMPLOYEE: {
     ROOT: `${API_BASE_URL}/employee`,
