@@ -1146,7 +1146,66 @@ router.post("/tag/delete/:uuid", async (req, res) => {
   }
 });
 
-router.post("/tag/rename/:tagUuid");
+router.post("/tag/edit/:uuid", async (req, res) => {
+  const uuid = parseTagUuid(req, res, "Invalid tag UUID");
+  if (!uuid) {
+    return;
+  }
+
+  const auth = getAuth(req);
+  if (!isAdmin(auth)) {
+    logger.warn(
+      `Rejected content tag edit request from user with position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  logger.verbose(`Querying ContentTag table for record ${uuid}`);
+  const existingTag = await findTagByUuid(uuid);
+  if (!existingTag) {
+    logger.warn(
+      `Received edit request for ContentTag table record ${uuid} that does not exist`,
+    );
+    return res.status(404).json({ message: "Tag not found" });
+  }
+  logger.verbose(
+    `Queried ContentTag table for record ${uuid}: found ${existingTag.name}`,
+  );
+
+  const parsed = CreateOrEditTagSchema.safeParse(req.body);
+  if (!parsed.success) {
+    logger.verbose(
+      `Failed to parse Content tag edit request body for record ${uuid}:\n${parsed.error.issues}`,
+    );
+    return res.status(400).json({ message: parsed.error.issues });
+  }
+
+  const normalizedTag = normalizeTagName(parsed.data.name);
+  if (!normalizedTag.name) {
+    return res.status(400).json({ message: "Tag name cannot be blank" });
+  }
+
+  logger.verbose(`Updating ContentTag table record ${uuid}`);
+
+  try {
+    const tag = await prisma.contentTag.update({
+      where: { uuid },
+      data: normalizedTag,
+    });
+
+    logger.verbose(`Updated ContentTag table record ${uuid}`);
+    return res.status(200).json(tag);
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return res.status(409).json({ message: "Tag name already exists" });
+    }
+
+    return sendInternalError(res, `Failed to update content tag ${uuid}`, e);
+  }
+});
 
 router.all("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
   const action = getTagActionFromMethod(req.method);
