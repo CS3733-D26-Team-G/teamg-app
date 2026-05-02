@@ -22,6 +22,13 @@ export interface ActivityRow {
   employee?: ActivityEmployee | null;
 }
 
+//Type for "Employee Activity" dashboard cart
+export type ActivitySummary = {
+  edited: number;
+  checkedOut: number;
+  deleted: number;
+};
+
 export type PositionCounts = Record<Position, number>;
 
 export interface FileTypeCount {

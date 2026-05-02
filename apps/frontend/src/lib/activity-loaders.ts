@@ -12,6 +12,7 @@ import {
 import type {
   ActivityCategory,
   ActivityRow,
+  ActivitySummary,
   DashboardBootstrapData,
   FileTypeCount,
   PositionCounts,
@@ -103,6 +104,18 @@ async function fetchEmployeeCounts() {
   );
 }
 
+async function fetchActivityActionSummary(params?: {
+  position?: string;
+  employeeUuid?: string;
+}) {
+  const query = new URLSearchParams(
+    params as Record<string, string>,
+  ).toString();
+  return fetchJson<ActivitySummary>(
+    `${API_ENDPOINTS.STATS.ACTIVITY_ACTION_SUMMARY}?${query}`,
+  );
+}
+
 async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
   const [
     activityAll,
@@ -112,6 +125,7 @@ async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
     fileTypeCounts,
     employeeCounts,
     contentList,
+    activitySummary,
   ] = await Promise.all([
     loadActivity("all"),
     loadActivity("content"),
@@ -120,6 +134,7 @@ async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
     loadContentFileTypeCounts(),
     loadEmployeeCounts(),
     loadContentList(),
+    loadActivityActionSummary(),
   ]);
 
   return {
@@ -130,6 +145,7 @@ async function fetchDashboardBootstrap(): Promise<DashboardBootstrapData> {
     fileTypeCounts,
     employeeCounts,
     contentList,
+    activitySummary,
   };
 }
 
@@ -180,6 +196,23 @@ export async function loadEmployeeCounts(): Promise<PositionCounts> {
     CACHE_KEYS.employeeCounts,
     fetchEmployeeCounts,
     COUNTS_CACHE_OPTIONS,
+  );
+}
+
+// Loads fetched data for "Employee activity" dashboard chart
+export async function loadActivityActionSummary(params?: {
+  position?: string;
+  employeeUuid?: string;
+}): Promise<ActivitySummary> {
+  return fetchCachedQuery(
+    "stats:activity:action-summary",
+    () => fetchActivityActionSummary(params),
+    {
+      staleTimeMs: 60_000,
+      cacheTimeMs: 10 * 60_000,
+      persist: true,
+      scope: "user",
+    },
   );
 }
 
