@@ -40,6 +40,7 @@ export const API_ENDPOINTS = {
 
   CONTENT: {
     ROOT: `${API_BASE_URL}/content`,
+    SEARCH: `${API_BASE_URL}/content/search`,
     CREATE: `${API_BASE_URL}/content/create`,
     COUNT_POSITION: `${API_BASE_URL}/stats/content/count/position`,
     COUNT_FILE_TYPE: `${API_BASE_URL}/stats/content/count/file-type`,
