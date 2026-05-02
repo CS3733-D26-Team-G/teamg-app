@@ -1130,23 +1130,81 @@ export default function ContentManagement({
     <Box sx={{ height: "auto", width: "100%" }}>
       <AppBar
         position="static"
-        sx={{ backgroundColor: "background.paper", boxShadow: "none" }}
+        sx={{
+          width: "100%",
+          boxSizing: "border-box",
+          backgroundColor: "transparent",
+          boxShadow: "none",
+          p: 0,
+        }}
       >
         <StyledToolbar
           sx={{
-            background:
-              "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+            width: "100%",
+            px: 0,
+            p: "0 !important",
+            background: "transparent",
             overflow: "hidden",
           }}
         >
-          <Typography
-            variant="h2"
-            sx={{ pb: 2, pt: 4, color: "White", fontWeight: "bold" }}
-          >
-            Content Management
-          </Typography>
+          <Box
+            className="content-header"
+            sx={{
+              px: 4,
+              pt: 5,
 
-          {/* decorative concentric rings in the top-right corner */}
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <Stack
+              direction="row"
+              alignItems="flex-start"
+              justifyContent="space-between"
+            >
+              <Box>
+                <Typography
+                  variant="h2"
+                  sx={{ color: "white", mb: 0.5 }}
+                >
+                  Content Management
+                </Typography>
+                <Typography
+                  sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
+                >
+                  Create, edit, and organize your digital assets and site
+                  content in one collaborative workspace.
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mt: 0.5,
+                  zIndex: 10,
+                }}
+              >
+                <HelpPopup
+                  description="The employee management page allows admins to add, manage, and delete any employee within iBank's database."
+                  infoOrHelp={true}
+                />
+              </Box>
+            </Stack>
+            <Box
+              sx={{
+                background: "transparent",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 2,
+                pt: 2,
+                flexWrap: "wrap",
+                position: "relative",
+                zIndex: 1000,
+              }}
+            ></Box>
+          </Box>
           {[...Array(3)].map((_, i) => (
             <Box
               key={i}
@@ -1167,6 +1225,8 @@ export default function ContentManagement({
               alignItems: "center",
               justifyContent: "space-between",
               width: "100%",
+              pb: 3,
+              px: 4,
             }}
           >
             <Box sx={{ display: "flex", gap: 2 }}>
@@ -1528,8 +1588,8 @@ export default function ContentManagement({
         </StyledToolbar>
       </AppBar>
 
-      {/* one accordion per position, current user's position listed first */}
-      <Box sx={{ width: "100%" }}>
+      {/* ── Accordion Data grids ───────────────────────────────────────────────────── */}
+      <Box sx={{ width: "95%", mx: "auto" }}>
         {orderedPositions.map(({ key, label, chipSx }) => {
           const positionRows = filteredRows.filter(
             (r) => r.forPosition === key,

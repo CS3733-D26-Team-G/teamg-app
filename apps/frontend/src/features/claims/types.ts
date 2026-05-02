@@ -36,4 +36,5 @@ export interface ReviewClaimRecord {
   createdAt: string;
   requestor: ReviewClaimRequestor;
   contents: ReviewClaimContent[];
+  comment: string | null;
 }

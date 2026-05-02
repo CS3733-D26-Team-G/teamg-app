@@ -39,6 +39,13 @@ export const lightTheme: Theme = createTheme({
     },
   },
   components: {
+    MuiInputBase: {
+      styleOverrides: {
+        root: {
+          fontFamily: "Rubik, Karla, sans-serif",
+        },
+      },
+    },
     MuiLink: {
       styleOverrides: {
         root: {
@@ -116,6 +123,7 @@ export const darkTheme: Theme = createTheme({
     MuiLink: {
       styleOverrides: {
         root: {
+          "fontFamily": "Rubik, Karla, sans-serif",
           "color": "#4D9FFF",
           "textDecoration": "none",
           "&:hover": {
