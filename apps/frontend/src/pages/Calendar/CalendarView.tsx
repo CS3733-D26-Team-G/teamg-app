@@ -10,22 +10,21 @@ import React, {
   useRef,
 } from "react";
 import { useAuth } from "../../auth/AuthContext";
-import { ContentRowsSchema, type ContentRow } from "../../types/content";
+import { type ContentRow } from "../../types/content";
 import type { EventInput } from "@fullcalendar/core";
 import { Box, Card, styled, Toolbar, Typography } from "@mui/material";
-import SearchBar from "../../features/dashboard/components/SearchBar.tsx";
 import { getExpirationStatus } from "../../features/notifications/components/Notifications.ts";
 import HelpPopup from "../../components/HelpPopup.tsx";
 import NotificationsBell from "../../features/notifications/components/NotificationBell.tsx";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { loadContentList } from "../../lib/api-loaders";
+import { useTheme } from "@mui/material/styles";
 
 const CREATED_COLOR = "#4f46e5";
 const CHECKED_OUT_COLOR = "#d97706";
 
 function getExpiresInSeconds(expirationTime: string | null): number {
   if (!expirationTime) return -1;
-
   return Math.floor((new Date(expirationTime).getTime() - Date.now()) / 1000);
 }
 
@@ -49,9 +48,19 @@ export function getEventColor(expirationTime: string | null): string {
   }
 }
 
+const StyledToolbar = styled(Toolbar)(({ theme }) => ({
+  flexDirection: "column",
+  alignItems: "stretch",
+  paddingTop: theme.spacing(2),
+  paddingBottom: theme.spacing(2),
+  minHeight: 128,
+}));
+
 export default function CalendarPage() {
   const { session } = useAuth();
   const { profile } = useProfile();
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === "dark";
   const calendarRef = useRef<FullCalendar>(null);
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,17 +80,12 @@ export default function CalendarPage() {
   }, [fetchContent]);
 
   const currentUserName = useMemo(() => {
-    if (!profile?.firstName || !profile?.lastName) {
-      return null;
-    }
-
+    if (!profile?.firstName || !profile?.lastName) return null;
     return `${profile.firstName} ${profile.lastName}`;
   }, [profile?.firstName, profile?.lastName]);
 
   const events = useMemo<EventInput[]>(() => {
-    if (!session || !currentUserName) {
-      return [];
-    }
+    if (!session || !currentUserName) return [];
 
     return rows.reduce((acc: EventInput[], row) => {
       if (!row || !row.expirationTime) return acc;
@@ -126,14 +130,6 @@ export default function CalendarPage() {
     }, []);
   }, [rows, session, currentUserName]);
 
-  const StyledToolbar = styled(Toolbar)(({ theme }) => ({
-    flexDirection: "column",
-    alignItems: "stretch",
-    paddingTop: theme.spacing(2),
-    paddingBottom: theme.spacing(2),
-    minHeight: 128,
-  }));
-
   return (
     <Box sx={{ width: "100%" }}>
       <StyledToolbar
@@ -177,16 +173,71 @@ export default function CalendarPage() {
       <Card
         sx={{
           p: 3,
-          backgroundColor: "#ffffff",
+          backgroundColor: "background.paper",
           minWidth: 0,
           width: "calc(100vw - 240px)",
           overflowX: "auto",
           minHeight: "calc(100vh - 128px)",
+          border: "none",
+          boxShadow: "none",
         }}
       >
         {loading ?
           <Typography>Loading calendar…</Typography>
         : <>
+            {/* dark mode styles — only injected when dark mode is active */}
+            {isDarkMode && (
+              <style>{`
+    .fc .fc-col-header-cell {
+      background-color: #161B27 !important;
+    }
+    .fc .fc-col-header-cell-cushion {
+      color: #9BA3B8 !important;
+      text-decoration: none !important;
+    }
+    .fc-theme-standard td,
+    .fc-theme-standard th,
+    .fc-theme-standard .fc-scrollgrid,
+    .fc .fc-scrollgrid-liquid {
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+    .fc .fc-daygrid-day.fc-day-today {
+      background-color: rgba(77,159,255,0.08) !important;
+    }
+    .fc .fc-scrollgrid-section > * {
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+    .fc table {
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+    /* fix white block in week/day time grid */
+    .fc .fc-timegrid-col.fc-day-today {
+      background-color: rgba(77,159,255,0.08) !important;
+    }
+    .fc .fc-timegrid-axis {
+      background-color: #161B27 !important;
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+    /* top-left empty corner cell in week/day view */
+    .fc .fc-timegrid-axis-cushion {
+      color: #9BA3B8 !important;
+    }
+    .fc-theme-standard .fc-scrollgrid-section-sticky > * {
+      background-color: #161B27 !important;
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+    /* catch any remaining white backgrounds */
+    .fc .fc-timegrid-slot {
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+    .fc .fc-daygrid-day,
+    .fc .fc-timegrid-col {
+      background-color: transparent !important;
+    }
+  `}</style>
+            )}
+
+            {/* font family applies in both modes */}
             <style>{`
               .fc,
               .fc-toolbar-title,
