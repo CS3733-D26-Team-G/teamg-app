@@ -22,21 +22,23 @@ const teamMembers = [
     name: "Tj Elysee",
     position: "Product Owner",
     photo: "/Tj.jpg",
-    quote: "I stink",
+    quote:
+      "“I can do all things through him who strengthens me” - Philippians 4:13",
   },
 
   {
     name: "Shriya Kulkarni",
     position: "Lead Back-End Developer",
     photo: "/Shriya.jpg",
-    quote: "I stink",
+    quote: `"But I suppose a fox's duty is to be... well, a fox." - Mr. Fox, Fantastic Mr. Fox`,
   },
 
   {
     name: "Justin Gauthier",
     position: "Project Manager",
     photo: "/Justin.jpg",
-    quote: "I stink",
+    quote:
+      '"Without pain, without sacrifice, we would have nothing" - Tyler Durden/ Chuck Palahniuk',
   },
 
   {
@@ -78,7 +80,8 @@ const teamMembers = [
     name: "Ronan Heatley",
     position: "Full-Time Software Engineer",
     photo: "/Ronan.png",
-    quote: "I stink",
+    quote:
+      "“A man that fears suffering is already suffering from what he fears.” - Michel de Montaigne",
   },
 ];
 
