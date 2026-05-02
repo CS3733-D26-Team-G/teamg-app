@@ -129,9 +129,12 @@ function Profile() {
             width: "90%",
             height: 80,
             mx: "auto",
-            backgroundColor: "primary.main",
             mt: 6,
             borderRadius: 4,
+            backgroundColor: "rgba(255, 255, 255, 0.12)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255, 255, 255, 0.25)",
+            borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
           }}
         >
           {/*'My Account text in header'*/}
