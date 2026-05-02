@@ -28,8 +28,7 @@ function Activity() {
       <Box
         className="activity-header"
         sx={{
-          background:
-            "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+          background: "transparent",
           px: 4,
           pt: 5,
           pb: 3,
@@ -134,6 +133,8 @@ function Activity() {
         sx={{
           borderRadius: "14px",
           backgroundColor: "white",
+          width: "95%",
+          mx: "auto",
         }}
       >
         <ActivityComponent

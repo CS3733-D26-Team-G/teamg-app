@@ -340,7 +340,6 @@ export default function EmployeeManagement() {
           boxSizing: "border-box",
           backgroundColor: "transparent",
           boxShadow: "none",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
           p: 0,
         }}
       >
@@ -591,7 +590,8 @@ export default function EmployeeManagement() {
         }}
         sx={{
           height: "calc(100vh - 200px)",
-          mx: 1,
+          width: "95%",
+          mx: "auto",
         }}
       />
 
