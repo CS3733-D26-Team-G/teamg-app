@@ -163,7 +163,7 @@ export default function AdminCards() {
 
   return (
     <Card
-      className="min-w-[560px] flex-1 outline-1 outline-gray-200"
+      className="min-w-140 flex-1 outline-1 outline-gray-200"
       sx={{ margin: 0, borderRadius: 3 }}
     >
       <CardHeader

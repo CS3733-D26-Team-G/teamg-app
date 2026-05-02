@@ -335,26 +335,26 @@ export default function Dashboard() {
     {
       id: "recent-activity" as dashboardCardID,
       node: <DashboardRecentActivity rawLogs={rawLogs} />,
-      className: "col-span-12 xl:col-span-8",
+      className: "col-span-12 xl:col-span-6",
     },
     ...roles.map((role) => ({
       id: getRolecard(role),
       node: buildroleCard(role),
-      className: "col-span-12 sm:col-span-6 lg:col-span-4 xl:col-span-2",
+      className: "col-span-3 sm:col-span-4 lg:col-span-2 xl:col-span-2",
     })),
     ...(session?.position === "ADMIN" ?
       [
         {
           id: "employee-activity" as dashboardCardID,
           node: <AdminCards />,
-          className: "col-span-12 lg:col-span-8",
+          className: "col-span-3 lg:col-span-5",
         },
       ]
     : []),
     {
       id: "file-types" as dashboardCardID,
       node: fileTypesCard,
-      className: "col-span-12 lg:col-span-4",
+      className: "col-span-3 lg:col-span-4",
     },
     {
       id: "popular-content-search" as dashboardCardID,
@@ -364,7 +364,7 @@ export default function Dashboard() {
     {
       id: "employee-edits-by-day" as dashboardCardID,
       node: employeeEditsByDay,
-      className: "col-span-12 lg:col-span-8",
+      className: "col-span-3 lg:col-span-8",
     },
   ];
   const visibleCardIDs = dashboardCards.map((card) => card.id);
