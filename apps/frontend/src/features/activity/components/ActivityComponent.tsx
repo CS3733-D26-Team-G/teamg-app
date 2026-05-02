@@ -8,9 +8,16 @@ import { useAuth } from "../../../auth/AuthContext";
 import { useActivityQuery } from "../../../lib/activity-loaders.ts";
 import { prefetchContentList } from "../../../lib/api-loaders.ts";
 
-export default function ActivityComponent() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "content" | "login">("all");
+// Define props interface
+interface ActivityComponentProps {
+  filter: "all" | "content" | "login";
+  searchQuery: string;
+}
+
+export default function ActivityComponent({
+  filter,
+  searchQuery,
+}: ActivityComponentProps) {
   const { session } = useAuth();
   const isAdmin = session?.permissions.can_manage_all_content ?? false;
   const category =
@@ -96,54 +103,38 @@ export default function ActivityComponent() {
   }, [groupedData, searchQuery]);
 
   return (
-    <Box sx={{ width: "100%" }}>
-      <Box
-        sx={{
-          background:
-            "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
-          px: 3,
-          py: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 2,
-          flexWrap: "wrap",
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <SearchBar setSearchQuery={setSearchQuery} />
-          <HelpPopup
-            description="The Activity page shows a log of recent actions taken across the platform, including content views and updates."
-            infoOrHelp={true}
-          />
-        </Box>
+    <Box
+      sx={{
+        "width": "100%",
 
-        {isAdmin && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {(["all", "content", "login"] as const).map((val) => (
-              <Button
-                key={val}
-                variant="contained"
-                size="small"
-                onClick={() => setFilter(val)}
-                sx={{
-                  opacity: filter === val ? 1 : 0.55,
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  fontSize: "0.75rem",
-                  letterSpacing: 0.5,
-                  boxShadow: filter === val ? 2 : "none",
-                }}
-              >
-                {val}
-              </Button>
-            ))}
-          </Box>
-        )}
-      </Box>
+        "&::-webkit-scrollbar": {
+          display: "none",
+        },
 
+        // Hide scrollbar for Firefox
+        "scrollbarWidth": "none",
+
+        // Hide scrollbar for IE and Edge
+        "msOverflowStyle": "none",
+      }}
+    >
       {activityQuery.loading && groupedData.length === 0 ?
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <Box
+          sx={{
+            "display": "flex",
+            "justifyContent": "center",
+            "mt": 4,
+            "&::-webkit-scrollbar": {
+              display: "none",
+            },
+
+            // Hide scrollbar for Firefox
+            "scrollbarWidth": "none",
+
+            // Hide scrollbar for IE and Edge
+            "msOverflowStyle": "none",
+          }}
+        >
           <CircularProgress />
         </Box>
       : <ActivityTimeline data={filteredData} />}
