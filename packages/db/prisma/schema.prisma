@@ -142,7 +142,6 @@ model Activity {
   resourceUuid String?       @map("resource_uuid") @db.Uuid
   resourceName String?       @map("resource_name")
   timestamp    DateTime      @default(now()) @db.Timestamptz(6)
-  read         Boolean       @default(false)
   employee     Employee      @relation(fields: [employeeUuid], references: [uuid])
 }
 
