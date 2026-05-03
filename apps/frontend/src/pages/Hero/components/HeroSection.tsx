@@ -109,17 +109,18 @@ export default function HeroSection() {
             sx={{
               "position": "absolute",
               "right": 40,
-              "background": "white",
-              "color": "black",
+              "color": "white",
               "fontFamily": theme.typography.fontFamily,
-              "fontSize": 18,
+              "fontSize": 14,
               "fontWeight": "bold",
               "px": 5,
               "py": 1.5,
-              "borderRadius": "70px",
-              "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
-              "textTransform": "none",
-              "&:hover": { background: "#d9d2c5" },
+              "borderRadius": 3,
+              "backgroundColor": "rgba(255, 255, 255, 0.12)",
+              "backdropFilter": "blur(8px)",
+              "border": "1px solid rgba(255, 255, 255, 0.25)",
+              "borderBottom": "2px solid rgba(255, 255, 255, 0.4)",
+              "&:hover": { background: "rgba(255, 255, 255, 0.20)" },
             }}
           >
             Go to Dashboard
