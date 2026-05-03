@@ -1374,6 +1374,7 @@ export default function ContentManagement({
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Button
+                  className="content-filter-button"
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
                   aria-haspopup="true"
@@ -1666,16 +1667,14 @@ export default function ContentManagement({
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Tooltip
                 title={
-                  viewMode === "accordion" ?
-                    "Switch to Tabs view"
-                  : "Switch to Accordion view"
+                  viewMode === "tabs" ?
+                    "Switch to Accordion view"
+                  : "Switch to Tabs view"
                 }
               >
                 <IconButton
                   onClick={() =>
-                    setViewMode((m) =>
-                      m === "accordion" ? "tabs" : "accordion",
-                    )
+                    setViewMode((m) => (m === "tabs" ? "accordion" : "tabs"))
                   }
                   size="small"
                   sx={{
@@ -1764,7 +1763,10 @@ export default function ContentManagement({
       </AppBar>
 
       {/* ── Content Data Grids (Accordion or Tabs) ────────────────────────────────── */}
-      <Box sx={{ width: "95%", mx: "auto" }}>
+      <Box
+        className="content-table"
+        sx={{ width: "95%", mx: "auto" }}
+      >
         {/* ── TABS VIEW ─────────────────────────────────────────────────────── */}
         {viewMode === "tabs" && (
           <Box

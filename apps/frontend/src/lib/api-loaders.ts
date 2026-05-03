@@ -66,7 +66,7 @@ async function fetchContentList(): Promise<ContentRow[]> {
 }
 
 async function fetchContentTags(): Promise<ContentTagSummary[]> {
-  const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+  const res = await fetch(API_ENDPOINTS.CONTENT.TAG.ROOT, {
     credentials: "include",
   });
 
