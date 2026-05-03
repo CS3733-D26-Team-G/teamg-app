@@ -334,7 +334,10 @@ export default function RiskReviewPage() {
             </Button>
           </Box>
         : <>
-            <Stack spacing={1.5}>
+            <Stack
+              className="risk-review-list"
+              spacing={1.5}
+            >
               <AnimatePresence>
                 {cards.map((card, index) => (
                   <RiskCardComponent
@@ -380,6 +383,7 @@ export default function RiskReviewPage() {
               >
                 <span>
                   <Button
+                    className="risk-submit-button"
                     variant="contained"
                     size="large"
                     startIcon={
@@ -706,6 +710,7 @@ function RiskCardComponent({
               Risk Assessment Notes
             </Typography>
             <TextField
+              className="risk-notes-field"
               placeholder="Summarise your risk evaluation…"
               fullWidth
               multiline
@@ -724,6 +729,7 @@ function RiskCardComponent({
           </Box>
 
           <Stack
+            className="risk-action-buttons"
             direction="row"
             spacing={1.5}
           >

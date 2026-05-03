@@ -176,6 +176,7 @@ function Profile() {
 
         {/*Profile Tag Bar*/}
         <Box
+          className="profile-info-section"
           sx={{
             display: "flex",
             alignItems: "center",
@@ -280,6 +281,7 @@ function Profile() {
         >
           {/*Notifications Card*/}
           <Box
+            className="notification-settings"
             sx={{
               display: "flex",
               width: "40%",
@@ -430,6 +432,7 @@ function Profile() {
 
           {/*'Security Card*/}
           <Box
+            className="security-settings"
             sx={{
               display: "flex",
               width: "30%",
