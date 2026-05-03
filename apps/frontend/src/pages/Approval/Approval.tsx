@@ -183,6 +183,7 @@ export default function ApprovalPage() {
         </Stack>
         {!loading && cards.length > 0 && (
           <Stack
+            className="approvals-action-buttons"
             direction="row"
             spacing={1.5}
             sx={{ mt: 2.5 }}
@@ -240,6 +241,7 @@ export default function ApprovalPage() {
           borderRadius: "14px",
           backgroundColor: "white",
           height: "calc(100vh - 200px)",
+          overflowY: "auto",
         }}
       >
         {loading ?
@@ -424,7 +426,7 @@ export default function ApprovalPage() {
               </Stack>
 
               <Box
-                className="approval-cards"
+                className="approvals-list"
                 sx={{ flex: 1 }}
               >
                 <Stack spacing={1.5}>
