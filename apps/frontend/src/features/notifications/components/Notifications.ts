@@ -1,5 +1,10 @@
 import type { ActivityRow } from "../../../types/activity.ts";
 import type { ContentRow } from "../../../types/content.ts";
+import type { InsuranceClaimType } from "@repo/db";
+import type {
+  InsuranceClaimCreatePayload,
+  InsuranceClaimRecord,
+} from "../../../types/claim.ts";
 
 export interface NotificationActivity {
   uuid: string;
@@ -104,6 +109,27 @@ export function getContentEdits(
       employee: item.employee,
       title: item.resourceName ?? "",
       notificationMessage: `Content was edited${
+        item.employee ?
+          ` by ${item.employee.firstName} ${item.employee.lastName}`
+        : ""
+      }`,
+    }));
+}
+
+export function getClaimActions(
+  activities: ActivityRow[],
+): NotificationActivity[] {
+  return activities
+    .filter((item) => item.action === "CREATE_CLAIM")
+    .map((item) => ({
+      uuid: item.uuid,
+      action: item.action,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: item.resourceName ?? "",
+      notificationMessage: `claim action by${
         item.employee ?
           ` by ${item.employee.firstName} ${item.employee.lastName}`
         : ""
