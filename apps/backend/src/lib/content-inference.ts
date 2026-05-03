@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+import { Groq } from "groq-sdk";
 import AdmZip from "adm-zip";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";

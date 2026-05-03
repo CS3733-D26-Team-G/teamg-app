@@ -241,6 +241,7 @@ export default function ApprovalPage() {
           borderRadius: "14px",
           backgroundColor: "white",
           height: "calc(100vh - 200px)",
+          overflowY: "auto",
         }}
       >
         {loading ?
