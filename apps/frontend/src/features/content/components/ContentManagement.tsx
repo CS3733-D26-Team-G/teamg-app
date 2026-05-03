@@ -1762,10 +1762,7 @@ export default function ContentManagement({
       </AppBar>
 
       {/* ── Content Data Grids (Accordion or Tabs) ────────────────────────────────── */}
-      <Box
-        className="content-table"
-        sx={{ width: "100%" }}
-      >
+      <Box sx={{ width: "95%", mx: "auto" }}>
         {/* ── TABS VIEW ─────────────────────────────────────────────────────── */}
         {viewMode === "tabs" && (
           <Box

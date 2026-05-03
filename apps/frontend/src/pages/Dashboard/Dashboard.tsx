@@ -4,7 +4,14 @@ import SearchBar from "../../features/dashboard/components/SearchBar.tsx";
 import PieChart from "../../features/dashboard/components/PieChart.tsx";
 import TypeBarChart from "../../features/dashboard/components/BarChart.tsx";
 import NotificationBell from "../../features/notifications/components/NotificationBell.tsx";
-import { Box, styled, Toolbar, Typography } from "@mui/material";
+import {
+  Box,
+  styled,
+  Toolbar,
+  Typography,
+  Skeleton,
+  Stack,
+} from "@mui/material";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import { CardHeader, Divider } from "@mui/material";
@@ -15,14 +22,191 @@ import AdminCards from "../../features/dashboard/components/AdminCards.tsx";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
 
+const StyledToolbar = styled(Toolbar)(({ theme }) => ({
+  flexDirection: "column",
+  alignItems: "stretch",
+  paddingTop: theme.spacing(2),
+  paddingBottom: theme.spacing(2),
+  minHeight: 128,
+}));
+
+function DashboardSkeleton() {
+  return (
+    <Box sx={{ height: "auto", width: "100%" }}>
+      {/* Header skeleton */}
+      <StyledToolbar
+        sx={{
+          background:
+            "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            px: 4,
+            py: 3,
+          }}
+        >
+          <Skeleton
+            variant="text"
+            width={320}
+            height={56}
+            sx={{ bgcolor: "rgba(255,255,255,0.15)" }}
+          />
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Skeleton
+              variant="circular"
+              width={40}
+              height={40}
+              sx={{ bgcolor: "rgba(255,255,255,0.15)" }}
+            />
+            <Skeleton
+              variant="rounded"
+              width={240}
+              height={40}
+              sx={{ bgcolor: "rgba(255,255,255,0.15)", borderRadius: "24px" }}
+            />
+          </Box>
+        </Box>
+      </StyledToolbar>
+
+      <Card sx={{ borderRadius: 3 }}>
+        <CardContent
+          sx={{
+            padding: 5,
+            minHeight: "88vh",
+            backgroundColor: "background.default",
+          }}
+        >
+          {/* Top row: pie chart + recent activity */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              gap: 8,
+              alignItems: "stretch",
+              mb: 4,
+            }}
+          >
+            <Box sx={{ width: 420, minWidth: 420 }}>
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={300}
+                sx={{ borderRadius: "12px" }}
+              />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 500 }}>
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={300}
+                sx={{ borderRadius: "12px" }}
+              />
+            </Box>
+          </Box>
+
+          {/* Count cards row */}
+          <Stack
+            direction="row"
+            spacing={4}
+            sx={{ mb: 4 }}
+          >
+            {[...Array(5)].map((_, i) => (
+              <Box
+                key={i}
+                sx={{ flex: 1 }}
+              >
+                <Skeleton
+                  variant="rounded"
+                  width="100%"
+                  height={100}
+                  sx={{ borderRadius: "12px" }}
+                />
+              </Box>
+            ))}
+          </Stack>
+
+          {/* Charts row */}
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 8 }}>
+            <Box sx={{ width: 420, minWidth: 420 }}>
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={340}
+                sx={{ borderRadius: "12px", mb: 4 }}
+              />
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={200}
+                sx={{ borderRadius: "12px" }}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={560}
+                sx={{ borderRadius: "12px" }}
+              />
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+}
+
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
   const { session } = useAuth();
   const { data, loading, error } = useDashboardBootstrap();
+  const { profile } = useProfile();
+
+  // Show full skeleton on initial load
+  if (loading && !data) {
+    return <DashboardSkeleton />;
+  }
+
+  if (error && !data) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
+        }}
+      >
+        <Box sx={{ textAlign: "center" }}>
+          <Typography
+            variant="h6"
+            color="error"
+            sx={{ mb: 1 }}
+          >
+            Failed to load dashboard
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            {error}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   const rawLogs = data?.activityAll ?? [];
   const analytics = (data?.contentCounts ?? {}) as Record<string, number>;
   const employeeCounts = (data?.employeeCounts ?? {}) as Record<string, number>;
   const fileTypeCounts = data?.fileTypeCounts ?? [];
+
   const employeePieData = [
     {
       id: 0,
@@ -61,6 +245,7 @@ export default function Dashboard() {
       color: "#721b31",
     },
   ];
+
   const roles = [
     "Business Analyst",
     "Underwriter",
@@ -77,7 +262,6 @@ export default function Dashboard() {
       "EXL Operations": "EXL_OPERATIONS",
       "Business Ops Team": "BUSINESS_OP_RATING",
     };
-
     return mapping[role] || role.replace(/\s+/g, "_").toUpperCase();
   };
 
@@ -99,16 +283,6 @@ export default function Dashboard() {
   const helpText =
     helpDescriptions[session?.position ?? ""] ??
     "The Dashboard gives you an overview of your organization.";
-
-  const StyledToolbar = styled(Toolbar)(({ theme }) => ({
-    flexDirection: "column",
-    alignItems: "stretch",
-    paddingTop: theme.spacing(2),
-    paddingBottom: theme.spacing(2),
-    minHeight: 128,
-  }));
-
-  const { profile } = useProfile();
 
   const employeeDemographicsCard = (
     <Card
@@ -190,29 +364,8 @@ export default function Dashboard() {
     </Card>
   );
 
-  if (loading && !data) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
-        <Typography variant="h6">Loading dashboard...</Typography>
-      </Box>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
-        <Typography color="error">{error}</Typography>
-      </Box>
-    );
-  }
-
   return (
-    <Box
-      sx={{
-        height: "auto",
-        width: "100%",
-      }}
-    >
+    <Box sx={{ height: "auto", width: "100%" }}>
       <StyledToolbar
         sx={{
           background:
@@ -279,7 +432,6 @@ export default function Dashboard() {
             {roles.map((role) => {
               const key = getAnalyticsKey(role);
               const count = analytics[key] ?? 0;
-
               return (
                 <Card
                   key={role}
@@ -334,7 +486,6 @@ export default function Dashboard() {
                 {popularContentSearchCard}
               </div>
             )}
-
             <Card
               className="dashboard-edits-chart flex-1 outline-1 outline-gray-200"
               sx={{ margin: 0, borderRadius: 3 }}
@@ -348,9 +499,7 @@ export default function Dashboard() {
                   >
                     Employee Edits By Day
                     <HelpPopup
-                      description={
-                        "This graphic shows the fluctuation in content hits by role."
-                      }
+                      description="This graphic shows the fluctuation in content hits by role."
                       infoOrHelp={false}
                     />
                   </Typography>
