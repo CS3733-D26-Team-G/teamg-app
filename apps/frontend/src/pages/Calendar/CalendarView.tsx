@@ -70,6 +70,7 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
 export default function CalendarPage() {
   const { session } = useAuth();
   const { profile } = useProfile();
+  const { isOpen } = useSidebar();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === "dark";
   const calendarRef = useRef<FullCalendar>(null);
@@ -190,11 +191,12 @@ export default function CalendarPage() {
       </StyledToolbar>
 
       <Card
+        className="calendar-grid"
         sx={{
           p: 3,
           backgroundColor: "background.paper",
           minWidth: 0,
-          width: "calc(100vw - 240px)",
+          width: isOpen ? "calc(100vw - 240px)" : "calc(100vw - 64px)",
           overflowX: "auto",
           minHeight: "calc(100vh - 128px)",
           border: "none",

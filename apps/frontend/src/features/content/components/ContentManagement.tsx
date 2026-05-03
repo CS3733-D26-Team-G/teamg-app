@@ -51,6 +51,7 @@ import { useAuth } from "../../../auth/AuthContext";
 import "./ContentManagement.css";
 import {
   ContentFavoriteResponseSchema,
+  ContentRowsSchema,
   type ContentRow,
   type ContentTagSummary,
 } from "../../../types/content";
@@ -65,12 +66,12 @@ import Tab from "@mui/material/Tab";
 import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import TableRowsIcon from "@mui/icons-material/TableRows";
 import mime from "mime-types";
-import DocumentEditorModal from "./DocumentEditorModal.tsx";
+import DocumentEditorModal from "./viewing/DocumentEditorModal.tsx";
 import HelpPopup from "../../../components/HelpPopup";
-import DocPreviewer from "./DocPreviewer.tsx";
+import DocPreviewer from "./viewing/DocPreviewer.tsx";
 import InfoPopup from "./ContentInfoPopup.tsx";
 import TagManagerPopup from "./TagManagerPopup.tsx";
-import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
+import VersionHistoryPanel from "./viewing/VersionHistoryPanel.tsx";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
@@ -89,7 +90,8 @@ import {
   patchDashboardBootstrap,
   prefetchActivity,
 } from "../../../lib/activity-loaders";
-import { ContentTabs, SPECIAL_TABS } from "./ContentTabs.tsx";
+import { ContentTabs, SPECIAL_TABS } from "./viewing/ContentTabs.tsx";
+import { recordRecentlyViewed } from "./viewing/RecentlyViewed.tsx";
 
 // human-readable labels for each content status
 const statusLabels: Record<ContentStatus, string> = {
@@ -190,7 +192,7 @@ const SlideUpTransition = React.forwardRef(function SlideUpTransition(
   );
 });
 
-// returns UUIDs of rows added after the current browser session started so they can be highlighted
+/* Highlights new content based on what is different from start of session */
 function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const KEY = `new_content_ids_${userUuid}`;
   const INITIAL_IDS_KEY = `initial_content_ids_${userUuid}`;
@@ -271,7 +273,9 @@ export default function ContentManagement({
     () => contentListQuery.data ?? [],
   );
   const [searchQuery, setSearchQuery] = useState("");
-  const [lockMessage, setLockMessage] = useState<string | null>(null); // inline warning when checkout fails
+  const [searchRows, setSearchRows] = useState<ContentRow[] | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [lockMessage, setLockMessage] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState<
     Record<string, boolean>
   >({}); // tracks in-flight favorite requests
@@ -299,7 +303,7 @@ export default function ContentManagement({
   const userPosition = session?.position ?? null;
   const isSystemAdmin = session?.permissions.can_manage_all_content ?? false;
 
-  // form modal is open whenever viewState is non-null
+  // Form modal open state — derived from viewState
   const formOpen = viewState !== null;
 
   // if the page loads with ?filter=, pre-fill the search box and auto-open the matching doc
@@ -362,6 +366,94 @@ export default function ContentManagement({
   );
 
   // toggles a single accordion open or closed
+  const fetchSearchResults = useCallback(
+    async (query: string) => {
+      const trimmedQuery = query.trim();
+      if (!trimmedQuery) {
+        setSearchRows(null);
+        setSearchError(null);
+        return;
+      }
+
+      const params = new URLSearchParams({ q: trimmedQuery });
+      positionFilters.forEach((position) =>
+        params.append("position", position),
+      );
+      fileTypeFilters.forEach((fileType) =>
+        params.append("fileType", fileType),
+      );
+      tagFilters.forEach((tag) => params.append("tagUuid", tag.uuid));
+
+      try {
+        setSearchError(null);
+        const res = await fetch(`${API_ENDPOINTS.CONTENT.SEARCH}?${params}`, {
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          throw new Error(`Search failed: ${res.status}`);
+        }
+
+        const data: unknown = await res.json();
+        const parsed = ContentRowsSchema.safeParse(data);
+        if (!parsed.success) {
+          throw parsed.error;
+        }
+
+        setSearchRows(
+          parsed.data.map((row) => ({
+            ...row,
+            isLocked: row.editLock != null,
+          })),
+        );
+      } catch (error) {
+        console.error(error);
+        setSearchRows([]);
+        setSearchError("Unable to search content");
+      }
+    },
+    [fileTypeFilters, positionFilters, tagFilters],
+  );
+
+  const handleSearch = useCallback((query: string) => {
+    const trimmedQuery = query.trim();
+    setSearchQuery(trimmedQuery);
+
+    if (!trimmedQuery) {
+      setSearchRows(null);
+      setSearchError(null);
+      return;
+    }
+
+    setSearchRows([]);
+  }, []);
+
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    if (filterParam) {
+      handleSearch(filterParam);
+
+      const matched = rows.find(
+        (r) => r.title.toLowerCase() === filterParam.toLowerCase(),
+      );
+      if (matched) {
+        setSelectedDoc({
+          uri: API_ENDPOINTS.CONTENT.FILE(matched.uuid),
+          fileName: matched.title,
+          uuid: matched.uuid,
+          forPosition: matched.forPosition,
+        });
+        setPreviewOpen(true);
+      }
+    }
+  }, [handleSearch, rows, searchParams]);
+
+  useEffect(() => {
+    if (searchQuery) {
+      void fetchSearchResults(searchQuery);
+    }
+  }, [fetchSearchResults, searchQuery]);
+
   const toggleAccordion = (key: string) => {
     setExpandedPositions((prev) => {
       const next = new Set(prev);
@@ -388,20 +480,9 @@ export default function ContentManagement({
   // applies text search + position / file-type / tag filters to the full row list
   const filteredRows = useMemo(
     () =>
-      rows.filter((row) => {
-        if (searchQuery.trim()) {
-          const targetFields = [
-            row.title,
-            row.status,
-            row.url,
-            row.contentOwner,
-            row.forPosition,
-            row.fileType,
-          ];
-          const searchMatch = targetFields.some((field) =>
-            field?.toLowerCase().includes(searchQuery.toLowerCase()),
-          );
-          if (!searchMatch) return false;
+      (searchRows ?? rows).filter((row) => {
+        if (searchRows) {
+          return true;
         }
 
         if (
@@ -429,7 +510,7 @@ export default function ContentManagement({
 
         return true;
       }),
-    [rows, searchQuery, positionFilters, fileTypeFilters, tagFilters],
+    [rows, searchRows, positionFilters, fileTypeFilters, tagFilters],
   );
 
   // adds or removes a position from the active filters
@@ -584,6 +665,11 @@ export default function ContentManagement({
           },
         },
       }));
+
+      if (session?.employeeUuid) {
+        recordRecentlyViewed(session.employeeUuid, row.uuid);
+      }
+
       markRelatedActivityStale();
     } catch (error) {
       console.error(error);
@@ -850,6 +936,10 @@ export default function ContentManagement({
 
   // fires a view event for analytics; failures are non-critical
   const recordContentView = async (uuid: string) => {
+    // record locally immediately so the recent tab updates without waiting for the API
+    if (session?.employeeUuid) {
+      recordRecentlyViewed(session.employeeUuid, uuid);
+    }
     try {
       await fetch(API_ENDPOINTS.CONTENT.VIEW(uuid), {
         method: "POST",
@@ -1071,7 +1161,7 @@ export default function ContentManagement({
               </IconButton>
             </Tooltip>
 
-            {/* gated on position permission */}
+            {/* Download */}
             <Tooltip
               title={
                 !hasPermission ?
@@ -1271,8 +1361,14 @@ export default function ContentManagement({
             }}
           >
             <Box sx={{ display: "flex", gap: 2 }}>
-              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
-                <HeaderSearchBar setSearchQuery={setSearchQuery} />
+              <Box
+                className="content-search-bar"
+                sx={{ flexGrow: 1, maxWidth: "70%" }}
+              >
+                <HeaderSearchBar
+                  searchQuery={searchQuery}
+                  onSearch={handleSearch}
+                />
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Button
@@ -1609,6 +1705,7 @@ export default function ContentManagement({
                 />
               )}
               <Button
+                className="content-upload-button"
                 onClick={() => setViewState("new")}
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -1656,11 +1753,16 @@ export default function ContentManagement({
               {lockMessage}
             </Typography>
           )}
+          {searchError && (
+            <Typography sx={{ pt: 1, color: "warning.main" }}>
+              {searchError}
+            </Typography>
+          )}
         </StyledToolbar>
       </AppBar>
 
       {/* ── Content Data Grids (Accordion or Tabs) ────────────────────────────────── */}
-      <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "95%", mx: "auto" }}>
         {/* ── TABS VIEW ─────────────────────────────────────────────────────── */}
         {viewMode === "tabs" && (
           <Box
@@ -1820,7 +1922,7 @@ export default function ContentManagement({
                 <Typography
                   sx={{
                     p: 3,
-                    color: "text.secondary",
+                    color: "rgba(255,255,255,0.85)",
                     fontSize: "0.875rem",
                     textAlign: "center",
                   }}
@@ -2006,8 +2108,7 @@ export default function ContentManagement({
                         variant="outlined"
                         sx={{
                           color: "rgba(255,255,255,0.8)",
-                          borderColor: "rgba(255,255,255,0.4)",
-                          border: "1px solid transparent",
+                          border: "none",
                         }}
                       />
                     )}

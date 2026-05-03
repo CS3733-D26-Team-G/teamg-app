@@ -27,7 +27,7 @@ export default function CalendarInput({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ width: "100%", mb: 2 }}>
+      <Box sx={{ width: "100%" }}>
         <DesktopDatePicker
           label={label}
           value={dateValue}
