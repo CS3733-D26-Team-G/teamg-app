@@ -190,7 +190,11 @@ export default function Credits() {
         variant="h5"
         fontWeight={500}
         mb={0.5}
-        sx={{ color: "white", fontFamily: "'Rubik', sans-serif" }}
+        sx={{
+          color: "white",
+          fontFamily: "'Rubik', sans-serif",
+          alignItems: "center",
+        }}
       >
         Credits
       </Typography>
@@ -203,17 +207,18 @@ export default function Credits() {
           color: "white",
           lineHeight: 1.8,
           fontFamily: "'Rubik', sans-serif",
+          alignItems: "center",
         }}
       >
         This website was developed using the <strong>PERN stack</strong>, which
-        consists of <strong>PostgreSQL</strong>, a powerful open-source
-        relational database; <strong>Express</strong>, a lightweight Node.js
-        framework for building APIs; <strong>React</strong>, a JavaScript
-        library for building dynamic user interfaces; and{" "}
-        <strong>Node.js</strong>, a JavaScript runtime that powers the server.
-        Together, these tools aided the development of this application. The
-        additional libraries and packages listed below furthered this
-        development by easing the implementation of various features.
+        consists of <strong>PostgreSQL</strong>, an open-source relational
+        database; <strong>Express</strong>, a Node.js framework for building
+        APIs; <strong>React</strong>, a JavaScript library for building dynamic
+        user interfaces; and <strong>Node.js</strong>, a JavaScript runtime that
+        powers the server. Together, these tools aided the development of this
+        application. The additional libraries and packages listed below
+        furthered this development by easing the implementation of various
+        features.
       </Typography>
 
       <Button

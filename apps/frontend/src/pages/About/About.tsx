@@ -104,9 +104,14 @@ export default function AboutUs() {
           onClick={() => navigate("/")}
           variant="outlined"
           size="small"
-          sx={{ position: "absolute", left: 0, top: 0, color: "white" }}
+          sx={{
+            color: "white",
+            mb: 3,
+            fontFamily: "'Rubik', sans-serif",
+            border: "1px solid white",
+          }}
         >
-          Return to Home
+          Return
         </Button>
 
         <Box sx={{ width: "100%", textAlign: "center", color: "white" }}>
@@ -256,10 +261,20 @@ export default function AboutUs() {
             fontFamily: '"Rubik", sans-serif',
           }}
         >
-          Thank you to Hanover Insurance for the opportunity to develop real
-          world full-stack web development experience by allowing us to use your
-          platform. We would like to extend a specific thank you to Brandon
-          Roche and Meaghan Jenket for making this possible.
+          <Typography
+            variant="body1"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.2,
+              fontWeight: "bold",
+              whiteSpace: "pre-line",
+              fontSize: "1.1rem",
+            }}
+          >
+            {`Thank you to Hanover Insurance for the opportunity to develop real world full-stack web development experience by allowing us to use your platform.\n
+             We would like to extend a specific thank you to Brandon Roche and Meaghan Jenket for making this possible.`}
+          </Typography>
         </Typography>
       </Box>
     </Box>
