@@ -1372,6 +1372,7 @@ export default function ContentManagement({
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Button
+                  className="content-filter-button"
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
                   aria-haspopup="true"
@@ -1762,7 +1763,10 @@ export default function ContentManagement({
       </AppBar>
 
       {/* ── Content Data Grids (Accordion or Tabs) ────────────────────────────────── */}
-      <Box sx={{ width: "95%", mx: "auto" }}>
+      <Box
+        className="content-table"
+        sx={{ width: "95%", mx: "auto" }}
+      >
         {/* ── TABS VIEW ─────────────────────────────────────────────────────── */}
         {viewMode === "tabs" && (
           <Box

@@ -1,7 +1,6 @@
 import { Groq } from "groq-sdk";
 import AdmZip from "adm-zip";
 import mammoth from "mammoth";
-import { PDFParse } from "pdf-parse";
 import * as XLSX from "xlsx";
 import { logger } from "../logger.ts";
 
@@ -34,6 +33,9 @@ type SearchTextSourceFile = {
   mimetype: string;
   originalname: string;
 };
+
+type PdfParseModule = typeof import("pdf-parse");
+type CanvasModule = typeof import("@napi-rs/canvas");
 
 const SYSTEM_PROMPT = `You are a high-precision document keyword extraction engine for a content management system.
 
@@ -114,6 +116,43 @@ BEGIN PROCESSING
 ----------------------------------------
 `;
 
+let pdfParseModulePromise: Promise<PdfParseModule> | null = null;
+let pdfRuntimeReadyPromise: Promise<void> | null = null;
+
+async function ensurePdfRuntime() {
+  if (!pdfRuntimeReadyPromise) {
+    pdfRuntimeReadyPromise = (async () => {
+      const canvasModule: CanvasModule = await import("@napi-rs/canvas");
+      const globalScope = globalThis as Record<string, unknown>;
+
+      if (!globalScope.DOMMatrix && "DOMMatrix" in canvasModule) {
+        globalScope.DOMMatrix = canvasModule.DOMMatrix;
+      }
+
+      if (!globalScope.ImageData && "ImageData" in canvasModule) {
+        globalScope.ImageData = canvasModule.ImageData;
+      }
+
+      if (!globalScope.Path2D && "Path2D" in canvasModule) {
+        globalScope.Path2D = canvasModule.Path2D;
+      }
+    })();
+  }
+
+  return pdfRuntimeReadyPromise;
+}
+
+async function getPdfParseModule() {
+  if (!pdfParseModulePromise) {
+    pdfParseModulePromise = (async () => {
+      await ensurePdfRuntime();
+      return import("pdf-parse");
+    })();
+  }
+
+  return pdfParseModulePromise;
+}
+
 function getGroqClient() {
   if (!process.env.GROQ_API_KEY) {
     logger.warn("Skipping content inference: GROQ_API_KEY is undefined");
@@ -132,6 +171,7 @@ async function getTextPreview(file: SearchTextSourceFile) {
   }
 
   if (file.mimetype === "application/pdf") {
+    const { PDFParse } = await getPdfParseModule();
     const parser = new PDFParse({ data: file.buffer });
     try {
       const parsed = await parser.getText();
