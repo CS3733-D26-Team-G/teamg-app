@@ -14,9 +14,11 @@ import { supabase } from "../../lib/supabase.ts";
 import { inferSearchTextFromUpload } from "../../lib/content-inference.ts";
 import {
   CreateContentSchema,
-  CreateTagSchema,
+  CreateOrEditTagSchema,
   FavoriteContentSchema,
   RegenerateContentLinkSchema,
+  SearchCandidate,
+  TagAction,
   UpdateContentSchema,
 } from "./schemas.ts";
 import {
@@ -24,6 +26,9 @@ import {
   findActiveLock,
   findContentByUuid,
   findTagByUuid,
+  getContentListInclude,
+  getSearchFilterClauses,
+  getTagActionFromMethod,
   getVisibleContentWhere,
   loadAccessibleContent,
   normalizeTagName,
@@ -34,6 +39,7 @@ import {
   rejectIfLockedByAnotherUser,
   resolveContentUrl,
   resolvePositionValue,
+  serializeContentList,
   serializeLock,
   validateProvidedUrl,
   validateTagUuids,
@@ -48,97 +54,6 @@ const upload = multer({
     files: 1,
   },
 });
-
-function getContentListInclude(employeeUuid: string) {
-  return {
-    favoritedBy: {
-      where: { employeeUuid },
-      select: { employeeUuid: true },
-    },
-    tagAssignments: {
-      select: {
-        tag: {
-          select: {
-            uuid: true,
-            name: true,
-          },
-        },
-      },
-    },
-    _count: {
-      select: { favoritedBy: true },
-    },
-    editLock: {
-      include: {
-        lockedByEmp: {
-          select: {
-            uuid: true,
-            firstName: true,
-            lastName: true,
-            avatar: true,
-          },
-        },
-      },
-    },
-  } satisfies Prisma.ContentInclude;
-}
-
-type ContentListItem = Prisma.ContentGetPayload<{
-  include: ReturnType<typeof getContentListInclude>;
-}>;
-
-function serializeContentList(content: ContentListItem[]) {
-  return content.map(({ favoritedBy, tagAssignments, _count, ...item }) => ({
-    ...item,
-    tags: tagAssignments.map(({ tag }) => tag),
-    is_favorite: favoritedBy.length > 0,
-    favorite_count: _count.favoritedBy,
-  }));
-}
-
-function normalizeQueryList(value: unknown): string[] {
-  if (typeof value === "undefined") {
-    return [];
-  }
-
-  const values = Array.isArray(value) ? value : [value];
-  return values.filter((item): item is string => typeof item === "string");
-}
-
-function getSearchFilterClauses(query: express.Request["query"]) {
-  const positionFilters = normalizeQueryList(query.position);
-  const fileTypeFilters = normalizeQueryList(query.fileType);
-  const tagUuidFilters = normalizeQueryList(query.tagUuid);
-  const clauses: Prisma.ContentWhereInput[] = [];
-
-  if (positionFilters.length > 0) {
-    clauses.push({ forPosition: { in: positionFilters as Position[] } });
-  }
-
-  if (fileTypeFilters.length > 0) {
-    clauses.push({ fileType: { in: fileTypeFilters } });
-  }
-
-  if (tagUuidFilters.length > 0) {
-    clauses.push({
-      tagAssignments: {
-        some: {
-          tagUuid: {
-            in: tagUuidFilters,
-          },
-        },
-      },
-    });
-  }
-
-  return clauses;
-}
-
-type SearchCandidate = {
-  uuid: string;
-  text_rank: number;
-  fuzzy_rank: number;
-};
 
 router.get("/", async (req, res) => {
   const auth = getAuth(req);
@@ -446,6 +361,9 @@ router.post("/create", upload.single("file"), async (req, res) => {
   });
 
   if (!urlResult.ok) {
+    logger.warn(
+      `Failed to resolve content url: \nstatus:${urlResult.status}\nmessage:${urlResult.message}`,
+    );
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 
@@ -590,6 +508,9 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   });
 
   if (!urlResult.ok) {
+    logger.warn(
+      `Failed to resolve content url: \nstatus:${urlResult.status}\nmessage:${urlResult.message}`,
+    );
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 
@@ -1168,7 +1089,7 @@ router.post("/tag/create", async (req, res) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const parsed = CreateTagSchema.safeParse(req.body);
+  const parsed = CreateOrEditTagSchema.safeParse(req.body);
   if (!parsed.success) {
     logger.verbose(
       `Failed to parse Content tag create request body:\n${parsed.error.issues}`,
@@ -1231,71 +1152,78 @@ router.post("/tag/delete/:uuid", async (req, res) => {
   }
 });
 
-router.post("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
-  const params = parseTagContentUuids(req, res);
-  if (!params) {
+router.post("/tag/edit/:uuid", async (req, res) => {
+  const uuid = parseTagUuid(req, res, "Invalid tag UUID");
+  if (!uuid) {
     return;
   }
 
   const auth = getAuth(req);
+  if (!isAdmin(auth)) {
+    logger.warn(
+      `Rejected content tag edit request from user with position ${auth.position}`,
+    );
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  logger.verbose(`Querying ContentTag table for record ${uuid}`);
+  const existingTag = await findTagByUuid(uuid);
+  if (!existingTag) {
+    logger.warn(
+      `Received edit request for ContentTag table record ${uuid} that does not exist`,
+    );
+    return res.status(404).json({ message: "Tag not found" });
+  }
+  logger.verbose(
+    `Queried ContentTag table for record ${uuid}: found ${existingTag.name}`,
+  );
+
+  const parsed = CreateOrEditTagSchema.safeParse(req.body);
+  if (!parsed.success) {
+    logger.verbose(
+      `Failed to parse Content tag edit request body for record ${uuid}:\n${parsed.error.issues}`,
+    );
+    return res.status(400).json({ message: parsed.error.issues });
+  }
+
+  const normalizedTag = normalizeTagName(parsed.data.name);
+  if (!normalizedTag.name) {
+    return res.status(400).json({ message: "Tag name cannot be blank" });
+  }
+
+  logger.verbose(`Updating ContentTag table record ${uuid}`);
 
   try {
-    const tag = await findTagByUuid(params.tagUuid);
-    if (!tag) {
-      return res.status(404).json({ message: "Tag not found" });
-    }
-
-    const content = await loadAccessibleContent(params.contentUuid, auth, res, {
-      notFoundStatus: 404,
-      notFoundMessage: "Content not found",
-      unauthorizedStatus: 401,
-      logUnauthorized: true,
-    });
-    if (!content) {
-      return;
-    }
-
-    const existingAssignment = await prisma.contentTagAssignment.findUnique({
-      where: {
-        contentUuid_tagUuid: {
-          contentUuid: params.contentUuid,
-          tagUuid: params.tagUuid,
-        },
-      },
+    const tag = await prisma.contentTag.update({
+      where: { uuid },
+      data: normalizedTag,
     });
 
-    if (existingAssignment) {
-      return res.status(200).json({
-        tagUuid: params.tagUuid,
-        contentUuid: params.contentUuid,
-        attached: true,
-        changed: false,
-      });
-    }
-
-    await prisma.contentTagAssignment.create({
-      data: {
-        contentUuid: params.contentUuid,
-        tagUuid: params.tagUuid,
-      },
-    });
-
-    return res.status(200).json({
-      tagUuid: params.tagUuid,
-      contentUuid: params.contentUuid,
-      attached: true,
-      changed: true,
-    });
+    logger.verbose(`Updated ContentTag table record ${uuid}`);
+    return res.status(200).json(tag);
   } catch (e) {
-    return sendInternalError(
-      res,
-      `Failed to attach tag ${params.tagUuid} to content ${params.contentUuid}`,
-      e,
-    );
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      return res.status(409).json({ message: "Tag name already exists" });
+    }
+
+    return sendInternalError(res, `Failed to update content tag ${uuid}`, e);
   }
 });
 
-router.delete("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
+router.all("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
+  const action = getTagActionFromMethod(req.method);
+  if (action == TagAction.INVALID) {
+    logger.warn(
+      `Received unsupported ${req.method} request for endpoint ${req.path}`,
+    );
+    return res.status(400).json({
+      message: `${req.method} method not supported for endpoint ${req.path}`,
+    });
+  }
+
   const params = parseTagContentUuids(req, res);
   if (!params) {
     return;
@@ -1328,34 +1256,55 @@ router.delete("/tag/update/:tagUuid/:contentUuid", async (req, res) => {
       },
     });
 
-    if (!existingAssignment) {
-      return res.status(200).json({
-        tagUuid: params.tagUuid,
-        contentUuid: params.contentUuid,
-        attached: false,
-        changed: false,
-      });
-    }
+    if (action == TagAction.CREATE) {
+      if (existingAssignment) {
+        return res.status(200).json({
+          tagUuid: params.tagUuid,
+          contentUuid: params.contentUuid,
+          attached: true,
+          changed: false,
+        });
+      }
 
-    await prisma.contentTagAssignment.delete({
-      where: {
-        contentUuid_tagUuid: {
+      await prisma.contentTagAssignment.create({
+        data: {
           contentUuid: params.contentUuid,
           tagUuid: params.tagUuid,
         },
-      },
-    });
+      });
+    } else if (action == TagAction.DELETE) {
+      if (!existingAssignment) {
+        return res.status(200).json({
+          tagUuid: params.tagUuid,
+          contentUuid: params.contentUuid,
+          attached: false,
+          changed: false,
+        });
+      }
+
+      await prisma.contentTagAssignment.delete({
+        where: {
+          contentUuid_tagUuid: {
+            contentUuid: params.contentUuid,
+            tagUuid: params.tagUuid,
+          },
+        },
+      });
+    }
 
     return res.status(200).json({
       tagUuid: params.tagUuid,
       contentUuid: params.contentUuid,
-      attached: false,
+      attached: action === TagAction.CREATE,
       changed: true,
     });
   } catch (e) {
+    const actionName = action === TagAction.CREATE ? "attach" : "remove";
+    const preposition = action === TagAction.CREATE ? "to" : "from";
+
     return sendInternalError(
       res,
-      `Failed to remove tag ${params.tagUuid} from content ${params.contentUuid}`,
+      `Failed to ${actionName} tag ${params.tagUuid} ${preposition} content ${params.contentUuid}`,
       e,
     );
   }

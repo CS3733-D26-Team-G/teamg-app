@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Box, Button, Typography, Stack, LinearProgress } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTutorial, TUTORIAL_STEPS } from "./TutorialContext";
+import { useTutorial } from "./TutorialContext";
+import type { TutorialStep } from "./TutorialContext";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloseIcon from "@mui/icons-material/Close";
@@ -38,7 +39,7 @@ function TooltipCard({
   onPrev,
   onEnd,
 }: {
-  step: (typeof TUTORIAL_STEPS)[0];
+  step: TutorialStep;
   stepIndex: number;
   totalSteps: number;
   highlightRect: HighlightRect | null;
@@ -115,19 +116,19 @@ function TooltipCard({
       initial={{
         opacity: 0,
         scale: 0.9,
-        x: isCentered ? "-40%" : 0,
+        x: isCentered ? "-50%" : 0,
         y: isCentered ? "-40%" : 12,
       }}
       animate={{
         opacity: 1,
         scale: 1,
-        x: isCentered ? "-2g0%" : 0,
+        x: isCentered ? "-50%" : 0,
         y: isCentered ? "-50%" : 0,
       }}
       exit={{
         opacity: 0,
         scale: 0.9,
-        x: isCentered ? "-40%" : 0,
+        x: isCentered ? "-50%" : 0,
         y: isCentered ? "-60%" : -8,
       }}
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
@@ -240,36 +241,6 @@ function TooltipCard({
           {step.description}
         </Typography>
 
-        {/* Navigation hint for steps requiring user navigation */}
-        {step.requiresNavigation && step.navigationHint && (
-          <Box
-            component={motion.div}
-            animate={{ x: [0, 4, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-            sx={{
-              backgroundColor: "primary.light",
-              borderRadius: "10px",
-              px: 1.5,
-              py: 1,
-              mb: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: "0.8rem",
-                color: "primary.dark",
-                fontWeight: 600,
-                fontFamily: "Rubik, sans-serif",
-              }}
-            >
-              {step.navigationHint}
-            </Typography>
-          </Box>
-        )}
-
         <Stack
           direction="row"
           spacing={1}
@@ -319,7 +290,7 @@ function TooltipCard({
               },
             }}
           >
-            {isLast ? "Finish Tour" : "Next"}
+            {isLast ? "Done" : "Next"}
           </Button>
         </Stack>
       </Box>
@@ -336,39 +307,29 @@ export default function TutorialOverlay() {
   const location = useLocation();
   const rafRef = useRef<number | null>(null);
 
-  const step = steps[currentStep];
+  const step = steps[currentStep] ?? null;
 
   const measureTarget = useCallback(() => {
     if (!step?.targetSelector) {
       setHighlightRect(null);
       return;
     }
-    const rect = getHighlightRect(step.targetSelector);
-    setHighlightRect(rect);
+    setHighlightRect(getHighlightRect(step.targetSelector));
   }, [step]);
 
-  // Re-measure whenever step or route changes
   useEffect(() => {
     if (!isActive) return;
-
-    // Allow DOM to settle after route change
-    const t = setTimeout(() => {
-      measureTarget();
-    }, 150);
-
+    const t = setTimeout(measureTarget, 150);
     return () => clearTimeout(t);
   }, [isActive, currentStep, location.pathname, measureTarget]);
 
-  // Keep highlight in sync with resize / scroll
   useEffect(() => {
     if (!isActive) return;
-
     const tick = () => {
       measureTarget();
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
-
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
@@ -377,14 +338,11 @@ export default function TutorialOverlay() {
   if (!isActive || !step) return null;
 
   const hasHighlight = !!highlightRect;
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1920;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 1080;
 
   return (
     <AnimatePresence>
       {isActive && (
         <>
-          {/* Dark overlay built from 4 rects that leave a hole — pure CSS, no SVG clip-path flicker */}
           {hasHighlight ?
             <>
               {/* Top */}
@@ -455,8 +413,7 @@ export default function TutorialOverlay() {
                   height: highlightRect.height,
                 }}
               />
-
-              {/* Highlight border ring */}
+              {/* Highlight ring */}
               <Box
                 component={motion.div}
                 initial={{ opacity: 0, scale: 1.06 }}
@@ -478,8 +435,7 @@ export default function TutorialOverlay() {
                 }}
               />
             </>
-          : /* Full-screen dim when no target */
-            <Box
+          : <Box
               component={motion.div}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -495,7 +451,6 @@ export default function TutorialOverlay() {
             />
           }
 
-          {/* Tooltip card */}
           <AnimatePresence mode="wait">
             <TooltipCard
               key={currentStep}

@@ -2,6 +2,8 @@ import type { Position } from "@repo/db";
 
 import type { ContentRow } from "./content";
 
+import type { EmployeeRecord } from "./employee";
+
 export type ActivityCategory = "all" | "content" | "verbose" | "auth" | "claim";
 
 export interface ActivityEmployee {
@@ -22,6 +24,23 @@ export interface ActivityRow {
   employee?: ActivityEmployee | null;
 }
 
+//Type for "Employee Activity" dashboard cart
+export type ActivitySummary = {
+  edited: number;
+  checkedOut: number;
+  deleted: number;
+};
+
+export interface EditHitsRow {
+  date: string;
+  UNDERWRITER?: number;
+  BUSINESS_ANALYST?: number;
+  ACTUARIAL_ANALYST?: number;
+  EXL_OPERATIONS?: number;
+  BUSINESS_OP_RATING?: number;
+  ADMIN?: number;
+}
+
 export type PositionCounts = Record<Position, number>;
 
 export interface FileTypeCount {
@@ -38,4 +57,7 @@ export interface DashboardBootstrapData {
   fileTypeCounts: FileTypeCount[];
   employeeCounts: PositionCounts;
   contentList: ContentRow[];
+  activitySummary: ActivitySummary;
+  employees: EmployeeRecord[];
+  editHitsByRole: EditHitsRow[];
 }

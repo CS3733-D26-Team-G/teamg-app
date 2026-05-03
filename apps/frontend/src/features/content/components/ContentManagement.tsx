@@ -1361,7 +1361,10 @@ export default function ContentManagement({
             }}
           >
             <Box sx={{ display: "flex", gap: 2 }}>
-              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+              <Box
+                className="content-search-bar"
+                sx={{ flexGrow: 1, maxWidth: "70%" }}
+              >
                 <HeaderSearchBar
                   searchQuery={searchQuery}
                   onSearch={handleSearch}
@@ -1369,6 +1372,7 @@ export default function ContentManagement({
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Button
+                  className="content-filter-button"
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
                   aria-haspopup="true"
@@ -1702,6 +1706,7 @@ export default function ContentManagement({
                 />
               )}
               <Button
+                className="content-upload-button"
                 onClick={() => setViewState("new")}
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -1758,7 +1763,10 @@ export default function ContentManagement({
       </AppBar>
 
       {/* ── Content Data Grids (Accordion or Tabs) ────────────────────────────────── */}
-      <Box sx={{ width: "100%" }}>
+      <Box
+        className="content-table"
+        sx={{ width: "95%", mx: "auto" }}
+      >
         {/* ── TABS VIEW ─────────────────────────────────────────────────────── */}
         {viewMode === "tabs" && (
           <Box

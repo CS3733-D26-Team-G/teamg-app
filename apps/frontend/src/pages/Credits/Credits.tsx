@@ -197,7 +197,7 @@ export default function Credits() {
 
       <Typography
         variant="body2"
-        color="text.secondary"
+        color="white"
         mb={3}
         sx={{
           color: "white",

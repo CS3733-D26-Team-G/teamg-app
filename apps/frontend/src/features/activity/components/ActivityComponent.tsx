@@ -1,17 +1,92 @@
-import { Box, CircularProgress, Button } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  Skeleton,
+  Stack,
+} from "@mui/material";
 import ActivityTimeline from "./ActivityTimeline";
-import { type ActivityGroup, type ActivityItem } from "./activityData"; // Import the type, not the const
-import { useEffect, useMemo, useState } from "react";
+import { type ActivityGroup, type ActivityItem } from "./activityData";
+import { useEffect, useMemo } from "react";
 import SearchBar from "./HeaderSearchBar";
 import HelpPopup from "../../../components/HelpPopup.tsx";
 import { useAuth } from "../../../auth/AuthContext";
 import { useActivityQuery } from "../../../lib/activity-loaders.ts";
 import { prefetchContentList } from "../../../lib/api-loaders.ts";
 
-// Define props interface
 interface ActivityComponentProps {
   filter: "all" | "content" | "login";
   searchQuery: string;
+}
+
+function TimelineItemSkeleton() {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        gap: 2,
+        mb: 1.5,
+        alignItems: "center",
+        px: "40px",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 0,
+        }}
+      >
+        <Box sx={{ width: 1, height: 16, bgcolor: "action.hover" }} />
+        <Skeleton
+          variant="circular"
+          width={32}
+          height={32}
+        />
+        <Box sx={{ width: 1, height: 16, bgcolor: "action.hover" }} />
+      </Box>
+      <Skeleton
+        variant="rounded"
+        width="100%"
+        height={60}
+        sx={{ borderRadius: "8px" }}
+      />
+    </Box>
+  );
+}
+
+function ActivityLoadingSkeleton() {
+  return (
+    <Box sx={{ pt: 2 }}>
+      {/* Date header */}
+      <Box sx={{ display: "flex", alignItems: "center", px: "40px", mb: 2 }}>
+        <Skeleton
+          variant="text"
+          width={140}
+          height={20}
+          sx={{ mr: 2 }}
+        />
+        <Box sx={{ flex: 1, height: 1, bgcolor: "divider" }} />
+      </Box>
+      {[...Array(4)].map((_, i) => (
+        <TimelineItemSkeleton key={i} />
+      ))}
+
+      <Box sx={{ display: "flex", alignItems: "center", px: "40px", my: 2 }}>
+        <Skeleton
+          variant="text"
+          width={100}
+          height={20}
+          sx={{ mr: 2 }}
+        />
+        <Box sx={{ flex: 1, height: 1, bgcolor: "divider" }} />
+      </Box>
+      {[...Array(3)].map((_, i) => (
+        <TimelineItemSkeleton key={i} />
+      ))}
+    </Box>
+  );
 }
 
 export default function ActivityComponent({
@@ -34,14 +109,6 @@ export default function ActivityComponent({
     const groups: { [key: string]: any[] } = {};
 
     rows.forEach((row) => {
-      console.log(
-        "RAW ROW:",
-        JSON.stringify({
-          action: row.action,
-          resourceName: row.resourceName,
-          resourceUuid: row.resourceUuid,
-        }),
-      );
       const dateObj = new Date(row.timestamp);
       const isValid = row.timestamp && !isNaN(dateObj.getTime());
 
@@ -102,42 +169,65 @@ export default function ActivityComponent({
       .filter((group) => group.items.length > 0);
   }, [groupedData, searchQuery]);
 
+  // Initial load — show skeleton
+  if (activityQuery.loading && groupedData.length === 0) {
+    return <ActivityLoadingSkeleton />;
+  }
+
+  // Empty state
+  if (!activityQuery.loading && groupedData.length === 0) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          py: 8,
+          color: "text.secondary",
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{ mb: 1, fontWeight: 600 }}
+        >
+          No activity found
+        </Typography>
+        <Typography variant="body2">
+          {searchQuery ?
+            "No results match your search."
+          : "Activity will appear here once actions are performed."}
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
         "width": "100%",
-
-        "&::-webkit-scrollbar": {
-          display: "none",
-        },
-
-        // Hide scrollbar for Firefox
+        "&::-webkit-scrollbar": { display: "none" },
         "scrollbarWidth": "none",
-
-        // Hide scrollbar for IE and Edge
         "msOverflowStyle": "none",
       }}
     >
-      {activityQuery.loading && groupedData.length === 0 ?
+      {/* Background refresh indicator */}
+      {activityQuery.fetching && groupedData.length > 0 && (
         <Box
-          sx={{
-            "display": "flex",
-            "justifyContent": "center",
-            "mt": 4,
-            "&::-webkit-scrollbar": {
-              display: "none",
-            },
-
-            // Hide scrollbar for Firefox
-            "scrollbarWidth": "none",
-
-            // Hide scrollbar for IE and Edge
-            "msOverflowStyle": "none",
-          }}
+          sx={{ display: "flex", justifyContent: "flex-end", px: 4, py: 0.5 }}
         >
-          <CircularProgress />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <CircularProgress size={12} />
+            <Typography
+              variant="caption"
+              color="text.secondary"
+            >
+              Refreshing…
+            </Typography>
+          </Box>
         </Box>
-      : <ActivityTimeline data={filteredData} />}
+      )}
+      <ActivityTimeline data={filteredData} />
     </Box>
   );
 }

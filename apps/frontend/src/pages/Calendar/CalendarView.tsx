@@ -9,10 +9,22 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "../../auth/AuthContext";
 import { type ContentRow } from "../../types/content";
 import type { EventInput } from "@fullcalendar/core";
-import { Box, Card, styled, Toolbar, Typography } from "@mui/material";
+import {
+  Box,
+  Card,
+  Dialog,
+  IconButton,
+  Stack,
+  styled,
+  Toolbar,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { getExpirationStatus } from "../../features/notifications/components/Notifications.ts";
 import HelpPopup from "../../components/HelpPopup.tsx";
 import NotificationsBell from "../../features/notifications/components/NotificationBell.tsx";
@@ -28,9 +40,14 @@ function getExpiresInSeconds(expirationTime: string | null): number {
   if (!expirationTime) return -1;
   return Math.floor((new Date(expirationTime).getTime() - Date.now()) / 1000);
 }
+import { API_ENDPOINTS } from "../../config";
+import DocPreviewer from "../../features/content/components/viewing/DocPreviewer.tsx";
+import VersionHistoryPanel from "../../features/content/components/viewing/VersionHistoryPanel.tsx";
+import { useSidebar } from "../../components/SidebarContext.tsx";
+import { Icon } from "lucide-react";
 
 export function getEventColor(expirationTime: string | null): string {
-  if (!expirationTime) return "#11d42b";
+  if (!expirationTime) return "#06d606";
   const expiresInSeconds = Math.floor(
     (new Date(expirationTime).getTime() - Date.now()) / 1000,
   );
@@ -45,8 +62,16 @@ export function getEventColor(expirationTime: string | null): string {
     case "expired":
       return "#6b7280";
     default:
-      return "#4f46e5";
+      return "#06d606";
   }
+}
+
+function formatShortTime(date: Date): string {
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
@@ -60,11 +85,19 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
 export default function CalendarPage() {
   const { session } = useAuth();
   const { profile } = useProfile();
+  const { isOpen } = useSidebar();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === "dark";
   const calendarRef = useRef<FullCalendar>(null);
   const [rows, setRows] = useState<ContentRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [previewDoc, setPreviewDoc] = useState<{
+    uri: string;
+    fileName: string;
+    uuid: string;
+    row: ContentRow;
+  } | null>(null);
 
   const fetchContent = useCallback(async () => {
     try {
@@ -84,6 +117,11 @@ export default function CalendarPage() {
     if (!profile?.firstName || !profile?.lastName) return null;
     return `${profile.firstName} ${profile.lastName}`;
   }, [profile?.firstName, profile?.lastName]);
+
+  const currentPosition = useMemo(() => {
+    if (!profile?.position) return null;
+    return `${profile.position}`;
+  }, [profile?.position]);
 
   const events = useMemo<EventInput[]>(() => {
     if (!session || !currentUserName) return [];
@@ -106,24 +144,23 @@ export default function CalendarPage() {
         if (endTime.getHours() === 0 && endTime.getMinutes() === 0) {
           endTime.setMilliseconds(-1);
           startTime = new Date(endTime);
-          startTime.setMinutes(endTime.getMinutes() - 5);
+          startTime.setMinutes(endTime.getMinutes() - 60);
         } else {
-          startTime.setMinutes(originalExpDate.getMinutes() - 5);
+          startTime.setMinutes(originalExpDate.getMinutes() - 60);
         }
 
-        const timeString = originalExpDate.toLocaleTimeString([], {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        });
+        const eventColor = getEventColor(row.expirationTime.toString());
 
         acc.push({
           id: `${isOwner ? "owner" : "checkout"}-${row.uuid}`,
-          title: `${isOwner ? "📓" : "👁️"} ${row.title} (${timeString})`,
+          title: `${isOwner ? "✏️" : "👁️"} ${formatShortTime(originalExpDate)} ${row.title}`,
           start: startTime,
           end: endTime,
           allDay: false,
-          color: getEventColor(row.expirationTime.toString()),
+          color: eventColor,
+          backgroundColor: eventColor,
+          borderColor: "#000000",
+          textColor: "#ffffff",
           extendedProps: { row },
         });
       }
@@ -132,69 +169,88 @@ export default function CalendarPage() {
   }, [rows, session, currentUserName]);
 
   return (
-    <Box sx={{ width: "100%" }}>
-      <StyledToolbar
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      style={{ width: "100%" }}
+    >
+      <Box
         sx={{
           background:
-            "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+            "linear-gradient(135deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+          px: 4,
+          pt: 5,
+          pb: 3,
+          position: "relative",
           overflow: "hidden",
+          width: "100%",
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <div className="flex justify-between items-center px-8 py-6">
-          <Typography
-            variant="h2"
-            sx={{ fontWeight: "bold", color: "white" }}
+        {[...Array(3)].map((_, i) => (
+          <Box
+            key={i}
+            sx={{
+              position: "absolute",
+              borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,0.12)",
+              width: 120 + i * 80,
+              height: 120 + i * 80,
+              top: -40 - i * 30,
+              right: -40 - i * 30,
+              pointerEvents: "none",
+              overflow: "hidden",
+            }}
+          />
+        ))}
+        <Stack
+          direction="row"
+          alignItems="flex-start"
+          justifyContent="space-between"
+        >
+          <Box>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={2}
+              sx={{ mb: 0.5 }}
+            >
+              <Typography
+                variant="h2"
+                sx={{ color: "white", fontWeight: 700, overflow: "hidden" }}
+              >
+                Calendar
+              </Typography>
+            </Stack>
+            <Typography
+              sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
+            >
+              See when content you created (✏️) or checked out (👁️) will expire
+            </Typography>
+          </Box>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2, mb: 3 }}
           >
-            Calendar
-          </Typography>
-          {[...Array(3)].map((_, i) => (
-            <Box
-              key={i}
-              sx={{
-                position: "absolute",
-                borderRadius: "50%",
-                border: "1px solid rgba(255,255,255,0.12)",
-                width: 120 + i * 80,
-                height: 120 + i * 80,
-                top: -40 - i * 30,
-                right: -40 - i * 30,
-              }}
-            />
-          ))}
-          <div className="flex items-center gap-2">
             <HelpPopup
-              description={"See upcoming expiring content"}
+              description="This queue shows all PENDING claims. Expand each card to read the details, write your risk notes, then clear or flag."
               infoOrHelp={true}
             />
-            <NotificationsBell />
-          </div>
-        </div>
-      </StyledToolbar>
+            <NotificationBarComponent />
+          </Box>
+        </Stack>
 
-      <div className="flex justify-between items-center p-3 gap-2">
         <Card
-          sx={{
-            p: 3,
-            backgroundColor: "background.paper",
-            width: "40%",
-            overflowX: "hidden",
-            height: "calc(100vh - 68px)",
-            border: "none",
-            boxShadow: "none",
-            objectFit: "contain",
-            overflowY: "auto",
-          }}
-        >
-          <NotificationBarComponent />
-        </Card>
-        <Card
+          className="calendar-grid"
           sx={{
             p: 3,
             backgroundColor: "background.paper",
             minWidth: 0,
-            width: "calc(100vw - 240px)",
+            width: isOpen ? "calc(100vw - 280px)" : "calc(100vw - 64px)",
             overflowX: "auto",
-            minHeight: "calc(100vh - 128px)",
+            minHeight: "calc(100vh - 130px)",
             border: "none",
             boxShadow: "none",
           }}
@@ -202,77 +258,103 @@ export default function CalendarPage() {
           {loading ?
             <Typography>Loading calendar…</Typography>
           : <>
-              {/* dark mode styles — only injected when dark mode is active */}
               {isDarkMode && (
                 <style>{`
-    .fc .fc-col-header-cell {
-      background-color: #161B27 !important;
-    }
-    .fc .fc-col-header-cell-cushion {
-      color: #9BA3B8 !important;
-      text-decoration: none !important;
-    }
-    .fc-theme-standard td,
-    .fc-theme-standard th,
-    .fc-theme-standard .fc-scrollgrid,
-    .fc .fc-scrollgrid-liquid {
-      border-color: rgba(255,255,255,0.08) !important;
-    }
-    .fc .fc-daygrid-day.fc-day-today {
-      background-color: rgba(77,159,255,0.08) !important;
-    }
-    .fc .fc-scrollgrid-section > * {
-      border-color: rgba(255,255,255,0.08) !important;
-    }
-    .fc table {
-      border-color: rgba(255,255,255,0.08) !important;
-    }
-    /* fix white block in week/day time grid */
-    .fc .fc-timegrid-col.fc-day-today {
-      background-color: rgba(77,159,255,0.08) !important;
-    }
-    .fc .fc-timegrid-axis {
-      background-color: #161B27 !important;
-      border-color: rgba(255,255,255,0.08) !important;
-    }
-    /* top-left empty corner cell in week/day view */
-    .fc .fc-timegrid-axis-cushion {
-      color: #9BA3B8 !important;
-    }
-    .fc-theme-standard .fc-scrollgrid-section-sticky > * {
-      background-color: #161B27 !important;
-      border-color: rgba(255,255,255,0.08) !important;
-    }
-    /* catch any remaining white backgrounds */
-    .fc .fc-timegrid-slot {
-      border-color: rgba(255,255,255,0.08) !important;
-    }
-    .fc .fc-daygrid-day,
-    .fc .fc-timegrid-col {
-      background-color: transparent !important;
-    }
-  `}</style>
+                  .fc .fc-col-header-cell {
+                    background-color: #161B27 !important;
+                  }
+                  .fc .fc-col-header-cell-cushion {
+                    color: #9BA3B8 !important;
+                    text-decoration: none !important;
+                  }
+                  .fc-theme-standard td,
+                  .fc-theme-standard th,
+                  .fc-theme-standard .fc-scrollgrid,
+                  .fc .fc-scrollgrid-liquid {
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-scrollgrid-section > * {
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc table {
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-timegrid-col.fc-day-today {
+                    background-color: rgba(77,159,255,0.08) !important;
+                  }
+                  .fc .fc-timegrid-axis {
+                    background-color: #161B27 !important;
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-timegrid-axis-cushion {
+                    color: #9BA3B8 !important;
+                  }
+                  .fc-theme-standard .fc-scrollgrid-section-sticky > * {
+                    background-color: #161B27 !important;
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-timegrid-slot {
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-daygrid-day,
+                  .fc .fc-timegrid-col {
+                    background-color: transparent !important;
+                  }
+                `}</style>
               )}
 
-              {/* font family applies in both modes */}
               <style>{`
-              .fc,
-              .fc-toolbar-title,
-              .fc-col-header-cell,
-              .fc-daygrid-day-number,
-              .fc-event,
-              .fc-button {
-                font-family: 'Rubik', sans-serif !important;
-              }
-            `}</style>
+                .fc,
+                .fc-toolbar-title,
+                .fc-col-header-cell,
+                .fc-daygrid-day-number,
+                .fc-event,
+                .fc-button {
+                  font-family: 'Rubik', sans-serif !important;
+                }
+
+                .fc-event {
+                  cursor: pointer !important;
+                }
+
+                .fc .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+                  color: #ffffff !important;
+                  font-weight: 700 !important;
+                }
+
+                .fc .fc-daygrid-day.fc-day-today {
+                  background-color: rgba(59, 130, 246, 0.12) !important;
+                }
+                .fc .fc-timegrid-col.fc-day-today {
+                  background-color: rgba(59, 130, 246, 0.08) !important;
+                }
+
+                .fc .fc-col-header-cell {
+                  background-color: #102347 !important;
+                }
+                .fc .fc-col-header-cell-cushion {
+                  color: #ffffff !important;
+                  text-decoration: none !important;
+                  font-weight: 600 !important;
+                }
+
+                .fc-event-time {
+                  display: none !important;
+                }
+
+                
+                  
+              `}</style>
 
               <FullCalendar
                 ref={calendarRef}
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                 initialView="dayGridMonth"
+                eventDisplay="block"
+                height="calc(100vh - 180px"
                 customButtons={{
                   dayToday: {
-                    text: "day",
+                    text: "Day",
                     click: () => {
                       const calendarApi = calendarRef.current?.getApi();
                       if (calendarApi) {
@@ -282,7 +364,7 @@ export default function CalendarPage() {
                     },
                   },
                   weekToday: {
-                    text: "week",
+                    text: "Week",
                     click: () => {
                       const calendarApi = calendarRef.current?.getApi();
                       if (calendarApi) {
@@ -291,27 +373,89 @@ export default function CalendarPage() {
                       }
                     },
                   },
+                  Month: {
+                    text: "Month",
+                    click: () => {
+                      const calendarApi = calendarRef.current?.getApi();
+                      if (calendarApi) {
+                        calendarApi.today();
+                        calendarApi.changeView("dayGridMonth");
+                      }
+                    },
+                  },
                 }}
                 headerToolbar={{
                   left: "prev,next",
                   center: "title",
-                  right: "dayGridMonth,weekToday,dayToday",
+                  right: "Month,weekToday,dayToday",
                 }}
                 events={events}
                 forceEventDuration={true}
-                displayEventTime={true}
-                eventTimeFormat={{
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
+                displayEventTime={false}
+                eventClick={(info) => {
+                  const row = info.event.extendedProps.row as ContentRow;
+                  setPreviewDoc({
+                    uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+                    fileName: row.title,
+                    uuid: row.uuid,
+                    row,
+                  });
                 }}
-                height="auto"
-                eventClick={() => {}}
               />
             </>
           }
         </Card>
-      </div>
-    </Box>
+
+        <Dialog
+          open={previewDoc !== null}
+          onClose={() => setPreviewDoc(null)}
+          maxWidth="xl"
+          fullWidth
+        >
+          <Box
+            sx={{ height: "85vh", display: "flex", flexDirection: "column" }}
+          >
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ p: 1, gap: 1, flexShrink: 0 }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{ pl: 1, color: "text.secondary" }}
+                noWrap
+              >
+                {previewDoc?.fileName ?? "Preview"}
+              </Typography>
+              <Tooltip title="Close">
+                <IconButton
+                  onClick={() => setPreviewDoc(null)}
+                  size="small"
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+
+            <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+              {previewDoc && (
+                <DocPreviewer
+                  key={previewDoc.uuid}
+                  uri={previewDoc.uri}
+                  fileName={previewDoc.fileName}
+                />
+              )}
+              {previewDoc && rows.find((r) => r.uuid === previewDoc.uuid) && (
+                <VersionHistoryPanel
+                  contentUuid={previewDoc.uuid}
+                  contentRow={rows.find((r) => r.uuid === previewDoc.uuid)!}
+                />
+              )}
+            </Box>
+          </Box>
+        </Dialog>
+      </Box>
+    </motion.div>
   );
 }

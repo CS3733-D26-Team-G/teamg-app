@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar.tsx";
 import { AppThemeProvider } from "../ThemeContext.tsx";
@@ -6,14 +7,40 @@ import { ProfileProvider } from "../profile/ProfileContext.tsx";
 import { TutorialProvider } from "../components/Tutorial/TutorialContext.tsx";
 import TutorialOverlay from "../components/Tutorial/TutorialOverlay.tsx";
 import TutorialPrompt from "../components/Tutorial/TutorialPrompt.tsx";
+import { useTutorial } from "../components/Tutorial/TutorialContext.tsx";
+import type { UserRole } from "../components/Tutorial/TutorialContext.tsx";
+import { SidebarProvider } from "../components/SidebarContext.tsx";
 
 function AppShell() {
   const location = useLocation();
   const { session } = useAuth();
+  const { triggerWelcomeTour } = useTutorial();
+
   const isHeroPage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
   const isAboutPage = location.pathname === "/aboutus";
   const isCreditsPage = location.pathname === "/credits";
+
+  // Derive role from session — same logic as Sidebar
+  const getRole = (): UserRole => {
+    if (!session) return "other";
+    if (session.permissions?.can_manage_employees) return "admin";
+    if (session.position === "UNDERWRITER") return "underwriter";
+    return "other";
+  };
+
+  // Fire the welcome tour once when the user first logs in
+  useEffect(() => {
+    if (
+      session &&
+      !isHeroPage &&
+      !isLoginPage &&
+      !isAboutPage &&
+      !isCreditsPage
+    ) {
+      triggerWelcomeTour(getRole());
+    }
+  }, [session, location.pathname]);
 
   return (
     <div
@@ -53,7 +80,9 @@ export default function App() {
       <ProfileProvider>
         <AppThemeProvider>
           <TutorialProvider>
-            <AppShell />
+            <SidebarProvider>
+              <AppShell />
+            </SidebarProvider>
           </TutorialProvider>
         </AppThemeProvider>
       </ProfileProvider>
