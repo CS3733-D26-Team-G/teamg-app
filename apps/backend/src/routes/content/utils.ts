@@ -3,7 +3,12 @@ import { Position, prisma, Prisma } from "@repo/db";
 import mime from "mime-types";
 import { z } from "zod";
 import { INTERNAL_ERROR_MESSAGE, STORAGE_BUCKET } from "../../config.ts";
-import { canManagePosition, isAdmin } from "../../lib/request.ts";
+import {
+  canManagePosition,
+  getAuth,
+  isAdmin,
+  sendInternalError,
+} from "../../lib/request.ts";
 import { supabase } from "../../lib/supabase.ts";
 import { logger } from "../../logger.ts";
 import { getVisibleContentWhere } from "../../lib/content.ts";
@@ -18,7 +23,10 @@ import {
   TagContentParamsSchema,
   TagParamsSchema,
   UploadResult,
+  ContentListItem,
+  TagAction,
 } from "./schemas.ts";
+import router from "./index.ts";
 
 export function getExpiresInSeconds(expirationTime: Date): number {
   return Math.floor((expirationTime.getTime() - Date.now()) / 1000);
@@ -472,6 +480,101 @@ export async function resolveContentUrl({
     url: signedUrlResult.data.signedUrl,
     supabasePath: uploadResult.data.path,
   };
+}
+
+export function getContentListInclude(employeeUuid: string) {
+  return {
+    favoritedBy: {
+      where: { employeeUuid },
+      select: { employeeUuid: true },
+    },
+    tagAssignments: {
+      select: {
+        tag: {
+          select: {
+            uuid: true,
+            name: true,
+          },
+        },
+      },
+    },
+    _count: {
+      select: { favoritedBy: true },
+    },
+    editLock: {
+      include: {
+        lockedByEmp: {
+          select: {
+            uuid: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+          },
+        },
+      },
+    },
+  } satisfies Prisma.ContentInclude;
+}
+
+export function serializeContentList(content: ContentListItem[]) {
+  return content.map(({ favoritedBy, tagAssignments, _count, ...item }) => ({
+    ...item,
+    tags: tagAssignments.map(({ tag }) => tag),
+    is_favorite: favoritedBy.length > 0,
+    favorite_count: _count.favoritedBy,
+  }));
+}
+
+export function normalizeQueryList(value: unknown): string[] {
+  if (typeof value === "undefined") {
+    return [];
+  }
+
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter((item): item is string => typeof item === "string");
+}
+
+export function getSearchFilterClauses(query: express.Request["query"]) {
+  const positionFilters = normalizeQueryList(query.position);
+  const fileTypeFilters = normalizeQueryList(query.fileType);
+  const tagUuidFilters = normalizeQueryList(query.tagUuid);
+  const clauses: Prisma.ContentWhereInput[] = [];
+
+  if (positionFilters.length > 0) {
+    clauses.push({ forPosition: { in: positionFilters as Position[] } });
+  }
+
+  if (fileTypeFilters.length > 0) {
+    clauses.push({ fileType: { in: fileTypeFilters } });
+  }
+
+  if (tagUuidFilters.length > 0) {
+    clauses.push({
+      tagAssignments: {
+        some: {
+          tagUuid: {
+            in: tagUuidFilters,
+          },
+        },
+      },
+    });
+  }
+
+  return clauses;
+}
+
+export function getTagActionFromMethod(method: string) {
+  switch (method) {
+    case "POST": {
+      return TagAction.CREATE;
+    }
+    case "DELETE": {
+      return TagAction.DELETE;
+    }
+    default: {
+      return TagAction.INVALID;
+    }
+  }
 }
 
 export { getVisibleContentWhere };
