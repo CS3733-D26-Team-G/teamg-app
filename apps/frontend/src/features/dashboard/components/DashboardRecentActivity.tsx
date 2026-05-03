@@ -9,20 +9,21 @@ import {
 } from "@mui/material";
 import { transformBackendData } from "./activityData.ts";
 import HelpPopup from "../../../components/HelpPopup.tsx";
+import { useTranslation } from "react-i18next";
 
 interface DashboardRecentActivityProps {
   rawLogs: any[];
 }
 
-function actionDictator(action: string) {
+function actionDictator(action: string, t: (key: string) => string) {
   const map: Record<string, string> = {
-    EDIT_CONTENT: "edited",
-    DELETE_CONTENT: "deleted",
-    CREATE_CONTENT: "created",
-    LOG_IN: "Logged In",
-    LOG_OUT: "Logged Out",
-    CHECK_IN_CONTENT: "checked in",
-    CHECK_OUT_CONTENT: "checked out",
+    EDIT_CONTENT: t("dashboardRecentActivity.edited"),
+    DELETE_CONTENT: t("dashboardRecentActivity.delete"),
+    CREATE_CONTENT: t("dashboardRecentActivity.create"),
+    LOG_IN: t("dashboardRecentActivity.loggedIn"),
+    LOG_OUT: t("dashboardRecentActivity.loggedOut"),
+    CHECK_IN_CONTENT: t("dashboardRecentActivity.checkedIn"),
+    CHECK_OUT_CONTENT: t("dashboardRecentActivity.checkedOut"),
   };
   return map[action] || action.toLowerCase();
 }
@@ -30,6 +31,7 @@ function actionDictator(action: string) {
 export default function DashboardRecentActivity({
   rawLogs,
 }: DashboardRecentActivityProps) {
+  const { t } = useTranslation();
   const recentActions = useMemo(() => {
     const groupedData = transformBackendData(rawLogs);
     const allItems = groupedData.flatMap((group) =>
@@ -60,9 +62,9 @@ export default function DashboardRecentActivity({
             variant="h6"
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
-            Recent Activity
+            {t("dashboardRecentActivity.recentActivity")}
             <HelpPopup
-              description="The Recent Activity feed shows information about the four most recent actions taken across the application. This includes the user, the time, the date, and what they did. Go to the Activity page using the side bar for a longer time line of activity!"
+              description={t("dashboardRecentActivity.recentActivityInfo")}
               infoOrHelp={false}
             />
           </Typography>
@@ -85,7 +87,7 @@ export default function DashboardRecentActivity({
             variant="body2"
             color="text.secondary"
           >
-            No recent activity.
+            {t("dashboardRecentActivity.noActivity")}
           </Typography>
         : <Box
             component="ul"
@@ -126,7 +128,7 @@ export default function DashboardRecentActivity({
                     sx={{ lineHeight: 1.2 }}
                   >
                     <strong>{action.user}</strong>{" "}
-                    {actionDictator(action.action)}{" "}
+                    {actionDictator(action.action, t)}{" "}
                     {action.action !== "LOG_IN" &&
                       action.action !== "LOG_OUT" && (
                         <Box
@@ -156,7 +158,7 @@ export default function DashboardRecentActivity({
                   sx={{ color: "text.disabled", fontStyle: "italic" }}
                 >
                   {action.dateLabel === "Invalid Date" ?
-                    "Recent"
+                    t("dashboardRecentActivity.recent")
                   : action.dateLabel}
                 </Typography>
               </Box>

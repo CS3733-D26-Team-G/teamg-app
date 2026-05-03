@@ -14,6 +14,8 @@ import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx
 import AdminCards from "../../features/dashboard/components/AdminCards.tsx";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
+import { useTranslation } from "react-i18next";
+import { LanguageToggle } from "../../components/LanguageToggle.tsx";
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -23,82 +25,73 @@ export default function Dashboard() {
   const analytics = (data?.contentCounts ?? {}) as Record<string, number>;
   const employeeCounts = (data?.employeeCounts ?? {}) as Record<string, number>;
   const fileTypeCounts = data?.fileTypeCounts ?? [];
+  const { t } = useTranslation();
+
+  const roleKeys = [
+    "BUSINESS_ANALYST",
+    "BUSINESS_OP_RATING",
+    "UNDERWRITER",
+    "ACTUARIAL_ANALYST",
+    "EXL_OPERATIONS",
+  ];
+
+  const roleLabels: Record<string, string> = {
+    BUSINESS_ANALYST: t("dashboard.businessAnalyst"),
+    BUSINESS_OP_RATING: t("dashboard.businessOpsTeam"),
+    UNDERWRITER: t("dashboard.underwriter"),
+    ACTUARIAL_ANALYST: t("dashboard.actuarialAnalyst"),
+    EXL_OPERATIONS: t("dashboard.exlOperations"),
+  };
   const employeePieData = [
     {
       id: 0,
       value: employeeCounts.BUSINESS_ANALYST ?? 0,
-      label: "Business Analyst",
+      label: t("dashboard.businessAnalyst"),
       color: "#bea5aa",
     },
     {
       id: 1,
       value: employeeCounts.BUSINESS_OP_RATING ?? 0,
-      label: "Business Ops Rating Team",
+      label: t("dashboard.businessOpsTeam"),
       color: "#509edd",
     },
     {
       id: 2,
       value: employeeCounts.UNDERWRITER ?? 0,
-      label: "Underwriter",
+      label: t("dashboard.underwriter"),
       color: "#395176",
     },
     {
       id: 3,
       value: employeeCounts.ACTUARIAL_ANALYST ?? 0,
-      label: "Actuarial Analyst",
+      label: t("dashboard.actuarialAnalyst"),
       color: "#ba667b",
     },
     {
       id: 4,
       value: employeeCounts.ADMIN ?? 0,
-      label: "Admin",
+      label: t("dashboard.admin"),
       color: "#74414e",
     },
     {
       id: 5,
       value: employeeCounts.EXL_OPERATIONS ?? 0,
-      label: "EXL Operations",
+      label: t("dashboard.exlOperations"),
       color: "#721b31",
     },
   ];
-  const roles = [
-    "Business Analyst",
-    "Underwriter",
-    "Actuarial Analyst",
-    "EXL Operations",
-    "Business Ops Team",
-  ];
-
-  const getAnalyticsKey = (role: string) => {
-    const mapping: Record<string, string> = {
-      "Business Analyst": "BUSINESS_ANALYST",
-      "Underwriter": "UNDERWRITER",
-      "Actuarial Analyst": "ACTUARIAL_ANALYST",
-      "EXL Operations": "EXL_OPERATIONS",
-      "Business Ops Team": "BUSINESS_OP_RATING",
-    };
-
-    return mapping[role] || role.replace(/\s+/g, "_").toUpperCase();
-  };
 
   const helpDescriptions: Record<string, string> = {
-    UNDERWRITER:
-      "You are an UnderWriter, please give us time to give you help.",
-    BUSINESS_ANALYST:
-      "You are an Business Analyst, please give us time to give you help.",
-    ACTUARIAL_ANALYST:
-      "You are an Actuarial Analyst, please give us time to give you help.",
-    EXL_OPERATIONS:
-      "You are an EXL Operations, please give us time to give you help.",
-    BUSINESS_OP_RATING:
-      "You are an Business OP Rating, please give us time to give you help.",
-    ADMIN:
-      "The Dashboard gives you a full organizational overview including employee demographics, recent activity, and content counts by role.",
+    UNDERWRITER: t("dashboard.underwriterHelp"),
+    BUSINESS_ANALYST: t("dashboard.businessAnalystHelp"),
+    ACTUARIAL_ANALYST: t("dashboard.actuarialAnalystHelp"),
+    EXL_OPERATIONS: t("dashboard.exlOperationsHelp"),
+    BUSINESS_OP_Team: t("dashboard.businessOpTeamHelp"),
+    ADMIN: t("dashboard.adminHelp"),
   };
 
   const helpText =
-    helpDescriptions[session?.position ?? ""] ??
-    "The Dashboard gives you an overview of your organization.";
+    helpDescriptions[session?.position ?? ""] ?? t("dashboard.dashboardInfo");
 
   const StyledToolbar = styled(Toolbar)(({ theme }) => ({
     flexDirection: "column",
@@ -122,9 +115,9 @@ export default function Dashboard() {
             variant="h6"
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
-            Employee Demographics
+            {t("dashboard.employeeDemographics")}
             <HelpPopup
-              description="The Employee Demographics chart provides a breakdown of how many employees belong to each role. Hover over a slice of the chart to see exact numbers!"
+              description={t("dashboard.demogrphicsInfo")}
               infoOrHelp={false}
             />
           </Typography>
@@ -151,7 +144,7 @@ export default function Dashboard() {
             variant="h6"
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
-            File Types
+            {t("dashboard.fileTypes")}
           </Typography>
         }
       />
@@ -174,7 +167,7 @@ export default function Dashboard() {
             variant="h6"
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
-            Popular Content Search
+            {t("dashboard.popularContentSearch")}
           </Typography>
         }
       />
@@ -184,7 +177,7 @@ export default function Dashboard() {
           variant="body2"
           color="text.secondary"
         >
-          No popular search data available yet.
+          {t("dashboard.noPopularContent")}
         </Typography>
       </CardContent>
     </Card>
@@ -193,7 +186,7 @@ export default function Dashboard() {
   if (loading && !data) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
-        <Typography variant="h6">Loading dashboard...</Typography>
+        <Typography variant="h6">{t("dashboard.loadingDashboard")}</Typography>
       </Box>
     );
   }
@@ -226,7 +219,7 @@ export default function Dashboard() {
             variant="h2"
             sx={{ fontWeight: "bold", color: "white" }}
           >
-            Welcome Back {profile?.firstName}!
+            {t("dashboard.welcomeBack")} {profile?.firstName}!
           </Typography>
           {[...Array(3)].map((_, i) => (
             <Box
@@ -247,6 +240,7 @@ export default function Dashboard() {
               description={helpText}
               infoOrHelp={true}
             />
+            <LanguageToggle />
             <NotificationBell />
             <div className="w-80">
               <SearchBar setSearchQuery={setSearchQuery} />
@@ -276,13 +270,13 @@ export default function Dashboard() {
           </div>
 
           <div className="flex flex-row gap-8 items-start">
-            {roles.map((role) => {
-              const key = getAnalyticsKey(role);
+            {roleKeys.map((key) => {
+              const label = roleLabels[key];
               const count = analytics[key] ?? 0;
 
               return (
                 <Card
-                  key={role}
+                  key={key}
                   className="flex-1 outline-1 outline-gray-200"
                   sx={{ borderRadius: 3 }}
                 >
@@ -292,7 +286,7 @@ export default function Dashboard() {
                       color="text.secondary"
                       gutterBottom
                     >
-                      {role}
+                      {label}
                     </Typography>
                     <Typography
                       variant="h4"
@@ -305,9 +299,9 @@ export default function Dashboard() {
                       color="primary.main"
                       sx={{ fontWeight: "bold" }}
                     >
-                      Total Items
+                      {t("dashboard.totalItems")}
                       <HelpPopup
-                        description={`This is the total amount of content accessible by ${role}s`}
+                        description={`${t("dashboard.totalItemsInfo")} ${label}s`}
                         infoOrHelp={false}
                       />
                     </Typography>
@@ -346,11 +340,9 @@ export default function Dashboard() {
                     variant="h6"
                     sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
                   >
-                    Employee Edits By Day
+                    {t("dashboard.editsByDay")}
                     <HelpPopup
-                      description={
-                        "This graphic shows the fluctuation in content hits by role."
-                      }
+                      description={t("dashboard.editsInfo")}
                       infoOrHelp={false}
                     />
                   </Typography>

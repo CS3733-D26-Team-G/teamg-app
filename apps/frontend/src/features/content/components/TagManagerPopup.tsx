@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Typography,
   Box,
@@ -35,6 +36,7 @@ export default function TagManagerPopup({
   availableTags,
   onTagsChanged,
 }: TagManagerPopupProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
@@ -119,7 +121,7 @@ export default function TagManagerPopup({
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <LocalOfferOutlinedIcon fontSize="small" />
-          Tag Manager
+          {t("tagManager.tagManager")}
         </Box>
       </Button>
 
@@ -139,10 +141,10 @@ export default function TagManagerPopup({
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Typography sx={{ fontSize: 16 }}>
-                <b>Manage Content Tags</b>
+                <b>{t("tagManager.manageContentTags")}</b>
               </Typography>
               <Chip
-                label={`${availableTags.length} tags`}
+                label={`${availableTags.length} ${t("tagManager.tags")}`}
                 size="small"
               />
             </Box>
@@ -170,7 +172,7 @@ export default function TagManagerPopup({
           >
             {localTags.length === 0 && (
               <Typography sx={{ display: "flex", justifyContent: "center" }}>
-                No Tags in the System
+                {t("tagManager.notags")}
               </Typography>
             )}
             {filteredTags.map((tag, index) => (
@@ -193,7 +195,7 @@ export default function TagManagerPopup({
                           gap: 1,
                         }}
                       >
-                        <Typography>Delete?</Typography>
+                        <Typography>{t("tagManager.delete")}</Typography>
                         <Button
                           size="small"
                           variant="contained"
@@ -201,7 +203,7 @@ export default function TagManagerPopup({
                             handleDeleteTag(tag.uuid);
                           }}
                         >
-                          Yes
+                          {t("tagManager.yes")}
                         </Button>
 
                         <Button
@@ -211,7 +213,7 @@ export default function TagManagerPopup({
                             setPendingDeleteTag(null);
                           }}
                         >
-                          No
+                          {t("tagManager.no")}
                         </Button>
                       </Box>
                     : <IconButton
@@ -262,7 +264,7 @@ export default function TagManagerPopup({
           >
             <TextField
               size="small"
-              placeholder="Enter new tag name..."
+              placeholder={t("tagManager.enterNewTag")}
               value={newTag}
               onChange={(event) => setNewTag(event.target.value)}
               fullWidth
@@ -277,7 +279,7 @@ export default function TagManagerPopup({
               disabled={!newTag.trim()}
               sx={{ width: 160 }}
             >
-              Add Tag
+              {t("tagManager.addTag")}
             </Button>
           </Box>
           <Button
@@ -290,7 +292,7 @@ export default function TagManagerPopup({
               }
             }}
           >
-            Cancel
+            {t("contentManagement.cancel")}
           </Button>
         </DialogActions>
       </Dialog>

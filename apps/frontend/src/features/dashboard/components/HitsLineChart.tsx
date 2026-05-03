@@ -1,4 +1,5 @@
 import { LineChart } from "@mui/x-charts/LineChart";
+import { useTranslation } from "react-i18next";
 
 interface EditHitsRow {
   date: string;
@@ -67,6 +68,7 @@ const MOCK_EDIT_HITS_BY_ROLE: EditHitsRow[] = [
 ];
 
 export default function HitsLineChart() {
+  const { t } = useTranslation();
   return (
     <LineChart
       height={320}
@@ -80,25 +82,25 @@ export default function HitsLineChart() {
       series={[
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.UNDERWRITER ?? 0),
-          label: "Underwriter",
+          label: t("dashboard.underwriter"),
           color: "#395176",
           shape: "circle",
         },
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.BUSINESS_ANALYST ?? 0),
-          label: "Business Analyst",
+          label: t("dashboard.businessAnalyst"),
           color: "#bea5aa",
           shape: "circle",
         },
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.ACTUARIAL_ANALYST ?? 0),
-          label: "Actuarial Analyst",
+          label: t("dashboard.actuarialAnalyst"),
           color: "#ba667b",
           shape: "circle",
         },
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.EXL_OPERATIONS ?? 0),
-          label: "EXL Operations",
+          label: t("dashboard.exlOperations"),
           color: "#721b31",
           shape: "circle",
         },
@@ -106,13 +108,13 @@ export default function HitsLineChart() {
           data: MOCK_EDIT_HITS_BY_ROLE.map(
             (row) => row.BUSINESS_OP_RATING ?? 0,
           ),
-          label: "Business Ops Rating",
+          label: t("dashboard.businessOpsTeam"),
           color: "#509edd",
           shape: "circle",
         },
         {
           data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.ADMIN ?? 0),
-          label: "Admin",
+          label: t("dashboard.admin"),
           color: "#74414e",
           shape: "circle",
         },

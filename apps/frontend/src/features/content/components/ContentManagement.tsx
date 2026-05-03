@@ -83,6 +83,8 @@ import {
   patchDashboardBootstrap,
   prefetchActivity,
 } from "../../../lib/activity-loaders";
+import { useTranslation } from "react-i18next";
+import { LanguageToggle } from "../../../components/LanguageToggle.tsx";
 
 // human-readable labels for each content status
 const statusLabels: Record<ContentStatus, string> = {
@@ -97,44 +99,6 @@ const statusColorMap: Record<ContentStatus, "success" | "warning" | "error"> = {
   IN_USE: "warning",
   UNAVAILABLE: "error",
 };
-
-// display config for each position — drives accordion headers and filter checkboxes
-const POSITION_CONFIG: {
-  key: string;
-  label: string;
-  chipSx: object;
-}[] = [
-  {
-    key: "UNDERWRITER",
-    label: "Underwriter",
-    chipSx: { backgroundColor: "#1976d2", color: "white" },
-  },
-  {
-    key: "BUSINESS_ANALYST",
-    label: "Business Analyst",
-    chipSx: { backgroundColor: "#2e7d32", color: "white" },
-  },
-  {
-    key: "ACTUARIAL_ANALYST",
-    label: "Actuarial Analyst",
-    chipSx: { backgroundColor: "#ed6c02", color: "white" },
-  },
-  {
-    key: "EXL_OPERATIONS",
-    label: "EXL Operations",
-    chipSx: { backgroundColor: "#7b1fa2", color: "white" },
-  },
-  {
-    key: "BUSINESS_OP_RATING",
-    label: "Business Ops Rating",
-    chipSx: { backgroundColor: "#0288d1", color: "white" },
-  },
-  {
-    key: "ADMIN",
-    label: "Admin",
-    chipSx: { backgroundColor: "#d32f2f", color: "white" },
-  },
-];
 
 // maps MIME types to short file extension labels shown in the UI
 const fileTypeLabels: Record<string, string> = {
@@ -228,8 +192,54 @@ export default function ContentManagement({
   viewState,
   setViewState,
 }: ContentManagementProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+
+  // human-readable labels for each content status
+  const statusLabels: Record<ContentStatus, string> = {
+    AVAILABLE: t("contentManagement.available"),
+    IN_USE: t("contentManagement.inUse"),
+    UNAVAILABLE: t("contentManagement.unavailable"),
+  };
+
+  // display config for each position — drives accordion headers and filter checkboxes
+  const POSITION_CONFIG: {
+    key: string;
+    label: string;
+    chipSx: object;
+  }[] = [
+    {
+      key: "UNDERWRITER",
+      label: t("dashboard.underwriter"),
+      chipSx: { backgroundColor: "#1976d2", color: "white" },
+    },
+    {
+      key: "BUSINESS_ANALYST",
+      label: t("dashboard.businessAnalyst"),
+      chipSx: { backgroundColor: "#2e7d32", color: "white" },
+    },
+    {
+      key: "ACTUARIAL_ANALYST",
+      label: t("dashboard.actuarialAnalyst"),
+      chipSx: { backgroundColor: "#ed6c02", color: "white" },
+    },
+    {
+      key: "EXL_OPERATIONS",
+      label: t("dashboard.exlOperations"),
+      chipSx: { backgroundColor: "#7b1fa2", color: "white" },
+    },
+    {
+      key: "BUSINESS_OP_RATING",
+      label: t("dashboard.businessOpsTeam"),
+      chipSx: { backgroundColor: "#0288d1", color: "white" },
+    },
+    {
+      key: "ADMIN",
+      label: t("dashboard.admin"),
+      chipSx: { backgroundColor: "#d32f2f", color: "white" },
+    },
+  ];
 
   // active filter selections
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
@@ -367,15 +377,6 @@ export default function ContentManagement({
       return next;
     });
   };
-
-  // puts the current user's position first so their content is immediately visible
-  const orderedPositions = useMemo(() => {
-    if (!userPosition) return POSITION_CONFIG;
-    return [
-      ...POSITION_CONFIG.filter((p) => p.key === userPosition),
-      ...POSITION_CONFIG.filter((p) => p.key !== userPosition),
-    ];
-  }, [userPosition]);
 
   // applies text search + position / file-type / tag filters to the full row list
   const filteredRows = useMemo(
@@ -766,19 +767,22 @@ export default function ContentManagement({
         open={pendingSave !== null}
         onClose={() => setPendingSave(null)}
       >
-        <DialogTitle>Submit content</DialogTitle>
+        <DialogTitle>{t("contentManagement.submitContent")}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ fontSize: "1.1rem" }}>
-            Are you sure you want to submit this content?
+            {t("contentMangement.confirmSubmit")}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPendingSave(null)}>Cancel</Button>
+          <Button onClick={() => setPendingSave(null)}>
+            {" "}
+            {t("contentMangement.cancel")}
+          </Button>
           <Button
             onClick={() => void confirmSave()}
             variant="contained"
           >
-            Submit
+            {t("contentMangement.submit")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -787,20 +791,23 @@ export default function ContentManagement({
         open={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
       >
-        <DialogTitle>Delete content</DialogTitle>
+        <DialogTitle> {t("contentMangement.deleteContent")}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ fontSize: "1.1rem" }}>
-            Are you sure you want to delete this content?
+            {t("contentMangement.confirmDelete")}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPendingDelete(null)}>Cancel</Button>
+          <Button onClick={() => setPendingDelete(null)}>
+            {" "}
+            {t("contentMangement.cancel")}
+          </Button>
           <Button
             onClick={() => void confirmDelete()}
             color="error"
             variant="contained"
           >
-            Delete
+            {t("contentMangement.delete")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -851,7 +858,7 @@ export default function ContentManagement({
     },
     {
       field: "title",
-      headerName: "Title",
+      headerName: t("contentManagement.title"),
       flex: 1,
       renderCell: (params) => (
         <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
@@ -889,7 +896,7 @@ export default function ContentManagement({
     {
       // shows a "NEW" badge for rows added after the session started
       field: "lastModifiedTime",
-      headerName: "Last Modified",
+      headerName: t("contentManagement.lastModified"),
       type: "dateTime",
       width: 160,
       valueGetter: (_value, row) =>
@@ -920,7 +927,7 @@ export default function ContentManagement({
     },
     {
       field: "url",
-      headerName: "URL",
+      headerName: t("contentManagement.url"),
       flex: 1,
       renderCell: (params) => (
         <Link
@@ -934,13 +941,13 @@ export default function ContentManagement({
     },
     {
       field: "contentOwner",
-      headerName: "Author",
+      headerName: t("contentManagement.author"),
       width: 140,
     },
     {
       // derived from the editLock relation; empty when not checked out
       field: "edited-by",
-      headerName: "Editor",
+      headerName: t("contentManagement.editor"),
       width: 140,
       valueGetter: (_, row) => {
         const employee = row.editLock?.lockedByEmp;
@@ -949,7 +956,7 @@ export default function ContentManagement({
     },
     {
       field: "forPosition",
-      headerName: "Position",
+      headerName: t("employeeManagement.position"),
       width: 160,
       align: "center",
       renderCell: (params) => (
@@ -963,7 +970,7 @@ export default function ContentManagement({
     },
     {
       field: "status",
-      headerName: "Status",
+      headerName: t("contentManagement.status"),
       width: 160,
       align: "center",
       renderCell: (params) => (
@@ -979,7 +986,7 @@ export default function ContentManagement({
     {
       // derives the extension from the MIME type via mime-types
       field: "fileType",
-      headerName: "File Type",
+      headerName: t("contentManagement.fileType"),
       width: 110,
       align: "center",
       renderCell: (params) => {
@@ -996,7 +1003,7 @@ export default function ContentManagement({
     {
       // shows different controls depending on who (if anyone) holds the lock
       field: "actions",
-      headerName: "Actions",
+      headerName: t("contentManagement.actions"),
       width: 220,
       minWidth: 220,
       align: "center",
@@ -1021,7 +1028,7 @@ export default function ContentManagement({
             }}
           >
             {/* always visible */}
-            <Tooltip title="Preview">
+            <Tooltip title={t("contentManagement.preview")}>
               <IconButton
                 color="primary"
                 onClick={() => onPreview(row)}
@@ -1034,7 +1041,7 @@ export default function ContentManagement({
             <Tooltip
               title={
                 !hasPermission ?
-                  "You don't have access to download this file"
+                  t("contentManagement.noPermissionDownload")
                 : ""
               }
             >
@@ -1054,8 +1061,8 @@ export default function ContentManagement({
               <Tooltip
                 title={
                   !hasPermission ?
-                    "You don't have permission"
-                  : "Check Out to edit"
+                    t("contentManagement.noPermission")
+                  : t("contentManagement.checkOutToEdit")
                 }
               >
                 <span>
@@ -1065,7 +1072,7 @@ export default function ContentManagement({
                     disabled={!hasPermission}
                     sx={{ border: "0.5px solid" }}
                   >
-                    CHECK OUT
+                    {t("contentManagement.checkOut")},
                   </Button>
                 </span>
               </Tooltip>
@@ -1076,8 +1083,8 @@ export default function ContentManagement({
               <Tooltip
                 title={
                   row.fileType?.startsWith("video/") ?
-                    "Video files cannot be edited"
-                  : "Open editor"
+                    t("contentManagement.videoCannotEdit")
+                  : t("contentManagement.openEditor")
                 }
               >
                 <span>
@@ -1094,7 +1101,7 @@ export default function ContentManagement({
 
             {/* releases the lock; only shown when current user holds it */}
             {isCheckedOutByMe && (
-              <Tooltip title="Check In (release lock)">
+              <Tooltip title={t("contentManagement.checkIn")}>
                 <IconButton
                   color="primary"
                   onClick={() => void onCheckIn(row.uuid)}
@@ -1107,7 +1114,7 @@ export default function ContentManagement({
             {/* shown when a different user holds the lock */}
             {isCheckedOutByOther && (
               <Tooltip
-                title={`Checked out by ${row.editLock?.lockedByEmp.firstName} ${row.editLock?.lockedByEmp.lastName}`}
+                title={`${t("contentManagement.checkOutBy")} ${row.editLock?.lockedByEmp.firstName} ${row.editLock?.lockedByEmp.lastName}`}
               >
                 <span>
                   <Button
@@ -1115,7 +1122,7 @@ export default function ContentManagement({
                     disabled
                     sx={{ border: "0.5px solid" }}
                   >
-                    LOCKED
+                    {t("contentManagement.locked")}
                   </Button>
                 </span>
               </Tooltip>
@@ -1125,6 +1132,15 @@ export default function ContentManagement({
       },
     },
   ];
+
+  // puts the current user's position first so their content is immediately visible
+  const orderedPositions = useMemo(() => {
+    if (!userPosition) return POSITION_CONFIG;
+    return [
+      ...POSITION_CONFIG.filter((p) => p.key === userPosition),
+      ...POSITION_CONFIG.filter((p) => p.key !== userPosition),
+    ];
+  }, [userPosition, POSITION_CONFIG]);
 
   return (
     <Box sx={{ height: "auto", width: "100%" }}>
@@ -1143,7 +1159,7 @@ export default function ContentManagement({
             variant="h2"
             sx={{ pb: 2, pt: 4, color: "White", fontWeight: "bold" }}
           >
-            Content Management
+            {t("contentManagement.title")}
           </Typography>
 
           {/* decorative concentric rings in the top-right corner */}
@@ -1182,7 +1198,7 @@ export default function ContentManagement({
                   variant="contained"
                   startIcon={<FilterAltIcon />}
                 >
-                  Filter
+                  {t("employeeManagement.filter")}
                 </Button>
 
                 {/* only shown when at least one filter is active */}
@@ -1203,7 +1219,7 @@ export default function ContentManagement({
                       border: "1px solid white",
                     }}
                   >
-                    Clear Filters
+                    {t("contentManagement.clearFilters")}
                   </Button>
                 )}
               </Box>
@@ -1227,7 +1243,7 @@ export default function ContentManagement({
                     setTagAnchor(null);
                   }}
                 >
-                  Position
+                  {t("contentManagement.position")}
                   <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
                 <MenuItem
@@ -1237,7 +1253,7 @@ export default function ContentManagement({
                     setTagAnchor(null);
                   }}
                 >
-                  File Type
+                  {t("contentManagement.fileType")}
                   <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
                 <MenuItem
@@ -1247,7 +1263,7 @@ export default function ContentManagement({
                     setFileTypeAnchor(null);
                   }}
                 >
-                  Tags
+                  {t("contentManagement.tags")}
                   <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
               </Popover>
@@ -1266,58 +1282,23 @@ export default function ContentManagement({
                 }}
               >
                 <FormGroup sx={{ pl: 1 }}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("UNDERWRITER")}
-                      />
-                    }
-                    checked={positionFilters.includes("UNDERWRITER")}
-                    label="Underwriter"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("BUSINESS_ANALYST")}
-                      />
-                    }
-                    checked={positionFilters.includes("BUSINESS_ANALYST")}
-                    label="Business Analysis"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("ACTUARIAL_ANALYST")}
-                      />
-                    }
-                    checked={positionFilters.includes("ACTUARIAL_ANALYST")}
-                    label="Actuarial Analyst"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("EXL_OPERATIONS")}
-                      />
-                    }
-                    checked={positionFilters.includes("EXL_OPERATIONS")}
-                    label="EXL Operations"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        onChange={() => togglePosition("BUSINESS_OP_RATING")}
-                      />
-                    }
-                    checked={positionFilters.includes("BUSINESS_OP_RATING")}
-                    label="Business Ops Rating"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox onChange={() => togglePosition("ADMIN")} />
-                    }
-                    checked={positionFilters.includes("ADMIN")}
-                    label="Admin"
-                  />
+                  {[
+                    ["UNDERWRITER", t("dashboard.underwriter")],
+                    ["BUSINESS_ANALYST", t("dashboard.businessAnalyst")],
+                    ["ACTUARIAL_ANALYST", t("dashboard.actuarialAnalyst")],
+                    ["EXL_OPERATIONS", t("dashboard.exlOperations")],
+                    ["BUSINESS_OP_RATING", t("dashboard.businessOpsRating")],
+                    ["ADMIN", t("dashboard.admin")],
+                  ].map(([value, label]) => (
+                    <FormControlLabel
+                      key={value}
+                      control={
+                        <Checkbox onChange={() => togglePosition(value)} />
+                      }
+                      checked={positionFilters.includes(value)}
+                      label={label}
+                    />
+                  ))}
                 </FormGroup>
               </Popover>
 
@@ -1466,7 +1447,7 @@ export default function ContentManagement({
             {/* tag manager is admin-only */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <HelpPopup
-                description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
+                description={t("contentManagement.helpInfo")}
                 infoOrHelp={true}
               />
               {isSystemAdmin && (
@@ -1483,7 +1464,7 @@ export default function ContentManagement({
                 startIcon={<AddIcon />}
                 sx={{ whiteSpace: "nowrap" }}
               >
-                New Content
+                {t("contentManagement.newContent")}
               </Button>
             </Box>
           </Box>
@@ -1587,7 +1568,7 @@ export default function ContentManagement({
                     {label}
                   </Typography>
                   <Chip
-                    label={`${positionRows.length} file${positionRows.length !== 1 ? "s" : ""}`}
+                    label={`${positionRows.length} file${positionRows.length !== 1 ? t("contentManagement.files") : t("contentManagement.file")}`}
                     size="small"
                     sx={{
                       fontWeight: 500,
@@ -1628,13 +1609,13 @@ export default function ContentManagement({
                       textAlign: "center",
                     }}
                   >
-                    No content for this position
+                    {t("contentManagement.noContent")}
                     {(
                       searchQuery ||
                       positionFilters.length ||
                       fileTypeFilters.length
                     ) ?
-                      " matching current filters"
+                      t("contentManagement.matchingCurrentFilters")
                     : ""}
                     .
                   </Typography>
@@ -1654,7 +1635,6 @@ export default function ContentManagement({
                           window.open(row.url, "_blank");
                           return;
                         }
-
                         setSelectedDoc({
                           uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
                           fileName: row.title,
@@ -1902,6 +1882,7 @@ export default function ContentManagement({
           );
         })()}
       {confirmationDialogs}
+      <LanguageToggle />
     </Box>
   );
 }

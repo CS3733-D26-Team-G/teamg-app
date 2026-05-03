@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
+import { useTranslation } from "react-i18next";
 import {
   AppBar,
   Box,
@@ -44,6 +45,7 @@ import MenuItem from "@mui/material/MenuItem";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { dedupeAsync } from "../../../lib/async-cache";
 import HelpPopup from "../../../components/HelpPopup";
+import { LanguageToggle } from "../../../components/LanguageToggle.tsx";
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   flexDirection: "column",
@@ -67,6 +69,19 @@ const SlideUpTransition = React.forwardRef(function SlideUpTransition(
 });
 
 export default function EmployeeManagement() {
+  const { t } = useTranslation();
+  const positionLabels: Record<string, string> = {
+    UNDERWRITER: t("dashboard.underwriter"),
+    BUSINESS_ANALYST: t("dashboard.businessAnalyst"),
+    ADMIN: t("dashboard.admin"),
+    ACTUARIAL_ANALYST: t("dashboard.actuarialAnalyst"),
+    EXL_OPERATIONS: t("dashboard.exlOperations"),
+    BUSINESS_OP_RATING: t("dashboard.businessOpsTeam"),
+  };
+  const deptLabels: Record<string, string> = {
+    OPERATION_TECHNOLOGY: t("employeeManagement.opsAndTechnology"),
+    ACCOUNTING: t("employeeManagement.accounting"),
+  };
   const [rows, setRows] = useState<EmployeeRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewState, setViewState] = useState<EmployeeRecord | "new" | null>(
@@ -163,7 +178,11 @@ export default function EmployeeManagement() {
   );
 
   const handleDelete = async (row: EmployeeRecord) => {
-    if (!window.confirm(`Remove employee ${row.firstName} ${row.lastName}?`))
+    if (
+      !window.confirm(
+        `${t("employeeManagement.confirmDelete")} ${row.firstName} ${row.lastName}?`,
+      )
+    )
       return;
     try {
       const res = await fetch(API_ENDPOINTS.EMPLOYEE.DELETE(row.uuid), {
@@ -175,13 +194,11 @@ export default function EmployeeManagement() {
       } else {
         const errorText = await res.text().catch(() => "");
         console.error("Failed to delete employee:", errorText);
-        alert(
-          "Delete failed. Check server logs (backend route may be rejecting).",
-        );
+        alert(t("employeeManagement.deleteFailed"));
       }
     } catch (error) {
       console.error("Network error during delete:", error);
-      alert("Network error while deleting employee.");
+      alert(t("employeeManagement.deleteNetworkError"));
     }
   };
 
@@ -192,7 +209,7 @@ export default function EmployeeManagement() {
 
     if (
       !window.confirm(
-        `Are you sure you want to ${isExisting ? "update" : "create"} "${formData.firstName} ${formData.lastName}"?`,
+        `${isExisting ? t("employeeManagement.confirmSaveUpdate") : t("employeeManagement.confirmSaveCreate")} "${formData.firstName} ${formData.lastName}"?`,
       )
     ) {
       return;
@@ -217,117 +234,116 @@ export default function EmployeeManagement() {
       } else {
         const errorText = await res.text().catch(() => "");
         console.error("Save failed:", errorText);
-        alert("Save failed. Please verify required fields and try again.");
+        alert(t("employeeManagement.saveFailed"));
       }
     } catch (error) {
       console.error("Error during handleSave:", error);
-      alert("Network error while saving employee.");
+      alert(t("employeeManagement.networkError"));
     }
   };
 
-  const getColumns = (
-    onEdit: (row: EmployeeRecord) => void,
-    onDelete: (row: EmployeeRecord) => void,
-  ): GridColDef<EmployeeRecord>[] => {
-    const deptLabels: Record<Department, string> = {
-      OPERATION_TECHNOLOGY: "Ops & Technology",
-      ACCOUNTING: "Accounting",
-    };
-
-    return [
-      {
-        field: "userIcon",
-        headerName: "",
-        width: 60,
-        sortable: false,
-        filterable: false,
-        renderCell: (params) => {
-          const { avatar } = params.row;
-          const firstInitial = params.row.firstName?.[0] ?? "";
-          const lastInitial = params.row.lastName?.[0] ?? "";
-          const initials = (firstInitial + lastInitial).toUpperCase() || "?";
-          return (
-            <Box
+  const columns: GridColDef<EmployeeRecord>[] = [
+    {
+      field: "userIcon",
+      headerName: "",
+      width: 60,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => {
+        const { avatar } = params.row;
+        const firstInitial = params.row.firstName?.[0] ?? "";
+        const lastInitial = params.row.lastName?.[0] ?? "";
+        const initials = (firstInitial + lastInitial).toUpperCase() || "?";
+        return (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+            }}
+          >
+            <Avatar
+              src={avatar || undefined}
               sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
+                width: 32,
+                height: 32,
+                bgcolor: avatar ? "transparent" : "#616161",
+                fontSize: "0.875rem",
+                color: "white",
               }}
             >
-              <Avatar
-                src={avatar || undefined}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: avatar ? "transparent" : "#616161",
-                  fontSize: "0.875rem",
-                  color: "white",
-                }}
-              >
-                {initials}
-              </Avatar>
-            </Box>
-          );
-        },
+              {initials}
+            </Avatar>
+          </Box>
+        );
       },
-      { field: "firstName", headerName: "First Name", flex: 1, minWidth: 140 },
-      { field: "lastName", headerName: "Last Name", flex: 1, minWidth: 140 },
-      {
-        field: "position",
-        headerName: "Position",
-        width: 160,
-        align: "center",
-        renderCell: (params) => {
-          const role = params.value as EmployeeRecord["position"];
-          return (
-            <Chip
-              label={getPositionLabel(role)}
-              color={getPositionChipColor(role)}
-              size="small"
-              variant="outlined"
-            />
-          );
-        },
+    },
+    {
+      field: "firstName",
+      headerName: t("employeeManagement.firstName"),
+      flex: 1,
+      minWidth: 140,
+    },
+    {
+      field: "lastName",
+      headerName: t("employeeManagement.lastName"),
+      flex: 1,
+      minWidth: 140,
+    },
+    {
+      field: "position",
+      headerName: t("employeeManagement.position"),
+      width: 160,
+      align: "center",
+      renderCell: (params) => {
+        const role = params.value as EmployeeRecord["position"];
+        return (
+          <Chip
+            label={positionLabels[role] ?? getPositionLabel(role)}
+            color={getPositionChipColor(role)}
+            size="small"
+            variant="outlined"
+          />
+        );
       },
-      {
-        field: "department",
-        headerName: "Department",
-        width: 190,
-        valueGetter: (value) =>
-          deptLabels[value as Department] ?? String(value),
-      },
-      {
-        field: "corporateEmail",
-        headerName: "Corporate Email",
-        flex: 1.2,
-        minWidth: 220,
-      },
-      {
-        field: "actions",
-        headerName: "Actions",
-        width: 120,
-        sortable: false,
-        filterable: false,
-        renderCell: (params) => (
-          <>
-            <IconButton
-              onClick={() => onEdit(params.row)}
-              aria-label="Edit"
-            >
-              <EditIcon />
-            </IconButton>
-            <IconButton
-              onClick={() => onDelete(params.row)}
-              aria-label="Delete"
-            >
-              <DeleteIcon color="error" />
-            </IconButton>
-          </>
-        ),
-      },
-    ];
-  };
+    },
+    {
+      field: "department",
+      headerName: t("employeeManagement.department"),
+      width: 190,
+      valueGetter: (value) => deptLabels[value as string] ?? String(value),
+    },
+    {
+      field: "corporateEmail",
+      headerName: t("employeeManagement.corporateEmail"),
+      flex: 1.2,
+      minWidth: 220,
+    },
+    {
+      field: "actions",
+      headerName: t("employeeManagement.actions"),
+      width: 120,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <>
+          <IconButton
+            onClick={() => setViewState(params.row)}
+            aria-label="Edit"
+          >
+            <EditIcon />
+          </IconButton>
+          <IconButton
+            onClick={() => handleDelete(params.row)}
+            aria-label="Delete"
+          >
+            <DeleteIcon color="error" />
+          </IconButton>
+        </>
+      ),
+    },
+  ];
 
   return (
     <Box sx={{ maxHeight: "100vh", overflowY: "auto" }}>
@@ -356,7 +372,7 @@ export default function EmployeeManagement() {
             sx={{ pb: 2, pt: 4, color: "White", fontWeight: "bold" }}
           >
             {" "}
-            Employee Management
+            {t("employeeManagement.employeeManagement")}
           </Typography>
           {[...Array(3)].map((_, i) => (
             <Box
@@ -396,7 +412,7 @@ export default function EmployeeManagement() {
                   startIcon={<FilterAltIcon />}
                   sx={{}}
                 >
-                  Filter
+                  {t("employeeManagement.filter")}
                 </Button>
               </Box>
 
@@ -417,7 +433,8 @@ export default function EmployeeManagement() {
                     setDeptAnchor(null);
                   }}
                 >
-                  Position <ArrowRightIcon sx={{ ml: "auto" }} />
+                  {t("employeeManagement.position")}{" "}
+                  <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
 
                 {/*Department Item*/}
@@ -427,7 +444,8 @@ export default function EmployeeManagement() {
                     setPositionAnchor(null);
                   }}
                 >
-                  Department <ArrowRightIcon sx={{ ml: "auto" }} />
+                  {t("employeeManagement.department")}{" "}
+                  <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
               </Popover>
 
@@ -446,12 +464,12 @@ export default function EmployeeManagement() {
               >
                 <FormGroup sx={{ pl: 1 }}>
                   {[
-                    ["UNDERWRITER", "Underwriter"],
-                    ["BUSINESS_ANALYST", "Business Analysis"],
-                    ["ACTUARIAL_ANALYST", "Actuarial Analyst"],
-                    ["EXL_OPERATIONS", "EXL Operations"],
-                    ["BUSINESS_OP_RATING", "Business Ops Rating"],
-                    ["ADMIN", "Admin"],
+                    ["UNDERWRITER", t("dashboard.underwriter")],
+                    ["BUSINESS_ANALYST", t("dashboard.businessAnalyst")],
+                    ["ACTUARIAL_ANALYST", t("dashboard.actuarialAnalyst")],
+                    ["EXL_OPERATIONS", t("dashboard.exlOperations")],
+                    ["BUSINESS_OP_RATING", t("dashboard.businessOpsTeam")],
+                    ["ADMIN", t("dashboard.admin")],
                   ].map(([value, label]) => (
                     <FormControlLabel
                       key={value}
@@ -480,8 +498,11 @@ export default function EmployeeManagement() {
               >
                 <FormGroup sx={{ pl: 1 }}>
                   {[
-                    ["OPERATION_TECHNOLOGY", "Operation Technology"],
-                    ["ACCOUNTING", "Accounting"],
+                    [
+                      "OPERATION_TECHNOLOGY",
+                      t("employeeManagement.opsAndTechnology"),
+                    ],
+                    ["ACCOUNTING", t("employeeManagement.accounting")],
                   ].map(([value, label]) => (
                     <FormControlLabel
                       key={value}
@@ -498,16 +519,17 @@ export default function EmployeeManagement() {
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <HelpPopup
-                description="The Employee Management page lets you view, add, edit, and delete employees. You can filter by position or department and search by name."
+                description={t("employeeManagement.helpInfo")}
                 infoOrHelp={true}
               />
+              <LanguageToggle />
               <Button
                 onClick={() => setViewState("new")}
                 variant="contained"
                 startIcon={<AddIcon />}
                 sx={{ whiteSpace: "nowrap" }}
               >
-                New Employee
+                {t("employeeManagement.newEmployee")}
               </Button>
             </Box>
           </Box>
@@ -517,7 +539,7 @@ export default function EmployeeManagement() {
       {/* ── Data grid ─────────────────────────────────────────────────────── */}
       <DataGrid
         rows={filteredRows}
-        columns={getColumns((row) => setViewState(row), handleDelete)}
+        columns={columns}
         getRowId={(row) => row.uuid}
         loading={loading}
         pageSizeOptions={[5, 10]}
@@ -560,7 +582,9 @@ export default function EmployeeManagement() {
               fontFamily: "Rubik, sans-serif",
             }}
           >
-            {viewState === "new" ? "Add New Employee" : "Edit Employee"}
+            {viewState === "new" ?
+              t("employeeManagement.addNewEmployee")
+            : t("employeeManagement.editEmployee")}
           </Typography>
           <IconButton
             onClick={() => setViewState(null)}

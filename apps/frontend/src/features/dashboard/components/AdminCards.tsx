@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { BarChart } from "@mui/x-charts/BarChart";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Card,
@@ -108,6 +109,25 @@ function addSummary(
 export default function AdminCards() {
   const [employeeType, setEmployeeType] = useState("");
   const [employeeUuid, setEmployeeUuid] = useState("");
+  const { t } = useTranslation();
+
+  const positionLabels: Record<string, string> = {
+    UNDERWRITER: t("dashboard.underwriter"),
+    BUSINESS_ANALYST: t("dashboard.businessAnalyst"),
+    ADMIN: t("dashboard.admin"),
+    ACTUARIAL_ANALYST: t("dashboard.actuarialAnalyst"),
+    EXL_OPERATIONS: t("dashboard.exlOperations"),
+    BUSINESS_OP_RATING: t("dashboard.businessOpsTeam"),
+  };
+
+  const ACTION_LABELS = [
+    { key: "edited" as const, label: t("dashboardRecentActivity.edited") },
+    {
+      key: "checkedOut" as const,
+      label: t("dashboardRecentActivity.checkedOut"),
+    },
+    { key: "deleted" as const, label: t("dashboardRecentActivity.deleted") },
+  ];
 
   const filteredEmployees = useMemo(() => {
     if (!employeeType) {
@@ -173,7 +193,7 @@ export default function AdminCards() {
             variant="h6"
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
-            Employee Activity
+            {t("adminCards.employeeActivity")}
           </Typography>
         }
       />
@@ -190,23 +210,23 @@ export default function AdminCards() {
             }}
           >
             <InputLabel id="employee-type-filter-label">
-              Employee Type
+              {t("adminCards.employeeType")}
             </InputLabel>
             <Select
               labelId="employee-type-filter-label"
               value={employeeType}
-              label="Employee Type"
+              label={t("adminCards.employeeType")}
               onChange={(event: SelectChangeEvent) => {
                 setEmployeeType(event.target.value);
               }}
             >
-              <MenuItem value="">All Employee Types</MenuItem>
+              <MenuItem value="">{t("adminCards.allEmployeeTypes")}</MenuItem>
               {POSITION_OPTIONS.map((position) => (
                 <MenuItem
                   key={position}
                   value={position}
                 >
-                  {getPositionLabel(position)}
+                  {positionLabels[position]}
                 </MenuItem>
               ))}
             </Select>
@@ -221,16 +241,18 @@ export default function AdminCards() {
               "& .MuiMenuItem-root": { fontFamily: "inherit" },
             }}
           >
-            <InputLabel id="employee-filter-label">Employee</InputLabel>
+            <InputLabel id="employee-filter-label">
+              {t("adminCards.employee")}
+            </InputLabel>
             <Select
               labelId="employee-filter-label"
               value={employeeUuid}
-              label="Employee"
+              label={t("adminCards.employee")}
               onChange={(event: SelectChangeEvent) => {
                 setEmployeeUuid(event.target.value);
               }}
             >
-              <MenuItem value="">All Employees</MenuItem>
+              <MenuItem value="">{t("adminCards.allEmployees")}</MenuItem>
               {filteredEmployees.map((employee) => (
                 <MenuItem
                   key={employee.uuid}
@@ -276,7 +298,7 @@ export default function AdminCards() {
           series={[
             {
               dataKey: "count",
-              label: "Actions",
+              label: t("adminCards.actions"),
               valueFormatter: (value) => `${value ?? 0}`,
             },
           ]}

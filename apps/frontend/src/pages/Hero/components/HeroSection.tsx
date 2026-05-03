@@ -42,10 +42,10 @@ export default function HeroSection() {
   const { t } = useTranslation();
 
   const careLines = [
-    { letter: "C", word: "ollaboration", indent: "pl-25" },
-    { letter: "A", word: "ccountability", indent: "pl-31" },
-    { letter: "R", word: "espect", indent: "pl-37" },
-    { letter: "E", word: "mpowerment", indent: "pl-43" },
+    { letter: "C", word: t("care.c"), indent: "pl-25" },
+    { letter: t("care.aLetter"), word: t("care.a"), indent: "pl-31" },
+    { letter: "R", word: t("care.r"), indent: "pl-37" },
+    { letter: "E", word: t("care.e"), indent: "pl-43" },
   ];
 
   return (
