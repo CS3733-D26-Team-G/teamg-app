@@ -13,19 +13,20 @@ import SchoolIcon from "@mui/icons-material/School";
 import { useThemeMode } from "../../ThemeContext.tsx";
 import { useTutorial } from "../../components/Tutorial/TutorialContext.tsx";
 import { useAuth } from "../../auth/AuthContext.tsx";
-import { useLocation } from "react-router-dom";
 
 function Settings() {
   const { isDarkMode, isSaving, toggleDarkMode } = useThemeMode();
-  const { resetTours, checkAndPrompt } = useTutorial();
+  const { resetTours, triggerPrompt } = useTutorial();
   const { session } = useAuth();
-  const location = useLocation();
 
   const isAdmin = session?.permissions?.can_manage_employees ?? false;
+  const isUnderwriter = session?.position === "UNDERWRITER";
 
   const handleRestartTour = () => {
     resetTours();
-    checkAndPrompt(location.pathname);
+    setTimeout(() => {
+      triggerPrompt();
+    }, 100);
   };
 
   return (
@@ -42,7 +43,6 @@ function Settings() {
         elevation={2}
         sx={{ mt: 3, borderRadius: 2, overflow: "hidden" }}
       >
-        {/* Section: Appearance */}
         <Box sx={{ px: 3, py: 2 }}>
           <Typography
             variant="overline"
@@ -99,8 +99,7 @@ function Settings() {
         </Box>
       </Paper>
 
-      {/* Tutorial section — admin only */}
-      {isAdmin && (
+      {(isAdmin || isUnderwriter) && (
         <Paper
           elevation={2}
           sx={{ mt: 3, borderRadius: 2, overflow: "hidden" }}
@@ -138,7 +137,7 @@ function Settings() {
                     variant="body2"
                     color="text.secondary"
                   >
-                    Take a guided tour of the admin portal
+                    Take a guided tour of the platform
                   </Typography>
                 </Box>
               </Stack>
