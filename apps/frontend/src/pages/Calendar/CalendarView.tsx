@@ -219,7 +219,7 @@ export default function CalendarPage() {
             <Typography
               sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
             >
-              See when content you created or checked out will expire
+              See when content you created (✏️) or checked out (👁️) will expire
             </Typography>
           </Box>
           <Box
