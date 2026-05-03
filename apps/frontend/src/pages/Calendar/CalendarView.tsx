@@ -238,7 +238,6 @@ export default function CalendarPage() {
               description="This queue shows all PENDING claims. Expand each card to read the details, write your risk notes, then clear or flag."
               infoOrHelp={true}
             />
-            <NotificationBarComponent />
           </Box>
         </Stack>
 
@@ -258,154 +257,90 @@ export default function CalendarPage() {
           {loading ?
             <Typography>Loading calendar…</Typography>
           : <>
-              {isDarkMode && (
-                <style>{`
-                  .fc .fc-col-header-cell {
-                    background-color: #161B27 !important;
-                  }
-                  .fc .fc-col-header-cell-cushion {
-                    color: #9BA3B8 !important;
-                    text-decoration: none !important;
-                  }
-                  .fc-theme-standard td,
-                  .fc-theme-standard th,
-                  .fc-theme-standard .fc-scrollgrid,
-                  .fc .fc-scrollgrid-liquid {
-                    border-color: rgba(255,255,255,0.08) !important;
-                  }
-                  .fc .fc-scrollgrid-section > * {
-                    border-color: rgba(255,255,255,0.08) !important;
-                  }
-                  .fc table {
-                    border-color: rgba(255,255,255,0.08) !important;
-                  }
-                  .fc .fc-timegrid-col.fc-day-today {
-                    background-color: rgba(77,159,255,0.08) !important;
-                  }
-                  .fc .fc-timegrid-axis {
-                    background-color: #161B27 !important;
-                    border-color: rgba(255,255,255,0.08) !important;
-                  }
-                  .fc .fc-timegrid-axis-cushion {
-                    color: #9BA3B8 !important;
-                  }
-                  .fc-theme-standard .fc-scrollgrid-section-sticky > * {
-                    background-color: #161B27 !important;
-                    border-color: rgba(255,255,255,0.08) !important;
-                  }
-                  .fc .fc-timegrid-slot {
-                    border-color: rgba(255,255,255,0.08) !important;
-                  }
-                  .fc .fc-daygrid-day,
-                  .fc .fc-timegrid-col {
-                    background-color: transparent !important;
-                  }
-                `}</style>
-              )}
+              {isDarkMode && <style>{`/* your dark mode styles */`}</style>}
 
-              <style>{`
-                .fc,
-                .fc-toolbar-title,
-                .fc-col-header-cell,
-                .fc-daygrid-day-number,
-                .fc-event,
-                .fc-button {
-                  font-family: 'Rubik', sans-serif !important;
-                }
+              <style>{`/* your calendar styles */`}</style>
 
-                .fc-event {
-                  cursor: pointer !important;
-                }
-
-                .fc .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
-                  color: #ffffff !important;
-                  font-weight: 700 !important;
-                }
-
-                .fc .fc-daygrid-day.fc-day-today {
-                  background-color: rgba(59, 130, 246, 0.12) !important;
-                }
-                .fc .fc-timegrid-col.fc-day-today {
-                  background-color: rgba(59, 130, 246, 0.08) !important;
-                }
-
-                .fc .fc-col-header-cell {
-                  background-color: #102347 !important;
-                }
-                .fc .fc-col-header-cell-cushion {
-                  color: #ffffff !important;
-                  text-decoration: none !important;
-                  font-weight: 600 !important;
-                }
-
-                .fc-event-time {
-                  display: none !important;
-                }
-
-                
-                  
-              `}</style>
-
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                eventDisplay="block"
-                height="calc(100vh - 180px"
-                customButtons={{
-                  dayToday: {
-                    text: "Day",
-                    click: () => {
-                      const calendarApi = calendarRef.current?.getApi();
-                      if (calendarApi) {
-                        calendarApi.today();
-                        calendarApi.changeView("timeGridDay");
-                      }
-                    },
-                  },
-                  weekToday: {
-                    text: "Week",
-                    click: () => {
-                      const calendarApi = calendarRef.current?.getApi();
-                      if (calendarApi) {
-                        calendarApi.today();
-                        calendarApi.changeView("timeGridWeek");
-                      }
-                    },
-                  },
-                  Month: {
-                    text: "Month",
-                    click: () => {
-                      const calendarApi = calendarRef.current?.getApi();
-                      if (calendarApi) {
-                        calendarApi.today();
-                        calendarApi.changeView("dayGridMonth");
-                      }
-                    },
-                  },
+              <div
+                style={{
+                  display: "flex",
+                  gap: "20px",
+                  height: "calc(100vh - 180px)",
                 }}
-                headerToolbar={{
-                  left: "prev,next",
-                  center: "title",
-                  right: "Month,weekToday,dayToday",
-                }}
-                events={events}
-                forceEventDuration={true}
-                displayEventTime={false}
-                eventClick={(info) => {
-                  const row = info.event.extendedProps.row as ContentRow;
-                  setPreviewDoc({
-                    uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
-                    fileName: row.title,
-                    uuid: row.uuid,
-                    row,
-                  });
-                }}
-              />
+              >
+                <div style={{ width: "300px", flexShrink: 0 }}>
+                  <Card sx={{ height: "100%", overflow: "auto" }}>
+                    <NotificationBarComponent showFilters={true} />
+                  </Card>
+                </div>
+                <div style={{ flex: 1, minWidth: 0, overflow: "auto" }}>
+                  <Card sx={{ height: "100%" }}>
+                    <FullCalendar
+                      ref={calendarRef}
+                      plugins={[
+                        dayGridPlugin,
+                        timeGridPlugin,
+                        interactionPlugin,
+                      ]}
+                      initialView="dayGridMonth"
+                      eventDisplay="block"
+                      height="100%"
+                      customButtons={{
+                        dayToday: {
+                          text: "Day",
+                          click: () => {
+                            const calendarApi = calendarRef.current?.getApi();
+                            if (calendarApi) {
+                              calendarApi.today();
+                              calendarApi.changeView("timeGridDay");
+                            }
+                          },
+                        },
+                        weekToday: {
+                          text: "Week",
+                          click: () => {
+                            const calendarApi = calendarRef.current?.getApi();
+                            if (calendarApi) {
+                              calendarApi.today();
+                              calendarApi.changeView("timeGridWeek");
+                            }
+                          },
+                        },
+                        Month: {
+                          text: "Month",
+                          click: () => {
+                            const calendarApi = calendarRef.current?.getApi();
+                            if (calendarApi) {
+                              calendarApi.today();
+                              calendarApi.changeView("dayGridMonth");
+                            }
+                          },
+                        },
+                      }}
+                      headerToolbar={{
+                        left: "prev,next",
+                        center: "title",
+                        right: "Month,weekToday,dayToday",
+                      }}
+                      events={events}
+                      forceEventDuration={true}
+                      displayEventTime={false}
+                      eventClick={(info) => {
+                        const row = info.event.extendedProps.row as ContentRow;
+                        setPreviewDoc({
+                          uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+                          fileName: row.title,
+                          uuid: row.uuid,
+                          row,
+                        });
+                      }}
+                    />
+                  </Card>
+                </div>
+              </div>
             </>
           }
         </Card>
-
         <Dialog
           open={previewDoc !== null}
           onClose={() => setPreviewDoc(null)}

@@ -102,11 +102,11 @@ export default function NotificationBell() {
             width: "400px",
             maxHeight: "500px",
             borderRadius: 2,
-            overflow: "hidden",
+            overflow: "auto",
           },
         }}
       >
-        <NotificationBarComponent />
+        <NotificationBarComponent showFilters={false} />
       </Popover>
     </>
   );

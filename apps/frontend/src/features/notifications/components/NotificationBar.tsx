@@ -251,7 +251,11 @@ export function useNotificationFilter() {
     isFiltering: currentFilter !== "all",
   };
 }
-export default function NotificationBarComponent() {
+export default function NotificationBarComponent({
+  showFilters = false,
+}: {
+  showFilters?: boolean;
+}) {
   const {
     visibleCriticalContent,
     visibleExpiringContent,
@@ -417,78 +421,81 @@ export default function NotificationBarComponent() {
         </Box>
       </Box>
 
-      {/* Filter Buttons */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          mb: 2,
-          flexWrap: "wrap",
-          gap: 1,
-          px: 1,
-        }}
-      >
-        <Button
-          size="small"
-          variant={currentFilter === "all" ? "contained" : "outlined"}
-          onClick={() => setFilter("all")}
-        >
-          All ({allAlerts.length})
-        </Button>
-        <Button
-          size="small"
-          variant={currentFilter === "critical" ? "contained" : "outlined"}
-          onClick={() => setFilter("critical")}
-          color="error"
-        >
-          Critical ({visibleCriticalContent.length})
-        </Button>
-        <Button
-          size="small"
-          variant={currentFilter === "expiring" ? "contained" : "outlined"}
-          onClick={() => setFilter("expiring")}
-          color="warning"
-        >
-          Expiring (
-          {visibleExpiringContent.length + visibleCriticalContent.length})
-        </Button>
-        <Button
-          size="small"
-          variant={currentFilter === "claim" ? "contained" : "outlined"}
-          onClick={() => setFilter("claim")}
-          color="primary"
-        >
-          Claims ({visibleClaimActions.length})
-        </Button>
-        <Button
-          size="small"
-          variant={currentFilter === "ownership" ? "contained" : "outlined"}
-          onClick={() => setFilter("ownership")}
-          color="info"
-        >
-          Ownership ({visibleOwnershipChanges.length})
-        </Button>
-        <Button
-          size="small"
-          variant={currentFilter === "edit" ? "contained" : "outlined"}
-          onClick={() => setFilter("edit")}
-          color="secondary"
-        >
-          Edits ({visibleContentEdits.length})
-        </Button>
-      </Box>
+      {showFilters && (
+        <>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              mb: 2,
+              flexWrap: "wrap",
+              gap: 1,
+              px: 1,
+            }}
+          >
+            <Button
+              size="small"
+              variant={currentFilter === "all" ? "contained" : "outlined"}
+              onClick={() => setFilter("all")}
+            >
+              All ({allAlerts.length})
+            </Button>
+            <Button
+              size="small"
+              variant={currentFilter === "critical" ? "contained" : "outlined"}
+              onClick={() => setFilter("critical")}
+              color="error"
+            >
+              Critical ({visibleCriticalContent.length})
+            </Button>
+            <Button
+              size="small"
+              variant={currentFilter === "expiring" ? "contained" : "outlined"}
+              onClick={() => setFilter("expiring")}
+              color="warning"
+            >
+              Expiring (
+              {visibleExpiringContent.length + visibleCriticalContent.length})
+            </Button>
+            <Button
+              size="small"
+              variant={currentFilter === "claim" ? "contained" : "outlined"}
+              onClick={() => setFilter("claim")}
+              color="primary"
+            >
+              Claims ({visibleClaimActions.length})
+            </Button>
+            <Button
+              size="small"
+              variant={currentFilter === "ownership" ? "contained" : "outlined"}
+              onClick={() => setFilter("ownership")}
+              color="info"
+            >
+              Ownership ({visibleOwnershipChanges.length})
+            </Button>
+            <Button
+              size="small"
+              variant={currentFilter === "edit" ? "contained" : "outlined"}
+              onClick={() => setFilter("edit")}
+              color="secondary"
+            >
+              Edits ({visibleContentEdits.length})
+            </Button>
+          </Box>
 
-      {/* Results Count */}
-      {isFiltering && displayedAlerts.length > 0 && (
-        <Typography
-          variant="caption"
-          color="textSecondary"
-          sx={{ mb: 1, px: 2 }}
-        >
-          Showing {displayedAlerts.length} of {allAlerts.length} notifications
-        </Typography>
+          {/* Results Count */}
+          {isFiltering && displayedAlerts.length > 0 && (
+            <Typography
+              variant="caption"
+              color="textSecondary"
+              sx={{ mb: 1, px: 2 }}
+            >
+              Showing {displayedAlerts.length} of {allAlerts.length}{" "}
+              notifications
+            </Typography>
+          )}
+        </>
       )}
-
       {/* Content Area */}
       <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, px: 1 }}>
         {loading ?
