@@ -7,4 +7,3 @@ packages/db/generated
 dist/
 package-lock.json
 packages/zod
-pnpm-lock.yaml
