@@ -15,22 +15,21 @@ const teamMembers = [
     name: "Myer Cheng",
     position: "Lead Software Engineer",
     photo: "/Myer.png",
-    quote: "I stink",
+    quote: `"In the midst of chaos, there is also opportunity"\n - Sun Tzu, The Art of War`,
   },
 
   {
     name: "Tj Elysee",
     position: "Product Owner",
     photo: "/Tj.jpg",
-    quote:
-      "“I can do all things through him who strengthens me” - Philippians 4:13",
+    quote: `"I can do all things through him who strengthens me"\n - Philippians 4:13`,
   },
 
   {
     name: "Shriya Kulkarni",
     position: "Lead Back-End Developer",
     photo: "/Shriya.jpg",
-    quote: `"But I suppose a fox's duty is to be... well, a fox." - Mr. Fox, Fantastic Mr. Fox`,
+    quote: `"But I suppose a fox's duty is to be... well, a fox."\n - Mr. Fox, Fantastic Mr. Fox`,
   },
 
   {
@@ -38,21 +37,21 @@ const teamMembers = [
     position: "Project Manager",
     photo: "/Justin.jpg",
     quote:
-      '"Without pain, without sacrifice, we would have nothing" - Tyler Durden/ Chuck Palahniuk',
+      '"Without pain, without sacrifice, we would have nothing"\n - Tyler Durden/ Chuck Palahniuk',
   },
 
   {
     name: "Colin Truong",
     position: "Lead Front-End Developer",
     photo: "/Colin.jpg",
-    quote: "I stink",
+    quote: `"That's rough buddy"\n - Prince Zuko, Son of Ozai `,
   },
 
   {
     name: "Isaac Gonzalez",
     position: "Documentation",
     photo: "/Isaac.png",
-    quote: `"Keep Moving Forward."\n- Lewis Robinson`,
+    quote: `"Keep Moving Forward."\n- Cornelius Robinson`,
   },
 
   {
@@ -73,7 +72,7 @@ const teamMembers = [
     name: "Sam Rodrigues",
     position: "Full-Time Software Engineer",
     photo: "/Sam.png",
-    quote: `"If you don't like something, change it. If you can't change it, change your attitude." - Maya Angelou`,
+    quote: `"If you don't like something, change it. If you can't change it, change your attitude."\n - Maya Angelou`,
   },
 
   {
@@ -81,7 +80,7 @@ const teamMembers = [
     position: "Full-Time Software Engineer",
     photo: "/Ronan.png",
     quote:
-      "“A man that fears suffering is already suffering from what he fears.” - Michel de Montaigne",
+      "“A man that fears suffering is already suffering from what he fears.”\n- Michel de Montaigne",
   },
 ];
 
@@ -150,7 +149,7 @@ export default function AboutUs() {
       </Box>
 
       <Box
-        sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}
+        sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2 }}
       >
         {teamMembers.map((member, index) => (
           <Card
