@@ -120,15 +120,18 @@ function Profile() {
       }}
     >
       {/*Top Header Bar*/}
-      <CardContent>
+      <CardContent
+        sx={{
+          width: "100%",
+          mx: "auto",
+        }}
+      >
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            width: "90%",
             height: 80,
-            mx: "auto",
             mt: 6,
             borderRadius: 4,
             backgroundColor: "rgba(255, 255, 255, 0.12)",
@@ -181,7 +184,7 @@ function Profile() {
           sx={{
             width: "90",
             mx: "auto",
-            mt: 3,
+            mt: 2,
             borderRadius: 3,
             backgroundColor: "background.default",
             boxShadow: "none",
@@ -191,9 +194,9 @@ function Profile() {
             sx={{
               display: "flex",
               flexDirection: "column",
-              gap: 3,
+              gap: 2,
               p: 3,
-              minHeight: "78vh",
+              minHeight: "79vh",
             }}
           >
             {/*Profile Tag Bar*/}
@@ -302,7 +305,7 @@ function Profile() {
                 sx={{
                   display: "flex",
                   width: "40%",
-                  height: 215,
+                  height: 200,
                   ...cardSx,
                 }}
               >
@@ -394,7 +397,7 @@ function Profile() {
                 sx={{
                   display: "flex",
                   width: "30%",
-                  height: 215,
+                  height: 200,
                   ...cardSx,
                 }}
               >
@@ -450,7 +453,7 @@ function Profile() {
                 sx={{
                   display: "flex",
                   width: "30%",
-                  height: 215,
+                  height: 200,
                   ...cardSx,
                 }}
               >
@@ -464,15 +467,6 @@ function Profile() {
                     }}
                   >
                     Security
-                  </Typography>
-
-                  <Typography
-                    sx={{
-                      pl: 2,
-                      fontSize: 20,
-                    }}
-                  >
-                    Password: ••••••••••••
                   </Typography>
 
                   <Button
