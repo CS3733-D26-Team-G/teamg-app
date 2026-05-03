@@ -35,6 +35,10 @@ export function ContentTabs({
     () => userPosition ?? "favorites",
   );
 
+  useEffect(() => {
+    localStorage.setItem("contentMgmt_viewMode", viewMode);
+  }, [viewMode]);
+
   // re-read localStorage whenever the tab becomes active so the list stays fresh
   const [recentEntries, setRecentEntries] = useState(() =>
     employeeUuid ? getRecentlyViewed(employeeUuid) : [],

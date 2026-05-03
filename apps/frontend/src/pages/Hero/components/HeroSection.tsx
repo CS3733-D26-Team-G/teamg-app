@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Box, Button, Alert, Collapse, Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import HanoverLogoWhite from "../../../assets/HanoverLogoWhite.png";
 import LoginModal from "./LoginModal.tsx";
 import theme from "../../../theme.tsx";
-import { type Variants } from "framer-motion";
+//import VoiceControl from "../../../VoiceControl.tsx";
 import CarouselBackground from "./CarouselBackground";
 import { useTranslation } from "react-i18next";
+import { Mic, MicOff } from "lucide-react";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -97,7 +98,7 @@ export default function HeroSection() {
           <img
             src={HanoverLogoWhite}
             alt="White Hanover Logo"
-            className="w-[80px] h-auto"
+            className="w-20 h-auto"
           />
         </Box>
 
@@ -121,6 +122,10 @@ export default function HeroSection() {
         >
           {t("heroSection.login")}
         </Button>
+        {/*
+        <button type = "button" className = "btn btn-outlne-secondary" onClick={startVoice}>
+          <Mic size={16}/> Start Voice</button>
+*/}
       </Box>
 
       {/* Animated Main Content Area */}

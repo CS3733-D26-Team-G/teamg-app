@@ -1,4 +1,13 @@
 import { LineChart } from "@mui/x-charts/LineChart";
+import { useState } from "react";
+import {
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  type SelectChangeEvent,
+} from "@mui/material";
+import { useDashboardBootstrapQuery } from "../../../lib/activity-loaders";
 
 interface EditHitsRow {
   date: string;
@@ -18,108 +27,93 @@ function formatDateLabel(date: string) {
   return `${Number(month)}/${Number(day)}`;
 }
 
-const MOCK_EDIT_HITS_BY_ROLE: EditHitsRow[] = [
-  {
-    date: "2026-04-22",
-    UNDERWRITER: 6,
-    BUSINESS_ANALYST: 4,
-    ACTUARIAL_ANALYST: 2,
-    EXL_OPERATIONS: 1,
-    BUSINESS_OP_RATING: 3,
-    ADMIN: 1,
-  },
-  {
-    date: "2026-04-23",
-    UNDERWRITER: 8,
-    BUSINESS_ANALYST: 5,
-    ACTUARIAL_ANALYST: 3,
-    EXL_OPERATIONS: 2,
-    BUSINESS_OP_RATING: 4,
-    ADMIN: 1,
-  },
-  {
-    date: "2026-04-24",
-    UNDERWRITER: 5,
-    BUSINESS_ANALYST: 6,
-    ACTUARIAL_ANALYST: 4,
-    EXL_OPERATIONS: 2,
-    BUSINESS_OP_RATING: 3,
-    ADMIN: 2,
-  },
-  {
-    date: "2026-04-25",
-    UNDERWRITER: 9,
-    BUSINESS_ANALYST: 4,
-    ACTUARIAL_ANALYST: 5,
-    EXL_OPERATIONS: 3,
-    BUSINESS_OP_RATING: 2,
-    ADMIN: 1,
-  },
-  {
-    date: "2026-04-26",
-    UNDERWRITER: 7,
-    BUSINESS_ANALYST: 5,
-    ACTUARIAL_ANALYST: 3,
-    EXL_OPERATIONS: 2,
-    BUSINESS_OP_RATING: 4,
-    ADMIN: 2,
-  },
-];
-
 export default function HitsLineChart() {
+  const [days, setDays] = useState<number | undefined>(7);
+  const { data } = useDashboardBootstrapQuery({
+    days,
+  });
+  const editHitsByRole = data?.editHitsByRole ?? [];
+
   return (
-    <LineChart
-      highlightedItem={null}
-      height={320}
-      margin={{ top: 16, right: 24, bottom: 24, left: 48 }}
-      xAxis={[
-        {
-          scaleType: "point",
-          data: MOCK_EDIT_HITS_BY_ROLE.map((row) => formatDateLabel(row.date)),
-        },
-      ]}
-      series={[
-        {
-          data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.UNDERWRITER ?? 0),
-          label: "Underwriter",
-          color: "#395176",
-          shape: "circle",
-        },
-        {
-          data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.BUSINESS_ANALYST ?? 0),
-          label: "Business Analyst",
-          color: "#bea5aa",
-          shape: "circle",
-        },
-        {
-          data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.ACTUARIAL_ANALYST ?? 0),
-          label: "Actuarial Analyst",
-          color: "#ba667b",
-          shape: "circle",
-        },
-        {
-          data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.EXL_OPERATIONS ?? 0),
-          label: "EXL Operations",
-          color: "#721b31",
-          shape: "circle",
-        },
-        {
-          data: MOCK_EDIT_HITS_BY_ROLE.map(
-            (row) => row.BUSINESS_OP_RATING ?? 0,
-          ),
-          label: "Business Ops Rating",
-          color: "#509edd",
-          shape: "circle",
-        },
-        {
-          data: MOCK_EDIT_HITS_BY_ROLE.map((row) => row.ADMIN ?? 0),
-          label: "Admin",
-          color: "#74414e",
-          shape: "circle",
-        },
-      ]}
-      grid={{ horizontal: true }}
-      sx={{ width: "100%", mr: "auto" }}
-    />
+    <>
+      <FormControl
+        size="small"
+        sx={{
+          "minWidth": 160,
+          "mb": 2,
+          "& .MuiInputBase-root": { fontFamily: "inherit" },
+          "& .MuiInputLabel-root": { fontFamily: "inherit" },
+          "& .MuiMenuItem-root": { fontFamily: "inherit" },
+        }}
+      >
+        <InputLabel id="edit-hits-range-label">Time Range</InputLabel>
+        <Select
+          labelId="edit-hits-range-label"
+          value={days === undefined ? "all" : String(days)}
+          label="Time Range"
+          onChange={(event: SelectChangeEvent) => {
+            const value = event.target.value;
+            setDays(value === "all" ? undefined : Number(value));
+          }}
+        >
+          <MenuItem value="7">Last 7 days</MenuItem>
+          <MenuItem value="14">Last 14 days</MenuItem>
+          <MenuItem value="30">Last 30 days</MenuItem>
+          <MenuItem value="all">All time</MenuItem>
+        </Select>
+      </FormControl>
+
+      <LineChart
+        highlightedItem={null}
+        height={320}
+        margin={{ top: 16, right: 24, bottom: 24, left: 48 }}
+        xAxis={[
+          {
+            scaleType: "point",
+            data: editHitsByRole.map((row) => formatDateLabel(row.date)),
+          },
+        ]}
+        series={[
+          {
+            data: editHitsByRole.map((row) => row.UNDERWRITER ?? 0),
+            label: "Underwriter",
+            color: "#395176",
+            shape: "circle",
+          },
+          {
+            data: editHitsByRole.map((row) => row.BUSINESS_ANALYST ?? 0),
+            label: "Business Analyst",
+            color: "#bea5aa",
+            shape: "circle",
+          },
+          {
+            data: editHitsByRole.map((row) => row.ACTUARIAL_ANALYST ?? 0),
+            label: "Actuarial Analyst",
+            color: "#ba667b",
+            shape: "circle",
+          },
+          {
+            data: editHitsByRole.map((row) => row.EXL_OPERATIONS ?? 0),
+            label: "EXL Operations",
+            color: "#721b31",
+            shape: "circle",
+          },
+          {
+            data: editHitsByRole.map((row) => row.BUSINESS_OP_RATING ?? 0),
+            label: "Business Ops Rating",
+            color: "#509edd",
+            shape: "circle",
+          },
+          {
+            data: editHitsByRole.map((row) => row.ADMIN ?? 0),
+            label: "Admin",
+            color: "#74414e",
+            shape: "circle",
+          },
+        ]}
+        grid={{ horizontal: true }}
+        sx={{ width: "100%", mr: "auto" }}
+      />
+    </>
   );
 }

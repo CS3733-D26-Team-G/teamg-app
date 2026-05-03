@@ -1,15 +1,26 @@
 import { Box, Button, Typography, Stack } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTutorial } from "./TutorialContext";
+import { useTutorial, PAGE_TUTORIALS } from "./TutorialContext";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 
 export default function TutorialPrompt() {
-  const { showPrompt, startTutorial, skipTutorial } = useTutorial();
+  const {
+    showPrompt,
+    promptPageId,
+    isWelcomeTour,
+    startTutorial,
+    skipTutorial,
+  } = useTutorial();
+
+  const pageTutorial =
+    promptPageId ?
+      Object.values(PAGE_TUTORIALS).find((t) => t.pageId === promptPageId)
+    : null;
 
   return (
     <AnimatePresence>
-      {showPrompt && (
+      {showPrompt && (isWelcomeTour || pageTutorial) && (
         <>
           {/* Backdrop */}
           <Box
@@ -45,7 +56,7 @@ export default function TutorialPrompt() {
               boxShadow: "0 32px 80px rgba(0,0,0,0.45)",
             }}
           >
-            {/* Gradient header strip */}
+            {/* Gradient header */}
             <Box
               sx={{
                 background:
@@ -93,7 +104,7 @@ export default function TutorialPrompt() {
                   fontFamily: "Rubik, sans-serif",
                 }}
               >
-                Welcome to iBank!
+                {isWelcomeTour ? "Welcome to iBank!" : pageTutorial!.pageTitle}
               </Typography>
               <Typography
                 sx={{
@@ -103,7 +114,9 @@ export default function TutorialPrompt() {
                   fontFamily: "Rubik, sans-serif",
                 }}
               >
-                Admin Portal
+                {isWelcomeTour ?
+                  "Admin Portal"
+                : `Quick page tour \u2022 ${pageTutorial!.steps.length} steps`}
               </Typography>
             </Box>
 
@@ -123,16 +136,31 @@ export default function TutorialPrompt() {
                   fontFamily: "Rubik, sans-serif",
                 }}
               >
-                It looks like you're new here — or maybe just need a refresher.
-                Would you like a{" "}
-                <Box
-                  component="span"
-                  sx={{ fontWeight: 700, color: "primary.main" }}
-                >
-                  quick guided tour
-                </Box>{" "}
-                of the platform? We'll walk you through the dashboard, content
-                management, employee tools, and your account in about 2 minutes.
+                {isWelcomeTour ?
+                  <>
+                    It looks like you're new here or maybe just need a
+                    refresher. Would you like a{" "}
+                    <Box
+                      component="span"
+                      sx={{ fontWeight: 700, color: "primary.main" }}
+                    >
+                      quick guided tour
+                    </Box>{" "}
+                    of the platform? We'll walk you through the dashboard,
+                    content management, employee tools, and your account in
+                    about 2 minutes.
+                  </>
+                : <>
+                    {pageTutorial!.pageDescription} Would you like a{" "}
+                    <Box
+                      component="span"
+                      sx={{ fontWeight: 700, color: "primary.main" }}
+                    >
+                      quick guided tour
+                    </Box>{" "}
+                    of this page?
+                  </>
+                }
               </Typography>
 
               <Stack spacing={1.5}>
@@ -157,7 +185,7 @@ export default function TutorialPrompt() {
                     },
                   }}
                 >
-                  Start the Tour
+                  {isWelcomeTour ? "Start the Tour" : "Show me around"}
                 </Button>
 
                 <Button

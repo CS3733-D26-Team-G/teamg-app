@@ -25,6 +25,8 @@ import {
   styled,
   Toolbar,
   Typography,
+  Skeleton,
+  Stack,
   CardHeader,
   Divider,
 } from "@mui/material";
@@ -36,6 +38,146 @@ import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx
 import AdminCards from "../../features/dashboard/components/AdminCards.tsx";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
+
+const StyledToolbar = styled(Toolbar)(({ theme }) => ({
+  flexDirection: "column",
+  alignItems: "stretch",
+  paddingTop: theme.spacing(2),
+  paddingBottom: theme.spacing(2),
+  minHeight: 128,
+}));
+
+function DashboardSkeleton() {
+  return (
+    <Box sx={{ height: "auto", width: "100%" }}>
+      {/* Header skeleton */}
+      <StyledToolbar
+        sx={{
+          background:
+            "linear-gradient(90deg, #1A1E4B 0%, #395176 60%, #4a7aab 100%)",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            px: 4,
+            py: 3,
+          }}
+        >
+          <Skeleton
+            variant="text"
+            width={320}
+            height={56}
+            sx={{ bgcolor: "rgba(255,255,255,0.15)" }}
+          />
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Skeleton
+              variant="circular"
+              width={40}
+              height={40}
+              sx={{ bgcolor: "rgba(255,255,255,0.15)" }}
+            />
+            <Skeleton
+              variant="rounded"
+              width={240}
+              height={40}
+              sx={{ bgcolor: "rgba(255,255,255,0.15)", borderRadius: "24px" }}
+            />
+          </Box>
+        </Box>
+      </StyledToolbar>
+
+      <Card sx={{ borderRadius: 3 }}>
+        <CardContent
+          sx={{
+            padding: 5,
+            minHeight: "88vh",
+            backgroundColor: "background.default",
+          }}
+        >
+          {/* Top row: pie chart + recent activity */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              gap: 8,
+              alignItems: "stretch",
+              mb: 4,
+            }}
+          >
+            <Box sx={{ width: 420, minWidth: 420 }}>
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={300}
+                sx={{ borderRadius: "12px" }}
+              />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 500 }}>
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={300}
+                sx={{ borderRadius: "12px" }}
+              />
+            </Box>
+          </Box>
+
+          {/* Count cards row */}
+          <Stack
+            direction="row"
+            spacing={4}
+            sx={{ mb: 4 }}
+          >
+            {[...Array(5)].map((_, i) => (
+              <Box
+                key={i}
+                sx={{ flex: 1 }}
+              >
+                <Skeleton
+                  variant="rounded"
+                  width="100%"
+                  height={100}
+                  sx={{ borderRadius: "12px" }}
+                />
+              </Box>
+            ))}
+          </Stack>
+
+          {/* Charts row */}
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 8 }}>
+            <Box sx={{ width: 420, minWidth: 420 }}>
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={340}
+                sx={{ borderRadius: "12px", mb: 4 }}
+              />
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={200}
+                sx={{ borderRadius: "12px" }}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Skeleton
+                variant="rounded"
+                width="100%"
+                height={560}
+                sx={{ borderRadius: "12px" }}
+              />
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+}
 
 export default function Dashboard() {
   const [_searchQuery, setSearchQuery] = useState("");
@@ -76,10 +218,47 @@ export default function Dashboard() {
 
   const { session } = useAuth();
   const { data, loading, error } = useDashboardBootstrap();
+  const { profile } = useProfile();
+
+  // Show full skeleton on initial load
+  if (loading && !data) {
+    return <DashboardSkeleton />;
+  }
+
+  if (error && !data) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
+        }}
+      >
+        <Box sx={{ textAlign: "center" }}>
+          <Typography
+            variant="h6"
+            color="error"
+            sx={{ mb: 1 }}
+          >
+            Failed to load dashboard
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            {error}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   const rawLogs = data?.activityAll ?? [];
   const analytics = (data?.contentCounts ?? {}) as Record<string, number>;
   const employeeCounts = (data?.employeeCounts ?? {}) as Record<string, number>;
   const fileTypeCounts = data?.fileTypeCounts ?? [];
+
   const employeePieData = [
     {
       id: 0,
@@ -118,6 +297,7 @@ export default function Dashboard() {
       color: "#721b31",
     },
   ];
+
   const roles = [
     "Business Analyst",
     "Underwriter",
@@ -143,7 +323,6 @@ export default function Dashboard() {
       "EXL Operations": "EXL_OPERATIONS",
       "Business Ops Team": "BUSINESS_OP_RATING",
     };
-
     return mapping[role] || role.replace(/\s+/g, "_").toUpperCase();
   };
 
@@ -166,19 +345,9 @@ export default function Dashboard() {
     helpDescriptions[session?.position ?? ""] ??
     "The Dashboard gives you an overview of your organization.";
 
-  const StyledToolbar = styled(Toolbar)(({ theme }) => ({
-    flexDirection: "column",
-    alignItems: "stretch",
-    paddingTop: theme.spacing(2),
-    paddingBottom: theme.spacing(2),
-    minHeight: 128,
-  }));
-
-  const { profile } = useProfile();
-
   const employeeDemographicsCard = (
     <Card
-      className="h-full w-full min-w-0 outline-1 outline-gray-200"
+      className="employee-demographics-card w-full outline-1 outline-gray-200"
       sx={{ margin: 0, borderRadius: 3 }}
     >
       <CardHeader
@@ -335,26 +504,26 @@ export default function Dashboard() {
     {
       id: "recent-activity" as dashboardCardID,
       node: <DashboardRecentActivity rawLogs={rawLogs} />,
-      className: "col-span-12 xl:col-span-6",
+      className: "col-span-12 xl:col-span-8",
     },
     ...roles.map((role) => ({
       id: getRolecard(role),
       node: buildroleCard(role),
-      className: "col-span-3 sm:col-span-4 lg:col-span-2 xl:col-span-2",
+      className: "col-span-12 sm:col-span-6 lg:col-span-4 xl:col-span-2",
     })),
     ...(session?.position === "ADMIN" ?
       [
         {
           id: "employee-activity" as dashboardCardID,
           node: <AdminCards />,
-          className: "col-span-3 lg:col-span-5",
+          className: "col-span-12 lg:col-span-5",
         },
       ]
     : []),
     {
       id: "file-types" as dashboardCardID,
       node: fileTypesCard,
-      className: "col-span-3 lg:col-span-4",
+      className: "col-span-12 sm:col-span-6 lg:col-span-4",
     },
     {
       id: "popular-content-search" as dashboardCardID,
@@ -364,7 +533,7 @@ export default function Dashboard() {
     {
       id: "employee-edits-by-day" as dashboardCardID,
       node: employeeEditsByDay,
-      className: "col-span-3 lg:col-span-8",
+      className: "col-span-12 lg:col-span-8",
     },
   ];
   const visibleCardIDs = dashboardCards.map((card) => card.id);
@@ -388,7 +557,6 @@ export default function Dashboard() {
       </Box>
     );
   }
-
   return (
     <Box
       sx={{

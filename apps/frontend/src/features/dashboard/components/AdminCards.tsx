@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import type { Position as PositionType } from "@repo/db";
 import { getPositionLabel } from "../../../utils/positionDisplay";
+import { useDashboardBootstrapQuery } from "../../../lib/activity-loaders";
 
 interface EmployeeOption {
   uuid: string;
@@ -46,54 +47,6 @@ const POSITION_OPTIONS: PositionType[] = [
   "BUSINESS_OP_RATING",
 ];
 
-const MOCK_EMPLOYEES: EmployeeOption[] = [
-  {
-    uuid: "emp-1",
-    first_name: "Avery",
-    last_name: "Stone",
-    position: "UNDERWRITER",
-  },
-  {
-    uuid: "emp-2",
-    first_name: "Maya",
-    last_name: "Cole",
-    position: "BUSINESS_ANALYST",
-  },
-  {
-    uuid: "emp-3",
-    first_name: "Jordan",
-    last_name: "Price",
-    position: "ACTUARIAL_ANALYST",
-  },
-  {
-    uuid: "emp-4",
-    first_name: "Riley",
-    last_name: "Nguyen",
-    position: "EXL_OPERATIONS",
-  },
-  {
-    uuid: "emp-5",
-    first_name: "Casey",
-    last_name: "Brooks",
-    position: "BUSINESS_OP_RATING",
-  },
-  {
-    uuid: "emp-6",
-    first_name: "Taylor",
-    last_name: "Morgan",
-    position: "ADMIN",
-  },
-];
-
-const MOCK_ACTIVITY_BY_EMPLOYEE: Record<string, ActivitySummary> = {
-  "emp-1": { edited: 18, checkedOut: 11, deleted: 2 },
-  "emp-2": { edited: 14, checkedOut: 8, deleted: 1 },
-  "emp-3": { edited: 10, checkedOut: 6, deleted: 2 },
-  "emp-4": { edited: 7, checkedOut: 9, deleted: 1 },
-  "emp-5": { edited: 12, checkedOut: 7, deleted: 3 },
-  "emp-6": { edited: 9, checkedOut: 4, deleted: 4 },
-};
-
 function addSummary(
   acc: ActivitySummary,
   next: ActivitySummary,
@@ -108,15 +61,28 @@ function addSummary(
 export default function AdminCards() {
   const [employeeType, setEmployeeType] = useState("");
   const [employeeUuid, setEmployeeUuid] = useState("");
+  const [employeeTypeTouched, setEmployeeTypeTouched] = useState(false);
+  const [employeeTouched, setEmployeeTouched] = useState(false);
+
+  const { data } = useDashboardBootstrapQuery({
+    position: employeeType || undefined,
+    employeeUuid: employeeUuid || undefined,
+  });
+
+  const employees: EmployeeOption[] =
+    data?.employees.map((employee) => ({
+      uuid: employee.uuid,
+      first_name: employee.firstName,
+      last_name: employee.lastName,
+      position: employee.position,
+    })) ?? [];
 
   const filteredEmployees = useMemo(() => {
     if (!employeeType) {
-      return MOCK_EMPLOYEES;
+      return employees;
     }
 
-    return MOCK_EMPLOYEES.filter(
-      (employee) => employee.position === employeeType,
-    );
+    return employees.filter((employee) => employee.position === employeeType);
   }, [employeeType]);
 
   const normalizedEmployeeUuid =
@@ -127,34 +93,12 @@ export default function AdminCards() {
       employeeUuid
     : "";
 
-  const summary = useMemo(() => {
-    if (normalizedEmployeeUuid) {
-      return (
-        MOCK_ACTIVITY_BY_EMPLOYEE[normalizedEmployeeUuid] ?? {
-          edited: 0,
-          checkedOut: 0,
-          deleted: 0,
-        }
-      );
-    }
-
-    return filteredEmployees.reduce<ActivitySummary>(
-      (acc, employee) =>
-        addSummary(
-          acc,
-          MOCK_ACTIVITY_BY_EMPLOYEE[employee.uuid] ?? {
-            edited: 0,
-            checkedOut: 0,
-            deleted: 0,
-          },
-        ),
-      {
-        edited: 0,
-        checkedOut: 0,
-        deleted: 0,
-      },
-    );
-  }, [filteredEmployees, normalizedEmployeeUuid]);
+  //Needed later
+  const summary = data?.activitySummary ?? {
+    edited: 0,
+    checkedOut: 0,
+    deleted: 0,
+  };
 
   const chartData = ACTION_LABELS.map((action) => ({
     label: action.label,
@@ -189,15 +133,31 @@ export default function AdminCards() {
               "& .MuiMenuItem-root": { fontFamily: "inherit" },
             }}
           >
-            <InputLabel id="employee-type-filter-label">
+            <InputLabel
+              id="employee-type-filter-label"
+              shrink={employeeTypeTouched}
+            >
               Employee Type
             </InputLabel>
             <Select
               labelId="employee-type-filter-label"
               value={employeeType}
               label="Employee Type"
+              displayEmpty
+              renderValue={(selected) => {
+                if (!employeeTypeTouched) {
+                  return "";
+                }
+
+                return selected ?
+                    getPositionLabel(selected as PositionType)
+                  : "All Employee Types";
+              }}
               onChange={(event: SelectChangeEvent) => {
+                setEmployeeTypeTouched(true);
                 setEmployeeType(event.target.value);
+                setEmployeeUuid("");
+                setEmployeeTouched(false);
               }}
             >
               <MenuItem value="">All Employee Types</MenuItem>
@@ -221,12 +181,43 @@ export default function AdminCards() {
               "& .MuiMenuItem-root": { fontFamily: "inherit" },
             }}
           >
-            <InputLabel id="employee-filter-label">Employee</InputLabel>
+            <InputLabel
+              id="employee-filter-label"
+              shrink={employeeTouched}
+            >
+              Employee
+            </InputLabel>
             <Select
               labelId="employee-filter-label"
               value={employeeUuid}
               label="Employee"
+              displayEmpty
+              renderValue={(selected) => {
+                if (!employeeTouched) {
+                  return "";
+                }
+
+                if (!selected) {
+                  return "All Employees";
+                }
+
+                const selectedEmployee = employees.find(
+                  (employee) => employee.uuid === selected,
+                );
+
+                return selectedEmployee ?
+                    `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+                  : "All Employees";
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    maxHeight: 8 * 48 + 8,
+                  },
+                },
+              }}
               onChange={(event: SelectChangeEvent) => {
+                setEmployeeTouched(true);
                 setEmployeeUuid(event.target.value);
               }}
             >

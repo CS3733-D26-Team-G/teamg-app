@@ -37,10 +37,11 @@ export default function EditableDashboardCard({
   return (
     <div
       ref={setNodeRef}
-      className={`${className} cursor-grab active:cursor-grabbing`}
+      className={`${className} min-w-0 cursor-grab active:cursor-grabbing`}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
+        position: "relative",
         opacity: isDragging ? 0.65 : 1,
         zIndex: isDragging ? 20 : "auto",
       }}

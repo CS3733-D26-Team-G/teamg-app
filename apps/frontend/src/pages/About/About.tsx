@@ -73,18 +73,12 @@ export default function AboutUs() {
           onClick={() => navigate("/")}
           variant="outlined"
           size="small"
-          sx={{
-            color: "white",
-            border: "1px solid white",
-            position: "absolute",
-            left: 0,
-            top: 0,
-          }}
+          sx={{ position: "absolute", left: 0, top: 0, color: "white" }}
         >
           Return to Home
         </Button>
 
-        <Box sx={{ width: "100%", textAlign: "center" }}>
+        <Box sx={{ width: "100%", textAlign: "center", color: "white" }}>
           <Typography
             variant="h5"
             fontWeight={600}
@@ -103,7 +97,7 @@ export default function AboutUs() {
           </Typography>
           <Typography
             variant="body1"
-            color="text.secondary"
+            color="white"
             mb={0.25}
             sx={{ color: "white" }}
           >
@@ -111,8 +105,7 @@ export default function AboutUs() {
           </Typography>
           <Typography
             variant="body1"
-            color="text.secondary"
-            sx={{ color: "white" }}
+            color="white"
           >
             Team Coach: Katherine Tse
           </Typography>
@@ -206,9 +199,7 @@ export default function AboutUs() {
       >
         <Typography
           variant="body2"
-          color="black"
-          align="center"
-          sx={{ color: "white" }}
+          color="white"
         >
           Thank you to Hanover Insurance for the opportunity to develop real
           world full-stack web development experience by allowing us to use your
