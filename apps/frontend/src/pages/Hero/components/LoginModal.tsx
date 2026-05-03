@@ -16,7 +16,6 @@ import { Visibility, VisibilityOff, Close } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "../../../config.ts";
 import { useAuth } from "../../../auth/AuthContext.tsx";
-import { useTutorial } from "../../../components/Tutorial/TutorialContext.tsx";
 import HanoverLoginPic from "../../../assets/hannoverBuilding.jpg";
 import HanoverLogo from "../../../assets/HanoverLogo.png";
 
@@ -35,7 +34,6 @@ function LoginModal({ open, onClose }: LoginModalProps) {
   const [error, setError] = useState<string | null>(null); // Added for UI feedback
   const navigate = useNavigate();
   const { refreshSession } = useAuth();
-  const { triggerPrompt } = useTutorial();
 
   if (!open) return null;
 
@@ -75,9 +73,6 @@ function LoginModal({ open, onClose }: LoginModalProps) {
 
       if (userData?.position === "ADMIN") {
         navigate("/dashboard");
-        setTimeout(() => {
-          triggerPrompt();
-        }, 600);
       } else {
         navigate("/library");
       }
