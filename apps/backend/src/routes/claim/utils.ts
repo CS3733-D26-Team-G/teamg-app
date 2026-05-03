@@ -59,6 +59,7 @@ export function serializeClaim(claim: ClaimWithRelations) {
     updatedAt: claim.updatedAt,
     requestor: claim.requestor,
     contents: claim.contents.map(({ content }) => content),
+    comment: claim.comment,
   };
 }
 

@@ -361,6 +361,9 @@ router.post("/create", upload.single("file"), async (req, res) => {
   });
 
   if (!urlResult.ok) {
+    logger.warn(
+      `Failed to resolve content url: \nstatus:${urlResult.status}\nmessage:${urlResult.message}`,
+    );
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 
@@ -505,6 +508,9 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   });
 
   if (!urlResult.ok) {
+    logger.warn(
+      `Failed to resolve content url: \nstatus:${urlResult.status}\nmessage:${urlResult.message}`,
+    );
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 

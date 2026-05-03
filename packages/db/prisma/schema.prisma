@@ -70,6 +70,7 @@ model InsuranceClaim {
   status                InsuranceClaimStatus     @default(PENDING)
   contents              ClaimContentAssignment[]
   requestor             Employee                 @relation(fields: [requestorEmployeeUuid], references: [uuid])
+  comment               String?
 }
 
 model ClaimContentAssignment {
@@ -213,6 +214,7 @@ enum InsuranceClaimType {
 enum InsuranceClaimStatus {
   PENDING
   UNDER_REVIEW
+  FINISHED
 }
 
 enum HitType {
