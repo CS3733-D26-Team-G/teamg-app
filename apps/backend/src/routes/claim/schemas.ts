@@ -31,6 +31,7 @@ export const ClaimUpdateSchema =
   }).extend({
     contentUuids: z.array(z.uuid()).optional(),
     status: ClaimStatusEnum.optional(), // Now perfectly matches Prisma's expectations
+    comment: z.string().optional().nullable(), // <--- ADD THIS
   });
 
 export const claimInclude = {

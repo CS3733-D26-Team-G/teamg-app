@@ -50,6 +50,7 @@ model Content {
   forPosition      Position                 @map("for_position")
   supabasePath     String?                  @map("supabase_path")
   fileType         String?                  @map("file_type")
+  searchText       String?                  @map("search_text") @db.Text
   createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   claimAssignments ClaimContentAssignment[]
   editLock         ContentEditLock?
@@ -69,6 +70,7 @@ model InsuranceClaim {
   status                InsuranceClaimStatus     @default(PENDING)
   contents              ClaimContentAssignment[]
   requestor             Employee                 @relation(fields: [requestorEmployeeUuid], references: [uuid])
+  comment               String?
 }
 
 model ClaimContentAssignment {
@@ -212,6 +214,7 @@ enum InsuranceClaimType {
 enum InsuranceClaimStatus {
   PENDING
   UNDER_REVIEW
+  FINISHED
 }
 
 enum HitType {

@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
   ACCOUNT_SETTINGS: `${API_BASE_URL}/account-settings`,
   STATS: {
     ACTIVITY_ACTION_SUMMARY: `${API_BASE_URL}/stats/activity/action-summary`,
+    CONTENT_EDIT_HITS_BY_ROLE: `${API_BASE_URL}/stats/content/edit-hits-by-role`,
   },
   EMPLOYEE: {
     ROOT: `${API_BASE_URL}/employee`,
@@ -40,6 +41,7 @@ export const API_ENDPOINTS = {
 
   CONTENT: {
     ROOT: `${API_BASE_URL}/content`,
+    SEARCH: `${API_BASE_URL}/content/search`,
     CREATE: `${API_BASE_URL}/content/create`,
     COUNT_POSITION: `${API_BASE_URL}/stats/content/count/position`,
     COUNT_FILE_TYPE: `${API_BASE_URL}/stats/content/count/file-type`,
@@ -51,11 +53,12 @@ export const API_ENDPOINTS = {
     LOCK: (uuid: string) => `${API_BASE_URL}/content/lock/${uuid}`,
     FILE: (uuid: string) => `${API_BASE_URL}/content/file/${uuid}`,
     TAG: {
+      ROOT: `${API_BASE_URL}/content/tag`,
       CREATE: `${API_BASE_URL}/content/tag/create`,
       DELETE: (uuid: string) => `${API_BASE_URL}/content/tag/delete/${uuid}`,
       UPDATE: (tagUuid: string, contentUuid: string) =>
         `${API_BASE_URL}/content/tag/update/${tagUuid}/${contentUuid}`,
-      GET_ALL: `${API_BASE_URL}/content/tag`,
+      EDIT: `${API_BASE_URL}/content/tag/edit`,
     },
   },
 };

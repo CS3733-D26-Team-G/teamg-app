@@ -20,29 +20,12 @@
   },
   "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
   "devDependencies": {
-    "dotenv": "^17.4.1",
+    "dotenv": "^17.4.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "prisma": "^7.7.0",
-    "turbo": "^2.9.6"
+    "prisma": "^7.8.0",
+    "turbo": "^2.9.8"
   },
   "dependencies": {
-    "@cyntler/react-doc-viewer": "^1.17.1",
-    "@emotion/cache": "^11.14.0",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@fullcalendar/core": "^6.1.20",
-    "@fullcalendar/daygrid": "^6.1.20",
-    "@fullcalendar/interaction": "^6.1.20",
-    "@fullcalendar/react": "^6.1.20",
-    "@fullcalendar/timegrid": "^6.1.20",
-    "@mui/x-charts": "^9.0.2",
-    "@pdftron/webviewer": "^11.12.0",
-    "@syncfusion/ej2-react-documenteditor": "^33.1.49",
-    "@syncfusion/ej2-react-pdfviewer": "^33.1.49",
-    "@tailwindcss/vite": "^4.2.2",
-    "i18next": "^26.0.6",
-    "react-i18next": "^17.0.4",
-    "tailwindcss": "^4.2.2"
   }
 }

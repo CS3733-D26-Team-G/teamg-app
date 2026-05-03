@@ -42,6 +42,19 @@ const AGENT_POSITIONS: Position[] = [
   "BUSINESS_OP_RATING",
 ];
 
+// human-readable labels for each content type
+const contentTypeLabels: Record<ContentType, string> = {
+  REFERENCE: "Reference",
+  WORKFLOW: "Workflow",
+};
+
+// human-readable labels for each content status
+const statusLabels: Record<ContentStatus, string> = {
+  AVAILABLE: "Available",
+  IN_USE: "In-Use",
+  UNAVAILABLE: "Unavailable",
+};
+
 type ContentFormInitialData = ContentRecord & {
   tags?: ContentTagSummary[];
 };
@@ -248,7 +261,7 @@ export default function ContentForm({
     <Box
       component="form"
       onSubmit={handleInternalSubmit}
-      sx={{ display: "flex", flexDirection: "column", gap: 0, px: 3, py: 3 }}
+      sx={{ display: "flex", flexDirection: "column", gap: 3, px: 3, py: 3 }}
     >
       {/* ── Source type toggle ─────────────────────────────────────────── */}
       <ToggleButtonGroup
@@ -275,7 +288,6 @@ export default function ContentForm({
         value={formData.title}
         onChange={(e) => handleChange("title", e.target.value)}
         variant="outlined"
-        margin="normal"
       />
 
       {/* ── URL or file upload ─────────────────────────────────────────── */}
@@ -286,7 +298,6 @@ export default function ContentForm({
           value={formData.url}
           onChange={(e) => handleChange("url", e.target.value)}
           variant="outlined"
-          margin="normal"
         />
       : <Box
           sx={{
@@ -338,14 +349,10 @@ export default function ContentForm({
         value={formData.contentOwner}
         onChange={(e) => handleChange("contentOwner", e.target.value)}
         variant="outlined"
-        margin="normal"
         disabled={!isAdmin}
       />
 
-      <FormControl
-        fullWidth
-        margin="normal"
-      >
+      <FormControl fullWidth>
         <InputLabel id="recipient-label">Intended Recipient</InputLabel>
         <Select
           labelId="recipient-label"
@@ -377,10 +384,7 @@ export default function ContentForm({
         onChange={(newDate) => handleChange("expirationTime", newDate)}
       />
 
-      <FormControl
-        fullWidth
-        margin="normal"
-      >
+      <FormControl fullWidth>
         <InputLabel id="content-type-label">Type of Content</InputLabel>
         <Select
           labelId="content-type-label"
@@ -393,51 +397,42 @@ export default function ContentForm({
               key={contentType}
               value={contentType}
             >
-              {contentType}
+              {contentTypeLabels[contentType as ContentType]}
             </MenuItem>
           ))}
         </Select>
       </FormControl>
 
-      <FormControl
-        fullWidth
-        margin="normal"
-      >
-        <Autocomplete
-          multiple
-          options={availableTags}
-          getOptionLabel={(tag) => tag.name}
-          value={availableTags.filter((tag) =>
-            selectedTagUuids.includes(tag.uuid),
-          )}
-          onChange={(_, selectedTags) =>
-            setSelectedTagUuids(selectedTags.map((tag) => tag.uuid))
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Tags"
-              margin="normal"
-              placeholder={selectedTagUuids.length ? "" : "Select tags..."}
+      <Autocomplete
+        multiple
+        options={availableTags}
+        getOptionLabel={(tag) => tag.name}
+        value={availableTags.filter((tag) =>
+          selectedTagUuids.includes(tag.uuid),
+        )}
+        onChange={(_, selectedTags) =>
+          setSelectedTagUuids(selectedTags.map((tag) => tag.uuid))
+        }
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Tags"
+            placeholder={selectedTagUuids.length ? "" : "Select tags..."}
+          />
+        )}
+        renderTags={(selected, getTagProps) =>
+          selected.map((tag, index) => (
+            <Chip
+              label={tag.name}
+              size="small"
+              {...getTagProps({ index })}
+              key={tag.uuid}
             />
-          )}
-          renderTags={(selected, getTagProps) =>
-            selected.map((tag, index) => (
-              <Chip
-                label={tag.name}
-                size="small"
-                {...getTagProps({ index })}
-                key={tag.uuid}
-              />
-            ))
-          }
-        />
-      </FormControl>
+          ))
+        }
+      />
 
-      <FormControl
-        fullWidth
-        margin="normal"
-      >
+      <FormControl fullWidth>
         <InputLabel id="status-label">Document Status</InputLabel>
         <Select
           labelId="status-label"
@@ -450,7 +445,7 @@ export default function ContentForm({
               key={status}
               value={status}
             >
-              {status}
+              {statusLabels[status as ContentStatus]}
             </MenuItem>
           ))}
         </Select>

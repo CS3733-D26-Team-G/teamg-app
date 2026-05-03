@@ -31,9 +31,10 @@ import { useAuth } from "../auth/AuthContext.tsx";
 //import Typography from "@mui/material/Typography";
 import { useProfile } from "../profile/ProfileContext.tsx";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import { useSidebar } from "./SidebarContext.tsx";
 
 export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true);
+  const { isOpen, setIsOpen } = useSidebar();
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorElement);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -104,13 +105,7 @@ export default function Sidebar() {
         transition: "width 0.3s",
         position: "sticky",
         top: 0,
-        // The sidebar uses the SAME gradient anchor colour (#1A1E4B) as the
-        // page headers, so the two surfaces read as one continuous band when
-        // placed side-by-side. The sidebar runs the gradient top-to-bottom
-        // (darkening slightly) while the header runs left-to-right; where they
-        // meet at the top-left corner the colours are identical.
-        background:
-          "linear-gradient(180deg, #1A1E4B 0%, #222847 35%, #263056 70%, #2c3a6a 100%)",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
       }}
@@ -126,17 +121,25 @@ export default function Sidebar() {
         }}
       >
         <Box
-          component="img"
-          src={"/hanover_logo.png"}
-          alt="Hanover Logo"
-          sx={{
-            width: "140px",
-            display: isOpen ? "block" : "none",
-            imageRendering: "crisp-edges",
-            // Invert so the dark logo reads white on the dark sidebar
-            filter: "brightness(0) invert(1)",
-          }}
-        />
+          component={Link}
+          to="/"
+          sx={{ display: isOpen ? "block" : "none" }}
+        >
+          <Box
+            component="img"
+            src={"/hanover_logo.png"}
+            alt="Hanover Logo"
+            sx={{
+              width: "140px",
+              mx: "auto",
+              my: 1,
+              display: isOpen ? "block" : "none",
+              imageRendering: "crisp-edges",
+              filter: "brightness(0) invert(1)",
+            }}
+          />
+        </Box>
+
         <IconButton
           onClick={() => setIsOpen(!isOpen)}
           sx={{ color: "rgba(255,255,255,0.75)" }}

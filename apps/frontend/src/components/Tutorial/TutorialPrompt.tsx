@@ -45,7 +45,7 @@ export default function TutorialPrompt() {
               boxShadow: "0 32px 80px rgba(0,0,0,0.45)",
             }}
           >
-            {/* Gradient header strip */}
+            {/* Gradient header */}
             <Box
               sx={{
                 background:
@@ -55,7 +55,6 @@ export default function TutorialPrompt() {
                 overflow: "hidden",
               }}
             >
-              {/* Decorative circles */}
               {[...Array(3)].map((_, i) => (
                 <Box
                   key={i}
@@ -109,10 +108,7 @@ export default function TutorialPrompt() {
 
             {/* Body */}
             <Box
-              sx={{
-                backgroundColor: "background.paper",
-                p: "28px 36px 32px",
-              }}
+              sx={{ backgroundColor: "background.paper", p: "28px 36px 32px" }}
             >
               <Typography
                 sx={{
@@ -131,8 +127,8 @@ export default function TutorialPrompt() {
                 >
                   quick guided tour
                 </Box>{" "}
-                of the platform? We'll walk you through the dashboard, content
-                management, employee tools, and your account in about 2 minutes.
+                of the platform? We'll walk you through every page in about 2
+                minutes.
               </Typography>
 
               <Stack spacing={1.5}>
