@@ -6,6 +6,7 @@ import { ProfileProvider } from "../profile/ProfileContext.tsx";
 import { TutorialProvider } from "../components/Tutorial/TutorialContext.tsx";
 import TutorialOverlay from "../components/Tutorial/TutorialOverlay.tsx";
 import TutorialPrompt from "../components/Tutorial/TutorialPrompt.tsx";
+import { SidebarProvider } from "../components/SidebarContext.tsx";
 
 function AppShell() {
   const location = useLocation();
@@ -53,7 +54,9 @@ export default function App() {
       <ProfileProvider>
         <AppThemeProvider>
           <TutorialProvider>
-            <AppShell />
+            <SidebarProvider>
+              <AppShell />
+            </SidebarProvider>
           </TutorialProvider>
         </AppThemeProvider>
       </ProfileProvider>

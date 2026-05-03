@@ -19,6 +19,7 @@ import NotificationsBell from "../../features/notifications/components/Notificat
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { loadContentList } from "../../lib/api-loaders";
 import { useTheme } from "@mui/material/styles";
+import { useSidebar } from "../../components/SidebarContext.tsx";
 
 const CREATED_COLOR = "#4f46e5";
 const CHECKED_OUT_COLOR = "#d97706";
@@ -59,6 +60,7 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
 export default function CalendarPage() {
   const { session } = useAuth();
   const { profile } = useProfile();
+  const { isOpen } = useSidebar();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === "dark";
   const calendarRef = useRef<FullCalendar>(null);
@@ -175,7 +177,7 @@ export default function CalendarPage() {
           p: 3,
           backgroundColor: "background.paper",
           minWidth: 0,
-          width: "calc(100vw - 240px)",
+          width: isOpen ? "calc(100vw - 240px)" : "calc(100vw - 64px)",
           overflowX: "auto",
           minHeight: "calc(100vh - 128px)",
           border: "none",
