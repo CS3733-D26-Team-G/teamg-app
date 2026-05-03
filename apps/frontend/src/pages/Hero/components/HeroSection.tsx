@@ -9,8 +9,8 @@ import theme from "../../../theme.tsx";
 //import VoiceControl from "../../../VoiceControl.tsx";
 import CarouselBackground from "./CarouselBackground";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../../../auth/AuthContext.tsx";
 import { Mic, MicOff } from "lucide-react";
+import { useAuth } from "../../../auth/AuthContext.tsx";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
