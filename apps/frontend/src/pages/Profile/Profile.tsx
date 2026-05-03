@@ -132,7 +132,7 @@ function Profile() {
             justifyContent: "space-between",
             alignItems: "center",
             height: 80,
-            mt: 6,
+            mt: 4,
             borderRadius: 4,
             backgroundColor: "rgba(255, 255, 255, 0.12)",
             backdropFilter: "blur(8px)",
@@ -196,7 +196,7 @@ function Profile() {
               flexDirection: "column",
               gap: 2,
               p: 3,
-              minHeight: "79vh",
+              minHeight: "81vh",
             }}
           >
             {/*Profile Tag Bar*/}
@@ -239,7 +239,7 @@ function Profile() {
 
                 <Stack
                   direction="row"
-                  gap={20}
+                  gap={16}
                   sx={{ width: "100%", justifyContent: "space-evenly", pl: 3 }}
                 >
                   <Box sx={{ textAlign: "center" }}>
@@ -371,7 +371,7 @@ function Profile() {
                         fontSize: 20,
                       }}
                     >
-                      Document Update Alerts
+                      Favorite Document Update Alerts
                     </Typography>
                     <Switch
                       checked={toggle2}
@@ -389,7 +389,7 @@ function Profile() {
                       mt: -0.75,
                     }}
                   >
-                    Notify me when a document I own is edited
+                    Notify me when a favorited document is updated
                   </Typography>
                 </Stack>
               </Box>

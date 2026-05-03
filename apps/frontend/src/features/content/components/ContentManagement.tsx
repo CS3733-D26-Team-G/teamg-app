@@ -1013,6 +1013,8 @@ export default function ContentManagement({
               : ""
             }
             editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
+            createdAt={params.row.createdAt}
+            expirationTime={params.row.expirationTime}
           />
         </Box>
       ),
