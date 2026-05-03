@@ -1665,16 +1665,14 @@ export default function ContentManagement({
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Tooltip
                 title={
-                  viewMode === "accordion" ?
-                    "Switch to Tabs view"
-                  : "Switch to Accordion view"
+                  viewMode === "tabs" ?
+                    "Switch to Accordion view"
+                  : "Switch to Tabs view"
                 }
               >
                 <IconButton
                   onClick={() =>
-                    setViewMode((m) =>
-                      m === "accordion" ? "tabs" : "accordion",
-                    )
+                    setViewMode((m) => (m === "tabs" ? "accordion" : "tabs"))
                   }
                   size="small"
                   sx={{

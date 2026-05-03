@@ -10,6 +10,7 @@ import theme from "../../../theme.tsx";
 import CarouselBackground from "./CarouselBackground";
 import { useTranslation } from "react-i18next";
 import { Mic, MicOff } from "lucide-react";
+import { useAuth } from "../../../auth/AuthContext.tsx";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -38,6 +39,7 @@ const itemVariants: Variants = {
 
 export default function HeroSection() {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(true);
   const { t } = useTranslation();
@@ -102,30 +104,48 @@ export default function HeroSection() {
           />
         </Box>
 
-        <Button
-          onClick={() => setLoginOpen(true)}
-          sx={{
-            "position": "absolute",
-            "right": 40,
-            "background": "white",
-            "color": "black",
-            "fontFamily": theme.typography.fontFamily,
-            "fontSize": 18,
-            "fontWeight": "bold",
-            "px": 5,
-            "py": 1.5,
-            "borderRadius": "70px",
-            "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
-            "textTransform": "none",
-            "&:hover": { background: "#d9d2c5" },
-          }}
-        >
-          {t("heroSection.login")}
-        </Button>
-        {/*
-        <button type = "button" className = "btn btn-outlne-secondary" onClick={startVoice}>
-          <Mic size={16}/> Start Voice</button>
-*/}
+        {session ?
+          <Button
+            onClick={() => navigate("/dashboard")}
+            sx={{
+              "position": "absolute",
+              "right": 15,
+              "background": "white",
+              "color": "black",
+              "fontFamily": theme.typography.fontFamily,
+              "fontSize": 18,
+              "fontWeight": "bold",
+              "px": 5,
+              "py": 1.5,
+              "borderRadius": "70px",
+              "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
+              "textTransform": "none",
+              "&:hover": { background: "#d9d2c5" },
+            }}
+          >
+            Go to Dashboard
+          </Button>
+        : <Button
+            onClick={() => setLoginOpen(true)}
+            sx={{
+              "position": "absolute",
+              "right": 40,
+              "background": "white",
+              "color": "black",
+              "fontFamily": theme.typography.fontFamily,
+              "fontSize": 18,
+              "fontWeight": "bold",
+              "px": 5,
+              "py": 1.5,
+              "borderRadius": "70px",
+              "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
+              "textTransform": "none",
+              "&:hover": { background: "#d9d2c5" },
+            }}
+          >
+            {t("heroSection.login")}
+          </Button>
+        }
       </Box>
 
       {/* Animated Main Content Area */}
