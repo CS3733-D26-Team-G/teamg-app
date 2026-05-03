@@ -16,8 +16,13 @@ import {
   Checkbox,
   Dialog,
   DialogContent,
+  DialogActions,
+  DialogContentText,
+  DialogTitle,
   Slide,
   Stack,
+  CircularProgress,
+  Skeleton,
 } from "@mui/material";
 import type { TransitionProps } from "@mui/material/transitions";
 import AddIcon from "@mui/icons-material/Add";
@@ -27,7 +32,6 @@ import CloseIcon from "@mui/icons-material/Close";
 
 import HeaderSearchBar from "../../content/components/HeaderSearchBar.tsx";
 import ManageEmployeeForm from "./ManageEmployeeForm";
-import { User } from "lucide-react";
 import { API_ENDPOINTS } from "../../../config";
 import {
   EmployeeFormSchema,
@@ -74,6 +78,17 @@ export default function EmployeeManagement() {
     null,
   );
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Confirmation dialog state
+  const [pendingDelete, setPendingDelete] = useState<EmployeeRecord | null>(
+    null,
+  );
+  const [pendingSave, setPendingSave] = useState<{
+    formData: EmployeeFormData;
+    isExisting: boolean;
+  } | null>(null);
 
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [deptFilters, setDeptFilters] = useState<string[]>([]);
@@ -138,7 +153,6 @@ export default function EmployeeManagement() {
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        // Search Bar Filter Logic
         if (searchQuery.trim()) {
           const targetFields = [row.position, row.department];
           const searchMatch = targetFields.some((field) =>
@@ -146,8 +160,6 @@ export default function EmployeeManagement() {
           );
           if (!searchMatch) return false;
         }
-        //Filter Button Logic
-        //Position Filter
         if (
           positionFilters.length > 0 &&
           !positionFilters.includes(row.position)
@@ -163,50 +175,61 @@ export default function EmployeeManagement() {
     [rows, searchQuery, positionFilters, deptFilters],
   );
 
-  const handleDelete = async (row: EmployeeRecord) => {
-    if (!window.confirm(`Remove employee ${row.firstName} ${row.lastName}?`))
-      return;
+  // Stage delete for confirmation dialog
+  const handleDelete = (row: EmployeeRecord) => {
+    setPendingDelete(row);
+  };
+
+  // Actually perform delete after confirmation
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const rowToDelete = pendingDelete;
+    setPendingDelete(null);
+    setDeleting(true);
     try {
-      const res = await fetch(API_ENDPOINTS.EMPLOYEE.DELETE(row.uuid), {
+      const res = await fetch(API_ENDPOINTS.EMPLOYEE.DELETE(rowToDelete.uuid), {
         method: "POST",
         credentials: "include",
       });
       if (res.ok) {
-        setRows((prev) => prev.filter((r) => r.uuid !== row.uuid));
+        setRows((prev) => prev.filter((r) => r.uuid !== rowToDelete.uuid));
       } else {
         const errorText = await res.text().catch(() => "");
         console.error("Failed to delete employee:", errorText);
-        alert(
-          "Delete failed. Check server logs (backend route may be rejecting).",
-        );
       }
     } catch (error) {
       console.error("Network error during delete:", error);
-      alert("Network error while deleting employee.");
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const handleSave = async (formData: EmployeeFormData) => {
+  // Stage save for confirmation dialog
+  const handleSave = (formData: EmployeeFormData) => {
     const isExisting = viewState !== null && viewState !== "new";
-    const uuid = isExisting ? viewState.uuid : undefined;
+    setPendingSave({ formData, isExisting });
+  };
+
+  // Actually perform save after confirmation
+  const confirmSave = async () => {
+    if (!pendingSave) return;
+    const { formData, isExisting } = pendingSave;
+    setPendingSave(null);
+
+    const isExistingRecord = viewState !== null && viewState !== "new";
+    const uuid =
+      isExistingRecord ? (viewState as EmployeeRecord).uuid : undefined;
     const parsedBody = EmployeeFormSchema.parse(formData);
 
-    if (
-      !window.confirm(
-        `Are you sure you want to ${isExisting ? "update" : "create"} "${formData.firstName} ${formData.lastName}"?`,
-      )
-    ) {
-      return;
-    }
-
     const url =
-      isExisting ?
+      isExistingRecord ?
         API_ENDPOINTS.EMPLOYEE.UPDATE(uuid as string)
       : API_ENDPOINTS.EMPLOYEE.CREATE;
 
+    setSaving(true);
     try {
       const res = await fetch(url, {
-        method: isExisting ? "PUT" : "POST",
+        method: isExistingRecord ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(parsedBody),
@@ -218,11 +241,11 @@ export default function EmployeeManagement() {
       } else {
         const errorText = await res.text().catch(() => "");
         console.error("Save failed:", errorText);
-        alert("Save failed. Please verify required fields and try again.");
       }
     } catch (error) {
-      console.error("Error during handleSave:", error);
-      alert("Network error while saving employee.");
+      console.error("Error during confirmSave:", error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -321,6 +344,7 @@ export default function EmployeeManagement() {
             <IconButton
               onClick={() => onDelete(params.row)}
               aria-label="Delete"
+              disabled={deleting}
             >
               <DeleteIcon color="error" />
             </IconButton>
@@ -329,6 +353,78 @@ export default function EmployeeManagement() {
       },
     ];
   };
+
+  // Loading skeleton
+  if (loading && rows.length === 0) {
+    return (
+      <Box sx={{ maxHeight: "100vh", overflowY: "auto" }}>
+        {/* Header skeleton */}
+        <Box
+          sx={{
+            px: 4,
+            pt: 5,
+            pb: 3,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <Skeleton
+            variant="text"
+            width={300}
+            height={60}
+            sx={{ bgcolor: "rgba(255,255,255,0.1)" }}
+          />
+          <Skeleton
+            variant="text"
+            width={400}
+            height={24}
+            sx={{ bgcolor: "rgba(255,255,255,0.1)", mt: 1 }}
+          />
+          <Box sx={{ display: "flex", gap: 2, mt: 3, pb: 3 }}>
+            <Skeleton
+              variant="rounded"
+              width={280}
+              height={40}
+              sx={{ bgcolor: "rgba(255,255,255,0.1)" }}
+            />
+            <Skeleton
+              variant="rounded"
+              width={100}
+              height={40}
+              sx={{ bgcolor: "rgba(255,255,255,0.1)" }}
+            />
+            <Box sx={{ ml: "auto" }}>
+              <Skeleton
+                variant="rounded"
+                width={140}
+                height={40}
+                sx={{ bgcolor: "rgba(255,255,255,0.1)" }}
+              />
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Table skeleton */}
+        <Box sx={{ width: "95%", mx: "auto" }}>
+          <Skeleton
+            variant="rounded"
+            width="100%"
+            height={56}
+            sx={{ mb: 0.5 }}
+          />
+          {[...Array(8)].map((_, i) => (
+            <Skeleton
+              key={i}
+              variant="rounded"
+              width="100%"
+              height={52}
+              sx={{ mb: 0.5, opacity: 1 - i * 0.08 }}
+            />
+          ))}
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ maxHeight: "100vh", overflowY: "auto" }}>
@@ -352,19 +448,11 @@ export default function EmployeeManagement() {
             overflow: "hidden",
           }}
         >
-          {/* <Typography
-            variant="h2"
-            sx={{ pb: 2, pt: 4, color: "White", fontWeight: "bold" }}
-          >
-            {" "}
-            Employee Management
-          </Typography> */}
           <Box
             className="employee-header"
             sx={{
               px: 4,
               pt: 5,
-
               position: "relative",
               overflow: "hidden",
             }}
@@ -458,7 +546,6 @@ export default function EmployeeManagement() {
                   aria-expanded={anchorElement ? "true" : undefined}
                   variant="contained"
                   startIcon={<FilterAltIcon />}
-                  sx={{}}
                 >
                   Filter
                 </Button>
@@ -474,7 +561,6 @@ export default function EmployeeManagement() {
                   paper: { sx: { border: "1px solid", borderColor: "gray" } },
                 }}
               >
-                {/*Position Item*/}
                 <MenuItem
                   onClick={(e) => {
                     setPositionAnchor(e.currentTarget);
@@ -483,8 +569,6 @@ export default function EmployeeManagement() {
                 >
                   Position <ArrowRightIcon sx={{ ml: "auto" }} />
                 </MenuItem>
-
-                {/*Department Item*/}
                 <MenuItem
                   onClick={(e) => {
                     setDeptAnchor(e.currentTarget);
@@ -594,6 +678,88 @@ export default function EmployeeManagement() {
           mx: "auto",
         }}
       />
+
+      {/* ── Save Confirmation Dialog ──────────────────────────────────────── */}
+      <Dialog
+        open={pendingSave !== null}
+        onClose={() => setPendingSave(null)}
+      >
+        <DialogTitle>
+          {pendingSave?.isExisting ? "Update employee" : "Create employee"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "1.1rem" }}>
+            {pendingSave?.isExisting ?
+              `Are you sure you want to save changes to ${pendingSave.formData.firstName} ${pendingSave.formData.lastName}?`
+            : `Are you sure you want to create ${pendingSave?.formData.firstName ?? ""} ${pendingSave?.formData.lastName ?? ""}?`
+            }
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setPendingSave(null)}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void confirmSave()}
+            variant="contained"
+            disabled={saving}
+            startIcon={
+              saving ?
+                <CircularProgress
+                  size={16}
+                  color="inherit"
+                />
+              : undefined
+            }
+          >
+            {saving ? "Saving…" : "Confirm"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Delete Confirmation Dialog ────────────────────────────────────── */}
+      <Dialog
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+      >
+        <DialogTitle>Delete employee</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "1.1rem" }}>
+            Are you sure you want to remove{" "}
+            <strong>
+              {pendingDelete?.firstName} {pendingDelete?.lastName}
+            </strong>
+            ? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setPendingDelete(null)}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void confirmDelete()}
+            color="error"
+            variant="contained"
+            disabled={deleting}
+            startIcon={
+              deleting ?
+                <CircularProgress
+                  size={16}
+                  color="inherit"
+                />
+              : undefined
+            }
+          >
+            {deleting ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ── Employee Form Modal ───────────────────────────────────────────── */}
       <Dialog
