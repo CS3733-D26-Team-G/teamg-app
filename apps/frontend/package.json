@@ -34,7 +34,18 @@
     "react-dom": "^19.2.4",
     "react-router": "^7.14.0",
     "react-router-dom": "^7.14.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "@fullcalendar/core": "^6.1.20",
+    "@fullcalendar/daygrid": "^6.1.20",
+    "@fullcalendar/interaction": "^6.1.20",
+    "@fullcalendar/react": "^6.1.20",
+    "@fullcalendar/timegrid": "^6.1.20",
+    "@mui/x-charts": "^9.0.4",
+    "@pdftron/webviewer": "^11.12.0",
+    "@syncfusion/ej2-react-documenteditor": "^33.2.4",
+    "@syncfusion/ej2-react-pdfviewer": "^33.2.4",
+    "i18next": "^26.0.8",
+    "react-i18next": "^17.0.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
