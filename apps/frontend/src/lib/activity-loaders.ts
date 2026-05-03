@@ -167,7 +167,7 @@ async function fetchDashboardBootstrap(params?: {
     loadContentList(),
     loadEmployees(),
     loadActivityActionSummary(params),
-    loadEditHitsByRole(params?.days ?? 7),
+    loadEditHitsByRole(params?.days),
   ]);
 
   return {
