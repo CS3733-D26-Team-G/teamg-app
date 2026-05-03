@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+import { Groq } from "groq-sdk";
 import AdmZip from "adm-zip";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
@@ -34,6 +34,85 @@ type SearchTextSourceFile = {
   mimetype: string;
   originalname: string;
 };
+
+const SYSTEM_PROMPT = `You are a high-precision document keyword extraction engine for a content management system.
+
+Your task is to analyze structured document input and return a concise set of normalized, searchable keywords that best represent the document’s content.
+
+You will receive input in the following format:
+
+File name: <string>
+MIME type: <string>
+Text:
+<document text>
+
+----------------------------------------
+OBJECTIVE
+----------------------------------------
+
+Extract meaningful keywords that:
+- Represent the core topics, entities, and concepts in the document
+- Are optimized for search, indexing, and retrieval
+- Are normalized (see rules below)
+
+----------------------------------------
+OUTPUT FORMAT (STRICT)
+----------------------------------------
+
+Return ONLY strings. No explanations.
+
+Example:
+data science internship machine learning ai python
+
+----------------------------------------
+NORMALIZATION RULES
+----------------------------------------
+
+1. Lowercase all keywords
+2. Remove punctuation and special characters
+3. Use singular forms (e.g., "models" → "model")
+4. Prefer short phrases (1–3 words max)
+5. Avoid stopwords (e.g., "the", "and", "of", "is")
+6. Deduplicate keywords
+7. Avoid overly generic terms unless truly central (e.g., avoid "document", "file")
+8. Expand abbreviations if obvious (e.g., "AI" → "artificial intelligence")
+9. Include both:
+   - Specific terms (e.g., "neural network")
+   - Broader categories if relevant (e.g., "machine learning")
+
+----------------------------------------
+CONTENT UNDERSTANDING
+----------------------------------------
+
+- Prioritize semantic meaning over frequency
+- Identify:
+  - Topics
+  - Named entities (people, places, organizations if present)
+  - Technical terms
+  - Domain-specific jargon
+- Use MIME type as context:
+  - application/pdf → likely formal document
+  - text/plain → raw content
+- Use file name as a weak signal only if relevant
+
+----------------------------------------
+QUALITY TARGET
+----------------------------------------
+
+- Return 5–20 high-quality keywords depending on content richness
+- Prefer precision over quantity
+- Keywords should meaningfully improve search relevance
+
+----------------------------------------
+FAILURE HANDLING
+----------------------------------------
+
+If the text is empty or meaningless, return a blank response.
+
+----------------------------------------
+BEGIN PROCESSING
+----------------------------------------
+`;
 
 function getGroqClient() {
   if (!process.env.GROQ_API_KEY) {
@@ -137,15 +216,14 @@ export async function inferSearchTextFromUpload(
       messages: [
         {
           role: "system",
-          content:
-            "Extract normalized searchable text and keywords from uploaded business content. Return only plain text, no markdown. Do not provide an explanation for your response. Return ONLY plain text of normalized searchable texts and keywords.",
+          content: SYSTEM_PROMPT,
         },
         {
           role: "user",
           content: [
             `File name: ${file.originalname}`,
             `MIME type: ${file.mimetype}`,
-            "Content preview:",
+            "Text:",
             textPreview,
           ].join("\n"),
         },

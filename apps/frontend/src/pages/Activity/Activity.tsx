@@ -1,10 +1,125 @@
 import ActivityComponent from "../../features/activity/components/ActivityComponent.tsx";
-import { Typography, Box, Button, Stack } from "@mui/material";
+import { Typography, Box, Button, Stack, Skeleton } from "@mui/material";
 import SearchBar from "../../features/activity/components/HeaderSearchBar";
 import HelpPopup from "../../components/HelpPopup.tsx";
 import { useAuth } from "../../auth/AuthContext";
 import { useState } from "react";
 import { useActivityQuery } from "../../lib/activity-loaders.ts";
+
+function ActivityPageSkeleton() {
+  return (
+    <Box
+      sx={{
+        backgroundColor: "transparent",
+        overflowX: "hidden",
+        borderRadius: "14px",
+      }}
+    >
+      {/* Header skeleton */}
+      <Box
+        sx={{
+          background: "transparent",
+          px: 4,
+          pt: 5,
+          pb: 3,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <Skeleton
+          variant="text"
+          width={260}
+          height={60}
+          sx={{ bgcolor: "rgba(255,255,255,0.12)" }}
+        />
+        <Skeleton
+          variant="text"
+          width={380}
+          height={24}
+          sx={{ bgcolor: "rgba(255,255,255,0.08)", mt: 0.5 }}
+        />
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ mt: 2 }}
+        >
+          <Skeleton
+            variant="rounded"
+            width={240}
+            height={40}
+            sx={{ bgcolor: "rgba(255,255,255,0.1)", borderRadius: "4px" }}
+          />
+        </Stack>
+      </Box>
+
+      {/* Timeline skeleton */}
+      <Box
+        sx={{
+          borderRadius: "14px",
+          backgroundColor: "white",
+          width: "95%",
+          mx: "auto",
+          p: 3,
+        }}
+      >
+        {/* Date label */}
+        <Skeleton
+          variant="text"
+          width={160}
+          height={20}
+          sx={{ mb: 2 }}
+        />
+        {[...Array(6)].map((_, i) => (
+          <Box
+            key={i}
+            sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center" }}
+          >
+            <Skeleton
+              variant="circular"
+              width={36}
+              height={36}
+              sx={{ flexShrink: 0 }}
+            />
+            <Skeleton
+              variant="rounded"
+              width="100%"
+              height={56}
+              sx={{ borderRadius: "8px", opacity: Math.max(0.2, 1 - i * 0.12) }}
+            />
+          </Box>
+        ))}
+        <Skeleton
+          variant="text"
+          width={120}
+          height={20}
+          sx={{ mt: 3, mb: 2 }}
+        />
+        {[...Array(3)].map((_, i) => (
+          <Box
+            key={i}
+            sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center" }}
+          >
+            <Skeleton
+              variant="circular"
+              width={36}
+              height={36}
+              sx={{ flexShrink: 0 }}
+            />
+            <Skeleton
+              variant="rounded"
+              width="100%"
+              height={56}
+              sx={{
+                borderRadius: "8px",
+                opacity: Math.max(0.2, 0.6 - i * 0.15),
+              }}
+            />
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
 function Activity() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,6 +131,11 @@ function Activity() {
     : filter === "login" ? "auth"
     : "all";
   const activityQuery = useActivityQuery(category);
+
+  // Show skeleton on initial load (no data yet)
+  if (activityQuery.loading && !activityQuery.data) {
+    return <ActivityPageSkeleton />;
+  }
 
   return (
     <Box
@@ -91,7 +211,10 @@ function Activity() {
           </Box>
 
           {isAdmin && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              className="activity-filters"
+              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            >
               {(["all", "content", "login"] as const).map((val) => (
                 <Button
                   key={val}
@@ -130,6 +253,7 @@ function Activity() {
         ))}
       </Box>
       <Box
+        className="activity-timeline"
         sx={{
           borderRadius: "14px",
           backgroundColor: "white",
