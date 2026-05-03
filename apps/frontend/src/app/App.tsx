@@ -10,6 +10,7 @@ import TutorialPrompt from "../components/Tutorial/TutorialPrompt.tsx";
 import { RouteWatcher } from "../components/Tutorial/RouteWatcher.tsx";
 import { useTutorial } from "../components/Tutorial/TutorialContext.tsx";
 import type { UserRole } from "../components/Tutorial/TutorialContext.tsx";
+import { SidebarProvider } from "../components/SidebarContext.tsx";
 
 function AppShell() {
   const location = useLocation();
@@ -82,7 +83,9 @@ export default function App() {
       <ProfileProvider>
         <AppThemeProvider>
           <TutorialProvider>
-            <AppShell />
+            <SidebarProvider>
+              <AppShell />
+            </SidebarProvider>
           </TutorialProvider>
         </AppThemeProvider>
       </ProfileProvider>

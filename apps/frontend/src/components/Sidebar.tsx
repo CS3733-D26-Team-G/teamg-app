@@ -31,9 +31,10 @@ import { useAuth } from "../auth/AuthContext.tsx";
 //import Typography from "@mui/material/Typography";
 import { useProfile } from "../profile/ProfileContext.tsx";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import { useSidebar } from "./SidebarContext.tsx";
 
 export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true);
+  const { isOpen, setIsOpen } = useSidebar();
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorElement);
   const [adminOpen, setAdminOpen] = useState(false);

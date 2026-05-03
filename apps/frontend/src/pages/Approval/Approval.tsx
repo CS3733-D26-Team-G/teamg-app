@@ -506,6 +506,11 @@ export default function ApprovalPage() {
                               "linear-gradient(135deg, #0f1230, #2d4060)",
                             boxShadow: "0 6px 20px rgba(26,30,75,0.5)",
                           },
+                          "&.Mui-disabled": {
+                            background: "rgba(26, 30, 75, 0.15)",
+                            color: "rgba(26, 30, 75, 0.35)",
+                            boxShadow: "none",
+                          },
                         }}
                       >
                         Submit Approvals
