@@ -171,6 +171,7 @@ export default function CalendarPage() {
       </StyledToolbar>
 
       <Card
+        className="calendar-grid"
         sx={{
           p: 3,
           backgroundColor: "background.paper",
@@ -249,48 +250,50 @@ export default function CalendarPage() {
               }
             `}</style>
 
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              customButtons={{
-                dayToday: {
-                  text: "day",
-                  click: () => {
-                    const calendarApi = calendarRef.current?.getApi();
-                    if (calendarApi) {
-                      calendarApi.today();
-                      calendarApi.changeView("timeGridDay");
-                    }
+            <div className="calendar-nav">
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialView="dayGridMonth"
+                customButtons={{
+                  dayToday: {
+                    text: "day",
+                    click: () => {
+                      const calendarApi = calendarRef.current?.getApi();
+                      if (calendarApi) {
+                        calendarApi.today();
+                        calendarApi.changeView("timeGridDay");
+                      }
+                    },
                   },
-                },
-                weekToday: {
-                  text: "week",
-                  click: () => {
-                    const calendarApi = calendarRef.current?.getApi();
-                    if (calendarApi) {
-                      calendarApi.today();
-                      calendarApi.changeView("timeGridWeek");
-                    }
+                  weekToday: {
+                    text: "week",
+                    click: () => {
+                      const calendarApi = calendarRef.current?.getApi();
+                      if (calendarApi) {
+                        calendarApi.today();
+                        calendarApi.changeView("timeGridWeek");
+                      }
+                    },
                   },
-                },
-              }}
-              headerToolbar={{
-                left: "prev,next",
-                center: "title",
-                right: "dayGridMonth,weekToday,dayToday",
-              }}
-              events={events}
-              forceEventDuration={true}
-              displayEventTime={true}
-              eventTimeFormat={{
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              }}
-              height="auto"
-              eventClick={() => {}}
-            />
+                }}
+                headerToolbar={{
+                  left: "prev,next",
+                  center: "title",
+                  right: "dayGridMonth,weekToday,dayToday",
+                }}
+                events={events}
+                forceEventDuration={true}
+                displayEventTime={true}
+                eventTimeFormat={{
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                }}
+                height="auto"
+                eventClick={() => {}}
+              />
+            </div>
           </>
         }
       </Card>

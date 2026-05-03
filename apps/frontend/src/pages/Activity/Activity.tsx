@@ -211,7 +211,10 @@ function Activity() {
           </Box>
 
           {isAdmin && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              className="activity-filters"
+              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            >
               {(["all", "content", "login"] as const).map((val) => (
                 <Button
                   key={val}
@@ -250,6 +253,7 @@ function Activity() {
         ))}
       </Box>
       <Box
+        className="activity-timeline"
         sx={{
           borderRadius: "14px",
           backgroundColor: "white",

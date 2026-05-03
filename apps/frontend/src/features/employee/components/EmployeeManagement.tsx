@@ -534,12 +534,16 @@ export default function EmployeeManagement() {
               className="app-bar"
               sx={{ display: "flex", gap: 4 }}
             >
-              <Box sx={{ flexGrow: 1, maxWidth: "70%" }}>
+              <Box
+                className="employee-search-bar"
+                sx={{ flexGrow: 1, maxWidth: "70%" }}
+              >
                 <HeaderSearchBar setSearchQuery={setSearchQuery} />
               </Box>
 
               <Box>
                 <Button
+                  className="employee-filter-button"
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
                   aria-haspopup="true"
@@ -650,6 +654,7 @@ export default function EmployeeManagement() {
                 infoOrHelp={true}
               />
               <Button
+                className="add-employee-button"
                 onClick={() => setViewState("new")}
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -663,21 +668,23 @@ export default function EmployeeManagement() {
       </AppBar>
 
       {/* ── Data grid ─────────────────────────────────────────────────────── */}
-      <DataGrid
-        rows={filteredRows}
-        columns={getColumns((row) => setViewState(row), handleDelete)}
-        getRowId={(row) => row.uuid}
-        loading={loading}
-        pageSizeOptions={[5, 10]}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 10 } },
-        }}
-        sx={{
-          height: "calc(100vh - 200px)",
-          width: "95%",
-          mx: "auto",
-        }}
-      />
+      <div className="employee-table">
+        <DataGrid
+          rows={filteredRows}
+          columns={getColumns((row) => setViewState(row), handleDelete)}
+          getRowId={(row) => row.uuid}
+          loading={loading}
+          pageSizeOptions={[5, 10]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+          }}
+          sx={{
+            height: "calc(100vh - 200px)",
+            width: "95%",
+            mx: "auto",
+          }}
+        />
+      </div>
 
       {/* ── Save Confirmation Dialog ──────────────────────────────────────── */}
       <Dialog

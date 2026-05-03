@@ -286,7 +286,7 @@ export default function Dashboard() {
 
   const employeeDemographicsCard = (
     <Card
-      className="w-[420px] min-w-[420px] outline-1 outline-gray-200"
+      className="employee-demographics-card w-[420px] min-w-[420px] outline-1 outline-gray-200"
       sx={{ margin: 0, borderRadius: 3 }}
     >
       <CardHeader
@@ -423,12 +423,12 @@ export default function Dashboard() {
             <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
               {employeeDemographicsCard}
             </div>
-            <div className="flex-1 min-w-[500px]">
+            <div className="recent-activity-card flex-1 min-w-[500px]">
               <DashboardRecentActivity rawLogs={rawLogs} />
             </div>
           </div>
 
-          <div className="flex flex-row gap-8 items-start">
+          <div className="role-count-cards flex flex-row gap-8 items-start">
             {roles.map((role) => {
               const key = getAnalyticsKey(role);
               const count = analytics[key] ?? 0;
@@ -470,7 +470,7 @@ export default function Dashboard() {
           </div>
 
           {session?.position === "ADMIN" && (
-            <div className="flex flex-row gap-8 items-start">
+            <div className="dashboard-activity-charts flex flex-row gap-8 items-start">
               <AdminCards />
               <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
                 {fileTypesCard}
@@ -479,7 +479,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div className="flex flex-row gap-8 items-start">
+          <div className="dashboard-charts-section flex flex-row gap-8 items-start">
             {session?.position !== "ADMIN" && (
               <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
                 {fileTypesCard}
@@ -487,7 +487,7 @@ export default function Dashboard() {
               </div>
             )}
             <Card
-              className="flex-1 outline-1 outline-gray-200"
+              className="dashboard-edits-chart flex-1 outline-1 outline-gray-200"
               sx={{ margin: 0, borderRadius: 3 }}
             >
               <CardHeader
