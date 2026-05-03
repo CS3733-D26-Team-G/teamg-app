@@ -11,6 +11,7 @@ import {
   sendInternalError,
 } from "../../lib/request.ts";
 import { supabase } from "../../lib/supabase.ts";
+import { inferSearchTextFromUpload } from "../../lib/content-inference.ts";
 import {
   CreateContentSchema,
   CreateTagSchema,
@@ -48,6 +49,97 @@ const upload = multer({
   },
 });
 
+function getContentListInclude(employeeUuid: string) {
+  return {
+    favoritedBy: {
+      where: { employeeUuid },
+      select: { employeeUuid: true },
+    },
+    tagAssignments: {
+      select: {
+        tag: {
+          select: {
+            uuid: true,
+            name: true,
+          },
+        },
+      },
+    },
+    _count: {
+      select: { favoritedBy: true },
+    },
+    editLock: {
+      include: {
+        lockedByEmp: {
+          select: {
+            uuid: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+          },
+        },
+      },
+    },
+  } satisfies Prisma.ContentInclude;
+}
+
+type ContentListItem = Prisma.ContentGetPayload<{
+  include: ReturnType<typeof getContentListInclude>;
+}>;
+
+function serializeContentList(content: ContentListItem[]) {
+  return content.map(({ favoritedBy, tagAssignments, _count, ...item }) => ({
+    ...item,
+    tags: tagAssignments.map(({ tag }) => tag),
+    is_favorite: favoritedBy.length > 0,
+    favorite_count: _count.favoritedBy,
+  }));
+}
+
+function normalizeQueryList(value: unknown): string[] {
+  if (typeof value === "undefined") {
+    return [];
+  }
+
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter((item): item is string => typeof item === "string");
+}
+
+function getSearchFilterClauses(query: express.Request["query"]) {
+  const positionFilters = normalizeQueryList(query.position);
+  const fileTypeFilters = normalizeQueryList(query.fileType);
+  const tagUuidFilters = normalizeQueryList(query.tagUuid);
+  const clauses: Prisma.ContentWhereInput[] = [];
+
+  if (positionFilters.length > 0) {
+    clauses.push({ forPosition: { in: positionFilters as Position[] } });
+  }
+
+  if (fileTypeFilters.length > 0) {
+    clauses.push({ fileType: { in: fileTypeFilters } });
+  }
+
+  if (tagUuidFilters.length > 0) {
+    clauses.push({
+      tagAssignments: {
+        some: {
+          tagUuid: {
+            in: tagUuidFilters,
+          },
+        },
+      },
+    });
+  }
+
+  return clauses;
+}
+
+type SearchCandidate = {
+  uuid: string;
+  text_rank: number;
+  fuzzy_rank: number;
+};
+
 router.get("/", async (req, res) => {
   const auth = getAuth(req);
   const gettingContent =
@@ -72,37 +164,7 @@ router.get("/", async (req, res) => {
             AND: whereClauses,
           }
         : undefined,
-      include: {
-        favoritedBy: {
-          where: { employeeUuid: auth.employeeUuid },
-          select: { employeeUuid: true },
-        },
-        tagAssignments: {
-          select: {
-            tag: {
-              select: {
-                uuid: true,
-                name: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: { favoritedBy: true },
-        },
-        editLock: {
-          include: {
-            lockedByEmp: {
-              select: {
-                uuid: true,
-                firstName: true,
-                lastName: true,
-                avatar: true,
-              },
-            },
-          },
-        },
-      },
+      include: getContentListInclude(auth.employeeUuid),
       orderBy: {
         lastModifiedTime: "desc",
       },
@@ -112,22 +174,113 @@ router.get("/", async (req, res) => {
       `Queried Content table for ${gettingContent} records: found ${content.length} record(s)`,
     );
 
-    const response = content.map(
-      ({ favoritedBy, tagAssignments, _count, ...item }) => ({
-        ...item,
-        tags: tagAssignments.map(({ tag }) => tag),
-        is_favorite: favoritedBy.length > 0,
-        favorite_count: _count.favoritedBy,
-      }),
-    );
-
-    return res.status(200).json(response);
+    return res.status(200).json(serializeContentList(content));
   } catch (e) {
     return sendInternalError(
       res,
       `Failed to query Content table for ${gettingContent} records`,
       e,
     );
+  }
+});
+
+router.get("/search", async (req, res) => {
+  const auth = getAuth(req);
+  const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+
+  if (!query) {
+    return res.status(400).json({ message: "Search query is required" });
+  }
+
+  const parsedFilters = parseContentFilters(req.query);
+  if (!parsedFilters.ok) {
+    return res.status(400).json({ message: parsedFilters.message });
+  }
+
+  try {
+    const candidates = await prisma.$queryRaw<SearchCandidate[]>`
+      WITH search_store AS (
+        SELECT
+          c.uuid,
+          to_tsvector(
+            'english',
+            concat_ws(
+              ' ',
+              c.title,
+              c.content_owner,
+              c.file_type,
+              c.for_position::text,
+              c.status::text,
+              c.content_type::text,
+              c.search_text,
+              coalesce(string_agg(ct.name, ' '), '')
+            )
+          ) AS search_vector,
+          lower(
+            concat_ws(
+              ' ',
+              c.title,
+              c.content_owner,
+              c.file_type,
+              c.for_position::text,
+              c.status::text,
+              c.content_type::text,
+              c.search_text,
+              coalesce(string_agg(ct.name, ' '), '')
+            )
+          ) AS fuzzy_text
+        FROM "Content" c
+        LEFT JOIN "ContentTagAssignment" cta ON cta.content_uuid = c.uuid
+        LEFT JOIN "ContentTag" ct ON ct.uuid = cta.tag_uuid
+        GROUP BY c.uuid
+      )
+      SELECT
+        uuid,
+        ts_rank_cd(search_vector, websearch_to_tsquery('english', ${query}))::float AS text_rank,
+        similarity(fuzzy_text, lower(${query}))::float AS fuzzy_rank
+      FROM search_store
+      WHERE
+        search_vector @@ websearch_to_tsquery('english', ${query})
+        OR fuzzy_text % lower(${query})
+        OR fuzzy_text LIKE '%' || lower(${query}) || '%'
+      ORDER BY text_rank DESC, fuzzy_rank DESC
+      LIMIT 500
+    `;
+
+    if (candidates.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const candidateOrder = new Map(
+      candidates.map((candidate, index) => [candidate.uuid, index]),
+    );
+    const whereClauses = [
+      getVisibleContentWhere(auth),
+      ...parsedFilters.filters,
+      ...getSearchFilterClauses(req.query),
+      {
+        uuid: {
+          in: candidates.map((candidate) => candidate.uuid),
+        },
+      },
+    ].filter((clause): clause is Prisma.ContentWhereInput => !!clause);
+
+    const content = await prisma.content.findMany({
+      where: {
+        AND: whereClauses,
+      },
+      include: getContentListInclude(auth.employeeUuid),
+    });
+
+    content.sort(
+      (a, b) =>
+        (candidateOrder.get(a.uuid) ?? Number.MAX_SAFE_INTEGER) -
+        (candidateOrder.get(b.uuid) ?? Number.MAX_SAFE_INTEGER),
+    );
+
+    return res.status(200).json(serializeContentList(content));
+  } catch (e) {
+    return sendInternalError(res, "Failed to search content", e);
   }
 });
 
@@ -293,6 +446,9 @@ router.post("/create", upload.single("file"), async (req, res) => {
   });
 
   if (!urlResult.ok) {
+    logger.warn(
+      `Failed to resolve content url: \nstatus:${urlResult.status}\nmessage:${urlResult.message}`,
+    );
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 
@@ -302,6 +458,7 @@ router.post("/create", upload.single("file"), async (req, res) => {
     url: urlResult.url,
     supabasePath: urlResult.supabasePath,
     fileType: req.file?.mimetype ?? null,
+    searchText: await inferSearchTextFromUpload(req.file ?? undefined),
   };
 
   logger.verbose(`Inserting Content table record ${uuid}`);
@@ -436,6 +593,9 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
   });
 
   if (!urlResult.ok) {
+    logger.warn(
+      `Failed to resolve content url: \nstatus:${urlResult.status}\nmessage:${urlResult.message}`,
+    );
     return res.status(urlResult.status).json({ message: urlResult.message });
   }
 
@@ -447,12 +607,17 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     req.file ? req.file.mimetype
     : effectiveProvidedUrl ? null
     : existingContent.fileType;
+  const nextSearchText =
+    req.file ? await inferSearchTextFromUpload(req.file)
+    : effectiveProvidedUrl ? null
+    : existingContent.searchText;
 
   const data = {
     ...input,
     url: urlResult.url,
     supabasePath: nextSupabasePath,
     fileType: nextFileType,
+    searchText: nextSearchText,
     lastModifiedTime: new Date(),
   };
 
@@ -849,8 +1014,6 @@ router.get("/file/:uuid", async (req, res) => {
   if (!uuid) {
     return;
   }
-
-  const auth = getAuth(req);
 
   try {
     const content = await findContentByUuid(uuid);

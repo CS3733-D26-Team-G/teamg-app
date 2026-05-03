@@ -50,6 +50,7 @@ model Content {
   forPosition      Position                 @map("for_position")
   supabasePath     String?                  @map("supabase_path")
   fileType         String?                  @map("file_type")
+  searchText       String?                  @map("search_text") @db.Text
   createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   claimAssignments ClaimContentAssignment[]
   editLock         ContentEditLock?
