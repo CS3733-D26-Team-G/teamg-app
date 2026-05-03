@@ -183,6 +183,7 @@ export default function ApprovalPage() {
         </Stack>
         {!loading && cards.length > 0 && (
           <Stack
+            className="approvals-action-buttons"
             direction="row"
             spacing={1.5}
             sx={{ mt: 2.5 }}
@@ -425,7 +426,7 @@ export default function ApprovalPage() {
               </Stack>
 
               <Box
-                className="approval-cards"
+                className="approvals-list"
                 sx={{ flex: 1 }}
               >
                 <Stack spacing={1.5}>
@@ -504,6 +505,11 @@ export default function ApprovalPage() {
                             background:
                               "linear-gradient(135deg, #0f1230, #2d4060)",
                             boxShadow: "0 6px 20px rgba(26,30,75,0.5)",
+                          },
+                          "&.Mui-disabled": {
+                            background: "rgba(26, 30, 75, 0.15)",
+                            color: "rgba(26, 30, 75, 0.35)",
+                            boxShadow: "none",
                           },
                         }}
                       >
