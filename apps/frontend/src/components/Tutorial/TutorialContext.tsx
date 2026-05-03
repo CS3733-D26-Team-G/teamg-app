@@ -8,6 +8,8 @@ export interface TutorialStep {
   position?: "top" | "bottom" | "left" | "right" | "center";
   requiresNavigation?: boolean;
   navigationHint?: string;
+  requiresInteraction?: boolean;
+  interactionHint?: string;
 }
 
 export type UserRole = "admin" | "underwriter" | "other";
@@ -353,6 +355,9 @@ const UNDERWRITER_STEPS: TutorialStep[] = [
       "Each card shows the claim type, claimant, and incident date. Click a card to expand it and read the full details.",
     targetSelector: ".risk-review-list",
     position: "top",
+    requiresInteraction: true,
+    interactionHint:
+      "Click on any claim card to expand it, then Next will unlock →",
   },
   {
     id: "risk-notes",
