@@ -7,7 +7,8 @@
     "SUPABASE_URL",
     "SUPABASE_SECRET_KEY",
     "PORT",
-    "VITE_APP_ENV"
+    "VITE_APP_ENV",
+    "GROQ_API_KEY"
   ],
   "tasks": {
     "db:generate": {
