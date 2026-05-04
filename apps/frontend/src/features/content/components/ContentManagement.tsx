@@ -1781,7 +1781,8 @@ export default function ContentManagement({
               border: "1px solid",
               borderColor: "divider",
               borderRadius: "8px",
-              overflow: "hidden",
+              height: "calc(100vh - 200px)",
+              overflowY: "auto",
             }}
           >
             <Box
