@@ -30,6 +30,8 @@ import {
   Checkbox,
   Slide,
   Switch,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import type { TransitionProps } from "@mui/material/transitions";
 import { useTheme } from "@mui/material/styles";
@@ -296,6 +298,7 @@ export default function ContentManagement({
 
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null); // row staged for the delete confirmation dialog
   const [pendingSave, setPendingSave] = useState<FormData | null>(null); // payload staged for the save confirmation dialog
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); // message shown in the upload success snackbar
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set()); // UUIDs added this session, used for "new" row highlighting
   const [showAllCheckedOut, setShowAllCheckedOut] = useState(true); // controls admins viewing of their own checked-out file or all checked-out files
 
@@ -775,10 +778,12 @@ export default function ContentManagement({
           if (!returningToEditorRef.current) {
             await releaseLock(uuid);
           }
+          setSuccessMessage("Document updated successfully.");
         } else {
           // highlight the newly created row for the rest of this session
           const data = (await res.json()) as { uuid: string };
           setSessionNewIds((prev) => new Set([...prev, data.uuid]));
+          setSuccessMessage("Document submitted successfully.");
         }
         markContentListStale();
         markRelatedActivityStale(true);
@@ -2440,6 +2445,7 @@ export default function ContentManagement({
               onSaved={() => {
                 markContentListStale();
                 markRelatedActivityStale(true);
+                setSuccessMessage("Document saved successfully.");
               }}
               readOnly={false}
               onDelete={() => editorRow && handleDelete(editorRow)}
@@ -2454,6 +2460,23 @@ export default function ContentManagement({
           );
         })()}
       {confirmationDialogs}
+
+      {/* upload / edit success confirmation */}
+      <Snackbar
+        open={successMessage !== null}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSuccessMessage(null)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
