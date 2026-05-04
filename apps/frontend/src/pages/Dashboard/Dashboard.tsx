@@ -42,6 +42,7 @@ import { useAuth } from "../../auth/AuthContext.tsx";
 import HelpPopup from "../../components/HelpPopup";
 import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx";
 import AdminCards from "../../features/dashboard/components/AdminCards.tsx";
+import PopularContent from "../../features/dashboard/components/PopularContent";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
@@ -700,13 +701,12 @@ export default function Dashboard() {
       id: "popular-content-search",
       size: "medium",
       adminOnly: false,
-      label: "Popular Searches",
-      description: "Most searched keywords (coming soon)",
+      label: "Popular Content",
+      description:
+        "Your most frequently used content and popular content for your role",
       node: (
-        <CardShell title="Popular Content Search">
-          <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>
-            No popular search data available yet.
-          </Typography>
+        <CardShell title="Popular Content">
+          <PopularContent position={session?.position} />
         </CardShell>
       ),
     },
