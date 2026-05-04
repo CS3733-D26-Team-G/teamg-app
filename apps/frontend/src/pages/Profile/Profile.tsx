@@ -64,7 +64,9 @@ function Profile() {
     setAvatarPopUpOpen(true);
   };
 
-  const { hideEdits, setHideEdits } = useNotificationFilterToggle();
+  const { hideEdits, toggleHideEdits } = useNotificationFilterToggle();
+  const { hideExpiration, toggleHideExpiration } =
+    useNotificationFilterToggle();
 
   const handleSaveAvatar = async () => {
     if (!file) return;
@@ -339,11 +341,11 @@ function Profile() {
                         fontSize: 20,
                       }}
                     >
-                      Document Expiration Alerts
+                      Hide Document Expiration Alerts
                     </Typography>
                     <Switch
-                      checked={toggle1}
-                      onChange={handleToggle1}
+                      checked={hideExpiration}
+                      onChange={(e) => toggleHideExpiration()}
                       slotProps={{ input: { "aria-label": "controlled" } }}
                     />
                   </Box>
@@ -357,7 +359,7 @@ function Profile() {
                       mt: -0.75,
                     }}
                   >
-                    Notify me when a document I own is expiring
+                    Hide expiration notifications of documents I own
                   </Typography>
 
                   <Box
@@ -378,7 +380,7 @@ function Profile() {
                     </Typography>
                     <Switch
                       checked={hideEdits}
-                      onChange={(e) => setHideEdits(e.target.checked)}
+                      onChange={(e) => toggleHideEdits()}
                       slotProps={{ input: { "aria-label": "controlled" } }}
                     />
                   </Box>

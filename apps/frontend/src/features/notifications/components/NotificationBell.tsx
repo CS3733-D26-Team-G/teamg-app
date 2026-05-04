@@ -28,12 +28,16 @@ function useFilteredTotalAlerts() {
   } = useContentInfo();
 
   const { hideEdits } = useNotificationFilterToggle();
+  const { hideExpiration } = useNotificationFilterToggle();
 
   const total = React.useMemo(() => {
     let total = 0;
-    total += visibleCriticalContent.length;
-    total += visibleExpiringContent.length;
     total += visibleClaimActions.length;
+
+    if (!hideExpiration) {
+      total += visibleExpiringContent.length;
+      total += visibleCriticalContent.length;
+    }
 
     if (!hideEdits) {
       total += visibleContentEdits.length;

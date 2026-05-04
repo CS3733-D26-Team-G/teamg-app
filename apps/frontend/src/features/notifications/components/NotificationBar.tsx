@@ -272,13 +272,16 @@ export default function NotificationBarComponent({
   // Use the filter hooks
   const { currentFilter, setFilter, isFiltering } = useNotificationFilter();
   const { hideEdits } = useNotificationFilterToggle();
+  const { hideExpiration } = useNotificationFilterToggle();
 
   // Apply the edit filter
   const filteredEdits = hideEdits ? [] : visibleContentEdits;
   const filteredOwnership = hideEdits ? [] : visibleOwnershipChanges;
+  const filteredExpiring = hideExpiration ? [] : visibleExpiringContent;
+  const filteredCritical = hideExpiration ? [] : visibleCriticalContent;
 
   const allAlerts: AlertItem[] = [
-    ...visibleCriticalContent.map((c) => ({
+    ...filteredCritical.map((c) => ({
       uuid: c.uuid,
       title: c.title || "",
       alertType: "critical" as const,
@@ -292,7 +295,7 @@ export default function NotificationBarComponent({
           c.expirationTime
         : c.expirationTime?.toString(),
     })),
-    ...visibleExpiringContent.map((c) => ({
+    ...filteredExpiring.map((c) => ({
       uuid: c.uuid,
       title: c.title || "",
       alertType: "expiring" as const,
@@ -336,6 +339,8 @@ export default function NotificationBarComponent({
     ...counts,
     edits: hideEdits ? 0 : counts.edits,
     ownership: hideEdits ? 0 : counts.ownership,
+    critical: hideExpiration ? 0 : counts.critical,
+    expiring: hideExpiration ? 0 : counts.expiring,
   };
 
   // Filter alerts based on current filter
@@ -363,7 +368,9 @@ export default function NotificationBarComponent({
   const totalAlerts =
     counts.total -
     (hideEdits ? counts.edits : 0) -
-    (hideEdits ? counts.ownership : 0);
+    (hideEdits ? counts.ownership : 0) -
+    (hideExpiration ? counts.critical : 0) -
+    (hideExpiration ? counts.expiring : 0);
 
   const handleDismiss = (uuid: string, title: string, alertType: string) => {
     dismissAlert(uuid, alertType);
