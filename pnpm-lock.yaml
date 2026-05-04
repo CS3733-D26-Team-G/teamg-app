@@ -267,9 +267,6 @@ importers:
       react-router-dom:
         specifier: ^7.14.0
         version: 7.14.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      react-speech-recognition:
-        specifier: ^4.0.1
-        version: 4.0.1(react@19.2.5)
       zod:
         specifier: ^4.3.6
         version: 4.4.2
@@ -3940,11 +3937,6 @@ packages:
     peerDependenciesMeta:
       react-dom:
         optional: true
-
-  react-speech-recognition@4.0.1:
-    resolution: {integrity: sha512-0fIqzLtfY8vuYA6AmJVK7qiabZx0oFKOO+rbiBgFI3COWVGREy0A+gdU16hWXmFebeyrI8JsOLYsWk6WaHUXRw==}
-    peerDependencies:
-      react: '>=16.8.0'
 
   react-transition-group@4.4.5:
     resolution: {integrity: sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g==}
@@ -8228,11 +8220,6 @@ snapshots:
       set-cookie-parser: 2.7.2
     optionalDependencies:
       react-dom: 19.2.5(react@19.2.5)
-
-  react-speech-recognition@4.0.1(react@19.2.5):
-    dependencies:
-      lodash.debounce: 4.0.8
-      react: 19.2.5
 
   react-transition-group@4.4.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
     dependencies:
