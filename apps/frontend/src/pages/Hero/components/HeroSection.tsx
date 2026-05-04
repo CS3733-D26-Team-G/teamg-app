@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Box, Button, Alert, Collapse, Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import HanoverLogoWhite from "../../../assets/HanoverLogoWhite.png";
 import LoginModal from "./LoginModal.tsx";
 import theme from "../../../theme.tsx";
-import { type Variants } from "framer-motion";
+//import VoiceControl from "../../../VoiceControl.tsx";
 import CarouselBackground from "./CarouselBackground";
 import { useTranslation } from "react-i18next";
+import { Mic, MicOff } from "lucide-react";
 import { useAuth } from "../../../auth/AuthContext.tsx";
 
 const containerVariants: Variants = {

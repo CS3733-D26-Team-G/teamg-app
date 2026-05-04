@@ -45,6 +45,7 @@ import DocPreviewer from "../../features/content/components/viewing/DocPreviewer
 import VersionHistoryPanel from "../../features/content/components/viewing/VersionHistoryPanel.tsx";
 import { useSidebar } from "../../components/SidebarContext.tsx";
 import { Icon } from "lucide-react";
+import { NotificationFilterProvider } from "../../features/notifications/components/NotificationsSettingsToggle.tsx";
 
 export function getEventColor(expirationTime: string | null): string {
   if (!expirationTime) return "#06d606";
@@ -283,9 +284,93 @@ export default function CalendarPage() {
           {loading ?
             <Typography>Loading calendar…</Typography>
           : <>
-              {isDarkMode && <style>{`/* your dark mode styles */`}</style>}
+              {isDarkMode && (
+                <style>{`
+                  .fc .fc-col-header-cell {
+                    background-color: #161B27 !important;
+                  }
+                  .fc .fc-col-header-cell-cushion {
+                    color: #9BA3B8 !important;
+                    text-decoration: none !important;
+                  }
+                  .fc-theme-standard td,
+                  .fc-theme-standard th,
+                  .fc-theme-standard .fc-scrollgrid,
+                  .fc .fc-scrollgrid-liquid {
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-scrollgrid-section > * {
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc table {
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-timegrid-col.fc-day-today {
+                    background-color: rgba(77,159,255,0.08) !important;
+                  }
+                  .fc .fc-timegrid-axis {
+                    background-color: #161B27 !important;
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-timegrid-axis-cushion {
+                    color: #9BA3B8 !important;
+                  }
+                  .fc-theme-standard .fc-scrollgrid-section-sticky > * {
+                    background-color: #161B27 !important;
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-timegrid-slot {
+                    border-color: rgba(255,255,255,0.08) !important;
+                  }
+                  .fc .fc-daygrid-day,
+                  .fc .fc-timegrid-col {
+                    background-color: transparent !important;
+                  }
+                `}</style>
+              )}
 
-              <style>{`/* your calendar styles */`}</style>
+              <style>{`
+                .fc,
+                .fc-toolbar-title,
+                .fc-col-header-cell,
+                .fc-daygrid-day-number,
+                .fc-event,
+                .fc-button {
+                  font-family: 'Rubik', sans-serif !important;
+                }
+
+                .fc-event {
+                  cursor: pointer !important;
+                }
+
+                .fc .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+                  color: #ffffff !important;
+                  font-weight: 700 !important;
+                }
+
+                .fc .fc-daygrid-day.fc-day-today {
+                  background-color: rgba(59, 130, 246, 0.12) !important;
+                }
+                .fc .fc-timegrid-col.fc-day-today {
+                  background-color: rgba(59, 130, 246, 0.08) !important;
+                }
+
+                .fc .fc-col-header-cell {
+                  background-color: #102347 !important;
+                }
+                .fc .fc-col-header-cell-cushion {
+                  color: #ffffff !important;
+                  text-decoration: none !important;
+                  font-weight: 600 !important;
+                }
+
+                .fc-event-time {
+                  display: none !important;
+                }
+
+                
+                  
+              `}</style>
 
               <div
                 style={{
