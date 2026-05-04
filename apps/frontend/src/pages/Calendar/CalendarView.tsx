@@ -210,65 +210,40 @@ export default function CalendarPage() {
             }}
           />
         ))}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            py: 1,
-            mb: 2,
-            mt: -1,
-            borderRadius: 4,
-            backgroundColor: "rgba(255, 255, 255, 0.12)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255, 255, 255, 0.25)",
-            borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
-            px: 3,
-          }}
+        <Stack
+          direction="row"
+          alignItems="flex-start"
+          justifyContent="space-between"
         >
-          <Stack
-            direction="row"
-            alignItems="flex-start"
-            justifyContent="space-between"
-            width="100%"
-          >
-            <Box>
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={2}
-                sx={{ mb: 0.5 }}
-              >
-                <Typography
-                  variant="h2"
-                  sx={{ color: "white", fontWeight: 700, overflow: "hidden" }}
-                >
-                  Calendar
-                </Typography>
-              </Stack>
-              <Typography
-                sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
-              >
-                See when content you created (✏️) or checked out (👁️) will
-                expire
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                mt: 2,
-                mb: 3,
-              }}
+          <Box>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={2}
+              sx={{ mb: 0.5 }}
             >
-              <HelpPopup
-                description="This queue shows all PENDING claims. Expand each card to read the details, write your risk notes, then clear or flag."
-                infoOrHelp={true}
-              />
-            </Box>
-          </Stack>
-        </Box>
+              <Typography
+                variant="h2"
+                sx={{ color: "white", fontWeight: 700, overflow: "hidden" }}
+              >
+                Calendar
+              </Typography>
+            </Stack>
+            <Typography
+              sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
+            >
+              See when content you created (✏️) or checked out (👁️) will expire
+            </Typography>
+          </Box>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2, mb: 3 }}
+          >
+            <HelpPopup
+              description="This queue shows all PENDING claims. Expand each card to read the details, write your risk notes, then clear or flag."
+              infoOrHelp={true}
+            />
+          </Box>
+        </Stack>
 
         <Card
           className="calendar-grid"
