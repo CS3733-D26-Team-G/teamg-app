@@ -37,8 +37,17 @@ export default function PopularContent({ position }: Props) {
       .catch(console.error);
   }, []);
 
-  const viewContent = (title: string) => {
-    navigate(`/library?filter=${encodeURIComponent(title)}`);
+  const viewContent = async (item: PopularItem) => {
+    try {
+      await fetch(API_ENDPOINTS.CONTENT.VIEW(item.contentUuid), {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Failed to record content view:", error);
+    }
+
+    navigate(`/library?filter=${encodeURIComponent(item.title)}`);
   };
 
   return (
@@ -69,7 +78,7 @@ export default function PopularContent({ position }: Props) {
                   alignItems: "center",
                   cursor: "pointer",
                 }}
-                onClick={() => viewContent(item.title)}
+                onClick={() => viewContent(item)}
               >
                 <Typography
                   variant="body2"
@@ -120,7 +129,7 @@ export default function PopularContent({ position }: Props) {
                   alignItems: "center",
                   cursor: "pointer",
                 }}
-                onClick={() => viewContent(item.title)}
+                onClick={() => viewContent(item)}
               >
                 <Typography
                   variant="body2"
