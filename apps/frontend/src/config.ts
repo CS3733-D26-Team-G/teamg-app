@@ -25,6 +25,8 @@ export const API_ENDPOINTS = {
   STATS: {
     ACTIVITY_ACTION_SUMMARY: `${API_BASE_URL}/stats/activity/action-summary`,
     CONTENT_EDIT_HITS_BY_ROLE: `${API_BASE_URL}/stats/content/edit-hits-by-role`,
+    CONTENT_HITS_TOP_USER: `${API_BASE_URL}/stats/content/hits/top-user`,
+    CONTENT_HITS_TOP_POSITION: `${API_BASE_URL}/stats/content/hits/top-position`,
   },
   EMPLOYEE: {
     ROOT: `${API_BASE_URL}/employee`,

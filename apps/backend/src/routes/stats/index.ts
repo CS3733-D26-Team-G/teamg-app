@@ -314,6 +314,120 @@ router.get("/content/hits/top", async (req, res) => {
   }
 });
 
+// Endpoint for user-specific frequently hit content
+router.get("/content/hits/top-user", async (req, res) => {
+  const auth = getAuth(req);
+
+  try {
+    const hits = await prisma.contentHit.groupBy({
+      by: ["contentUuid"],
+      where: {
+        employeeUuid: auth.employeeUuid,
+        content: getVisibleContentWhere(auth),
+      },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        _count: {
+          contentUuid: "desc",
+        },
+      },
+      take: 5,
+    });
+
+    const contents = await prisma.content.findMany({
+      where: {
+        uuid: {
+          in: hits.map((hit) => hit.contentUuid),
+        },
+      },
+      select: {
+        uuid: true,
+        title: true,
+        forPosition: true,
+      },
+    });
+
+    const stats = hits.map((hit) => {
+      const content = contents.find((item) => item.uuid === hit.contentUuid);
+
+      return {
+        contentUuid: hit.contentUuid,
+        title: content?.title ?? "Unknown",
+        position: content?.forPosition ?? null,
+        hits: hit._count._all,
+      };
+    });
+
+    return res.status(200).json(stats);
+  } catch (e) {
+    return sendInternalError(
+      res,
+      "Failed to retrieve user content hit stats",
+      e,
+    );
+  }
+});
+
+// Endpoint for user-specific role based frequently hit content
+router.get("/content/hits/top-position", async (req, res) => {
+  const auth = getAuth(req);
+
+  try {
+    const hits = await prisma.contentHit.groupBy({
+      by: ["contentUuid"],
+      where: {
+        employee: {
+          position: auth.position,
+        },
+        content: getVisibleContentWhere(auth),
+      },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        _count: {
+          contentUuid: "desc",
+        },
+      },
+      take: 5,
+    });
+
+    const contents = await prisma.content.findMany({
+      where: {
+        uuid: {
+          in: hits.map((hit) => hit.contentUuid),
+        },
+      },
+      select: {
+        uuid: true,
+        title: true,
+        forPosition: true,
+      },
+    });
+
+    const stats = hits.map((hit) => {
+      const content = contents.find((item) => item.uuid === hit.contentUuid);
+
+      return {
+        contentUuid: hit.contentUuid,
+        title: content?.title ?? "Unknown",
+        position: content?.forPosition ?? null,
+        hits: hit._count._all,
+      };
+    });
+
+    return res.status(200).json(stats);
+  } catch (e) {
+    return sendInternalError(
+      res,
+      "Failed to retrieve position content hit stats",
+      e,
+    );
+  }
+});
+
 router.get("/content/hits/action", async (req, res) => {
   const auth = getAuth(req);
 
