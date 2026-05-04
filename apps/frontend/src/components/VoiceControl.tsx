@@ -7,9 +7,9 @@ import MicOffIcon from "@mui/icons-material/MicOff";
 type VoiceControlProps = {
   onCommand: (command: string) => boolean;
   buttonSx?: SxProps<Theme>;
-  panelSx?: SxProps<Theme>;
-  showPanel?: boolean;
 };
+
+const VOICE_LISTENING_KEY = "teamg.voiceListening";
 
 type SpeechRecognitionResultLike = {
   readonly isFinal: boolean;
@@ -40,7 +40,6 @@ type SpeechRecognitionLike = EventTarget & {
   onend: (() => void) | null;
   onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onspeechend: (() => void) | null;
   onspeechstart: (() => void) | null;
   onstart: (() => void) | null;
   start: () => void;
@@ -58,8 +57,6 @@ type SpeechWindow = Window &
 export default function VoiceControl({
   onCommand,
   buttonSx,
-  panelSx,
-  showPanel = true,
 }: VoiceControlProps) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const shouldListenRef = useRef(false);
@@ -124,6 +121,7 @@ export default function VoiceControl({
 
   const stopListening = () => {
     shouldListenRef.current = false;
+    sessionStorage.setItem(VOICE_LISTENING_KEY, "false");
     clearRestartTimer();
     cleanupRecognition();
     setIsListening(false);
@@ -181,12 +179,26 @@ export default function VoiceControl({
       const spokenText = interimTranscript.trim();
       const command = finalTranscript.trim().toLowerCase();
       if (command) {
+        const compactCommand = command.replace(/\s+/g, "");
+        if (
+          compactCommand.includes("stopvoice") ||
+          compactCommand.includes("turnoffvoice") ||
+          compactCommand.includes("stoplistening") ||
+          compactCommand.includes("microphoneoff")
+        ) {
+          stopListening();
+          return;
+        }
+
         const wasSuccessful = onCommand(command);
         if (wasSuccessful) {
           finalTranscriptRef.current =
             `${finalTranscriptRef.current} ${command}`.trim();
           setTranscript(finalTranscriptRef.current);
           setStatus("Command accepted.");
+          if (shouldListenRef.current) {
+            setIsListening(true);
+          }
         } else if (spokenText) {
           setStatus("Listening for a supported command.");
         }
@@ -230,10 +242,21 @@ export default function VoiceControl({
     };
     recognitionRef.current = recognition;
     shouldListenRef.current = true;
+    sessionStorage.setItem(VOICE_LISTENING_KEY, "true");
     finalTranscriptRef.current = "";
     startRecognition(recognition);
     setTranscript("");
   };
+
+  useEffect(() => {
+    if (
+      isSupported &&
+      !isListening &&
+      sessionStorage.getItem(VOICE_LISTENING_KEY) === "true"
+    ) {
+      startListening();
+    }
+  }, [isSupported, isListening]);
   const handleClick = () => {
     if (isListening) {
       stopListening();
@@ -273,22 +296,19 @@ export default function VoiceControl({
           </Fab>
         </span>
       </Tooltip>
-      {showPanel && isListening && (
+      {isListening && (
         <Paper
           elevation={6}
-          sx={[
-            {
-              position: "fixed",
-              right: 24,
-              bottom: 88,
-              zIndex: 1400,
-              width: 320,
-              maxWidth: "calc(100vw - 48px)",
-              p: 2,
-              borderRadius: 2,
-            },
-            ...(Array.isArray(panelSx) ? panelSx : [panelSx]),
-          ]}
+          sx={{
+            position: "fixed",
+            right: 24,
+            bottom: 88,
+            zIndex: 1400,
+            width: 320,
+            maxWidth: "calc(100vw - 48px)",
+            p: 2,
+            borderRadius: 2,
+          }}
         >
           <Typography
             variant="caption"

@@ -8,7 +8,6 @@ import LoginModal from "./LoginModal.tsx";
 import theme from "../../../theme.tsx";
 import CarouselBackground from "./CarouselBackground";
 import { useTranslation } from "react-i18next";
-import { Mic, MicOff } from "lucide-react";
 import { useAuth } from "../../../auth/AuthContext.tsx";
 import VoiceControl from "../../../components/VoiceControl.tsx";
 
@@ -55,9 +54,12 @@ export default function HeroSection() {
 
   const handleVoiceCommand = (command: string) => {
     const normalizedCommand = command.toLowerCase().replace(/[^\w\s]/g, "");
+    const compactCommand = normalizedCommand.replace(/\s+/g, "");
     const routes: Array<[string[], string]> = [
       [["dashboard", "home"], "/dashboard"],
       [["library", "content library"], "/library"],
+      [["preview", "preview content", "content preview"], "/library"],
+      [["check out", "checkout", "checked out"], "/library"],
       [["forms", "my forms", "content form"], "/my-forms"],
       [["activity"], "/activity"],
       [["settings"], "/settings"],
@@ -70,9 +72,11 @@ export default function HeroSection() {
     ];
 
     if (
-      normalizedCommand.includes("login") ||
-      normalizedCommand.includes("log in") ||
-      normalizedCommand.includes("sign in")
+      compactCommand.includes("login") ||
+      compactCommand.includes("signin") ||
+      normalizedCommand.includes("log me in") ||
+      normalizedCommand.includes("sign me in") ||
+      (normalizedCommand.includes("log") && normalizedCommand.includes("in"))
     ) {
       openLogin();
       return true;
@@ -149,10 +153,8 @@ export default function HeroSection() {
             gap: 1.5,
           }}
         >
-          {" "}
           <VoiceControl
             onCommand={handleVoiceCommand}
-            // showPanel={false}
             buttonSx={{
               position: "static",
               zIndex: 13,

@@ -51,6 +51,8 @@ function AppShell() {
     const routes: Array<[string[], string]> = [
       [["dashboard", "home"], "/dashboard"],
       [["library", "content library"], "/library"],
+      [["preview", "preview content", "content preview"], "/library"],
+      [["check out", "checkout", "checked out"], "/library"],
       [["forms", "my forms", "content form"], "/my-forms"],
       [["activity"], "/activity"],
       [["settings"], "/settings"],
