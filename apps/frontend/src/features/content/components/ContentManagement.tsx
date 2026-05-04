@@ -712,6 +712,35 @@ export default function ContentManagement({
     }
   };
 
+  const handleForceCheckIn = async (uuid: string) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.LOCK(uuid), {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        setLockMessage("Unable to check in content");
+        return;
+      }
+
+      patchContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      patchBootstrapContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      markRelatedActivityStale();
+    } catch (error) {
+      console.error(error);
+      setLockMessage("Unable to check in content.");
+    }
+  };
+
   // stages the form payload and opens the save confirmation dialog
   const handleSave = (payload: FormData) => {
     setPendingSave(payload);
@@ -957,6 +986,7 @@ export default function ContentManagement({
     onCheckOut: (row: ContentRow) => void,
     onOpenEditor: (row: ContentRow) => void,
     onCheckIn: (uuid: string) => void,
+    onForceCheckIn: (uuid: string) => void,
   ): GridColDef<ContentRow>[] => [
     {
       // hidden numeric field used only for default sort (favorites first)
@@ -1251,6 +1281,18 @@ export default function ContentManagement({
                     LOCKED
                   </Button>
                 </span>
+              </Tooltip>
+            )}
+
+            {isSystemAdmin && row.isLocked && !isCheckedOutByMe && (
+              <Tooltip title={"Force check in"}>
+                <IconButton
+                  sx={{ color: "orange" }}
+                  size="small"
+                  onClick={() => void onForceCheckIn(row.uuid)}
+                >
+                  <LockOpenIcon fontSize="small" />
+                </IconButton>
               </Tooltip>
             )}
           </Box>
@@ -1980,6 +2022,7 @@ export default function ContentManagement({
                     handleCheckout,
                     handleOpenEditor,
                     releaseLock,
+                    handleForceCheckIn,
                   )}
                   getRowClassName={(params) => {
                     const hasPermission =
@@ -2183,6 +2226,7 @@ export default function ContentManagement({
                         handleCheckout,
                         handleOpenEditor,
                         releaseLock,
+                        handleForceCheckIn,
                       )}
                       getRowClassName={(params) => {
                         const hasPermission =
