@@ -1332,67 +1332,56 @@ export default function ContentManagement({
               overflow: "hidden",
             }}
           >
-            <Box
-              className="content-header"
-              sx={{
-                px: 4,
-                pt: 5,
-
-                position: "relative",
-                overflow: "hidden",
-              }}
+            <Stack
+              direction="row"
+              alignItems="flex-start"
+              justifyContent="space-between"
             >
-              <Stack
-                direction="row"
-                alignItems="flex-start"
-                justifyContent="space-between"
-              >
-                <Box>
-                  <Typography
-                    variant="h2"
-                    sx={{ color: "white", mb: 0.5 }}
-                  >
-                    Content Management
-                  </Typography>
-                  <Typography
-                    sx={{
-                      color: "rgba(255,255,255,0.65)",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    Create, edit, and organize your digital assets and site
-                    content in one collaborative workspace.
-                  </Typography>
-                </Box>
-                <Box
+              <Box>
+                <Typography
+                  variant="h2"
+                  sx={{ color: "white", mb: 0.5 }}
+                >
+                  Content Management
+                </Typography>
+                <Typography
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    mt: 0.5,
-                    zIndex: 10,
+                    color: "rgba(255,255,255,0.65)",
+                    fontSize: "0.95rem",
                   }}
                 >
-                  <HelpPopup
-                    description="The employee management page allows admins to add, manage, and delete any employee within iBank's database."
-                    infoOrHelp={true}
-                  />
-                </Box>
-              </Stack>
+                  Create, edit, and organize your digital assets and site
+                  content in one collaborative workspace.
+                </Typography>
+              </Box>
               <Box
                 sx={{
-                  background: "transparent",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 2,
-                  pt: 2,
-                  flexWrap: "wrap",
-                  position: "relative",
-                  zIndex: 1000,
+                  gap: 1,
+                  mt: 0.5,
+                  zIndex: 10,
                 }}
-              ></Box>
-            </Box>
+              >
+                <HelpPopup
+                  description="The employee management page allows admins to add, manage, and delete any employee within iBank's database."
+                  infoOrHelp={true}
+                />
+              </Box>
+            </Stack>
+            <Box
+              sx={{
+                background: "transparent",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 2,
+                pt: 2,
+                flexWrap: "wrap",
+                position: "relative",
+                zIndex: 1000,
+              }}
+            ></Box>
           </Box>
           {[...Array(3)].map((_, i) => (
             <Box
