@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   PROFILE: {
     ROOT: `${API_BASE_URL}/profile`,
     AVATAR: `${API_BASE_URL}/profile/avatar`,
+    CHANGE_PASSWORD: `${API_BASE_URL}/profile/change-password`,
   },
   ACCOUNT_SETTINGS: `${API_BASE_URL}/account-settings`,
   STATS: {

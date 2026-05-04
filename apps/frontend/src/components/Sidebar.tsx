@@ -419,13 +419,6 @@ export default function Sidebar() {
           My Account
         </MenuItem>
         <MenuItem
-          component={Link}
-          to="/settings"
-          onClick={handleClose}
-        >
-          Settings
-        </MenuItem>
-        <MenuItem
           onClick={() => {
             handleClose();
             void handleLogout();
