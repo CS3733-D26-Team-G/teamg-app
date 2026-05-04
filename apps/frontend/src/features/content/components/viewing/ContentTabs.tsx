@@ -2,15 +2,11 @@ import { useMemo, useState, useEffect } from "react";
 import type { ContentRow } from "../../../../types/content.ts";
 import type { Position } from "@repo/db";
 import { getRecentlyViewed } from "./RecentlyViewed.tsx";
-
-type SpecialTab = "favorites" | "recent" | "checked-out";
-export type TabKey = string | SpecialTab;
-
-export const SPECIAL_TABS: { key: SpecialTab; label: string }[] = [
-  { key: "favorites", label: "Favorites" },
-  { key: "recent", label: "Recently Viewed" },
-  { key: "checked-out", label: "Checked Out" },
-];
+import {
+  SPECIAL_TABS,
+  type TabKey,
+  type SpecialTab,
+} from "./ContentTabsConfig.ts";
 
 interface ContentTabsOptions {
   filteredRows: ContentRow[];
@@ -25,19 +21,22 @@ export function ContentTabs({
   userPosition,
   isSystemAdmin,
 }: ContentTabsOptions) {
-  const [viewMode, setViewMode] = useState<"accordion" | "tabs">(
-    () =>
-      (localStorage.getItem("contentMgmt_viewMode") as "accordion" | "tabs") ??
-      "accordion",
-  );
+  const [viewMode, setViewMode] = useState<"tabs" | "accordion" | null>(null);
 
   const [activeTab, setActiveTab] = useState<TabKey>(
     () => userPosition ?? "favorites",
   );
 
   useEffect(() => {
-    localStorage.setItem("contentMgmt_viewMode", viewMode);
-  }, [viewMode]);
+    if (!employeeUuid) return;
+    const saved = localStorage.getItem(`contentMgmt_viewMode_${employeeUuid}`);
+    setViewMode(saved === "accordion" ? "accordion" : "tabs");
+  }, [employeeUuid]);
+
+  useEffect(() => {
+    if (!employeeUuid || !viewMode) return;
+    localStorage.setItem(`contentMgmt_viewMode_${employeeUuid}`, viewMode);
+  }, [viewMode, employeeUuid]);
 
   // re-read localStorage whenever the tab becomes active so the list stays fresh
   const [recentEntries, setRecentEntries] = useState(() =>
