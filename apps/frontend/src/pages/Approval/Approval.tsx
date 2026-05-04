@@ -260,7 +260,7 @@ export default function ApprovalPage() {
           mx: "auto",
           mb: "2rem",
           borderRadius: "14px",
-          backgroundColor: "white",
+          backgroundColor: "background.paper",
           height: "calc(100vh - 200px)",
           overflowY: "auto",
         }}
