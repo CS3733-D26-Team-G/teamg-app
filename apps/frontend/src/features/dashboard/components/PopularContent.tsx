@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Box, Stack, Typography, Tooltip } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { getPositionLabel } from "../../../utils/positionDisplay";
+import { API_ENDPOINTS } from "../../../config";
 
 type PopularItem = {
   contentUuid: string;
@@ -20,14 +22,14 @@ export default function PopularContent({ position }: Props) {
   const [roleData, setRoleData] = useState<PopularItem[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/stats/content/hits/top-user", {
+    fetch(API_ENDPOINTS.STATS.CONTENT_HITS_TOP_USER, {
       credentials: "include",
     })
       .then((res) => res.json())
       .then(setUserData)
       .catch(console.error);
 
-    fetch("http://localhost:3000/stats/content/hits/top-position", {
+    fetch(API_ENDPOINTS.STATS.CONTENT_HITS_TOP_POSITION, {
       credentials: "include",
     })
       .then((res) => res.json())
@@ -56,9 +58,11 @@ export default function PopularContent({ position }: Props) {
             No data yet.
           </Typography>
         : userData.map((item) => (
-            <Tooltip title="View content">
+            <Tooltip
+              key={item.contentUuid}
+              title="View content"
+            >
               <Box
-                key={item.contentUuid}
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -95,7 +99,7 @@ export default function PopularContent({ position }: Props) {
           variant="subtitle2"
           sx={{ fontWeight: "bold", mb: 1 }}
         >
-          Popular for {position}
+          Popular for {position ? getPositionLabel(position as any) : ""}
         </Typography>
         {roleData.length === 0 ?
           <Typography
@@ -105,9 +109,11 @@ export default function PopularContent({ position }: Props) {
             No data yet.
           </Typography>
         : roleData.map((item) => (
-            <Tooltip title="View content">
+            <Tooltip
+              key={item.contentUuid}
+              title="View content"
+            >
               <Box
-                key={item.contentUuid}
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
