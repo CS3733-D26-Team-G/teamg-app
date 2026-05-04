@@ -24,7 +24,9 @@ function useFilteredTotalAlerts() {
     visibleExpiringContent,
     visibleOwnershipChanges,
     visibleContentEdits,
-    visibleClaimActions,
+    visibleClaimCreate,
+    visibleClaimEdit,
+    visibleClaimDelete,
   } = useContentInfo();
 
   const { hideEdits } = useNotificationFilterToggle();
@@ -32,7 +34,10 @@ function useFilteredTotalAlerts() {
 
   const total = React.useMemo(() => {
     let total = 0;
-    total += visibleClaimActions.length;
+
+    total += visibleClaimCreate.length;
+    total += visibleClaimEdit.length;
+    total += visibleClaimDelete.length;
 
     if (!hideExpiration) {
       total += visibleExpiringContent.length;
@@ -50,8 +55,11 @@ function useFilteredTotalAlerts() {
     visibleExpiringContent.length,
     visibleOwnershipChanges.length,
     visibleContentEdits.length,
-    visibleClaimActions.length,
+    visibleClaimCreate.length,
+    visibleClaimEdit.length,
+    visibleClaimDelete.length,
     hideEdits,
+    hideExpiration,
   ]);
 
   return total;
