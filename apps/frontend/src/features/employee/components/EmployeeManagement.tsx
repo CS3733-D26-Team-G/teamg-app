@@ -457,53 +457,61 @@ export default function EmployeeManagement() {
               overflow: "hidden",
             }}
           >
-            <Stack
-              direction="row"
-              alignItems="flex-start"
-              justifyContent="space-between"
-            >
-              <Box>
-                <Typography
-                  variant="h2"
-                  sx={{ color: "white", mb: 0.5 }}
-                >
-                  Employee Management
-                </Typography>
-                <Typography
-                  sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
-                >
-                  A central hub for staff records, role assignments, and
-                  department oversight.
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  mt: 0.5,
-                  zIndex: 10,
-                }}
-              >
-                <HelpPopup
-                  description="The employee management page allows admins to add, manage, and delete any employee within iBank's database."
-                  infoOrHelp={true}
-                />
-              </Box>
-            </Stack>
             <Box
               sx={{
-                background: "transparent",
                 display: "flex",
-                alignItems: "center",
                 justifyContent: "space-between",
-                gap: 2,
-                pt: 2,
-                flexWrap: "wrap",
-                position: "relative",
-                zIndex: 1000,
+                alignItems: "center",
+                py: 1,
+                mb: 2,
+                mt: -1,
+                borderRadius: 4,
+                backgroundColor: "rgba(255, 255, 255, 0.12)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
+                borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
+                px: 3,
               }}
-            ></Box>
+            >
+              <Stack
+                direction="row"
+                alignItems="flex-start"
+                justifyContent="space-between"
+                width="100%"
+              >
+                <Box>
+                  <Typography
+                    variant="h2"
+                    sx={{ color: "white", mb: 0.5 }}
+                  >
+                    Employee Management
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color: "rgba(255,255,255,0.65)",
+                      fontSize: "0.95rem",
+                    }}
+                  >
+                    A central hub for staff records, role assignments, and
+                    department oversight.
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    mt: 0.5,
+                    zIndex: 10,
+                  }}
+                >
+                  <HelpPopup
+                    description="The employee management page allows admins to add, manage, and delete any employee within iBank's database."
+                    infoOrHelp={true}
+                  />
+                </Box>
+              </Stack>
+            </Box>
           </Box>
           {[...Array(3)].map((_, i) => (
             <Box
@@ -516,6 +524,7 @@ export default function EmployeeManagement() {
                 height: 120 + i * 80,
                 top: -40 - i * 30,
                 right: -40 - i * 30,
+                pointerEvents: "none",
               }}
             />
           ))}

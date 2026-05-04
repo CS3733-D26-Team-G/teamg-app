@@ -6,11 +6,10 @@ import { motion, type Variants } from "framer-motion";
 import HanoverLogoWhite from "../../../assets/HanoverLogoWhite.png";
 import LoginModal from "./LoginModal.tsx";
 import theme from "../../../theme.tsx";
-//import VoiceControl from "../../../VoiceControl.tsx";
 import CarouselBackground from "./CarouselBackground";
 import { useTranslation } from "react-i18next";
-import { Mic, MicOff } from "lucide-react";
 import { useAuth } from "../../../auth/AuthContext.tsx";
+import VoiceControl from "../../../components/VoiceControl.tsx";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -50,6 +49,47 @@ export default function HeroSection() {
     { letter: "R", word: "espect", indent: "pl-37" },
     { letter: "E", word: "mpowerment", indent: "pl-43" },
   ];
+
+  const openLogin = () => setLoginOpen(true);
+
+  const handleVoiceCommand = (command: string) => {
+    const normalizedCommand = command.toLowerCase().replace(/[^\w\s]/g, "");
+    const compactCommand = normalizedCommand.replace(/\s+/g, "");
+    const routes: Array<[string[], string]> = [
+      [["dashboard", "home"], "/dashboard"],
+      [["library", "content library"], "/library"],
+      [["preview", "preview content", "content preview"], "/library"],
+      [["check out", "checkout", "checked out"], "/library"],
+      [["forms", "my forms", "content form"], "/my-forms"],
+      [["activity"], "/activity"],
+      [["settings"], "/settings"],
+      [["profile"], "/profile"],
+      [["calendar"], "/calendar"],
+      [["claims"], "/claims"],
+      [["risk review"], "/risk-review"],
+      [["credits"], "/credits"],
+      [["about"], "/aboutus"],
+    ];
+
+    if (
+      compactCommand.includes("login") ||
+      compactCommand.includes("signin") ||
+      normalizedCommand.includes("log me in") ||
+      normalizedCommand.includes("sign me in") ||
+      (normalizedCommand.includes("log") && normalizedCommand.includes("in"))
+    ) {
+      openLogin();
+      return true;
+    }
+    const route = routes.find(([phrases]) =>
+      phrases.some((phrase) => normalizedCommand.includes(phrase)),
+    );
+    if (route) {
+      navigate(route[1]);
+      return true;
+    }
+    return false;
+  };
 
   return (
     <CarouselBackground>
@@ -104,52 +144,61 @@ export default function HeroSection() {
           />
         </Box>
 
-        {session ?
-          <Button
-            onClick={() => navigate("/dashboard")}
-            sx={{
-              "position": "absolute",
-              "right": 15,
-              "background": "white",
-              "color": "black",
-              "fontFamily": theme.typography.fontFamily,
-              "fontSize": 18,
-              "fontWeight": "bold",
-              "px": 5,
-              "py": 1.5,
-              "borderRadius": "70px",
-              "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
-              "textTransform": "none",
-              "&:hover": { background: "#d9d2c5" },
+        <Box
+          sx={{
+            position: "absolute",
+            right: session ? 15 : 40,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+          }}
+        >
+          <VoiceControl
+            onCommand={handleVoiceCommand}
+            buttonSx={{
+              position: "static",
+              zIndex: 13,
             }}
-          >
-            Go to Dashboard
-          </Button>
-        : <Button
-            onClick={() => setLoginOpen(true)}
-            sx={{
-              "position": "absolute",
-              "right": 40,
-              "background": "white",
-              "color": "black",
-              "fontFamily": theme.typography.fontFamily,
-              "fontSize": 18,
-              "fontWeight": "bold",
-              "px": 5,
-              "py": 1.5,
-              "borderRadius": "70px",
-              "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
-              "textTransform": "none",
-              "&:hover": { background: "#d9d2c5" },
-            }}
-          >
-            {t("heroSection.login")}
-          </Button>
-        }
-        {/*
-        <button type = "button" className = "btn btn-outlne-secondary" onClick={startVoice}>
-          <Mic size={16}/> Start Voice</button>
-*/}
+          />
+          {session ?
+            <Button
+              onClick={() => navigate("/dashboard")}
+              sx={{
+                "background": "white",
+                "color": "black",
+                "fontFamily": theme.typography.fontFamily,
+                "fontSize": 18,
+                "fontWeight": "bold",
+                "px": 5,
+                "py": 1.5,
+                "borderRadius": "70px",
+                "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
+                "textTransform": "none",
+                "&:hover": { background: "#d9d2c5" },
+              }}
+            >
+              Go to Dashboard
+            </Button>
+          : <Button
+              onClick={openLogin}
+              sx={{
+                "background": "white",
+                "color": "black",
+                "fontFamily": theme.typography.fontFamily,
+                "fontSize": 18,
+                "fontWeight": "bold",
+                "px": 5,
+                "py": 1.5,
+                "borderRadius": "70px",
+                "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
+                "textTransform": "none",
+                "&:hover": { background: "#d9d2c5" },
+              }}
+            >
+              {t("heroSection.login")}
+            </Button>
+          }
+        </Box>
       </Box>
 
       {/* Animated Main Content Area */}

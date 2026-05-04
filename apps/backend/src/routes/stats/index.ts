@@ -43,52 +43,56 @@ router.get(
   },
 );
 
-router.get(
-  "/activity/action-summary",
-  requireAdmin("dashboard activity summary"),
-  async (req, res) => {
-    const position = req.query.position as Position | undefined;
-    const employeeUuid = req.query.employeeUuid as string | undefined;
+router.get("/activity/action-summary", async (req, res) => {
+  const auth = getAuth(req);
+  const isAdmin = auth.position === "ADMIN";
 
-    try {
-      const employeeWhere: Prisma.EmployeeWhereInput = {
-        ...(position ? { position } : {}),
-        ...(employeeUuid ? { uuid: employeeUuid } : {}),
-      };
-      const hasEmployeeFilter = Object.keys(employeeWhere).length > 0;
+  const position =
+    isAdmin ? (req.query.position as Position | undefined) : undefined;
 
-      const activities = await prisma.activity.groupBy({
-        by: ["action"],
-        where: {
-          ...(hasEmployeeFilter ? { employee: employeeWhere } : {}),
-          action: {
-            in: ["EDIT_CONTENT", "CHECK_OUT_CONTENT", "DELETE_CONTENT"],
-          },
+  const employeeUuid =
+    isAdmin ?
+      (req.query.employeeUuid as string | undefined)
+    : auth.employeeUuid;
+
+  try {
+    const employeeWhere: Prisma.EmployeeWhereInput = {
+      ...(position ? { position } : {}),
+      ...(employeeUuid ? { uuid: employeeUuid } : {}),
+    };
+    const hasEmployeeFilter = Object.keys(employeeWhere).length > 0;
+
+    const activities = await prisma.activity.groupBy({
+      by: ["action"],
+      where: {
+        ...(hasEmployeeFilter ? { employee: employeeWhere } : {}),
+        action: {
+          in: ["EDIT_CONTENT", "CHECK_OUT_CONTENT", "DELETE_CONTENT"],
         },
-        _count: {
-          _all: true,
-        },
-      });
+      },
+      _count: {
+        _all: true,
+      },
+    });
 
-      const summary = {
-        edited:
-          activities.find((activity) => activity.action === "EDIT_CONTENT")
-            ?._count._all ?? 0,
-        checkedOut:
-          activities.find((activity) => activity.action === "CHECK_OUT_CONTENT")
-            ?._count._all ?? 0,
-        deleted:
-          activities.find((activity) => activity.action === "DELETE_CONTENT")
-            ?._count._all ?? 0,
-        previewed: 0,
-      };
+    const summary = {
+      edited:
+        activities.find((activity) => activity.action === "EDIT_CONTENT")
+          ?._count._all ?? 0,
+      checkedOut:
+        activities.find((activity) => activity.action === "CHECK_OUT_CONTENT")
+          ?._count._all ?? 0,
+      deleted:
+        activities.find((activity) => activity.action === "DELETE_CONTENT")
+          ?._count._all ?? 0,
+      previewed: 0,
+    };
 
-      return res.status(200).json(summary);
-    } catch (e) {
-      return sendInternalError(res, "Can't get summary", e);
-    }
-  },
-);
+    return res.status(200).json(summary);
+  } catch (e) {
+    return sendInternalError(res, "Can't get summary", e);
+  }
+});
 
 router.get("/content/count/position", async (req, res) => {
   const auth = getAuth(req);
@@ -307,6 +311,120 @@ router.get("/content/hits/top", async (req, res) => {
     return res.status(200).json(stats);
   } catch (e) {
     return sendInternalError(res, "Failed to retrieve content hit stats", e);
+  }
+});
+
+// Endpoint for user-specific frequently hit content
+router.get("/content/hits/top-user", async (req, res) => {
+  const auth = getAuth(req);
+
+  try {
+    const hits = await prisma.contentHit.groupBy({
+      by: ["contentUuid"],
+      where: {
+        employeeUuid: auth.employeeUuid,
+        content: getVisibleContentWhere(auth),
+      },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        _count: {
+          contentUuid: "desc",
+        },
+      },
+      take: 5,
+    });
+
+    const contents = await prisma.content.findMany({
+      where: {
+        uuid: {
+          in: hits.map((hit) => hit.contentUuid),
+        },
+      },
+      select: {
+        uuid: true,
+        title: true,
+        forPosition: true,
+      },
+    });
+
+    const stats = hits.map((hit) => {
+      const content = contents.find((item) => item.uuid === hit.contentUuid);
+
+      return {
+        contentUuid: hit.contentUuid,
+        title: content?.title ?? "Unknown",
+        position: content?.forPosition ?? null,
+        hits: hit._count._all,
+      };
+    });
+
+    return res.status(200).json(stats);
+  } catch (e) {
+    return sendInternalError(
+      res,
+      "Failed to retrieve user content hit stats",
+      e,
+    );
+  }
+});
+
+// Endpoint for user-specific role based frequently hit content
+router.get("/content/hits/top-position", async (req, res) => {
+  const auth = getAuth(req);
+
+  try {
+    const hits = await prisma.contentHit.groupBy({
+      by: ["contentUuid"],
+      where: {
+        employee: {
+          position: auth.position,
+        },
+        content: getVisibleContentWhere(auth),
+      },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        _count: {
+          contentUuid: "desc",
+        },
+      },
+      take: 5,
+    });
+
+    const contents = await prisma.content.findMany({
+      where: {
+        uuid: {
+          in: hits.map((hit) => hit.contentUuid),
+        },
+      },
+      select: {
+        uuid: true,
+        title: true,
+        forPosition: true,
+      },
+    });
+
+    const stats = hits.map((hit) => {
+      const content = contents.find((item) => item.uuid === hit.contentUuid);
+
+      return {
+        contentUuid: hit.contentUuid,
+        title: content?.title ?? "Unknown",
+        position: content?.forPosition ?? null,
+        hits: hit._count._all,
+      };
+    });
+
+    return res.status(200).json(stats);
+  } catch (e) {
+    return sendInternalError(
+      res,
+      "Failed to retrieve position content hit stats",
+      e,
+    );
   }
 });
 

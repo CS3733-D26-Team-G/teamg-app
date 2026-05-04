@@ -153,34 +153,55 @@ export default function ApprovalPage() {
               top: -40 - i * 30,
               right: -40 - i * 30,
               pointerEvents: "none",
+              zIndex: 100,
             }}
           />
         ))}
-        <Stack
-          direction="row"
-          alignItems="flex-start"
-          justifyContent="space-between"
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            py: 1,
+            mb: 2,
+            mt: -1,
+            borderRadius: 4,
+            backgroundColor: "rgba(255, 255, 255, 0.12)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255, 255, 255, 0.25)",
+            borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
+            px: 3,
+          }}
         >
-          <Box>
-            <Typography
-              variant="h2"
-              sx={{ color: "white", fontWeight: 700, mb: 0.5 }}
+          <Stack
+            direction="row"
+            alignItems="flex-start"
+            justifyContent="space-between"
+            width="100%"
+          >
+            <Box>
+              <Typography
+                variant="h2"
+                sx={{ color: "white", fontWeight: 700, mb: 0.5 }}
+              >
+                Approval Queue
+              </Typography>
+              <Typography
+                sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
+              >
+                Review risk-cleared claims and issue final approval or denial
+              </Typography>
+            </Box>
+            <Box
+              sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}
             >
-              Approval Queue
-            </Typography>
-            <Typography
-              sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
-            >
-              Review risk-cleared claims and issue final approval or denial
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-            <HelpPopup
-              description="This page shows all claims. Expand each card to review the incident details, attached evidence, then approve or deny."
-              infoOrHelp={true}
-            />
-          </Box>
-        </Stack>
+              <HelpPopup
+                description="This page shows all claims. Expand each card to review the incident details, attached evidence, then approve or deny."
+                infoOrHelp={true}
+              />
+            </Box>
+          </Stack>
+        </Box>
         {!loading && cards.length > 0 && (
           <Stack
             className="approvals-action-buttons"

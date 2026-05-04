@@ -7,6 +7,8 @@ import {
   Select,
   type SelectChangeEvent,
 } from "@mui/material";
+import { useAuth } from "../../../auth/AuthContext";
+import { getPositionLabel } from "../../../utils/positionDisplay";
 import { useDashboardBootstrapQuery } from "../../../lib/activity-loaders";
 
 interface EditHitsRow {
@@ -29,10 +31,41 @@ function formatDateLabel(date: string) {
 
 export default function HitsLineChart() {
   const [days, setDays] = useState<number | undefined>(7);
+  const { session } = useAuth();
+  const isAdmin = session?.position === "ADMIN";
+
   const { data } = useDashboardBootstrapQuery({
     days,
   });
   const editHitsByRole = data?.editHitsByRole ?? [];
+  const ROLE_KEYS = [
+    "UNDERWRITER",
+    "BUSINESS_ANALYST",
+    "ACTUARIAL_ANALYST",
+    "EXL_OPERATIONS",
+    "BUSINESS_OP_RATING",
+    "ADMIN",
+  ] as const;
+
+  const ROLE_COLORS: Record<string, string> = {
+    UNDERWRITER: "#395176",
+    BUSINESS_ANALYST: "#bea5aa",
+    ACTUARIAL_ANALYST: "#ba667b",
+    EXL_OPERATIONS: "#721b31",
+    BUSINESS_OP_RATING: "#509edd",
+    ADMIN: "#74414e",
+  };
+  const visibleRoles =
+    isAdmin ? ROLE_KEYS
+    : session?.position ? [session.position]
+    : [];
+
+  const series = visibleRoles.map((role) => ({
+    data: editHitsByRole.map((row) => row[role] ?? 0),
+    label: getPositionLabel(role),
+    color: ROLE_COLORS[role],
+    shape: "circle" as const,
+  }));
 
   return (
     <>
@@ -73,44 +106,7 @@ export default function HitsLineChart() {
             data: editHitsByRole.map((row) => formatDateLabel(row.date)),
           },
         ]}
-        series={[
-          {
-            data: editHitsByRole.map((row) => row.UNDERWRITER ?? 0),
-            label: "Underwriter",
-            color: "#395176",
-            shape: "circle",
-          },
-          {
-            data: editHitsByRole.map((row) => row.BUSINESS_ANALYST ?? 0),
-            label: "Business Analyst",
-            color: "#bea5aa",
-            shape: "circle",
-          },
-          {
-            data: editHitsByRole.map((row) => row.ACTUARIAL_ANALYST ?? 0),
-            label: "Actuarial Analyst",
-            color: "#ba667b",
-            shape: "circle",
-          },
-          {
-            data: editHitsByRole.map((row) => row.EXL_OPERATIONS ?? 0),
-            label: "EXL Operations",
-            color: "#721b31",
-            shape: "circle",
-          },
-          {
-            data: editHitsByRole.map((row) => row.BUSINESS_OP_RATING ?? 0),
-            label: "Business Ops Rating",
-            color: "#509edd",
-            shape: "circle",
-          },
-          {
-            data: editHitsByRole.map((row) => row.ADMIN ?? 0),
-            label: "Admin",
-            color: "#74414e",
-            shape: "circle",
-          },
-        ]}
+        series={series}
         grid={{ horizontal: true }}
         sx={{ width: "100%", mr: "auto" }}
       />

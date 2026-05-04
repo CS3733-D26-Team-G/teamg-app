@@ -133,6 +133,7 @@ model Account {
 model AccountSettings {
   accountUsername String  @id @map("account_username")
   darkMode        Boolean @default(false) @map("dark_mode")
+  tutorialDone    Boolean @default(false) @map("tutorial_done")
   account         Account @relation(fields: [accountUsername], references: [username], onDelete: Cascade)
 }
 

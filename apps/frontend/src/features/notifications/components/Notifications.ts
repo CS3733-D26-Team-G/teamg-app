@@ -116,7 +116,7 @@ export function getContentEdits(
     }));
 }
 
-export function getClaimActions(
+export function getClaimCreate(
   activities: ActivityRow[],
 ): NotificationActivity[] {
   return activities
@@ -125,14 +125,44 @@ export function getClaimActions(
       uuid: item.uuid,
       action: item.action,
       resourceUuid: item.resourceUuid ?? "",
-      resourceName: item.resourceName ?? "",
+      resourceName: item.resourceName ?? "Claim",
       timestamp: item.timestamp,
       employee: item.employee,
-      title: item.resourceName ?? "",
-      notificationMessage: `claim action by${
-        item.employee ?
-          ` by ${item.employee.firstName} ${item.employee.lastName}`
-        : ""
-      }`,
+      title: item.resourceName ?? "Claim Created",
+      notificationMessage: `Claim created${item.employee ? ` by ${item.employee.firstName} ${item.employee.lastName}` : ""}`,
+    }));
+}
+
+export function getClaimEdit(
+  activities: ActivityRow[],
+): NotificationActivity[] {
+  return activities
+    .filter((item) => item.action === "EDIT_CLAIM")
+    .map((item) => ({
+      uuid: item.uuid,
+      action: item.action,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "Claim",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: item.resourceName ?? "Claim Edited",
+      notificationMessage: `Claim edited${item.employee ? ` by ${item.employee.firstName} ${item.employee.lastName}` : ""}`,
+    }));
+}
+
+export function getClaimDelete(
+  activities: ActivityRow[],
+): NotificationActivity[] {
+  return activities
+    .filter((item) => item.action === "DELETE_CLAIM")
+    .map((item) => ({
+      uuid: item.uuid,
+      action: item.action,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "Claim",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: item.resourceName ?? "Claim Deleted",
+      notificationMessage: `Claim deleted${item.employee ? ` by ${item.employee.firstName} ${item.employee.lastName}` : ""}`,
     }));
 }

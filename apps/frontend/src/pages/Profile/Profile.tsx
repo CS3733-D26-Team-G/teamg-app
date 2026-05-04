@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState } from "react";
-import SearchBar from "../../features/dashboard/components/SearchBar.tsx";
+import { useThemeMode } from "../../ThemeContext.tsx";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  TextField,
 } from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
@@ -22,6 +23,14 @@ import { getPositionLabel } from "../../utils/positionDisplay.ts";
 import { EmployeeRecordSchema, type Department } from "../../types/employee.ts";
 import { API_ENDPOINTS } from "../../config.ts";
 import { useProfile } from "../../profile/ProfileContext.tsx";
+import { useTutorial } from "../../components/Tutorial/TutorialContext.tsx";
+import { useNotificationFilterToggle } from "../../features/notifications/components/NotificationsSettingsToggle.tsx";
+import { useNavigate } from "react-router-dom";
+import { useActivityQuery } from "../../lib/activity-loaders.ts";
+import { useMemo } from "react";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import SchoolIcon from "@mui/icons-material/School";
 
 function Profile() {
   const today = new Date();
@@ -41,8 +50,19 @@ function Profile() {
   const [avatarPopUpOpen, setAvatarPopUpOpen] = React.useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [avatarError, setAvatarError] = React.useState<string | null>(null);
+  const [changePasswordOpen, setChangePasswordOpen] = React.useState(false);
+  const [passwordForm, setPasswordForm] = React.useState({
+    currentPassword: "",
+    newPassword: "",
+  });
+  const [passwordError, setPasswordError] = React.useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = React.useState(false);
 
   const { profile, isLoading, setProfile } = useProfile();
+  const { isDarkMode, isSaving, toggleDarkMode } = useThemeMode();
+  const { resetTours, triggerPrompt } = useTutorial();
+  const navigate = useNavigate();
+  const activityQuery = useActivityQuery("auth");
 
   const handleToggle1 = (event: React.ChangeEvent<HTMLInputElement>) => {
     setToggle1(event.target.checked);
@@ -62,6 +82,17 @@ function Profile() {
     setAvatarError(null);
     setAvatarPopUpOpen(true);
   };
+
+  const handleRestartTour = () => {
+    resetTours();
+    setTimeout(() => {
+      triggerPrompt(true);
+    }, 100);
+  };
+
+  const { hideEdits, toggleHideEdits } = useNotificationFilterToggle();
+  const { hideExpiration, toggleHideExpiration } =
+    useNotificationFilterToggle();
 
   const handleSaveAvatar = async () => {
     if (!file) return;
@@ -93,6 +124,49 @@ function Profile() {
       setAvatarError("Failed to upload avatar");
     }
   };
+
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    try {
+      const res = await fetch(API_ENDPOINTS.PROFILE.CHANGE_PASSWORD, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(passwordForm),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setPasswordError(data?.message ?? "Failed to upload change password");
+        return;
+      }
+
+      setPasswordSuccess(true);
+      setPasswordForm({ currentPassword: "", newPassword: "" });
+      setTimeout(() => setChangePasswordOpen(false), 1500);
+    } catch {
+      setPasswordError("Failed to change password");
+    }
+  };
+
+  const recentLogins = useMemo(() => {
+    return (activityQuery.data ?? []).slice(0, 3).map((row: any) => {
+      const date = new Date(row.timestamp);
+      return (
+        date.toLocaleDateString("en-US", {
+          month: "numeric",
+          day: "numeric",
+          year: "numeric",
+        }) +
+        " at " +
+        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      );
+    });
+  }, [activityQuery.data]);
 
   if (isLoading) {
     return <Typography>Loading profile...</Typography>;
@@ -132,7 +206,7 @@ function Profile() {
             justifyContent: "space-between",
             alignItems: "center",
             height: 80,
-            mt: 6,
+            mt: 4,
             borderRadius: 4,
             backgroundColor: "rgba(255, 255, 255, 0.12)",
             backdropFilter: "blur(8px)",
@@ -196,7 +270,7 @@ function Profile() {
               flexDirection: "column",
               gap: 2,
               p: 3,
-              minHeight: "79vh",
+              minHeight: "81vh",
             }}
           >
             {/*Profile Tag Bar*/}
@@ -239,7 +313,7 @@ function Profile() {
 
                 <Stack
                   direction="row"
-                  gap={20}
+                  gap={16}
                   sx={{ width: "100%", justifyContent: "space-evenly", pl: 3 }}
                 >
                   <Box sx={{ textAlign: "center" }}>
@@ -294,7 +368,7 @@ function Profile() {
             </Box>
 
             <Stack
-              direction={"row"}
+              direction="row"
               gap={2}
               sx={{
                 justifyContent: "space-evenly",
@@ -306,7 +380,7 @@ function Profile() {
                 className="notification-settings"
                 sx={{
                   display: "flex",
-                  width: "40%",
+                  width: "65%",
                   height: 200,
                   ...cardSx,
                 }}
@@ -336,25 +410,25 @@ function Profile() {
                         fontSize: 20,
                       }}
                     >
-                      Document Expiration Alerts
+                      Hide Document Expiration Alerts
                     </Typography>
                     <Switch
-                      checked={toggle1}
-                      onChange={handleToggle1}
+                      checked={hideExpiration}
+                      onChange={(e) => toggleHideExpiration()}
                       slotProps={{ input: { "aria-label": "controlled" } }}
                     />
                   </Box>
 
                   <Typography
-                    variant="caption"
                     color="text.secondary"
                     sx={{
                       pl: 2,
-                      fontSize: 14,
+                      fontSize: 16,
                       mt: -0.75,
                     }}
                   >
-                    Notify me when a document I own is expiring
+                    Hide notifications that remind me when documents I own have
+                    expired
                   </Typography>
 
                   <Box
@@ -371,25 +445,25 @@ function Profile() {
                         fontSize: 20,
                       }}
                     >
-                      Document Update Alerts
+                      Hide Document Edit Alerts
                     </Typography>
                     <Switch
-                      checked={toggle2}
-                      onChange={handleToggle2}
+                      checked={hideEdits}
+                      onChange={(e) => toggleHideEdits()}
                       slotProps={{ input: { "aria-label": "controlled" } }}
                     />
                   </Box>
 
                   <Typography
-                    variant="caption"
                     color="text.secondary"
                     sx={{
                       pl: 2,
-                      fontSize: 14,
+                      fontSize: 16,
                       mt: -0.75,
                     }}
                   >
-                    Notify me when a document I own is edited
+                    Hide notifications that remind me when changes have been
+                    made to documents I own
                   </Typography>
                 </Stack>
               </Box>
@@ -398,7 +472,7 @@ function Profile() {
               <Box
                 sx={{
                   display: "flex",
-                  width: "30%",
+                  width: "35%",
                   height: 200,
                   ...cardSx,
                 }}
@@ -449,13 +523,21 @@ function Profile() {
                   </Typography>
                 </Stack>
               </Box>
-
+            </Stack>
+            <Stack
+              direction="row"
+              gap={2}
+              sx={{
+                justifyContent: "space-evenly",
+                alignItems: "center",
+              }}
+            >
               {/*'Security Card*/}
               <Box
                 className="security-settings"
                 sx={{
                   display: "flex",
-                  width: "30%",
+                  width: "50%",
                   height: 200,
                   ...cardSx,
                 }}
@@ -472,24 +554,187 @@ function Profile() {
                     Security
                   </Typography>
 
-                  <Button
-                    variant="contained"
-                    sx={{ mt: 2, alignSelf: "center" }}
-                  >
-                    Change Password
-                  </Button>
-
-                  <Typography
-                    variant="caption"
-                    color="text.primary"
+                  <Box
                     sx={{
-                      pl: 2,
-                      fontSize: 14,
-                      mt: 5,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      pr: 4,
                     }}
                   >
-                    Password last changed 4/2/2025
+                    <Typography
+                      sx={{
+                        pl: 2,
+                        fontSize: 18,
+                      }}
+                    >
+                      Password last changed 4/2/2025
+                    </Typography>
+
+                    <Button
+                      variant="contained"
+                      onClick={() => setChangePasswordOpen(true)}
+                    >
+                      Change Password
+                    </Button>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      pr: 4,
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        sx={{
+                          pl: 2,
+                          fontSize: 18,
+                        }}
+                      >
+                        Recent Login Activity:
+                      </Typography>
+
+                      {recentLogins.map((entry, index) => (
+                        <Typography
+                          key={index}
+                          variant="body2"
+                          sx={{ pl: 3, pt: 0.4 }}
+                        >
+                          Logged in {entry}
+                        </Typography>
+                      ))}
+                    </Box>
+
+                    <Button
+                      variant="contained"
+                      onClick={() => navigate("/activity")}
+                    >
+                      View All Activity
+                    </Button>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {/*Preferences Card*/}
+              <Box
+                className="preference-settings"
+                sx={{
+                  display: "flex",
+                  width: "50%",
+                  height: 200,
+                  ...cardSx,
+                }}
+              >
+                <Stack sx={{ width: "100%" }}>
+                  <Typography
+                    sx={{
+                      fontSize: 32,
+                      pl: 1.6,
+                      pt: 0.3,
+                      pb: 0.4,
+                    }}
+                  >
+                    Preferences
                   </Typography>
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", rowGap: 2 }}
+                  >
+                    <Stack
+                      className="dark-mode-toggle"
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{
+                        pt: 1,
+                        pl: 2,
+                        pr: 2,
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1.5}
+                      >
+                        {isDarkMode ?
+                          <DarkModeIcon sx={{ color: "primary.main" }} />
+                        : <LightModeIcon sx={{ color: "primary.main" }} />}
+                        <Box>
+                          <Typography
+                            variant="body1"
+                            fontWeight={500}
+                          >
+                            Dark Mode
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                          >
+                            {isDarkMode ?
+                              "Dark theme is active"
+                            : "Light theme is active"}
+                          </Typography>
+                        </Box>
+                      </Stack>
+
+                      <Switch
+                        checked={isDarkMode}
+                        onChange={() => {
+                          void toggleDarkMode();
+                        }}
+                        color="primary"
+                        disabled={isSaving}
+                        inputProps={{ "aria-label": "Toggle dark mode" }}
+                      />
+                    </Stack>
+
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{ pl: 2, pr: 2 }}
+                    >
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1.5}
+                      >
+                        <SchoolIcon sx={{ color: "primary.main" }} />
+                        <Box>
+                          <Typography
+                            variant="body1"
+                            fontWeight={500}
+                          >
+                            Platform Tutorial
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                          >
+                            Take a guided tour of the platform
+                          </Typography>
+                        </Box>
+                      </Stack>
+
+                      <Button
+                        className="reset-tutorials-button"
+                        variant="outlined"
+                        size="small"
+                        startIcon={<SchoolIcon />}
+                        onClick={handleRestartTour}
+                        sx={{
+                          borderRadius: "10px",
+                          textTransform: "none",
+                          fontWeight: 600,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Restart Tour
+                      </Button>
+                    </Stack>
+                  </Box>
                 </Stack>
               </Box>
             </Stack>
@@ -567,6 +812,87 @@ function Profile() {
               disabled={!file}
               onClick={() => {
                 void handleSaveAvatar();
+              }}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={changePasswordOpen}
+          onClose={() => {
+            setChangePasswordOpen(false);
+            setPasswordError(null);
+            setPasswordSuccess(false);
+            setPasswordForm({ currentPassword: "", newPassword: "" });
+          }}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Change Password</DialogTitle>
+          <DialogContent>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                pt: 2,
+              }}
+            >
+              <TextField
+                label="Current Password"
+                type="password"
+                fullWidth
+                value={passwordForm.currentPassword}
+                onChange={(e) =>
+                  setPasswordForm((pass) => ({
+                    ...pass,
+                    currentPassword: e.target.value,
+                  }))
+                }
+              />
+
+              <TextField
+                label="New Password"
+                type="password"
+                fullWidth
+                value={passwordForm.newPassword}
+                onChange={(e) =>
+                  setPasswordForm((pass) => ({
+                    ...pass,
+                    newPassword: e.target.value,
+                  }))
+                }
+              />
+
+              {passwordError && (
+                <Typography color="error">{passwordError}</Typography>
+              )}
+              {passwordSuccess && (
+                <Typography color="success.main">{passwordSuccess}</Typography>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setChangePasswordOpen(false);
+                setPasswordError(null);
+                setPasswordSuccess(false);
+                setPasswordForm({ currentPassword: "", newPassword: "" });
+              }}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant="contained"
+              disabled={
+                !passwordForm.currentPassword || !passwordForm.newPassword
+              }
+              onClick={() => {
+                void handleChangePassword();
               }}
             >
               Save
