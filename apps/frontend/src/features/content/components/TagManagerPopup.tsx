@@ -26,6 +26,7 @@ import {
   type ContentTagSummary,
 } from "../../../types/content";
 import { invalidateContentTags } from "../../../lib/api-loaders";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
 interface TagManagerPopupProps {
   availableTags: ContentTagSummary[];
@@ -38,6 +39,8 @@ export default function TagManagerPopup({
 }: TagManagerPopupProps) {
   const [open, setOpen] = useState(false);
   const [newTag, setNewTag] = useState("");
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
   const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
   const [localTags, setLocalTags] = useState<ContentTagSummary[]>([]);
   const [hoveredTag, setHoveredTag] = useState<string | null>(null);
@@ -85,6 +88,37 @@ export default function TagManagerPopup({
       );
       setLocalTags((prev) => [...prev, createdTag]);
       setNewTag("");
+      invalidateContentTags();
+      setLocalTags(await onTagsChanged());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRenameTag = async (uuid: string) => {
+    if (!editValue.trim()) {
+      return;
+    }
+
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.TAG.EDIT(uuid), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editValue.trim() }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to edit tag");
+      }
+
+      setLocalTags((prev) =>
+        prev.map((tag) =>
+          tag.uuid === uuid ? { ...tag, name: editValue.trim() } : tag,
+        ),
+      );
+
+      setEditingTag(null);
       invalidateContentTags();
       setLocalTags(await onTagsChanged());
     } catch (e) {
@@ -185,67 +219,126 @@ export default function TagManagerPopup({
                     "py": 0.75,
                     "borderRadius": 1,
                   }}
-                  secondaryAction={
-                    pendingDeleteTag === tag.uuid ?
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
+                >
+                  {editingTag === tag.uuid ?
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        pl: 1,
+                        flex: 1,
+                      }}
+                    >
+                      <LocalOfferOutlinedIcon
+                        sx={{ fontSize: 18, color: "text.secondary" }}
+                      />
+                      <TextField
+                        size="small"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") void handleRenameTag(tag.uuid);
+                          if (e.key === "Escape") setEditingTag(null);
+                        }}
+                        autoFocus
+                        fullWidth
+                      />
+                    </Box>
+                  : <ListItemText
+                      sx={{ pl: 1 }}
+                      primary={
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
+                        >
+                          <LocalOfferOutlinedIcon
+                            sx={{ fontSize: 18, color: "text.secondary" }}
+                          />
+                          {tag.name}
+                        </Box>
+                      }
+                    />
+                  }
+
+                  {editingTag === tag.uuid ?
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        flexShrink: 0,
+                        ml: 2,
+                        mr: 1,
+                      }}
+                    >
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => void handleRenameTag(tag.uuid)}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => setEditingTag(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </Box>
+                  : pendingDeleteTag === tag.uuid ?
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        flexShrink: 0,
+                        mr: 1,
+                      }}
+                    >
+                      <Typography>Delete?</Typography>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => handleDeleteTag(tag.uuid)}
+                      >
+                        Yes
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => setPendingDeleteTag(null)}
+                      >
+                        No
+                      </Button>
+                    </Box>
+                  : <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setEditingTag(tag.uuid);
+                          setEditValue(tag.name);
                         }}
                       >
-                        <Typography>Delete?</Typography>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() => {
-                            handleDeleteTag(tag.uuid);
-                          }}
-                        >
-                          Yes
-                        </Button>
-
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() => {
-                            setPendingDeleteTag(null);
-                          }}
-                        >
-                          No
-                        </Button>
-                      </Box>
-                    : <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <IconButton size="small">
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            setPendingDeleteTag(tag.uuid);
-                          }}
-                        >
-                          <DeleteIcon
-                            fontSize="small"
-                            sx={{ color: "#ef5350" }}
-                          />
-                        </IconButton>
-                      </Box>
-                  }
-                >
-                  <ListItemText
-                    sx={{ pl: 1 }}
-                    primary={
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => setPendingDeleteTag(tag.uuid)}
                       >
-                        <LocalOfferOutlinedIcon
-                          sx={{ fontSize: 18, color: "text.secondary" }}
+                        <DeleteIcon
+                          fontSize="small"
+                          sx={{ color: "#ef5350" }}
                         />
-                        {tag.name}
-                      </Box>
-                    }
-                  />
+                      </IconButton>
+                    </Box>
+                  }
                 </ListItem>
               </Box>
             ))}

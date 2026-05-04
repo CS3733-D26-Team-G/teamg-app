@@ -1701,6 +1701,8 @@ export default function ContentManagement({
                 <TagManagerPopup
                   availableTags={availableTags}
                   onTagsChanged={async () => {
+                    markContentListStale();
+                    await contentListQuery.refresh();
                     return (await contentTagsQuery.refresh()) ?? [];
                   }}
                 />
