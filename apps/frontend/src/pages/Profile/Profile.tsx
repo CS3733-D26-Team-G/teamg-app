@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState } from "react";
-import SearchBar from "../../features/dashboard/components/SearchBar.tsx";
+import { useThemeMode } from "../../ThemeContext.tsx";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -22,7 +22,14 @@ import { getPositionLabel } from "../../utils/positionDisplay.ts";
 import { EmployeeRecordSchema, type Department } from "../../types/employee.ts";
 import { API_ENDPOINTS } from "../../config.ts";
 import { useProfile } from "../../profile/ProfileContext.tsx";
+import { useTutorial } from "../../components/Tutorial/TutorialContext.tsx";
 import { useNotificationFilterToggle } from "../../features/notifications/components/NotificationsSettingsToggle.tsx";
+import { useNavigate } from "react-router-dom";
+import { useActivityQuery } from "../../lib/activity-loaders.ts";
+import { useMemo } from "react";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import SchoolIcon from "@mui/icons-material/School";
 
 function Profile() {
   const today = new Date();
@@ -44,6 +51,10 @@ function Profile() {
   const [avatarError, setAvatarError] = React.useState<string | null>(null);
 
   const { profile, isLoading, setProfile } = useProfile();
+  const { isDarkMode, isSaving, toggleDarkMode } = useThemeMode();
+  const { resetTours, triggerPrompt } = useTutorial();
+  const navigate = useNavigate();
+  const activityQuery = useActivityQuery("auth");
 
   const handleToggle1 = (event: React.ChangeEvent<HTMLInputElement>) => {
     setToggle1(event.target.checked);
@@ -62,6 +73,13 @@ function Profile() {
   const handleProfilePicClick = () => {
     setAvatarError(null);
     setAvatarPopUpOpen(true);
+  };
+
+  const handleRestartTour = () => {
+    resetTours();
+    setTimeout(() => {
+      triggerPrompt(true);
+    }, 100);
   };
 
   const { hideEdits, toggleHideEdits } = useNotificationFilterToggle();
@@ -98,6 +116,21 @@ function Profile() {
       setAvatarError("Failed to upload avatar");
     }
   };
+
+  const recentLogins = useMemo(() => {
+    return (activityQuery.data ?? []).slice(0, 3).map((row: any) => {
+      const date = new Date(row.timestamp);
+      return (
+        date.toLocaleDateString("en-US", {
+          month: "numeric",
+          day: "numeric",
+          year: "numeric",
+        }) +
+        " at " +
+        date.toLocaleDateString([], { hour: "2-digit", minute: "2-digit" })
+      );
+    });
+  }, [activityQuery.data]);
 
   if (isLoading) {
     return <Typography>Loading profile...</Typography>;
@@ -351,15 +384,15 @@ function Profile() {
                   </Box>
 
                   <Typography
-                    variant="caption"
                     color="text.secondary"
                     sx={{
                       pl: 2,
-                      fontSize: 14,
+                      fontSize: 16,
                       mt: -0.75,
                     }}
                   >
-                    Hide expiration notifications of documents I own
+                    Hide notifications that remind me when documents I own have
+                    expired
                   </Typography>
 
                   <Box
@@ -386,15 +419,15 @@ function Profile() {
                   </Box>
 
                   <Typography
-                    variant="caption"
                     color="text.secondary"
                     sx={{
                       pl: 2,
-                      fontSize: 14,
+                      fontSize: 16,
                       mt: -0.75,
                     }}
                   >
-                    Hide edit notifications for documents I own
+                    Hide notifications that remind me when changes have been
+                    made to documents I own
                   </Typography>
                 </Stack>
               </Box>
@@ -489,8 +522,8 @@ function Profile() {
                     sx={{
                       display: "flex",
                       alignItems: "center",
-                      flexDirection: "row",
-                      gap: 10,
+                      justifyContent: "space-between",
+                      pr: 4,
                     }}
                   >
                     <Typography
@@ -503,6 +536,43 @@ function Profile() {
                     </Typography>
 
                     <Button variant="contained">Change Password</Button>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      pr: 4,
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        sx={{
+                          pl: 2,
+                          fontSize: 18,
+                        }}
+                      >
+                        Recent Login Activity:
+                      </Typography>
+
+                      {recentLogins.map((entry, index) => (
+                        <Typography
+                          key={index}
+                          variant="body2"
+                          sx={{ pl: 2.5, pt: 0.4 }}
+                        >
+                          Logged in {entry}
+                        </Typography>
+                      ))}
+                    </Box>
+
+                    <Button
+                      variant="contained"
+                      onClick={() => navigate("/activity")}
+                    >
+                      View All Activity
+                    </Button>
                   </Box>
                 </Stack>
               </Box>
@@ -528,6 +598,102 @@ function Profile() {
                   >
                     Preferences
                   </Typography>
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", rowGap: 2 }}
+                  >
+                    <Stack
+                      className="dark-mode-toggle"
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{
+                        pt: 1,
+                        pl: 2,
+                        pr: 2,
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1.5}
+                      >
+                        {isDarkMode ?
+                          <DarkModeIcon sx={{ color: "primary.main" }} />
+                        : <LightModeIcon sx={{ color: "primary.main" }} />}
+                        <Box>
+                          <Typography
+                            variant="body1"
+                            fontWeight={500}
+                          >
+                            Dark Mode
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                          >
+                            {isDarkMode ?
+                              "Dark theme is active"
+                            : "Light theme is active"}
+                          </Typography>
+                        </Box>
+                      </Stack>
+
+                      <Switch
+                        checked={isDarkMode}
+                        onChange={() => {
+                          void toggleDarkMode();
+                        }}
+                        color="primary"
+                        disabled={isSaving}
+                        inputProps={{ "aria-label": "Toggle dark mode" }}
+                      />
+                    </Stack>
+
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{ pl: 2, pr: 2 }}
+                    >
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1.5}
+                      >
+                        <SchoolIcon sx={{ color: "primary.main" }} />
+                        <Box>
+                          <Typography
+                            variant="body1"
+                            fontWeight={500}
+                          >
+                            Platform Tutorial
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                          >
+                            Take a guided tour of the platform
+                          </Typography>
+                        </Box>
+                      </Stack>
+
+                      <Button
+                        className="reset-tutorials-button"
+                        variant="outlined"
+                        size="small"
+                        startIcon={<SchoolIcon />}
+                        onClick={handleRestartTour}
+                        sx={{
+                          borderRadius: "10px",
+                          textTransform: "none",
+                          fontWeight: 600,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Restart Tour
+                      </Button>
+                    </Stack>
+                  </Box>
                 </Stack>
               </Box>
             </Stack>
