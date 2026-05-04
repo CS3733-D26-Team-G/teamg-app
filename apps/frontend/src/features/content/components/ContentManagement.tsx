@@ -712,6 +712,35 @@ export default function ContentManagement({
     }
   };
 
+  const handleForceCheckIn = async (uuid: string) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.LOCK(uuid), {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        setLockMessage("Unable to check in content");
+        return;
+      }
+
+      patchContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      patchBootstrapContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      markRelatedActivityStale();
+    } catch (error) {
+      console.error(error);
+      setLockMessage("Unable to check in content.");
+    }
+  };
+
   // stages the form payload and opens the save confirmation dialog
   const handleSave = (payload: FormData) => {
     setPendingSave(payload);
@@ -957,6 +986,7 @@ export default function ContentManagement({
     onCheckOut: (row: ContentRow) => void,
     onOpenEditor: (row: ContentRow) => void,
     onCheckIn: (uuid: string) => void,
+    onForceCheckIn: (uuid: string) => void,
   ): GridColDef<ContentRow>[] => [
     {
       // hidden numeric field used only for default sort (favorites first)
@@ -1253,6 +1283,18 @@ export default function ContentManagement({
                 </span>
               </Tooltip>
             )}
+
+            {isSystemAdmin && row.isLocked && !isCheckedOutByMe && (
+              <Tooltip title={"Force check in"}>
+                <IconButton
+                  sx={{ color: "orange" }}
+                  size="small"
+                  onClick={() => void onForceCheckIn(row.uuid)}
+                >
+                  <LockOpenIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
         );
       },
@@ -1291,26 +1333,19 @@ export default function ContentManagement({
             }}
           >
             <Box
+              className="content-header"
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                py: 1,
-                mb: 2,
-                mt: -1,
-                borderRadius: 4,
-                backgroundColor: "rgba(255, 255, 255, 0.12)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid rgba(255, 255, 255, 0.25)",
-                borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
-                px: 3,
+                px: 4,
+                pt: 5,
+
+                position: "relative",
+                overflow: "hidden",
               }}
             >
               <Stack
                 direction="row"
                 alignItems="flex-start"
                 justifyContent="space-between"
-                width="100%"
               >
                 <Box>
                   <Typography
@@ -1339,11 +1374,24 @@ export default function ContentManagement({
                   }}
                 >
                   <HelpPopup
-                    description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
+                    description="The employee management page allows admins to add, manage, and delete any employee within iBank's database."
                     infoOrHelp={true}
                   />
                 </Box>
               </Stack>
+              <Box
+                sx={{
+                  background: "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  pt: 2,
+                  flexWrap: "wrap",
+                  position: "relative",
+                  zIndex: 1000,
+                }}
+              ></Box>
             </Box>
           </Box>
           {[...Array(3)].map((_, i) => (
@@ -1974,6 +2022,7 @@ export default function ContentManagement({
                     handleCheckout,
                     handleOpenEditor,
                     releaseLock,
+                    handleForceCheckIn,
                   )}
                   getRowClassName={(params) => {
                     const hasPermission =
@@ -2177,6 +2226,7 @@ export default function ContentManagement({
                         handleCheckout,
                         handleOpenEditor,
                         releaseLock,
+                        handleForceCheckIn,
                       )}
                       getRowClassName={(params) => {
                         const hasPermission =
