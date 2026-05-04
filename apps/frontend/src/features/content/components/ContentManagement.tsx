@@ -628,16 +628,22 @@ export default function ContentManagement({
         credentials: "include",
       });
 
+      // If another user holds the lock - update the local state to show that
       if (res.status === 409) {
-        // another user holds the lock — update local state to reflect that
+        const data = await res.json();
+
         patchContentRow(row.uuid, (currentRow) => ({
           ...currentRow,
           isLocked: true,
+          editLock: data.lock,
         }));
+
         patchBootstrapContentRow(row.uuid, (currentRow) => ({
           ...currentRow,
           isLocked: true,
+          editLock: data.lock,
         }));
+
         return;
       }
 
@@ -1278,7 +1284,11 @@ export default function ContentManagement({
             {/* shown when a different user holds the lock */}
             {isCheckedOutByOther && (
               <Tooltip
-                title={`Checked out by ${row.editLock?.lockedByEmp.firstName} ${row.editLock?.lockedByEmp.lastName}`}
+                title={
+                  row.editLock?.lockedByEmp ?
+                    `Checked out by ${row.editLock.lockedByEmp.firstName} ${row.editLock.lockedByEmp.lastName}`
+                  : "Checked out by another user"
+                }
               >
                 <span>
                   <Button
