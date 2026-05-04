@@ -104,6 +104,7 @@ export default function DocPreviewer({
   const instanceRef = useRef<WebViewerInstance | null>(null);
   const hasInitializedRef = useRef(false);
   const pendingLoadRef = useRef<(() => void) | null>(null);
+  const currentExtRef = useRef<string>("");
 
   // ─── State ─────────────────────────────────────────────────────────────────
 
@@ -201,7 +202,9 @@ export default function DocPreviewer({
 
         // Trigger word count extraction each time a new document loads
         instance.Core.documentViewer.addEventListener("documentLoaded", () => {
-          void extractWordCountFromViewer(instance).then(resolveWordCount);
+          void extractWordCountFromViewer(instance, currentExtRef.current).then(
+            resolveWordCount,
+          );
         });
 
         if (pendingLoadRef.current) {
@@ -238,6 +241,7 @@ export default function DocPreviewer({
         if (abortController.signal.aborted) return;
 
         const ext = extFromName ?? MIME_TO_EXT[type] ?? "pdf";
+        currentExtRef.current = ext;
 
         // ── Route 1: Text files ──────────────────────────────────────────────
         if (

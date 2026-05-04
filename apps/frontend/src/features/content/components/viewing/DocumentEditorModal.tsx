@@ -119,6 +119,7 @@ export default function DocumentEditorModal({
   const instanceRef = useRef<WebViewerInstance | null>(null);
   const pendingLoadRef = useRef<(() => void) | null>(null);
   const hasInitializedRef = useRef(false);
+  const currentExtRef = useRef<string>("");
 
   /**
    * Tracks the URI of the last successfully loaded document.
@@ -173,10 +174,12 @@ export default function DocumentEditorModal({
         // Trigger word count extraction each time a new document loads
         instance.Core.documentViewer.addEventListener("documentLoaded", () => {
           setWordCount(null); // reset while counting
-          void extractWordCountFromViewer(instance).then((count) => {
-            setWordCount(count);
-            onWordCount?.(count);
-          });
+          void extractWordCountFromViewer(instance, currentExtRef.current).then(
+            (count) => {
+              setWordCount(count);
+              onWordCount?.(count);
+            },
+          );
         });
 
         if (pendingLoadRef.current) {
@@ -217,6 +220,7 @@ export default function DocumentEditorModal({
         const extFromName =
           fileName.includes(".") ? fileName.split(".").pop() : undefined;
         const ext = extFromName ?? extFromMime;
+        currentExtRef.current = ext ?? "";
         if (abortController.signal.aborted) return;
 
         const objectUrl = URL.createObjectURL(blob);

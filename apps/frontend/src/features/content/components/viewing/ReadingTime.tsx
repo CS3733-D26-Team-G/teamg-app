@@ -77,7 +77,10 @@ export function formatReadingTime(wordCount: number): string {
  */
 export async function extractWordCountFromViewer(
   instance: WebViewerInstance,
+  ext: string,
 ): Promise<number> {
+  if (ext !== "pdf") return 0;
+
   try {
     const { documentViewer } = instance.Core;
     const doc = documentViewer.getDocument();
@@ -93,7 +96,6 @@ export async function extractWordCountFromViewer(
 
     return countWords(allText);
   } catch {
-    // Non-critical: swallow errors so a failed count never breaks the caller
     return 0;
   }
 }
