@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Box, Button, Alert, Collapse, Typography } from "@mui/material";
+import { Box, Button, Alert, Collapse } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import { motion, type Variants } from "framer-motion";
 import HanoverLogoWhite from "../../../assets/HanoverLogoWhite.png";
@@ -59,7 +59,7 @@ export default function HeroSection() {
       [["dashboard", "home"], "/dashboard"],
       [["library", "content library"], "/library"],
       [["preview", "preview content", "content preview"], "/library"],
-      [["check out", "checkout", "checked out"], "/library"],
+      [["check out", "check in", "go to content ", "content"], "/library"],
       [["forms", "my forms", "content form"], "/my-forms"],
       [["activity"], "/activity"],
       [["settings"], "/settings"],
@@ -72,9 +72,10 @@ export default function HeroSection() {
     ];
 
     if (
-      compactCommand.includes("login") ||
+      compactCommand.includes("log in") ||
+      compactCommand.includes("sign in") ||
       compactCommand.includes("signin") ||
-      normalizedCommand.includes("log me in") ||
+      normalizedCommand.includes("logging") ||
       normalizedCommand.includes("sign me in") ||
       (normalizedCommand.includes("log") && normalizedCommand.includes("in"))
     ) {
@@ -155,6 +156,7 @@ export default function HeroSection() {
         >
           <VoiceControl
             onCommand={handleVoiceCommand}
+            showTranscript={false}
             buttonSx={{
               position: "static",
               zIndex: 13,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Fab, Paper, Tooltip, Typography } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
 import MicIcon from "@mui/icons-material/Mic";
@@ -7,9 +7,11 @@ import MicOffIcon from "@mui/icons-material/MicOff";
 type VoiceControlProps = {
   onCommand: (command: string) => boolean;
   buttonSx?: SxProps<Theme>;
+  showTranscript?: boolean;
 };
 
 const VOICE_LISTENING_KEY = "teamg.voiceListening";
+const MAX_TRANSCRIPT_WORDS = 7;
 
 type SpeechRecognitionResultLike = {
   readonly isFinal: boolean;
@@ -35,12 +37,9 @@ type SpeechRecognitionLike = EventTarget & {
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
-  onaudiostart: (() => void) | null;
-  onnomatch: (() => void) | null;
   onend: (() => void) | null;
   onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onspeechstart: (() => void) | null;
   onstart: (() => void) | null;
   start: () => void;
   stop: () => void;
@@ -57,6 +56,7 @@ type SpeechWindow = Window &
 export default function VoiceControl({
   onCommand,
   buttonSx,
+  showTranscript = true,
 }: VoiceControlProps) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const shouldListenRef = useRef(false);
@@ -66,12 +66,9 @@ export default function VoiceControl({
   const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState("");
 
-  const SpeechRecognition = useMemo(() => {
-    const speechWindow = window as SpeechWindow;
-    return (
-      speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition
-    );
-  }, []);
+  const speechWindow = window as SpeechWindow;
+  const SpeechRecognition =
+    speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
 
   const isSupported = Boolean(SpeechRecognition);
 
@@ -99,9 +96,6 @@ export default function VoiceControl({
     }
 
     recognition.onstart = null;
-    recognition.onaudiostart = null;
-    recognition.onspeechstart = null;
-    recognition.onnomatch = null;
     recognition.onresult = null;
     recognition.onerror = null;
     recognition.onend = null;
@@ -113,9 +107,8 @@ export default function VoiceControl({
     try {
       recognition.start();
       setIsListening(true);
-      setStatus("Microphone is on.");
     } catch {
-      setStatus("Voice control is already starting.");
+      setStatus("Voice starting.");
     }
   };
 
@@ -125,7 +118,6 @@ export default function VoiceControl({
     clearRestartTimer();
     cleanupRecognition();
     setIsListening(false);
-    setStatus("Microphone is off.");
   };
 
   const startListening = () => {
@@ -144,19 +136,7 @@ export default function VoiceControl({
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
-      setStatus("Listening. Speak now.");
-    };
-
-    recognition.onaudiostart = () => {
-      setStatus("Microphone connected.");
-    };
-
-    recognition.onspeechstart = () => {
-      setStatus("Speech detected.");
-    };
-
-    recognition.onnomatch = () => {
-      setStatus("Speech was heard, but no transcript was recognized.");
+      setStatus("Speak now.");
     };
 
     recognition.onresult = (event) => {
@@ -184,7 +164,7 @@ export default function VoiceControl({
           compactCommand.includes("stopvoice") ||
           compactCommand.includes("turnoffvoice") ||
           compactCommand.includes("stoplistening") ||
-          compactCommand.includes("microphoneoff")
+          compactCommand.includes("mikeoff")
         ) {
           stopListening();
           return;
@@ -192,13 +172,18 @@ export default function VoiceControl({
 
         const wasSuccessful = onCommand(command);
         if (wasSuccessful) {
-          finalTranscriptRef.current =
+          const nextTranscript =
             `${finalTranscriptRef.current} ${command}`.trim();
-          setTranscript(finalTranscriptRef.current);
-          setStatus("Command accepted.");
-          if (shouldListenRef.current) {
-            setIsListening(true);
+          const wordCount = nextTranscript.split(/\s+/).filter(Boolean).length;
+
+          if (wordCount >= MAX_TRANSCRIPT_WORDS) {
+            finalTranscriptRef.current = "";
+            setTranscript("");
+          } else {
+            finalTranscriptRef.current = nextTranscript;
+            setTranscript(finalTranscriptRef.current);
           }
+          setStatus("Command accepted.");
         } else if (spokenText) {
           setStatus("Listening for a supported command.");
         }
@@ -214,9 +199,7 @@ export default function VoiceControl({
       ) {
         shouldListenRef.current = false;
         setIsListening(false);
-        setStatus(
-          "Microphone permission is blocked. Allow it in your browser.",
-        );
+        setStatus("Allow Microphone permission in your browser.");
         return;
       }
 
@@ -296,7 +279,7 @@ export default function VoiceControl({
           </Fab>
         </span>
       </Tooltip>
-      {isListening && (
+      {isListening && showTranscript && (
         <Paper
           elevation={6}
           sx={{

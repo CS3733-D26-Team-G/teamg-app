@@ -15,6 +15,7 @@ interface AuthContextValue {
   session: Session | null;
   refreshSession: () => Promise<Session | null>;
   clearSession: () => void;
+  logout: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -68,6 +69,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   };
 
+  const logout = async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.LOGOUT, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        return false;
+      }
+      clearSession();
+      localStorage.clear();
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     void refreshSession();
   }, []);
@@ -79,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         refreshSession,
         clearSession,
+        logout,
       }}
     >
       {children}

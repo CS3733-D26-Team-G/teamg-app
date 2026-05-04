@@ -9,15 +9,16 @@ import TutorialOverlay from "../components/Tutorial/TutorialOverlay.tsx";
 import TutorialPrompt from "../components/Tutorial/TutorialPrompt.tsx";
 import { useTutorial } from "../components/Tutorial/TutorialContext.tsx";
 import type { UserRole } from "../components/Tutorial/TutorialContext.tsx";
-import { SidebarProvider } from "../components/SidebarContext.tsx";
+import { SidebarProvider, useSidebar } from "../components/SidebarContext.tsx";
 import VoiceControl from "../components/VoiceControl.tsx";
 import { NotificationFilterProvider } from "../features/notifications/components/NotificationsSettingsToggle.tsx";
 
 function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { logout, session } = useAuth();
   const { triggerWelcomeTour } = useTutorial();
+  const { setIsManagementOpen, setIsOpen } = useSidebar();
 
   const isHeroPage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
@@ -47,7 +48,34 @@ function AppShell() {
     triggerWelcomeTour,
   ]);
 
+  const handleLogout = async () => {
+    const didLogout = await logout();
+    if (didLogout) {
+      navigate("/");
+    } else {
+      console.error("Logout Failed");
+    }
+  };
   const handleVoiceCommand = (command: string) => {
+    const normalizedCommand = command.toLowerCase().replace(/[^\w\s]/g, "");
+    const compactCommand = normalizedCommand.replace(/\s+/g, "");
+
+    if (
+      compactCommand.includes("logout") ||
+      compactCommand.includes("signout")
+    ) {
+      void handleLogout();
+      return true;
+    }
+    if (
+      session?.permissions.can_manage_employees &&
+      compactCommand.includes("management")
+    ) {
+      setIsOpen(true);
+      setIsManagementOpen(true);
+      return true;
+    }
+
     const routes: Array<[string[], string]> = [
       [["dashboard", "home"], "/dashboard"],
       [["library", "content library"], "/library"],
@@ -63,8 +91,15 @@ function AppShell() {
       [["credits"], "/credits"],
       [["about"], "/aboutus"],
     ];
+    if (session?.permissions.can_manage_employees) {
+      routes.push([
+        ["employees", "employee management"],
+        "/employee-management",
+      ]);
+      routes.push([["approvals", "approval"], "/approvals"]);
+    }
     const route = routes.find(([phrases]) =>
-      phrases.some((phrase) => command.includes(phrase)),
+      phrases.some((phrase) => normalizedCommand.includes(phrase)),
     );
     if (route) {
       navigate(route[1]);
