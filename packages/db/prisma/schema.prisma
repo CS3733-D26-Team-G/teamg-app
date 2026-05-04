@@ -211,9 +211,14 @@ enum ResourceType {
 }
 
 enum InsuranceClaimType {
-  HOME
   AUTO
-  BUSINESS
+  PROPERTY_DAMAGE
+  MEDICAL
+  LIABILITY
+  WORKERS_COMPENSATION
+  THEFT
+  NATURAL_DISASTER
+  OTHER
 }
 
 enum InsuranceClaimStatus {
