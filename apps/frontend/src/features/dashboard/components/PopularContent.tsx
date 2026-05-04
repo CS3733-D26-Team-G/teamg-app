@@ -3,6 +3,8 @@ import { Box, Stack, Typography, Tooltip } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { getPositionLabel } from "../../../utils/positionDisplay";
 import { API_ENDPOINTS } from "../../../config";
+import { useAuth } from "../../../auth/AuthContext";
+import { recordRecentlyViewed } from "../../content/components/viewing/RecentlyViewed";
 
 type PopularItem = {
   contentUuid: string;
@@ -16,6 +18,7 @@ type Props = {
 };
 
 export default function PopularContent({ position }: Props) {
+  const { session } = useAuth();
   const navigate = useNavigate();
 
   const [userData, setUserData] = useState<PopularItem[]>([]);
@@ -37,15 +40,15 @@ export default function PopularContent({ position }: Props) {
       .catch(console.error);
   }, []);
 
-  const viewContent = async (item: PopularItem) => {
-    try {
-      await fetch(API_ENDPOINTS.CONTENT.VIEW(item.contentUuid), {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (error) {
-      console.error("Failed to record content view:", error);
+  const viewContent = (item: PopularItem) => {
+    if (session?.employeeUuid) {
+      recordRecentlyViewed(session.employeeUuid, item.contentUuid);
     }
+
+    void fetch(API_ENDPOINTS.CONTENT.VIEW(item.contentUuid), {
+      method: "POST",
+      credentials: "include",
+    });
 
     navigate(`/library?filter=${encodeURIComponent(item.title)}`);
   };

@@ -70,7 +70,6 @@ export default function Sidebar() {
       });
       if (res.ok) {
         clearSession();
-        localStorage.clear();
         navigate("/");
       } else {
         console.error("Logout Failed");

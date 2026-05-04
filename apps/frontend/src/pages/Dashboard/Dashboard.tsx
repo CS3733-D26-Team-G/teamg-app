@@ -43,6 +43,7 @@ import HelpPopup from "../../components/HelpPopup";
 import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx";
 import AdminCards from "../../features/dashboard/components/AdminCards.tsx";
 import PopularContent from "../../features/dashboard/components/PopularContent";
+import RecentlyViewed from "../../features/dashboard/components/RecentlyViewed";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
@@ -90,6 +91,7 @@ const DEFAULT_ORDER: dashboardCardID[] = [
   "role-bus-ops",
   "employee-activity",
   "popular-content-search",
+  "recently-viewed",
   "file-types",
   "employee-edits-by-day",
 ];
@@ -585,7 +587,7 @@ export default function Dashboard() {
     {
       id: "employee-demographics",
       size: "medium",
-      adminOnly: false,
+      adminOnly: true,
       label: "Employee Demographics",
       description: "Pie chart of staff by role",
       node: (
@@ -629,56 +631,58 @@ export default function Dashboard() {
         </Box>
       ),
     },
-    ...roleConfig.map(({ id, label, key }) => ({
-      id,
-      size: "small" as FlexSize,
-      adminOnly: false,
-      label: `${label} Count`,
-      description: `Content count for ${label}s`,
-      node: (
-        <Card
-          sx={cardSx}
-          elevation={0}
-        >
-          <CardContent sx={{ "p": 2, "&:last-child": { pb: 2 } }}>
-            <Typography
-              sx={{
-                fontSize: "0.72rem",
-                color: "text.secondary",
-                fontWeight: 500,
-                mb: 0.25,
-              }}
-            >
-              {label}
-            </Typography>
-            <Typography
-              sx={{
-                fontWeight: 800,
-                fontSize: "1.7rem",
-                lineHeight: 1.1,
-                mt: 1,
-              }}
-            >
-              {analytics[key] ?? 0}
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: "0.68rem",
-                color: "primary.main",
-                fontWeight: 600,
-                mt: 0.5,
-              }}
-            >
-              Total Items
-              <HelpPopup
-                description={`Total content accessible by ${label}s`}
-                infoOrHelp={false}
-              />
-            </Typography>
-          </CardContent>
-        </Card>
-      ),
-    })),
+    ...roleConfig.map(
+      ({ id, label, key }): CardDef => ({
+        id,
+        size: "small" as FlexSize,
+        adminOnly: true,
+        label: `${label} Count`,
+        description: `Content count for ${label}s`,
+        node: (
+          <Card
+            sx={cardSx}
+            elevation={0}
+          >
+            <CardContent sx={{ "p": 2, "&:last-child": { pb: 2 } }}>
+              <Typography
+                sx={{
+                  fontSize: "0.72rem",
+                  color: "text.secondary",
+                  fontWeight: 500,
+                  mb: 0.25,
+                }}
+              >
+                {label}
+              </Typography>
+              <Typography
+                sx={{
+                  fontWeight: 800,
+                  fontSize: "1.7rem",
+                  lineHeight: 1.1,
+                  mt: 1,
+                }}
+              >
+                {analytics[key as string] ?? 0}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: "0.68rem",
+                  color: "primary.main",
+                  fontWeight: 600,
+                  mt: 0.5,
+                }}
+              >
+                Total Items
+                <HelpPopup
+                  description={`Total content accessible by ${label}s`}
+                  infoOrHelp={false}
+                />
+              </Typography>
+            </CardContent>
+          </Card>
+        ),
+      }),
+    ),
     {
       id: "employee-activity",
       size: "large",
@@ -707,6 +711,18 @@ export default function Dashboard() {
       node: (
         <CardShell title="Popular Content">
           <PopularContent position={session?.position} />
+        </CardShell>
+      ),
+    },
+    {
+      id: "recently-viewed",
+      size: "medium",
+      adminOnly: false,
+      label: "Recently Viewed",
+      description: "Your recently viewed content",
+      node: (
+        <CardShell title="Recently Viewed">
+          <RecentlyViewed />
         </CardShell>
       ),
     },

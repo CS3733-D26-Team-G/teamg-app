@@ -12,6 +12,7 @@ export type dashboardCardID =
   | "role-bus-ops"
   | "role-counts"
   | "employee-activity"
+  | "recently-viewed"
   | "file-types"
   | "popular-content-search"
   | "employee-edits-by-day";
