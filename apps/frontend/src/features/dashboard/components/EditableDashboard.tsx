@@ -1,8 +1,7 @@
-import { type ReactNode } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-//dnd kit stuff
 export type dashboardCardID =
   | "employee-demographics"
   | "recent-activity"
@@ -16,14 +15,17 @@ export type dashboardCardID =
   | "file-types"
   | "popular-content-search"
   | "employee-edits-by-day";
+
 export default function EditableDashboardCard({
   id,
   children,
   className = "",
+  style,
 }: {
   id: dashboardCardID;
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }) {
   const {
     attributes,
@@ -37,8 +39,9 @@ export default function EditableDashboardCard({
   return (
     <div
       ref={setNodeRef}
-      className={`${className} min-w-0 cursor-grab active:cursor-grabbing`}
+      className={`${className} cursor-grab active:cursor-grabbing`}
       style={{
+        ...style,
         transform: CSS.Transform.toString(transform),
         transition,
         position: "relative",

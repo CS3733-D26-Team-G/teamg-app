@@ -6,8 +6,11 @@ import {
   getCriticalContent,
   getContentEdits,
   getOwnershipChanges,
-  getClaimActions,
+  getClaimCreate,
+  getClaimEdit,
+  getClaimDelete,
 } from "./Notifications.ts";
+import { useNotificationFilterToggle } from "./NotificationsSettingsToggle.tsx";
 
 import {
   Box,
@@ -18,11 +21,8 @@ import {
   Chip,
   CircularProgress,
   Button,
-  Badge,
 } from "@mui/material";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
-import FilterListIcon from "@mui/icons-material/FilterList";
-import FilterListOffIcon from "@mui/icons-material/FilterListOff";
 
 import { useDashboardBootstrap } from "../../dashboard/useDashboardBootstrap.ts";
 
@@ -32,7 +32,9 @@ interface NotificationCounts {
   expired: number;
   ownership: number;
   edits: number;
-  claims: number;
+  claimCreate: number;
+  claimEdit: number;
+  claimDelete: number;
   total: number;
 }
 
@@ -40,8 +42,9 @@ interface AlertItem {
   uuid: string;
   title: string;
   alertType: "critical" | "expiring" | "ownership" | "edit" | "claim";
+  subType?: "create" | "edit" | "delete";
   notificationMessage: string;
-  expirationTime: string | Date | null;
+  expirationTime?: string | Date | null;
   timestamp?: string;
 }
 
@@ -117,11 +120,20 @@ export function useContentInfo() {
     () => getContentEdits(data?.activityContent ?? []),
     [data?.activityContent],
   );
-  const claimActions = useMemo(() => {
-    const claimActivities =
-      (data as any)?.activityClaim ?? data?.activityAll ?? [];
-    return getClaimActions(claimActivities);
-  }, [data]);
+
+  // Separate claim actions
+  const claimCreate = useMemo(
+    () => getClaimCreate(data?.activityAll ?? []),
+    [data?.activityAll],
+  );
+  const claimEdit = useMemo(
+    () => getClaimEdit(data?.activityAll ?? []),
+    [data?.activityAll],
+  );
+  const claimDelete = useMemo(
+    () => getClaimDelete(data?.activityAll ?? []),
+    [data?.activityAll],
+  );
 
   const visibleCriticalContent = useMemo(
     () =>
@@ -149,10 +161,20 @@ export function useContentInfo() {
       contentEdits.filter((item) => !dismissedAlerts.has(`edit:${item.uuid}`)),
     [contentEdits, dismissedAlerts],
   );
-  const visibleClaimActions = useMemo(
+  const visibleClaimCreate = useMemo(
     () =>
-      claimActions.filter((item) => !dismissedAlerts.has(`claim:${item.uuid}`)),
-    [claimActions, dismissedAlerts],
+      claimCreate.filter((item) => !dismissedAlerts.has(`claim:${item.uuid}`)),
+    [claimCreate, dismissedAlerts],
+  );
+  const visibleClaimEdit = useMemo(
+    () =>
+      claimEdit.filter((item) => !dismissedAlerts.has(`claim:${item.uuid}`)),
+    [claimEdit, dismissedAlerts],
+  );
+  const visibleClaimDelete = useMemo(
+    () =>
+      claimDelete.filter((item) => !dismissedAlerts.has(`claim:${item.uuid}`)),
+    [claimDelete, dismissedAlerts],
   );
 
   const dismissAllAlerts = useCallback(() => {
@@ -168,7 +190,9 @@ export function useContentInfo() {
         newSet.add(`ownership:${item.uuid}`),
       );
       visibleContentEdits.forEach((item) => newSet.add(`edit:${item.uuid}`));
-      visibleClaimActions.forEach((item) => newSet.add(`claim:${item.uuid}`));
+      visibleClaimCreate.forEach((item) => newSet.add(`claim:${item.uuid}`));
+      visibleClaimEdit.forEach((item) => newSet.add(`claim:${item.uuid}`));
+      visibleClaimDelete.forEach((item) => newSet.add(`claim:${item.uuid}`));
       return newSet;
     });
   }, [
@@ -176,8 +200,15 @@ export function useContentInfo() {
     visibleExpiringContent,
     visibleOwnershipChanges,
     visibleContentEdits,
-    visibleClaimActions,
+    visibleClaimCreate,
+    visibleClaimEdit,
+    visibleClaimDelete,
   ]);
+
+  const totalClaims =
+    visibleClaimCreate.length +
+    visibleClaimEdit.length +
+    visibleClaimDelete.length;
 
   const counts = useMemo<NotificationCounts>(() => {
     const expiringCount = visibleExpiringContent.filter((content) => {
@@ -191,13 +222,15 @@ export function useContentInfo() {
       expired: expiredContent.length,
       ownership: visibleOwnershipChanges.length,
       edits: visibleContentEdits.length,
-      claims: visibleClaimActions.length,
+      claimCreate: visibleClaimCreate.length,
+      claimEdit: visibleClaimEdit.length,
+      claimDelete: visibleClaimDelete.length,
       total:
         visibleCriticalContent.length +
         expiringCount +
         visibleOwnershipChanges.length +
         visibleContentEdits.length +
-        visibleClaimActions.length,
+        totalClaims,
     };
   }, [
     expiredContent.length,
@@ -205,7 +238,10 @@ export function useContentInfo() {
     visibleCriticalContent.length,
     visibleExpiringContent,
     visibleOwnershipChanges.length,
-    visibleClaimActions.length,
+    visibleClaimCreate.length,
+    visibleClaimEdit.length,
+    visibleClaimDelete.length,
+    totalClaims,
   ]);
 
   return {
@@ -213,7 +249,9 @@ export function useContentInfo() {
     visibleExpiringContent,
     visibleOwnershipChanges,
     visibleContentEdits,
-    visibleClaimActions,
+    visibleClaimCreate,
+    visibleClaimEdit,
+    visibleClaimDelete,
     counts,
     loading,
     dismissAlert,
@@ -261,18 +299,48 @@ export default function NotificationBarComponent({
     visibleExpiringContent,
     visibleOwnershipChanges,
     visibleContentEdits,
-    visibleClaimActions,
+    visibleClaimCreate,
+    visibleClaimEdit,
+    visibleClaimDelete,
     counts,
     loading,
     dismissAlert,
     dismissAllAlerts,
   } = useContentInfo();
 
-  // Use the filter hook
   const { currentFilter, setFilter, isFiltering } = useNotificationFilter();
+  const { hideEdits } = useNotificationFilterToggle();
+  const { hideExpiration } = useNotificationFilterToggle();
+
+  const filteredEdits = hideEdits ? [] : visibleContentEdits;
+  const filteredOwnership = hideEdits ? [] : visibleOwnershipChanges;
+  const filteredExpiring = hideExpiration ? [] : visibleExpiringContent;
+  const filteredCritical = hideExpiration ? [] : visibleCriticalContent;
+
+  // Combine all claim actions under "claim" type
+  const allClaims = [
+    ...visibleClaimCreate.map((c) => ({
+      ...c,
+      alertType: "claim" as const,
+      subType: "create" as const,
+      notificationMessage: `Claim created${c.employee ? ` by ${c.employee.firstName} ${c.employee.lastName}` : ""}`,
+    })),
+    ...visibleClaimEdit.map((c) => ({
+      ...c,
+      alertType: "claim" as const,
+      subType: "edit" as const,
+      notificationMessage: `Claim edited${c.employee ? ` by ${c.employee.firstName} ${c.employee.lastName}` : ""}`,
+    })),
+    ...visibleClaimDelete.map((c) => ({
+      ...c,
+      alertType: "claim" as const,
+      subType: "delete" as const,
+      notificationMessage: `Claim deleted${c.employee ? ` by ${c.employee.firstName} ${c.employee.lastName}` : ""}`,
+    })),
+  ];
 
   const allAlerts: AlertItem[] = [
-    ...visibleCriticalContent.map((c) => ({
+    ...filteredCritical.map((c) => ({
       uuid: c.uuid,
       title: c.title || "",
       alertType: "critical" as const,
@@ -286,7 +354,7 @@ export default function NotificationBarComponent({
           c.expirationTime
         : c.expirationTime?.toString(),
     })),
-    ...visibleExpiringContent.map((c) => ({
+    ...filteredExpiring.map((c) => ({
       uuid: c.uuid,
       title: c.title || "",
       alertType: "expiring" as const,
@@ -300,7 +368,7 @@ export default function NotificationBarComponent({
           c.expirationTime
         : c.expirationTime?.toString(),
     })),
-    ...visibleOwnershipChanges.map((o) => ({
+    ...filteredOwnership.map((o) => ({
       uuid: o.uuid,
       title: o.title,
       alertType: "ownership" as const,
@@ -308,7 +376,7 @@ export default function NotificationBarComponent({
       expirationTime: null,
       timestamp: o.timestamp,
     })),
-    ...visibleContentEdits.map((e) => ({
+    ...filteredEdits.map((e) => ({
       uuid: e.uuid,
       title: e.title,
       alertType: "edit" as const,
@@ -316,17 +384,22 @@ export default function NotificationBarComponent({
       expirationTime: null,
       timestamp: e.timestamp,
     })),
-    ...visibleClaimActions.map((c) => ({
-      uuid: c.uuid,
-      title: c.title,
-      alertType: "claim" as const,
-      notificationMessage: c.notificationMessage,
-      expirationTime: null,
-      timestamp: c.timestamp,
-    })),
+    ...allClaims,
   ];
 
-  // Filter alerts based on current filter
+  const totalClaimsCount =
+    visibleClaimCreate.length +
+    visibleClaimEdit.length +
+    visibleClaimDelete.length;
+
+  const updatedCounts = {
+    ...counts,
+    edits: hideEdits ? 0 : counts.edits,
+    ownership: hideEdits ? 0 : counts.ownership,
+    critical: hideExpiration ? 0 : counts.critical,
+    expiring: hideExpiration ? 0 : counts.expiring,
+  };
+
   const getFilteredAlerts = useCallback(() => {
     switch (currentFilter) {
       case "critical":
@@ -348,7 +421,10 @@ export default function NotificationBarComponent({
   }, [allAlerts, currentFilter]);
 
   const displayedAlerts = getFilteredAlerts();
-  const totalAlerts = counts.total;
+  const totalAlerts =
+    counts.total -
+    (hideEdits ? counts.edits + counts.ownership + totalClaimsCount : 0) -
+    (hideExpiration ? counts.critical + counts.expiring : 0);
 
   const handleDismiss = (uuid: string, title: string, alertType: string) => {
     dismissAlert(uuid, alertType);
@@ -385,7 +461,6 @@ export default function NotificationBarComponent({
         minWidth: 0,
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -446,7 +521,7 @@ export default function NotificationBarComponent({
               onClick={() => setFilter("critical")}
               color="error"
             >
-              Critical ({visibleCriticalContent.length})
+              Critical ({updatedCounts.critical})
             </Button>
             <Button
               size="small"
@@ -454,8 +529,7 @@ export default function NotificationBarComponent({
               onClick={() => setFilter("expiring")}
               color="warning"
             >
-              Expiring (
-              {visibleExpiringContent.length + visibleCriticalContent.length})
+              Expiring ({updatedCounts.expiring + updatedCounts.critical})
             </Button>
             <Button
               size="small"
@@ -463,7 +537,7 @@ export default function NotificationBarComponent({
               onClick={() => setFilter("claim")}
               color="primary"
             >
-              Claims ({visibleClaimActions.length})
+              Claims ({totalClaimsCount})
             </Button>
             <Button
               size="small"
@@ -471,7 +545,7 @@ export default function NotificationBarComponent({
               onClick={() => setFilter("ownership")}
               color="info"
             >
-              Ownership ({visibleOwnershipChanges.length})
+              Ownership ({updatedCounts.ownership})
             </Button>
             <Button
               size="small"
@@ -479,11 +553,10 @@ export default function NotificationBarComponent({
               onClick={() => setFilter("edit")}
               color="secondary"
             >
-              Edits ({visibleContentEdits.length})
+              Edits ({updatedCounts.edits})
             </Button>
           </Box>
 
-          {/* Results Count */}
           {isFiltering && displayedAlerts.length > 0 && (
             <Typography
               variant="caption"
@@ -496,7 +569,7 @@ export default function NotificationBarComponent({
           )}
         </>
       )}
-      {/* Content Area */}
+
       <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, px: 1 }}>
         {loading ?
           <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
@@ -537,6 +610,7 @@ export default function NotificationBarComponent({
                     gap={1}
                     flex={1}
                     minWidth={0}
+                    flexWrap="wrap"
                   >
                     <Typography
                       variant="subtitle2"

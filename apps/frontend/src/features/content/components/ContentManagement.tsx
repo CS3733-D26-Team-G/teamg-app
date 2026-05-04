@@ -712,6 +712,35 @@ export default function ContentManagement({
     }
   };
 
+  const handleForceCheckIn = async (uuid: string) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.LOCK(uuid), {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        setLockMessage("Unable to check in content");
+        return;
+      }
+
+      patchContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      patchBootstrapContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      markRelatedActivityStale();
+    } catch (error) {
+      console.error(error);
+      setLockMessage("Unable to check in content.");
+    }
+  };
+
   // stages the form payload and opens the save confirmation dialog
   const handleSave = (payload: FormData) => {
     setPendingSave(payload);
@@ -957,6 +986,7 @@ export default function ContentManagement({
     onCheckOut: (row: ContentRow) => void,
     onOpenEditor: (row: ContentRow) => void,
     onCheckIn: (uuid: string) => void,
+    onForceCheckIn: (uuid: string) => void,
   ): GridColDef<ContentRow>[] => [
     {
       // hidden numeric field used only for default sort (favorites first)
@@ -1013,6 +1043,8 @@ export default function ContentManagement({
               : ""
             }
             editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
+            createdAt={params.row.createdAt}
+            expirationTime={params.row.expirationTime}
           />
         </Box>
       ),
@@ -1251,6 +1283,18 @@ export default function ContentManagement({
                 </span>
               </Tooltip>
             )}
+
+            {isSystemAdmin && row.isLocked && !isCheckedOutByMe && (
+              <Tooltip title={"Force check in"}>
+                <IconButton
+                  sx={{ color: "orange" }}
+                  size="small"
+                  onClick={() => void onForceCheckIn(row.uuid)}
+                >
+                  <LockOpenIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
         );
       },
@@ -1301,7 +1345,10 @@ export default function ContentManagement({
                   Content Management
                 </Typography>
                 <Typography
-                  sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
+                  sx={{
+                    color: "rgba(255,255,255,0.65)",
+                    fontSize: "0.95rem",
+                  }}
                 >
                   Create, edit, and organize your digital assets and site
                   content in one collaborative workspace.
@@ -1347,6 +1394,7 @@ export default function ContentManagement({
                 height: 120 + i * 80,
                 top: -40 - i * 30,
                 right: -40 - i * 30,
+                pointerEvents: "none",
               }}
             />
           ))}
@@ -1691,14 +1739,12 @@ export default function ContentManagement({
                   : <TableRowsIcon fontSize="small" />}
                 </IconButton>
               </Tooltip>
-              <HelpPopup
-                description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
-                infoOrHelp={true}
-              />
               {isSystemAdmin && (
                 <TagManagerPopup
                   availableTags={availableTags}
                   onTagsChanged={async () => {
+                    markContentListStale();
+                    await contentListQuery.refresh();
                     return (await contentTagsQuery.refresh()) ?? [];
                   }}
                 />
@@ -1772,7 +1818,8 @@ export default function ContentManagement({
               border: "1px solid",
               borderColor: "divider",
               borderRadius: "8px",
-              overflow: "hidden",
+              height: "calc(100vh - 200px)",
+              overflowY: "auto",
             }}
           >
             <Box
@@ -1964,6 +2011,7 @@ export default function ContentManagement({
                     handleCheckout,
                     handleOpenEditor,
                     releaseLock,
+                    handleForceCheckIn,
                   )}
                   getRowClassName={(params) => {
                     const hasPermission =
@@ -2167,6 +2215,7 @@ export default function ContentManagement({
                         handleCheckout,
                         handleOpenEditor,
                         releaseLock,
+                        handleForceCheckIn,
                       )}
                       getRowClassName={(params) => {
                         const hasPermission =

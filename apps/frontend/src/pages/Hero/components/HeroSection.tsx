@@ -8,6 +8,7 @@ import LoginModal from "./LoginModal.tsx";
 import theme from "../../../theme.tsx";
 import CarouselBackground from "./CarouselBackground";
 import { useTranslation } from "react-i18next";
+import { Mic, MicOff } from "lucide-react";
 import { useAuth } from "../../../auth/AuthContext.tsx";
 import VoiceControl from "../../../components/VoiceControl.tsx";
 
@@ -76,16 +77,13 @@ export default function HeroSection() {
       openLogin();
       return true;
     }
-
     const route = routes.find(([phrases]) =>
       phrases.some((phrase) => normalizedCommand.includes(phrase)),
     );
-
     if (route) {
       navigate(route[1]);
       return true;
     }
-
     return false;
   };
 
@@ -151,6 +149,7 @@ export default function HeroSection() {
             gap: 1.5,
           }}
         >
+          {" "}
           <VoiceControl
             onCommand={handleVoiceCommand}
             // showPanel={false}
