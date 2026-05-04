@@ -733,7 +733,7 @@ export default function Dashboard() {
           title={
             isAdmin ?
               "Employee Edits By Day"
-            : `${getPositionLabel(session?.position)} Edits By Day`
+            : `${getPositionLabel(session!.position)} Edits By Day`
           }
           helpDesc="Fluctuation in content edits by role over time."
         >

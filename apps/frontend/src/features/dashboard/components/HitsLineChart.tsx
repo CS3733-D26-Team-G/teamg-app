@@ -55,12 +55,16 @@ export default function HitsLineChart() {
     BUSINESS_OP_RATING: "#509edd",
     ADMIN: "#74414e",
   };
-  const series = (
-    isAdmin ? ROLE_KEYS : [session?.position].filter(Boolean)).map((role) => ({
+  const visibleRoles =
+    isAdmin ? ROLE_KEYS
+    : session?.position ? [session.position]
+    : [];
+
+  const series = visibleRoles.map((role) => ({
     data: editHitsByRole.map((row) => row[role] ?? 0),
     label: getPositionLabel(role),
     color: ROLE_COLORS[role],
-    shape: "circle",
+    shape: "circle" as const,
   }));
 
   return (
