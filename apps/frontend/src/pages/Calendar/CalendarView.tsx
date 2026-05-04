@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../auth/AuthContext";
+
 import { type ContentRow } from "../../types/content";
 import type { EventInput } from "@fullcalendar/core";
 import {
@@ -134,8 +135,9 @@ export default function CalendarPage() {
         row.contentOwner?.toLowerCase() === currentUserName.toLowerCase();
       const isCheckedOutByMe =
         row.editLock?.lockedByEmp?.uuid === session.employeeUuid;
+      const isAdmin = profile?.position === "ADMIN";
 
-      if (isOwner || isCheckedOutByMe) {
+      if (isOwner || isCheckedOutByMe || isAdmin) {
         const originalExpDate = new Date(row.expirationTime);
         if (isNaN(originalExpDate.getTime())) return acc;
 
