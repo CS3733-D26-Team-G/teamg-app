@@ -294,7 +294,7 @@ function Profile() {
             </Box>
 
             <Stack
-              direction={"row"}
+              direction="row"
               gap={2}
               sx={{
                 justifyContent: "space-evenly",
@@ -306,7 +306,7 @@ function Profile() {
                 className="notification-settings"
                 sx={{
                   display: "flex",
-                  width: "40%",
+                  width: "65%",
                   height: 200,
                   ...cardSx,
                 }}
@@ -398,7 +398,7 @@ function Profile() {
               <Box
                 sx={{
                   display: "flex",
-                  width: "30%",
+                  width: "35%",
                   height: 200,
                   ...cardSx,
                 }}
@@ -449,13 +449,21 @@ function Profile() {
                   </Typography>
                 </Stack>
               </Box>
-
+            </Stack>
+            <Stack
+              direction="row"
+              gap={2}
+              sx={{
+                justifyContent: "space-evenly",
+                alignItems: "center",
+              }}
+            >
               {/*'Security Card*/}
               <Box
                 className="security-settings"
                 sx={{
                   display: "flex",
-                  width: "30%",
+                  width: "50%",
                   height: 200,
                   ...cardSx,
                 }}
@@ -472,23 +480,48 @@ function Profile() {
                     Security
                   </Typography>
 
-                  <Button
-                    variant="contained"
-                    sx={{ mt: 2, alignSelf: "center" }}
-                  >
-                    Change Password
-                  </Button>
-
-                  <Typography
-                    variant="caption"
-                    color="text.primary"
+                  <Box
                     sx={{
-                      pl: 2,
-                      fontSize: 14,
-                      mt: 5,
+                      display: "flex",
+                      alignItems: "center",
+                      flexDirection: "row",
+                      gap: 10,
                     }}
                   >
-                    Password last changed 4/2/2025
+                    <Typography
+                      sx={{
+                        pl: 2,
+                        fontSize: 18,
+                      }}
+                    >
+                      Password last changed 4/2/2025
+                    </Typography>
+
+                    <Button variant="contained">Change Password</Button>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {/*Preferences Card*/}
+              <Box
+                className="preference-settings"
+                sx={{
+                  display: "flex",
+                  width: "50%",
+                  height: 200,
+                  ...cardSx,
+                }}
+              >
+                <Stack sx={{ width: "100%" }}>
+                  <Typography
+                    sx={{
+                      fontSize: 32,
+                      pl: 1.6,
+                      pt: 0.3,
+                      pb: 0.4,
+                    }}
+                  >
+                    Preferences
                   </Typography>
                 </Stack>
               </Box>

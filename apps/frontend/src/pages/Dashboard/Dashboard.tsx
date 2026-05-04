@@ -374,7 +374,21 @@ export default function Dashboard() {
           position: "relative",
         }}
       >
-        <div className="flex justify-between items-center px-8 py-6">
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            height: 80,
+            mt: 1,
+            borderRadius: 4,
+            backgroundColor: "rgba(255, 255, 255, 0.12)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255, 255, 255, 0.25)",
+            borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
+            px: 4,
+          }}
+        >
           <Typography
             variant="h2"
             sx={{ fontWeight: "bold", color: "white" }}
@@ -392,6 +406,7 @@ export default function Dashboard() {
                 height: 120 + i * 80,
                 top: -40 - i * 30,
                 right: -40 - i * 30,
+                pointerEvents: "none",
               }}
             />
           ))}
@@ -405,7 +420,7 @@ export default function Dashboard() {
               <SearchBar setSearchQuery={setSearchQuery} />
             </div>
           </div>
-        </div>
+        </Box>
       </StyledToolbar>
       <Card
         className="m-auto mr-2 mb-2 flex h-auto min-h-[95vh] flex-col"
