@@ -561,16 +561,6 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
         }
       }
 
-      await tx.activity.create({
-        data: {
-          employeeUuid: auth.employeeUuid,
-          action: "EDIT_CONTENT",
-          resource: "CONTENT",
-          resourceUuid: content.uuid,
-          resourceName: content.title,
-        },
-      });
-
       return content;
     });
 

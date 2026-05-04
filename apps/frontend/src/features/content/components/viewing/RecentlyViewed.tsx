@@ -31,6 +31,15 @@ export function recordRecentlyViewed(employeeUuid: string, uuid: string): void {
   }
 }
 
+/** Clears all recently viewed entries for the given employee. */
+export function clearRecentlyViewed(employeeUuid: string): void {
+  try {
+    localStorage.removeItem(storageKey(employeeUuid));
+  } catch {
+    // localStorage unavailable — fail silently
+  }
+}
+
 /** Returns an ordered list of recently viewed entries, most recent first. */
 export function getRecentlyViewed(employeeUuid: string): RecentEntry[] {
   try {
