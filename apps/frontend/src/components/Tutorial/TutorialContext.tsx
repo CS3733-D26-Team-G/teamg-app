@@ -777,6 +777,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       const steps = TOUR_STEPS_BY_ROLE[role];
       autoPromptTimerRef.current = setTimeout(() => {
         autoPromptTimerRef.current = null;
+        // The delayed prompt may fire after settings refresh marks the tour done.
         if (tutorialDoneRef.current) return;
         setPendingSteps(steps);
         setPromptMode("auto");

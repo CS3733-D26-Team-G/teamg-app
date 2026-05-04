@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshSession = async () => {
     try {
       const nextSession = await fetchSession();
+      // Cache identity must change before consumers refresh user-scoped queries.
       setCacheIdentity(nextSession?.employeeUuid ?? null);
       if (session?.employeeUuid !== nextSession?.employeeUuid) {
         invalidateDashboardBootstrap();

@@ -125,6 +125,7 @@ async function ensurePdfRuntime() {
       const canvasModule: CanvasModule = await import("@napi-rs/canvas");
       const globalScope = globalThis as Record<string, unknown>;
 
+      // pdf-parse expects browser canvas globals even when running in Node.
       if (!globalScope.DOMMatrix && "DOMMatrix" in canvasModule) {
         globalScope.DOMMatrix = canvasModule.DOMMatrix;
       }
@@ -205,6 +206,8 @@ async function getTextPreview(file: SearchTextSourceFile) {
       .getEntries()
       .filter((entry) => /^ppt\/slides\/slide\d+\.xml$/.test(entry.entryName))
       .map((entry) =>
+        // PPTX stores slide text inside XML parts; stripping tags gives the
+        // inference prompt enough semantic text without needing a full renderer.
         entry
           .getData()
           .toString("utf8")

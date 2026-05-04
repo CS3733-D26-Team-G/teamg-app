@@ -1,47 +1,43 @@
 import express from "express";
 import { Position, Prisma, prisma } from "@repo/db";
 import { getVisibleContentWhere } from "../../lib/content.ts";
-import { getAuth, requireAdmin, sendInternalError } from "../../lib/request.ts";
+import { getAuth, sendInternalError } from "../../lib/request.ts";
 import { logger } from "../../logger.ts";
 import { formatDashboardDateKey } from "./utils.ts";
 
 const router = express.Router();
 
-router.get(
-  "/employee/count",
-  //requireAdmin("Employee stats route"),
-  async (_req, res) => {
-    logger.verbose("Querying Employee table for employee counts by position");
-    try {
-      const positions = Object.values(Position);
+router.get("/employee/count", async (_req, res) => {
+  logger.verbose("Querying Employee table for employee counts by position");
+  try {
+    const positions = Object.values(Position);
 
-      const groupedCounts = await prisma.employee.groupBy({
-        by: ["position"],
-        _count: {
-          _all: true,
-        },
-      });
+    const groupedCounts = await prisma.employee.groupBy({
+      by: ["position"],
+      _count: {
+        _all: true,
+      },
+    });
 
-      logger.verbose(
-        `Queried Employee table for employee counts by position: found ${groupedCounts.length} grouped record(s)`,
-      );
+    logger.verbose(
+      `Queried Employee table for employee counts by position: found ${groupedCounts.length} grouped record(s)`,
+    );
 
-      const stats = positions.reduce<Record<Position, number>>(
-        (acc, position) => {
-          acc[position] =
-            groupedCounts.find((group) => group.position === position)?._count
-              ._all ?? 0;
-          return acc;
-        },
-        {} as Record<Position, number>,
-      );
+    const stats = positions.reduce<Record<Position, number>>(
+      (acc, position) => {
+        acc[position] =
+          groupedCounts.find((group) => group.position === position)?._count
+            ._all ?? 0;
+        return acc;
+      },
+      {} as Record<Position, number>,
+    );
 
-      return res.status(200).json(stats);
-    } catch (e) {
-      return sendInternalError(res, "Failed to retrieve employee stats", e);
-    }
-  },
-);
+    return res.status(200).json(stats);
+  } catch (e) {
+    return sendInternalError(res, "Failed to retrieve employee stats", e);
+  }
+});
 
 router.get("/activity/action-summary", async (req, res) => {
   const auth = getAuth(req);
@@ -161,6 +157,8 @@ router.get("/content/edit-hits-by-role", async (req, res) => {
 
   try {
     const visibleContentWhere = getVisibleContentWhere(auth);
+    // Activity rows reference content by UUID only, so role visibility has to be
+    // translated into a UUID allow-list before grouping edit events.
     const visibleContentUuids =
       visibleContentWhere ?
         (

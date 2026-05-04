@@ -284,6 +284,8 @@ export default function DocPreviewer({
           setLoading(false);
         };
 
+        // WebViewer initializes asynchronously; queue the load so fast modal
+        // opens do not drop the first document.
         if (instanceRef.current) {
           doLoad();
         } else {

@@ -119,7 +119,8 @@ router.post("/create", async (req, res) => {
       const claim = await tx.insuranceClaim.create({
         data: {
           ...data,
-          status: "PENDING", // Force initial status to PENDING
+          // New claims always enter the underwriter review queue first.
+          status: "PENDING",
           requestorEmployeeUuid: auth.employeeUuid,
         },
       });

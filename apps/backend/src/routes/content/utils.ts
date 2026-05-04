@@ -3,12 +3,7 @@ import { Position, prisma, Prisma } from "@repo/db";
 import mime from "mime-types";
 import { z } from "zod";
 import { INTERNAL_ERROR_MESSAGE, STORAGE_BUCKET } from "../../config.ts";
-import {
-  canManagePosition,
-  getAuth,
-  isAdmin,
-  sendInternalError,
-} from "../../lib/request.ts";
+import { canManagePosition, isAdmin } from "../../lib/request.ts";
 import { supabase } from "../../lib/supabase.ts";
 import { logger } from "../../logger.ts";
 import { getVisibleContentWhere } from "../../lib/content.ts";
@@ -26,7 +21,6 @@ import {
   ContentListItem,
   TagAction,
 } from "./schemas.ts";
-import router from "./index.ts";
 
 export function getExpiresInSeconds(expirationTime: Date): number {
   return Math.floor((expirationTime.getTime() - Date.now()) / 1000);
@@ -387,6 +381,8 @@ export async function resolveContentUrl({
     }
 
     if (fallbackSupabasePath) {
+      // Existing uploads store a private object path; edits and link
+      // regeneration mint a fresh signed URL instead of re-uploading bytes.
       const expiresIn = getExpiresInSeconds(expirationTime);
       if (expiresIn < 0) {
         return {
@@ -442,6 +438,8 @@ export async function resolveContentUrl({
   logger.verbose(
     `Uploading ${uuid}.${mime.extension(file.mimetype)} to ${STORAGE_BUCKET}`,
   );
+  // Keep object names stable per content UUID so edited uploads replace the
+  // previous file when callers pass upsert=true.
   const uploadResult = await supabase.storage
     .from(STORAGE_BUCKET)
     .upload(`content/${uuid}.${mime.extension(file.mimetype)}`, file.buffer, {

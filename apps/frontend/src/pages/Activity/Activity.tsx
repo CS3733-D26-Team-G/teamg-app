@@ -56,7 +56,7 @@ function ActivityPageSkeleton() {
       <Box
         sx={{
           borderRadius: "14px",
-          backgroundColor: "white",
+          backgroundColor: "background.paper",
           width: "95%",
           mx: "auto",
           p: 3,
@@ -275,7 +275,7 @@ function Activity() {
         className="activity-timeline"
         sx={{
           borderRadius: "14px",
-          backgroundColor: "white",
+          backgroundColor: "background.paper",
           width: "95%",
           mx: "auto",
         }}
