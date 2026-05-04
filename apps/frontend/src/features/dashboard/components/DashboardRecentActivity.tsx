@@ -72,7 +72,7 @@ export default function DashboardRecentActivity({
   return (
     <>
       <Card
-        className="min-w-125 outline-gray-200 outline-1  drop-shadow-lg"
+        className="min-w-75 outline-gray-200 outline-1"
         sx={{
           backgroundColor: "background.paper",
           height: "100%",
