@@ -126,16 +126,19 @@ type ActiveContentLock = NonNullable<
 >;
 
 export function serializeLock(lock: ActiveContentLock) {
+  const lockedByEmp = {
+    uuid: lock.lockedByEmp.uuid,
+    firstName: lock.lockedByEmp.firstName,
+    lastName: lock.lockedByEmp.lastName,
+    corporateEmail: lock.lockedByEmp.corporateEmail,
+  };
+
   return {
     contentUuid: lock.contentUuid,
     lockedByEmpUuid: lock.lockedByEmpUuid,
     lockedAt: lock.lockedAt,
-    locked_by: {
-      uuid: lock.lockedByEmp.uuid,
-      firstName: lock.lockedByEmp.firstName,
-      lastName: lock.lockedByEmp.lastName,
-      corporateEmail: lock.lockedByEmp.corporateEmail,
-    },
+    lockedByEmp,
+    locked_by: lockedByEmp,
   };
 }
 
@@ -348,10 +351,13 @@ export async function createOrRefreshLock(
     });
   }
 
+  if (existingLock.lockedByEmpUuid !== auth.employeeUuid) {
+    throw new Error("Cannot refresh lock owned by another employee");
+  }
+
   return prisma.contentEditLock.update({
     where: { contentUuid: uuid },
     data: {
-      lockedByEmpUuid: auth.employeeUuid,
       lockedAt: new Date(),
     },
     include: contentLockInclude,
