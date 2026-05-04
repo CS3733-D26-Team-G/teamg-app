@@ -43,6 +43,7 @@ import HelpPopup from "../../components/HelpPopup";
 import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx";
 import AdminCards from "../../features/dashboard/components/AdminCards.tsx";
 import PopularContent from "../../features/dashboard/components/PopularContent";
+import RecentlyViewed from "../../features/dashboard/components/RecentlyViewed";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
@@ -90,6 +91,7 @@ const DEFAULT_ORDER: dashboardCardID[] = [
   "role-bus-ops",
   "employee-activity",
   "popular-content-search",
+  "recently-viewed",
   "file-types",
   "employee-edits-by-day",
 ];
@@ -585,7 +587,7 @@ export default function Dashboard() {
     {
       id: "employee-demographics",
       size: "medium",
-      adminOnly: false,
+      adminOnly: true,
       label: "Employee Demographics",
       description: "Pie chart of staff by role",
       node: (
@@ -632,7 +634,7 @@ export default function Dashboard() {
     ...roleConfig.map(({ id, label, key }) => ({
       id,
       size: "small" as FlexSize,
-      adminOnly: false,
+      adminOnly: true,
       label: `${label} Count`,
       description: `Content count for ${label}s`,
       node: (
@@ -707,6 +709,18 @@ export default function Dashboard() {
       node: (
         <CardShell title="Popular Content">
           <PopularContent position={session?.position} />
+        </CardShell>
+      ),
+    },
+    {
+      id: "recently-viewed",
+      size: "medium",
+      adminOnly: false,
+      label: "Recently Viewed",
+      description: "Your recently viewed content",
+      node: (
+        <CardShell title="Recently Viewed">
+          <RecentlyViewed />
         </CardShell>
       ),
     },
