@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   PROFILE: {
     ROOT: `${API_BASE_URL}/profile`,
     AVATAR: `${API_BASE_URL}/profile/avatar`,
+    CHANGE_PASSWORD: `${API_BASE_URL}/profile/change-password`,
   },
   ACCOUNT_SETTINGS: `${API_BASE_URL}/account-settings`,
   STATS: {
@@ -53,11 +54,12 @@ export const API_ENDPOINTS = {
     LOCK: (uuid: string) => `${API_BASE_URL}/content/lock/${uuid}`,
     FILE: (uuid: string) => `${API_BASE_URL}/content/file/${uuid}`,
     TAG: {
+      ROOT: `${API_BASE_URL}/content/tag`,
       CREATE: `${API_BASE_URL}/content/tag/create`,
       DELETE: (uuid: string) => `${API_BASE_URL}/content/tag/delete/${uuid}`,
       UPDATE: (tagUuid: string, contentUuid: string) =>
         `${API_BASE_URL}/content/tag/update/${tagUuid}/${contentUuid}`,
-      GET_ALL: `${API_BASE_URL}/content/tag`,
+      EDIT: (uuid: string) => `${API_BASE_URL}/content/tag/edit/${uuid}`,
     },
   },
 };

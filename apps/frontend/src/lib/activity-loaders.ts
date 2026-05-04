@@ -53,6 +53,7 @@ const CACHE_KEYS = {
     all: "activity:all",
     content: "activity:content",
     verbose: "activity:verbose",
+    claim: "activity:claim",
     auth: "activity:auth",
   },
   dashboardBootstrap: "dashboard:bootstrap",
@@ -151,6 +152,7 @@ async function fetchDashboardBootstrap(params?: {
     activityAll,
     activityContent,
     activityVerbose,
+    activityClaim,
     contentCounts,
     fileTypeCounts,
     employeeCounts,
@@ -162,6 +164,7 @@ async function fetchDashboardBootstrap(params?: {
     loadActivity("all"),
     loadActivity("content"),
     loadActivity("verbose"),
+    loadActivity("claim"),
     loadContentPositionCounts(),
     loadContentFileTypeCounts(),
     loadEmployeeCounts(),
@@ -175,6 +178,7 @@ async function fetchDashboardBootstrap(params?: {
     activityAll,
     activityContent,
     activityVerbose,
+    activityClaim,
     contentCounts,
     fileTypeCounts,
     employeeCounts,
@@ -339,6 +343,7 @@ export function invalidateActivity(category?: ActivityCategory) {
   invalidateCached(CACHE_KEYS.activity.all);
   invalidateCached(CACHE_KEYS.activity.content);
   invalidateCached(CACHE_KEYS.activity.verbose);
+  invalidateCached(CACHE_KEYS.activity.claim);
   invalidateCached(CACHE_KEYS.activity.auth);
 }
 
@@ -351,6 +356,7 @@ export function markActivityStale(category?: ActivityCategory) {
   markCachedStale(CACHE_KEYS.activity.all);
   markCachedStale(CACHE_KEYS.activity.content);
   markCachedStale(CACHE_KEYS.activity.verbose);
+  markCachedStale(CACHE_KEYS.activity.claim);
   markCachedStale(CACHE_KEYS.activity.auth);
 }
 

@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../auth/AuthContext";
+
 import { type ContentRow } from "../../types/content";
 import type { EventInput } from "@fullcalendar/core";
 import {
@@ -31,11 +32,21 @@ import NotificationsBell from "../../features/notifications/components/Notificat
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { loadContentList } from "../../lib/api-loaders";
 import { useTheme } from "@mui/material/styles";
+import NotificationBarComponent from "../../features/notifications/components/NotificationBar.tsx";
+
+const CREATED_COLOR = "#4f46e5";
+const CHECKED_OUT_COLOR = "#d97706";
+
+function getExpiresInSeconds(expirationTime: string | null): number {
+  if (!expirationTime) return -1;
+  return Math.floor((new Date(expirationTime).getTime() - Date.now()) / 1000);
+}
 import { API_ENDPOINTS } from "../../config";
 import DocPreviewer from "../../features/content/components/viewing/DocPreviewer.tsx";
 import VersionHistoryPanel from "../../features/content/components/viewing/VersionHistoryPanel.tsx";
 import { useSidebar } from "../../components/SidebarContext.tsx";
 import { Icon } from "lucide-react";
+import { NotificationFilterProvider } from "../../features/notifications/components/NotificationsSettingsToggle.tsx";
 
 export function getEventColor(expirationTime: string | null): string {
   if (!expirationTime) return "#06d606";
@@ -124,8 +135,9 @@ export default function CalendarPage() {
         row.contentOwner?.toLowerCase() === currentUserName.toLowerCase();
       const isCheckedOutByMe =
         row.editLock?.lockedByEmp?.uuid === session.employeeUuid;
+      const isAdmin = profile?.position === "ADMIN";
 
-      if (isOwner || isCheckedOutByMe) {
+      if (isOwner || isCheckedOutByMe || isAdmin) {
         const originalExpDate = new Date(row.expirationTime);
         if (isNaN(originalExpDate.getTime())) return acc;
 
@@ -194,43 +206,69 @@ export default function CalendarPage() {
               right: -40 - i * 30,
               pointerEvents: "none",
               overflow: "hidden",
+              zIndex: 100,
             }}
           />
         ))}
-        <Stack
-          direction="row"
-          alignItems="flex-start"
-          justifyContent="space-between"
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            py: 1,
+            mb: 2,
+            mt: -1,
+            borderRadius: 4,
+            backgroundColor: "rgba(255, 255, 255, 0.12)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255, 255, 255, 0.25)",
+            borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
+            px: 3,
+          }}
         >
-          <Box>
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={2}
-              sx={{ mb: 0.5 }}
-            >
-              <Typography
-                variant="h2"
-                sx={{ color: "white", fontWeight: 700, overflow: "hidden" }}
-              >
-                Calendar
-              </Typography>
-            </Stack>
-            <Typography
-              sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
-            >
-              See when content you created (✏️) or checked out (👁️) will expire
-            </Typography>
-          </Box>
-          <Box
-            sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2, mb: 3 }}
+          <Stack
+            direction="row"
+            alignItems="flex-start"
+            justifyContent="space-between"
+            width="100%"
           >
-            <HelpPopup
-              description="This queue shows all PENDING claims. Expand each card to read the details, write your risk notes, then clear or flag."
-              infoOrHelp={true}
-            />
-          </Box>
-        </Stack>
+            <Box>
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={2}
+                sx={{ mb: 0.5 }}
+              >
+                <Typography
+                  variant="h2"
+                  sx={{ color: "white", fontWeight: 700, overflow: "hidden" }}
+                >
+                  Calendar
+                </Typography>
+              </Stack>
+              <Typography
+                sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
+              >
+                See when content you created (✏️) or checked out (👁️) will
+                expire
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                mt: 2,
+                mb: 3,
+              }}
+            >
+              <HelpPopup
+                description="This queue shows all PENDING claims. Expand each card to read the details, write your risk notes, then clear or flag."
+                infoOrHelp={true}
+              />
+            </Box>
+          </Stack>
+        </Box>
 
         <Card
           className="calendar-grid"
@@ -238,7 +276,7 @@ export default function CalendarPage() {
             p: 3,
             backgroundColor: "background.paper",
             minWidth: 0,
-            width: isOpen ? "calc(100vw - 280px)" : "calc(100vw - 64px)",
+            width: isOpen ? "calc(100vw - 266px)" : "calc(100vw - 95px)",
             overflowX: "auto",
             minHeight: "calc(100vh - 130px)",
             border: "none",
@@ -336,66 +374,86 @@ export default function CalendarPage() {
                   
               `}</style>
 
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                eventDisplay="block"
-                height="calc(100vh - 180px"
-                customButtons={{
-                  dayToday: {
-                    text: "Day",
-                    click: () => {
-                      const calendarApi = calendarRef.current?.getApi();
-                      if (calendarApi) {
-                        calendarApi.today();
-                        calendarApi.changeView("timeGridDay");
-                      }
-                    },
-                  },
-                  weekToday: {
-                    text: "Week",
-                    click: () => {
-                      const calendarApi = calendarRef.current?.getApi();
-                      if (calendarApi) {
-                        calendarApi.today();
-                        calendarApi.changeView("timeGridWeek");
-                      }
-                    },
-                  },
-                  Month: {
-                    text: "Month",
-                    click: () => {
-                      const calendarApi = calendarRef.current?.getApi();
-                      if (calendarApi) {
-                        calendarApi.today();
-                        calendarApi.changeView("dayGridMonth");
-                      }
-                    },
-                  },
+              <div
+                style={{
+                  display: "flex",
+                  gap: "20px",
+                  height: "calc(100vh - 180px)",
                 }}
-                headerToolbar={{
-                  left: "prev,next",
-                  center: "title",
-                  right: "Month,weekToday,dayToday",
-                }}
-                events={events}
-                forceEventDuration={true}
-                displayEventTime={false}
-                eventClick={(info) => {
-                  const row = info.event.extendedProps.row as ContentRow;
-                  setPreviewDoc({
-                    uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
-                    fileName: row.title,
-                    uuid: row.uuid,
-                    row,
-                  });
-                }}
-              />
+              >
+                <div style={{ width: "300px", flexShrink: 0 }}>
+                  <Card sx={{ height: "100%", overflow: "auto" }}>
+                    <NotificationBarComponent showFilters={true} />
+                  </Card>
+                </div>
+                <div style={{ flex: 1, minWidth: 0, overflow: "auto" }}>
+                  <Card sx={{ height: "100%" }}>
+                    <FullCalendar
+                      ref={calendarRef}
+                      plugins={[
+                        dayGridPlugin,
+                        timeGridPlugin,
+                        interactionPlugin,
+                      ]}
+                      initialView="dayGridMonth"
+                      eventDisplay="block"
+                      height="100%"
+                      customButtons={{
+                        dayToday: {
+                          text: "Day",
+                          click: () => {
+                            const calendarApi = calendarRef.current?.getApi();
+                            if (calendarApi) {
+                              calendarApi.today();
+                              calendarApi.changeView("timeGridDay");
+                            }
+                          },
+                        },
+                        weekToday: {
+                          text: "Week",
+                          click: () => {
+                            const calendarApi = calendarRef.current?.getApi();
+                            if (calendarApi) {
+                              calendarApi.today();
+                              calendarApi.changeView("timeGridWeek");
+                            }
+                          },
+                        },
+                        Month: {
+                          text: "Month",
+                          click: () => {
+                            const calendarApi = calendarRef.current?.getApi();
+                            if (calendarApi) {
+                              calendarApi.today();
+                              calendarApi.changeView("dayGridMonth");
+                            }
+                          },
+                        },
+                      }}
+                      headerToolbar={{
+                        left: "prev,next",
+                        center: "title",
+                        right: "Month,weekToday,dayToday",
+                      }}
+                      events={events}
+                      forceEventDuration={true}
+                      displayEventTime={false}
+                      eventClick={(info) => {
+                        const row = info.event.extendedProps.row as ContentRow;
+                        setPreviewDoc({
+                          uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+                          fileName: row.title,
+                          uuid: row.uuid,
+                          row,
+                        });
+                      }}
+                    />
+                  </Card>
+                </div>
+              </div>
             </>
           }
         </Card>
-
         <Dialog
           open={previewDoc !== null}
           onClose={() => setPreviewDoc(null)}

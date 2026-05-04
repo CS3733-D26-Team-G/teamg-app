@@ -93,6 +93,7 @@ export default function HitsLineChart() {
       </FormControl>
 
       <LineChart
+        highlightedItem={null}
         height={320}
         margin={{ top: 16, right: 24, bottom: 24, left: 48 }}
         xAxis={[

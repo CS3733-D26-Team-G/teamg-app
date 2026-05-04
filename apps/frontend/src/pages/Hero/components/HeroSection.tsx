@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Box, Button, Alert, Collapse, Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import HanoverLogoWhite from "../../../assets/HanoverLogoWhite.png";
 import LoginModal from "./LoginModal.tsx";
 import theme from "../../../theme.tsx";
-import { type Variants } from "framer-motion";
+//import VoiceControl from "../../../VoiceControl.tsx";
 import CarouselBackground from "./CarouselBackground";
 import { useTranslation } from "react-i18next";
+import { Mic, MicOff } from "lucide-react";
+import { useAuth } from "../../../auth/AuthContext.tsx";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -37,6 +39,7 @@ const itemVariants: Variants = {
 
 export default function HeroSection() {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(true);
   const { t } = useTranslation();
@@ -97,30 +100,52 @@ export default function HeroSection() {
           <img
             src={HanoverLogoWhite}
             alt="White Hanover Logo"
-            className="w-[80px] h-auto"
+            className="w-20 h-auto"
           />
         </Box>
 
-        <Button
-          onClick={() => setLoginOpen(true)}
-          sx={{
-            "position": "absolute",
-            "right": 40,
-            "background": "white",
-            "color": "black",
-            "fontFamily": theme.typography.fontFamily,
-            "fontSize": 18,
-            "fontWeight": "bold",
-            "px": 5,
-            "py": 1.5,
-            "borderRadius": "70px",
-            "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
-            "textTransform": "none",
-            "&:hover": { background: "#d9d2c5" },
-          }}
-        >
-          {t("heroSection.login")}
-        </Button>
+        {session ?
+          <Button
+            onClick={() => navigate("/dashboard")}
+            sx={{
+              "position": "absolute",
+              "right": 15,
+              "background": "white",
+              "color": "black",
+              "fontFamily": theme.typography.fontFamily,
+              "fontSize": 18,
+              "fontWeight": "bold",
+              "px": 5,
+              "py": 1.5,
+              "borderRadius": "70px",
+              "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
+              "textTransform": "none",
+              "&:hover": { background: "#d9d2c5" },
+            }}
+          >
+            Go to Dashboard
+          </Button>
+        : <Button
+            onClick={() => setLoginOpen(true)}
+            sx={{
+              "position": "absolute",
+              "right": 40,
+              "background": "white",
+              "color": "black",
+              "fontFamily": theme.typography.fontFamily,
+              "fontSize": 18,
+              "fontWeight": "bold",
+              "px": 5,
+              "py": 1.5,
+              "borderRadius": "70px",
+              "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
+              "textTransform": "none",
+              "&:hover": { background: "#d9d2c5" },
+            }}
+          >
+            {t("heroSection.login")}
+          </Button>
+        }
       </Box>
 
       {/* Animated Main Content Area */}

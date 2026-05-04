@@ -121,18 +121,25 @@ export default function Sidebar() {
         }}
       >
         <Box
-          component="img"
-          src={"/hanover_logo.png"}
-          alt="Hanover Logo"
-          sx={{
-            width: "140px",
-            mx: "auto",
-            my: 1,
-            display: isOpen ? "block" : "none",
-            imageRendering: "crisp-edges",
-            filter: "brightness(0) invert(1)",
-          }}
-        />
+          component={Link}
+          to="/"
+          sx={{ display: isOpen ? "block" : "none" }}
+        >
+          <Box
+            component="img"
+            src={"/hanover_logo.png"}
+            alt="Hanover Logo"
+            sx={{
+              width: "140px",
+              mx: "auto",
+              my: 1,
+              display: isOpen ? "block" : "none",
+              imageRendering: "crisp-edges",
+              filter: "brightness(0) invert(1)",
+            }}
+          />
+        </Box>
+
         <IconButton
           onClick={() => setIsOpen(!isOpen)}
           sx={{ color: "rgba(255,255,255,0.75)" }}
@@ -410,13 +417,6 @@ export default function Sidebar() {
           onClick={handleClose}
         >
           My Account
-        </MenuItem>
-        <MenuItem
-          component={Link}
-          to="/settings"
-          onClick={handleClose}
-        >
-          Settings
         </MenuItem>
         <MenuItem
           onClick={() => {
