@@ -22,6 +22,7 @@ import { getPositionLabel } from "../../utils/positionDisplay.ts";
 import { EmployeeRecordSchema, type Department } from "../../types/employee.ts";
 import { API_ENDPOINTS } from "../../config.ts";
 import { useProfile } from "../../profile/ProfileContext.tsx";
+import { useNotificationFilterToggle } from "../../features/notifications/components/NotificationsSettingsToggle.tsx";
 
 function Profile() {
   const today = new Date();
@@ -62,6 +63,10 @@ function Profile() {
     setAvatarError(null);
     setAvatarPopUpOpen(true);
   };
+
+  const { hideEdits, toggleHideEdits } = useNotificationFilterToggle();
+  const { hideExpiration, toggleHideExpiration } =
+    useNotificationFilterToggle();
 
   const handleSaveAvatar = async () => {
     if (!file) return;
@@ -132,7 +137,7 @@ function Profile() {
             justifyContent: "space-between",
             alignItems: "center",
             height: 80,
-            mt: 6,
+            mt: 4,
             borderRadius: 4,
             backgroundColor: "rgba(255, 255, 255, 0.12)",
             backdropFilter: "blur(8px)",
@@ -196,7 +201,7 @@ function Profile() {
               flexDirection: "column",
               gap: 2,
               p: 3,
-              minHeight: "79vh",
+              minHeight: "81vh",
             }}
           >
             {/*Profile Tag Bar*/}
@@ -239,7 +244,7 @@ function Profile() {
 
                 <Stack
                   direction="row"
-                  gap={20}
+                  gap={16}
                   sx={{ width: "100%", justifyContent: "space-evenly", pl: 3 }}
                 >
                   <Box sx={{ textAlign: "center" }}>
@@ -294,7 +299,7 @@ function Profile() {
             </Box>
 
             <Stack
-              direction={"row"}
+              direction="row"
               gap={2}
               sx={{
                 justifyContent: "space-evenly",
@@ -306,7 +311,7 @@ function Profile() {
                 className="notification-settings"
                 sx={{
                   display: "flex",
-                  width: "40%",
+                  width: "65%",
                   height: 200,
                   ...cardSx,
                 }}
@@ -336,11 +341,11 @@ function Profile() {
                         fontSize: 20,
                       }}
                     >
-                      Document Expiration Alerts
+                      Hide Document Expiration Alerts
                     </Typography>
                     <Switch
-                      checked={toggle1}
-                      onChange={handleToggle1}
+                      checked={hideExpiration}
+                      onChange={(e) => toggleHideExpiration()}
                       slotProps={{ input: { "aria-label": "controlled" } }}
                     />
                   </Box>
@@ -354,7 +359,7 @@ function Profile() {
                       mt: -0.75,
                     }}
                   >
-                    Notify me when a document I own is expiring
+                    Hide expiration notifications of documents I own
                   </Typography>
 
                   <Box
@@ -371,11 +376,11 @@ function Profile() {
                         fontSize: 20,
                       }}
                     >
-                      Document Update Alerts
+                      Hide Document Edit Alerts
                     </Typography>
                     <Switch
-                      checked={toggle2}
-                      onChange={handleToggle2}
+                      checked={hideEdits}
+                      onChange={(e) => toggleHideEdits()}
                       slotProps={{ input: { "aria-label": "controlled" } }}
                     />
                   </Box>
@@ -389,7 +394,7 @@ function Profile() {
                       mt: -0.75,
                     }}
                   >
-                    Notify me when a document I own is edited
+                    Hide edit notifications for documents I own
                   </Typography>
                 </Stack>
               </Box>
@@ -398,7 +403,7 @@ function Profile() {
               <Box
                 sx={{
                   display: "flex",
-                  width: "30%",
+                  width: "35%",
                   height: 200,
                   ...cardSx,
                 }}
@@ -449,13 +454,21 @@ function Profile() {
                   </Typography>
                 </Stack>
               </Box>
-
+            </Stack>
+            <Stack
+              direction="row"
+              gap={2}
+              sx={{
+                justifyContent: "space-evenly",
+                alignItems: "center",
+              }}
+            >
               {/*'Security Card*/}
               <Box
                 className="security-settings"
                 sx={{
                   display: "flex",
-                  width: "30%",
+                  width: "50%",
                   height: 200,
                   ...cardSx,
                 }}
@@ -472,23 +485,48 @@ function Profile() {
                     Security
                   </Typography>
 
-                  <Button
-                    variant="contained"
-                    sx={{ mt: 2, alignSelf: "center" }}
-                  >
-                    Change Password
-                  </Button>
-
-                  <Typography
-                    variant="caption"
-                    color="text.primary"
+                  <Box
                     sx={{
-                      pl: 2,
-                      fontSize: 14,
-                      mt: 5,
+                      display: "flex",
+                      alignItems: "center",
+                      flexDirection: "row",
+                      gap: 10,
                     }}
                   >
-                    Password last changed 4/2/2025
+                    <Typography
+                      sx={{
+                        pl: 2,
+                        fontSize: 18,
+                      }}
+                    >
+                      Password last changed 4/2/2025
+                    </Typography>
+
+                    <Button variant="contained">Change Password</Button>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {/*Preferences Card*/}
+              <Box
+                className="preference-settings"
+                sx={{
+                  display: "flex",
+                  width: "50%",
+                  height: 200,
+                  ...cardSx,
+                }}
+              >
+                <Stack sx={{ width: "100%" }}>
+                  <Typography
+                    sx={{
+                      fontSize: 32,
+                      pl: 1.6,
+                      pt: 0.3,
+                      pb: 0.4,
+                    }}
+                  >
+                    Preferences
                   </Typography>
                 </Stack>
               </Box>

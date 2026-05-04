@@ -9,6 +9,8 @@ import {
   buildAvatarPath,
   getAvatarBucketName,
 } from "../../lib/avatar-storage.ts";
+import { hashPassword, verifyPassword } from "../../lib/password.ts";
+import { ChangePasswordSchema } from "./schema.ts";
 
 const router = express.Router();
 const upload = multer({
@@ -129,6 +131,62 @@ router.put("/avatar", upload.single("avatar"), async (req, res) => {
     return sendInternalError(
       res,
       `Failed to update avatar for ${auth.employeeUuid}`,
+      e,
+    );
+  }
+});
+
+router.put("/change-password", async (req, res) => {
+  const auth = getAuth(req);
+  const body = ChangePasswordSchema.safeParse(req.body);
+
+  if (!body.success) {
+    logger.verbose(
+      `Failed to parse change password request body:\n${body.error.issues}`,
+    );
+    return res.status(400).json({ message: body.error.issues });
+  }
+
+  try {
+    logger.verbose(
+      `Querying Account table while changing password for employee ${auth.employeeUuid}`,
+    );
+
+    const account = await prisma.account.findUnique({
+      where: { employeeUuid: auth.employeeUuid },
+      select: {
+        username: true,
+        password: true,
+      },
+    });
+
+    if (!account) {
+      logger.warn(
+        `Failed to find account while changing password for employee ${auth.employeeUuid}`,
+      );
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    if (!verifyPassword(body.data.currentPassword, account.password)) {
+      logger.warn(
+        `Rejected password change request with invalid current password for username ${account.username}`,
+      );
+      return res.status(401).json({ message: "Invalid current password" });
+    }
+
+    await prisma.account.update({
+      where: { username: account.username },
+      data: {
+        password: hashPassword(body.data.newPassword),
+      },
+    });
+
+    logger.info(`Changed password for username ${account.username}`);
+    return res.status(200).json({ message: "Password changed successfully" });
+  } catch (e) {
+    return sendInternalError(
+      res,
+      `Failed to change password for employee ${auth.employeeUuid}`,
       e,
     );
   }

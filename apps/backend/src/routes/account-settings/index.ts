@@ -26,6 +26,9 @@ router.get("/", async (req, res) => {
     }
 
     const settings = await prisma.accountSettings.findUnique({
+      omit: {
+        accountUsername: true,
+      },
       where: { accountUsername: account.username },
     });
     const normalizedSettings = normalizeAccountSettings(settings);

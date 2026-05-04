@@ -1013,6 +1013,8 @@ export default function ContentManagement({
               : ""
             }
             editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
+            createdAt={params.row.createdAt}
+            expirationTime={params.row.expirationTime}
           />
         </Box>
       ),
@@ -1288,53 +1290,61 @@ export default function ContentManagement({
               overflow: "hidden",
             }}
           >
-            <Stack
-              direction="row"
-              alignItems="flex-start"
-              justifyContent="space-between"
-            >
-              <Box>
-                <Typography
-                  variant="h2"
-                  sx={{ color: "white", mb: 0.5 }}
-                >
-                  Content Management
-                </Typography>
-                <Typography
-                  sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
-                >
-                  Create, edit, and organize your digital assets and site
-                  content in one collaborative workspace.
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  mt: 0.5,
-                  zIndex: 10,
-                }}
-              >
-                <HelpPopup
-                  description="The employee management page allows admins to add, manage, and delete any employee within iBank's database."
-                  infoOrHelp={true}
-                />
-              </Box>
-            </Stack>
             <Box
               sx={{
-                background: "transparent",
                 display: "flex",
-                alignItems: "center",
                 justifyContent: "space-between",
-                gap: 2,
-                pt: 2,
-                flexWrap: "wrap",
-                position: "relative",
-                zIndex: 1000,
+                alignItems: "center",
+                py: 1,
+                mb: 2,
+                mt: -1,
+                borderRadius: 4,
+                backgroundColor: "rgba(255, 255, 255, 0.12)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
+                borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
+                px: 3,
               }}
-            ></Box>
+            >
+              <Stack
+                direction="row"
+                alignItems="flex-start"
+                justifyContent="space-between"
+                width="100%"
+              >
+                <Box>
+                  <Typography
+                    variant="h2"
+                    sx={{ color: "white", mb: 0.5 }}
+                  >
+                    Content Management
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color: "rgba(255,255,255,0.65)",
+                      fontSize: "0.95rem",
+                    }}
+                  >
+                    Create, edit, and organize your digital assets and site
+                    content in one collaborative workspace.
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    mt: 0.5,
+                    zIndex: 10,
+                  }}
+                >
+                  <HelpPopup
+                    description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
+                    infoOrHelp={true}
+                  />
+                </Box>
+              </Stack>
+            </Box>
           </Box>
           {[...Array(3)].map((_, i) => (
             <Box
@@ -1347,6 +1357,7 @@ export default function ContentManagement({
                 height: 120 + i * 80,
                 top: -40 - i * 30,
                 right: -40 - i * 30,
+                pointerEvents: "none",
               }}
             />
           ))}
@@ -1665,16 +1676,14 @@ export default function ContentManagement({
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Tooltip
                 title={
-                  viewMode === "accordion" ?
-                    "Switch to Tabs view"
-                  : "Switch to Accordion view"
+                  viewMode === "tabs" ?
+                    "Switch to Accordion view"
+                  : "Switch to Tabs view"
                 }
               >
                 <IconButton
                   onClick={() =>
-                    setViewMode((m) =>
-                      m === "accordion" ? "tabs" : "accordion",
-                    )
+                    setViewMode((m) => (m === "tabs" ? "accordion" : "tabs"))
                   }
                   size="small"
                   sx={{
@@ -1693,14 +1702,12 @@ export default function ContentManagement({
                   : <TableRowsIcon fontSize="small" />}
                 </IconButton>
               </Tooltip>
-              <HelpPopup
-                description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
-                infoOrHelp={true}
-              />
               {isSystemAdmin && (
                 <TagManagerPopup
                   availableTags={availableTags}
                   onTagsChanged={async () => {
+                    markContentListStale();
+                    await contentListQuery.refresh();
                     return (await contentTagsQuery.refresh()) ?? [];
                   }}
                 />
@@ -1774,7 +1781,8 @@ export default function ContentManagement({
               border: "1px solid",
               borderColor: "divider",
               borderRadius: "8px",
-              overflow: "hidden",
+              height: "calc(100vh - 200px)",
+              overflowY: "auto",
             }}
           >
             <Box

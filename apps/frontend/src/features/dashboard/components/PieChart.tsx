@@ -13,6 +13,7 @@ interface PieProps {
 export default function BasicPie({ data }: PieProps) {
   return (
     <PieChart
+      highlightedItem={null}
       series={[
         {
           innerRadius: 60,
