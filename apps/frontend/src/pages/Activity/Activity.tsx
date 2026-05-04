@@ -156,57 +156,39 @@ function Activity() {
           overflow: "hidden",
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            py: 1,
-            mb: 0.5,
-            mt: -1,
-            borderRadius: 4,
-            backgroundColor: "rgba(255, 255, 255, 0.12)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255, 255, 255, 0.25)",
-            borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
-            px: 3,
-          }}
+        <Stack
+          direction="row"
+          alignItems="flex-start"
+          justifyContent="space-between"
         >
-          <Stack
-            direction="row"
-            alignItems="flex-start"
-            justifyContent="space-between"
-            width="100%"
-          >
-            <Box>
-              <Typography
-                variant="h2"
-                sx={{ color: "white", mb: 0.5 }}
-              >
-                Recent Activity
-              </Typography>
-              <Typography
-                sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
-              >
-                Track historical changes and pending approvals in real-time.
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                mt: 0.5,
-                zIndex: 10,
-              }}
+          <Box>
+            <Typography
+              variant="h2"
+              sx={{ color: "white", mb: 0.5 }}
             >
-              <HelpPopup
-                description="The Activity page shows a log of recent actions taken across the platform, including content views and updates."
-                infoOrHelp={true}
-              />
-            </Box>
-          </Stack>
-        </Box>
+              Recent Activity
+            </Typography>
+            <Typography
+              sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
+            >
+              Track historical changes and pending approvals in real-time.
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              mt: 0.5,
+              zIndex: 10,
+            }}
+          >
+            <HelpPopup
+              description="The Activity page shows a log of recent actions taken across the platform, including content views and updates."
+              infoOrHelp={true}
+            />
+          </Box>
+        </Stack>
         <Box
           sx={{
             background: "transparent",
