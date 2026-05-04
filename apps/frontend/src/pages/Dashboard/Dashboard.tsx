@@ -852,7 +852,19 @@ export default function Dashboard() {
         ))}
       </StyledToolbar>
 
-      <Card sx={{ borderRadius: 2, mx: "32px" }}>
+      <Card
+        sx={{
+          "borderRadius": 2,
+          "mx": "32px",
+          "height": "calc(100vh - 150px)",
+          "overflowY": "auto",
+          "scrollbarWidth": "none", // Hides scrollbar for Firefox
+          "&::-webkit-scrollbar": {
+            display: "none", // Hides scrollbar for Chrome, Safari, and Edge
+          },
+          "-ms-overflow-style": "none", // Hides scrollbar for IE/Edge
+        }}
+      >
         <CardContent
           sx={{
             p: 3,
