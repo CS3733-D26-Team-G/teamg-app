@@ -7,6 +7,7 @@ import {
   TimelineDot,
 } from "@mui/lab";
 import { Avatar, Box, Typography, Link, Chip } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import { type ActivityItem } from "./activityData";
 import EditIcon from "@mui/icons-material/Edit";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
@@ -153,10 +154,6 @@ function isCheckoutAction(action: string): boolean {
   return normalized === "check_out_content";
 }
 
-interface ActivityTimelineItemProps extends ActivityItem {
-  onPreview?: (resourceUuid: string, resourceName: string) => void;
-}
-
 export default function ActivityTimelineItem({
   time,
   user,
@@ -164,8 +161,8 @@ export default function ActivityTimelineItem({
   resourceName,
   resourceUuid,
   avatar_url,
-  onPreview,
-}: ActivityTimelineItemProps) {
+}: ActivityItem) {
+  const navigate = useNavigate();
   const { label, dotColor, chipColor, icon } = getActionConfig(action);
   const isCheckout = isCheckoutAction(action);
   const canPreview = isCheckout && !!resourceUuid && !!resourceName;
@@ -233,7 +230,9 @@ export default function ActivityTimelineItem({
                     underline="hover"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onPreview?.(resourceUuid!, resourceName);
+                      navigate(
+                        `/library?filter=${encodeURIComponent(resourceName)}`,
+                      );
                     }}
                     sx={{
                       fontWeight: 600,

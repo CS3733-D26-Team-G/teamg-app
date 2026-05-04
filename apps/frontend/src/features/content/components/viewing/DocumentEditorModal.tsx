@@ -35,6 +35,7 @@ import {
   Typography,
   IconButton,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import SaveIcon from "@mui/icons-material/Save";
 import CloseIcon from "@mui/icons-material/Close";
@@ -120,6 +121,7 @@ export default function DocumentEditorModal({
   const pendingLoadRef = useRef<(() => void) | null>(null);
   const hasInitializedRef = useRef(false);
   const currentExtRef = useRef<string>("");
+  const isSavingRef = useRef(false);
 
   /**
    * Tracks the URI of the last successfully loaded document.
@@ -265,10 +267,11 @@ export default function DocumentEditorModal({
   // ─── Save handler ─────────────────────────────────────────────────────────
 
   const handleSave = async () => {
-    if (saving) return;
+    if (isSavingRef.current) return;
     const instance = instanceRef.current;
     if (!instance) return;
 
+    isSavingRef.current = true;
     setSaving(true);
     try {
       const { annotationManager, documentViewer } = instance.Core;
@@ -316,6 +319,7 @@ export default function DocumentEditorModal({
     } catch (error) {
       console.error("Document save failed:", error);
     } finally {
+      isSavingRef.current = false;
       setSaving(false);
     }
   };
@@ -395,15 +399,22 @@ export default function DocumentEditorModal({
             )}
 
             {!readOnly && (
-              <Tooltip title="Save">
-                <IconButton
-                  onClick={() => void handleSave()}
-                  size="small"
-                  color="primary"
-                  disabled={saving}
-                >
-                  <SaveIcon />
-                </IconButton>
+              <Tooltip title={saving ? "Saving..." : "Save"}>
+                <span>
+                  <IconButton
+                    onClick={() => void handleSave()}
+                    size="small"
+                    color="primary"
+                    disabled={saving}
+                  >
+                    {saving ?
+                      <CircularProgress
+                        size={20}
+                        color="primary"
+                      />
+                    : <SaveIcon />}
+                  </IconButton>
+                </span>
               </Tooltip>
             )}
 
