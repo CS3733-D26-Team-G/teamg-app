@@ -84,7 +84,6 @@ export default function ActivityTimeline({ data }: ActivityTimelineProps) {
                 <ActivityTimelineItem
                   key={item.id}
                   {...item}
-                  onPreview={(uuid, name) => void handlePreview(uuid, name)}
                 />
               ))}
             </Fragment>
