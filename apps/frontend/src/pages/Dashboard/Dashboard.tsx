@@ -631,56 +631,58 @@ export default function Dashboard() {
         </Box>
       ),
     },
-    ...roleConfig.map(({ id, label, key }) => ({
-      id,
-      size: "small" as FlexSize,
-      adminOnly: true,
-      label: `${label} Count`,
-      description: `Content count for ${label}s`,
-      node: (
-        <Card
-          sx={cardSx}
-          elevation={0}
-        >
-          <CardContent sx={{ "p": 2, "&:last-child": { pb: 2 } }}>
-            <Typography
-              sx={{
-                fontSize: "0.72rem",
-                color: "text.secondary",
-                fontWeight: 500,
-                mb: 0.25,
-              }}
-            >
-              {label}
-            </Typography>
-            <Typography
-              sx={{
-                fontWeight: 800,
-                fontSize: "1.7rem",
-                lineHeight: 1.1,
-                mt: 1,
-              }}
-            >
-              {analytics[key] ?? 0}
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: "0.68rem",
-                color: "primary.main",
-                fontWeight: 600,
-                mt: 0.5,
-              }}
-            >
-              Total Items
-              <HelpPopup
-                description={`Total content accessible by ${label}s`}
-                infoOrHelp={false}
-              />
-            </Typography>
-          </CardContent>
-        </Card>
-      ),
-    })),
+    ...roleConfig.map(
+      ({ id, label, key }): CardDef => ({
+        id,
+        size: "small" as FlexSize,
+        adminOnly: true,
+        label: `${label} Count`,
+        description: `Content count for ${label}s`,
+        node: (
+          <Card
+            sx={cardSx}
+            elevation={0}
+          >
+            <CardContent sx={{ "p": 2, "&:last-child": { pb: 2 } }}>
+              <Typography
+                sx={{
+                  fontSize: "0.72rem",
+                  color: "text.secondary",
+                  fontWeight: 500,
+                  mb: 0.25,
+                }}
+              >
+                {label}
+              </Typography>
+              <Typography
+                sx={{
+                  fontWeight: 800,
+                  fontSize: "1.7rem",
+                  lineHeight: 1.1,
+                  mt: 1,
+                }}
+              >
+                {analytics[key as string] ?? 0}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: "0.68rem",
+                  color: "primary.main",
+                  fontWeight: 600,
+                  mt: 0.5,
+                }}
+              >
+                Total Items
+                <HelpPopup
+                  description={`Total content accessible by ${label}s`}
+                  infoOrHelp={false}
+                />
+              </Typography>
+            </CardContent>
+          </Card>
+        ),
+      }),
+    ),
     {
       id: "employee-activity",
       size: "large",
