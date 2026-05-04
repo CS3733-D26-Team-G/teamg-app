@@ -17,27 +17,60 @@ type Props = {
   position?: string;
 };
 
+let cachedUserData: PopularItem[] | null = null;
+let cachedRoleData: PopularItem[] | null = null;
+
 export default function PopularContent({ position }: Props) {
   const { session } = useAuth();
   const navigate = useNavigate();
 
-  const [userData, setUserData] = useState<PopularItem[]>([]);
-  const [roleData, setRoleData] = useState<PopularItem[]>([]);
+  const [isLoading, setIsLoading] = useState(
+    cachedUserData === null || cachedRoleData === null,
+  );
+  const [userData, setUserData] = useState<PopularItem[]>(cachedUserData ?? []);
+  const [roleData, setRoleData] = useState<PopularItem[]>(cachedRoleData ?? []);
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.STATS.CONTENT_HITS_TOP_USER, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then(setUserData)
-      .catch(console.error);
+    let isMounted = true;
 
-    fetch(API_ENDPOINTS.STATS.CONTENT_HITS_TOP_POSITION, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then(setRoleData)
-      .catch(console.error);
+    async function loadPopularContent() {
+      try {
+        setIsLoading(true);
+
+        const [userRes, roleRes] = await Promise.all([
+          fetch(API_ENDPOINTS.STATS.CONTENT_HITS_TOP_USER, {
+            credentials: "include",
+          }),
+          fetch(API_ENDPOINTS.STATS.CONTENT_HITS_TOP_POSITION, {
+            credentials: "include",
+          }),
+        ]);
+
+        const [userHits, roleHits] = await Promise.all([
+          userRes.json(),
+          roleRes.json(),
+        ]);
+
+        if (!isMounted) return;
+
+        cachedUserData = userHits;
+        cachedRoleData = roleHits;
+        setUserData(userHits);
+        setRoleData(roleHits);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadPopularContent();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const viewContent = (item: PopularItem) => {
@@ -62,14 +95,9 @@ export default function PopularContent({ position }: Props) {
         >
           My Frequently Used
         </Typography>
-        {userData.length === 0 ?
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            No data yet.
-          </Typography>
-        : userData.map((item) => (
+
+        {userData.length > 0 ?
+          userData.map((item) => (
             <Tooltip
               key={item.contentUuid}
               title="View content"
@@ -103,6 +131,12 @@ export default function PopularContent({ position }: Props) {
               </Box>
             </Tooltip>
           ))
+        : <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            {isLoading ? "Loading..." : "No data yet."}
+          </Typography>
         }
       </Box>
 
@@ -113,14 +147,9 @@ export default function PopularContent({ position }: Props) {
         >
           Popular for {position ? getPositionLabel(position as any) : ""}
         </Typography>
-        {roleData.length === 0 ?
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            No data yet.
-          </Typography>
-        : roleData.map((item) => (
+
+        {roleData.length > 0 ?
+          roleData.map((item) => (
             <Tooltip
               key={item.contentUuid}
               title="View content"
@@ -154,6 +183,12 @@ export default function PopularContent({ position }: Props) {
               </Box>
             </Tooltip>
           ))
+        : <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            {isLoading ? "Loading..." : "No data yet."}
+          </Typography>
         }
       </Box>
     </Stack>
