@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState } from "react";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
 import NotificationBarComponent from "./NotificationBar";
 
@@ -7,21 +7,18 @@ import {
   IconButton,
   Badge,
   Popover,
-  List,
-  ListItem,
   Typography,
   Chip,
-  CircularProgress,
   Button,
-  Card,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
-import { useDashboardBootstrap } from "../../dashboard/useDashboardBootstrap.ts";
 import { useContentInfo } from "./NotificationBar";
+import { useNotificationFilterToggle } from "./NotificationsSettingsToggle.tsx";
+import React from "react";
 
-// Custom hook to get total alerts count for the bell
-function useTotalAlerts() {
+// Custom hook to get filtered total alerts count
+function useFilteredTotalAlerts() {
   const {
     visibleCriticalContent,
     visibleExpiringContent,
@@ -30,20 +27,31 @@ function useTotalAlerts() {
     visibleClaimActions,
   } = useContentInfo();
 
-  const total = useMemo(() => {
-    return (
-      visibleCriticalContent.length +
-      visibleExpiringContent.length +
-      visibleOwnershipChanges.length +
-      visibleContentEdits.length +
-      visibleClaimActions.length
-    );
+  const { hideEdits } = useNotificationFilterToggle();
+  const { hideExpiration } = useNotificationFilterToggle();
+
+  const total = React.useMemo(() => {
+    let total = 0;
+    total += visibleClaimActions.length;
+
+    if (!hideExpiration) {
+      total += visibleExpiringContent.length;
+      total += visibleCriticalContent.length;
+    }
+
+    if (!hideEdits) {
+      total += visibleContentEdits.length;
+      total += visibleOwnershipChanges.length;
+    }
+
+    return total;
   }, [
     visibleCriticalContent.length,
     visibleExpiringContent.length,
     visibleOwnershipChanges.length,
     visibleContentEdits.length,
     visibleClaimActions.length,
+    hideEdits,
   ]);
 
   return total;
@@ -51,7 +59,7 @@ function useTotalAlerts() {
 
 export default function NotificationBell() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const totalAlertsCount = useTotalAlerts();
+  const totalAlertsCount = useFilteredTotalAlerts();
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -106,7 +114,7 @@ export default function NotificationBell() {
           },
         }}
       >
-        <NotificationBarComponent showFilters={false} />
+        <NotificationBarComponent />
       </Popover>
     </>
   );

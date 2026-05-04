@@ -45,6 +45,7 @@ import DocPreviewer from "../../features/content/components/viewing/DocPreviewer
 import VersionHistoryPanel from "../../features/content/components/viewing/VersionHistoryPanel.tsx";
 import { useSidebar } from "../../components/SidebarContext.tsx";
 import { Icon } from "lucide-react";
+import { NotificationFilterProvider } from "../../features/notifications/components/NotificationsSettingsToggle.tsx";
 
 export function getEventColor(expirationTime: string | null): string {
   if (!expirationTime) return "#06d606";
