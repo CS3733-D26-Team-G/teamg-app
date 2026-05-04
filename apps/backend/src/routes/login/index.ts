@@ -111,7 +111,6 @@ router.post("/", async (req, res) => {
       `Queried Employee table for record ${account.employeeUuid} during login: record found`,
     );
 
-    // Creates a row in the database Activity table for the login action
     await prisma.activity.create({
       data: {
         employeeUuid: employee.uuid,

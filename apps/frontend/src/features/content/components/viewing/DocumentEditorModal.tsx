@@ -235,6 +235,8 @@ export default function DocumentEditorModal({
           setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
         };
 
+        // The modal can receive a document before Apryse finishes booting.
+        // Store one pending load instead of racing the viewer initialization.
         if (instanceRef.current) {
           doLoad();
         } else {

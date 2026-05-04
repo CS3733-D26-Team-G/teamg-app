@@ -36,7 +36,7 @@ export function getClaimVisibilityWhere(
     return {};
   }
 
-  // Underwriters see all PENDING claims so they can perform risk review
+  // Underwriters see all claims because risk review and approval share this API.
   if (auth.position === "UNDERWRITER") {
     return {};
   }

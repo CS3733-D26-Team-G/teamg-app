@@ -113,6 +113,8 @@ router.get("/search", async (req, res) => {
   }
 
   try {
+    // Prisma cannot express this full-text + trigram ranking cleanly, so this
+    // query builds a temporary search document and re-applies authorization below.
     const candidates = await prisma.$queryRaw<SearchCandidate[]>`
       WITH search_store AS (
         SELECT
@@ -450,6 +452,8 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     return res.status(400).json({ message: validatedUrl.message });
   }
 
+  // When editing unchanged uploaded content, the form sends the existing signed
+  // URL back. Treat that as "keep current file" because the URL itself expires.
   const isExistingUploadedFileUrl =
     !req.file &&
     !!validatedUrl.normalizedUrl &&
@@ -476,8 +480,9 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const validatedTagUuids = await validateTagUuids(tagUuids);
-  if (!validatedTagUuids.ok) {
+  const validatedTagUuids =
+    tagUuids ? await validateTagUuids(tagUuids) : undefined;
+  if (validatedTagUuids && !validatedTagUuids.ok) {
     logger.warn(
       `Rejected Content edit request for record ${uuid} with invalid tag UUIDs: ${validatedTagUuids.missingTagUuids.join(", ")}`,
     );
@@ -545,17 +550,19 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
         data,
       });
 
-      await tx.contentTagAssignment.deleteMany({
-        where: { contentUuid: uuid },
-      });
-
-      if (validatedTagUuids.tagUuids.length > 0) {
-        await tx.contentTagAssignment.createMany({
-          data: validatedTagUuids.tagUuids.map((tagUuid) => ({
-            contentUuid: uuid,
-            tagUuid,
-          })),
+      if (validatedTagUuids) {
+        await tx.contentTagAssignment.deleteMany({
+          where: { contentUuid: uuid },
         });
+
+        if (validatedTagUuids.tagUuids.length > 0) {
+          await tx.contentTagAssignment.createMany({
+            data: validatedTagUuids.tagUuids.map((tagUuid) => ({
+              contentUuid: uuid,
+              tagUuid,
+            })),
+          });
+        }
       }
 
       await tx.activity.create({
@@ -605,6 +612,8 @@ router.put("/edit/:uuid", upload.single("file"), async (req, res) => {
       previousSupabasePath !== updatedContent.supabasePath;
 
     if (shouldDeleteOldSupabaseObject) {
+      // Delete after the DB commit so a storage failure cannot orphan the
+      // content row without a usable URL.
       const deleteResult = await supabase.storage
         .from(STORAGE_BUCKET)
         .remove([previousSupabasePath]);

@@ -199,7 +199,7 @@ export default function ContentForm({
     body.append("contentType", formData.contentType);
     body.append("status", formData.status);
 
-    selectedTagUuids.forEach((uuid) => body.append("tagUuids", uuid));
+    body.append("tagUuids", JSON.stringify(selectedTagUuids));
 
     if (sourceType === "file") {
       if (file) body.append("file", file);

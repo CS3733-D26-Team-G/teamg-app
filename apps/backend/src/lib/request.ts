@@ -7,6 +7,8 @@ export const AUTH_COOKIE_NAME = "token";
 export const authCookieOptions = {
   httpOnly: true,
   secure: isProd,
+  // Production frontend/backend are cross-site Vercel deployments, so the JWT
+  // cookie must opt into third-party delivery there while local dev stays lax.
   sameSite: isProd ? ("none" as const) : ("lax" as const),
   path: "/",
 };
