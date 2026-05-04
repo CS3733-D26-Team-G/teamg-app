@@ -14,6 +14,7 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import type { Position as PositionType } from "@repo/db";
+import { useAuth } from "../../../auth/AuthContext";
 import { getPositionLabel } from "../../../utils/positionDisplay";
 import { useDashboardBootstrapQuery } from "../../../lib/activity-loaders";
 
@@ -64,9 +65,13 @@ export default function AdminCards() {
   const [employeeTypeTouched, setEmployeeTypeTouched] = useState(false);
   const [employeeTouched, setEmployeeTouched] = useState(false);
 
+  const { session } = useAuth();
+  const isAdmin = session?.position === "ADMIN";
+
   const { data } = useDashboardBootstrapQuery({
-    position: employeeType || undefined,
-    employeeUuid: employeeUuid || undefined,
+    position: isAdmin ? employeeType || undefined : undefined,
+    employeeUuid: isAdmin ? employeeUuid || undefined : session?.employeeUuid,
+    isAdmin,
   });
 
   const employees: EmployeeOption[] =
@@ -117,122 +122,124 @@ export default function AdminCards() {
             variant="h6"
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
-            Employee Activity
+            {isAdmin ? "Employee Activity" : "My Content Changes"}
           </Typography>
         }
       />
       <Divider />
       <CardContent className="p-4">
-        <Box className="mb-6 flex flex-wrap gap-4">
-          <FormControl
-            size="small"
-            sx={{
-              "minWidth": 220,
-              "& .MuiInputBase-root": { fontFamily: "inherit" },
-              "& .MuiInputLabel-root": { fontFamily: "inherit" },
-              "& .MuiMenuItem-root": { fontFamily: "inherit" },
-            }}
-          >
-            <InputLabel
-              id="employee-type-filter-label"
-              shrink={employeeTypeTouched}
-            >
-              Employee Type
-            </InputLabel>
-            <Select
-              labelId="employee-type-filter-label"
-              value={employeeType}
-              label="Employee Type"
-              displayEmpty
-              renderValue={(selected) => {
-                if (!employeeTypeTouched) {
-                  return "";
-                }
-
-                return selected ?
-                    getPositionLabel(selected as PositionType)
-                  : "All Employee Types";
-              }}
-              onChange={(event: SelectChangeEvent) => {
-                setEmployeeTypeTouched(true);
-                setEmployeeType(event.target.value);
-                setEmployeeUuid("");
-                setEmployeeTouched(false);
+        {isAdmin && (
+          <Box className="mb-6 flex flex-wrap gap-4">
+            <FormControl
+              size="small"
+              sx={{
+                "minWidth": 220,
+                "& .MuiInputBase-root": { fontFamily: "inherit" },
+                "& .MuiInputLabel-root": { fontFamily: "inherit" },
+                "& .MuiMenuItem-root": { fontFamily: "inherit" },
               }}
             >
-              <MenuItem value="">All Employee Types</MenuItem>
-              {POSITION_OPTIONS.map((position) => (
-                <MenuItem
-                  key={position}
-                  value={position}
-                >
-                  {getPositionLabel(position)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              <InputLabel
+                id="employee-type-filter-label"
+                shrink={employeeTypeTouched}
+              >
+                Employee Type
+              </InputLabel>
+              <Select
+                labelId="employee-type-filter-label"
+                value={employeeType}
+                label="Employee Type"
+                displayEmpty
+                renderValue={(selected) => {
+                  if (!employeeTypeTouched) {
+                    return "";
+                  }
 
-          <FormControl
-            size="small"
-            sx={{
-              "minWidth": 260,
-              "& .MuiInputBase-root": { fontFamily: "inherit" },
-              "& .MuiInputLabel-root": { fontFamily: "inherit" },
-              "& .MuiMenuItem-root": { fontFamily: "inherit" },
-            }}
-          >
-            <InputLabel
-              id="employee-filter-label"
-              shrink={employeeTouched}
-            >
-              Employee
-            </InputLabel>
-            <Select
-              labelId="employee-filter-label"
-              value={employeeUuid}
-              label="Employee"
-              displayEmpty
-              renderValue={(selected) => {
-                if (!employeeTouched) {
-                  return "";
-                }
+                  return selected ?
+                      getPositionLabel(selected as PositionType)
+                    : "All Employee Types";
+                }}
+                onChange={(event: SelectChangeEvent) => {
+                  setEmployeeTypeTouched(true);
+                  setEmployeeType(event.target.value);
+                  setEmployeeUuid("");
+                  setEmployeeTouched(false);
+                }}
+              >
+                <MenuItem value="">All Employee Types</MenuItem>
+                {POSITION_OPTIONS.map((position) => (
+                  <MenuItem
+                    key={position}
+                    value={position}
+                  >
+                    {getPositionLabel(position)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-                if (!selected) {
-                  return "All Employees";
-                }
-
-                const selectedEmployee = employees.find(
-                  (employee) => employee.uuid === selected,
-                );
-
-                return selectedEmployee ?
-                    `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
-                  : "All Employees";
+            <FormControl
+              size="small"
+              sx={{
+                "minWidth": 260,
+                "& .MuiInputBase-root": { fontFamily: "inherit" },
+                "& .MuiInputLabel-root": { fontFamily: "inherit" },
+                "& .MuiMenuItem-root": { fontFamily: "inherit" },
               }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    maxHeight: 8 * 48 + 8,
+            >
+              <InputLabel
+                id="employee-filter-label"
+                shrink={employeeTouched}
+              >
+                Employee
+              </InputLabel>
+              <Select
+                labelId="employee-filter-label"
+                value={employeeUuid}
+                label="Employee"
+                displayEmpty
+                renderValue={(selected) => {
+                  if (!employeeTouched) {
+                    return "";
+                  }
+
+                  if (!selected) {
+                    return "All Employees";
+                  }
+
+                  const selectedEmployee = employees.find(
+                    (employee) => employee.uuid === selected,
+                  );
+
+                  return selectedEmployee ?
+                      `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+                    : "All Employees";
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      maxHeight: 8 * 48 + 8,
+                    },
                   },
-                },
-              }}
-              onChange={(event: SelectChangeEvent) => {
-                setEmployeeTouched(true);
-                setEmployeeUuid(event.target.value);
-              }}
-            >
-              <MenuItem value="">All Employees</MenuItem>
-              {filteredEmployees.map((employee) => (
-                <MenuItem
-                  key={employee.uuid}
-                  value={employee.uuid}
-                >
-                  {employee.first_name} {employee.last_name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
+                }}
+                onChange={(event: SelectChangeEvent) => {
+                  setEmployeeTouched(true);
+                  setEmployeeUuid(event.target.value);
+                }}
+              >
+                <MenuItem value="">All Employees</MenuItem>
+                {filteredEmployees.map((employee) => (
+                  <MenuItem
+                    key={employee.uuid}
+                    value={employee.uuid}
+                  >
+                    {employee.first_name} {employee.last_name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        )}
 
         <BarChart
           dataset={chartData}

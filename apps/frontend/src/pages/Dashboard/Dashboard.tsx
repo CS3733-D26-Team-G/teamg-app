@@ -20,6 +20,7 @@ import HelpPopup from "../../components/HelpPopup";
 import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx";
 import AdminCards from "../../features/dashboard/components/AdminCards.tsx";
 import { useProfile } from "../../profile/ProfileContext.tsx";
+import { getPositionLabel } from "../../utils/positionDisplay";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
@@ -469,15 +470,15 @@ export default function Dashboard() {
             })}
           </div>
 
-          {session?.position === "ADMIN" && (
-            <div className="dashboard-activity-charts flex flex-row gap-8 items-start">
-              <AdminCards />
+          <div className="dashboard-activity-charts flex flex-row gap-8 items-start">
+            <AdminCards />
+            {session?.position === "ADMIN" && (
               <div className="flex w-[420px] min-w-[420px] flex-col gap-8">
                 {fileTypesCard}
                 {popularContentSearchCard}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="dashboard-charts-section flex flex-row gap-8 items-start">
             {session?.position !== "ADMIN" && (
@@ -497,7 +498,9 @@ export default function Dashboard() {
                     variant="h6"
                     sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
                   >
-                    Employee Edits By Day
+                    {session?.position === "ADMIN" ?
+                      "Employee Edits By Day"
+                    : `${getPositionLabel(session?.position)} Edits By Day`}
                     <HelpPopup
                       description="This graphic shows the fluctuation in content hits by role."
                       infoOrHelp={false}

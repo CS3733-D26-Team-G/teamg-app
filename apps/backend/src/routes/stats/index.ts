@@ -43,52 +43,56 @@ router.get(
   },
 );
 
-router.get(
-  "/activity/action-summary",
-  requireAdmin("dashboard activity summary"),
-  async (req, res) => {
-    const position = req.query.position as Position | undefined;
-    const employeeUuid = req.query.employeeUuid as string | undefined;
+router.get("/activity/action-summary", async (req, res) => {
+  const auth = getAuth(req);
+  const isAdmin = auth.position === "ADMIN";
 
-    try {
-      const employeeWhere: Prisma.EmployeeWhereInput = {
-        ...(position ? { position } : {}),
-        ...(employeeUuid ? { uuid: employeeUuid } : {}),
-      };
-      const hasEmployeeFilter = Object.keys(employeeWhere).length > 0;
+  const position =
+    isAdmin ? (req.query.position as Position | undefined) : undefined;
 
-      const activities = await prisma.activity.groupBy({
-        by: ["action"],
-        where: {
-          ...(hasEmployeeFilter ? { employee: employeeWhere } : {}),
-          action: {
-            in: ["EDIT_CONTENT", "CHECK_OUT_CONTENT", "DELETE_CONTENT"],
-          },
+  const employeeUuid =
+    isAdmin ?
+      (req.query.employeeUuid as string | undefined)
+    : auth.employeeUuid;
+
+  try {
+    const employeeWhere: Prisma.EmployeeWhereInput = {
+      ...(position ? { position } : {}),
+      ...(employeeUuid ? { uuid: employeeUuid } : {}),
+    };
+    const hasEmployeeFilter = Object.keys(employeeWhere).length > 0;
+
+    const activities = await prisma.activity.groupBy({
+      by: ["action"],
+      where: {
+        ...(hasEmployeeFilter ? { employee: employeeWhere } : {}),
+        action: {
+          in: ["EDIT_CONTENT", "CHECK_OUT_CONTENT", "DELETE_CONTENT"],
         },
-        _count: {
-          _all: true,
-        },
-      });
+      },
+      _count: {
+        _all: true,
+      },
+    });
 
-      const summary = {
-        edited:
-          activities.find((activity) => activity.action === "EDIT_CONTENT")
-            ?._count._all ?? 0,
-        checkedOut:
-          activities.find((activity) => activity.action === "CHECK_OUT_CONTENT")
-            ?._count._all ?? 0,
-        deleted:
-          activities.find((activity) => activity.action === "DELETE_CONTENT")
-            ?._count._all ?? 0,
-        previewed: 0,
-      };
+    const summary = {
+      edited:
+        activities.find((activity) => activity.action === "EDIT_CONTENT")
+          ?._count._all ?? 0,
+      checkedOut:
+        activities.find((activity) => activity.action === "CHECK_OUT_CONTENT")
+          ?._count._all ?? 0,
+      deleted:
+        activities.find((activity) => activity.action === "DELETE_CONTENT")
+          ?._count._all ?? 0,
+      previewed: 0,
+    };
 
-      return res.status(200).json(summary);
-    } catch (e) {
-      return sendInternalError(res, "Can't get summary", e);
-    }
-  },
-);
+    return res.status(200).json(summary);
+  } catch (e) {
+    return sendInternalError(res, "Can't get summary", e);
+  }
+});
 
 router.get("/content/count/position", async (req, res) => {
   const auth = getAuth(req);
