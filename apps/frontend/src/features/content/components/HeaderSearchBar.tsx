@@ -45,7 +45,7 @@ const SearchBar = ({
             }
           }}
           sx={{
-            backgroundColor: "white",
+            backgroundColor: "background.paper",
             borderRadius: "4px",
           }}
           slotProps={{

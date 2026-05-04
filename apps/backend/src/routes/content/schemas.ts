@@ -17,15 +17,45 @@ export const TagContentParamsSchema = z.object({
   contentUuid: z.uuid(),
 });
 
-export const TagUuidListSchema = z
-  .preprocess((value) => {
-    if (typeof value === "undefined") {
-      return [];
-    }
+function normalizeTagUuidListInput(
+  value: unknown,
+  missingValue: string[] | undefined,
+) {
+  if (typeof value === "undefined") {
+    return missingValue;
+  }
 
-    return Array.isArray(value) ? value : [value];
-  }, z.array(z.uuid()))
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    if (trimmedValue.startsWith("[") && trimmedValue.endsWith("]")) {
+      try {
+        const parsedValue: unknown = JSON.parse(trimmedValue);
+        if (Array.isArray(parsedValue)) {
+          return parsedValue;
+        }
+      } catch {
+        return value;
+      }
+    }
+  }
+
+  return Array.isArray(value) ? value : [value];
+}
+
+export const TagUuidListSchema = z
+  .preprocess(
+    (value) => normalizeTagUuidListInput(value, []),
+    z.array(z.uuid()),
+  )
   .transform((tagUuids) => Array.from(new Set(tagUuids)));
+
+export const OptionalTagUuidListSchema = z
+  .preprocess((value) => {
+    return normalizeTagUuidListInput(value, undefined);
+  }, z.array(z.uuid()).optional())
+  .transform((tagUuids) =>
+    tagUuids ? Array.from(new Set(tagUuids)) : undefined,
+  );
 
 export const CreateContentSchema =
   Schemas.ContentCreateInputObjectZodSchema.extend({
@@ -40,7 +70,7 @@ export const UpdateContentSchema =
     .partial()
     .extend({
       url: z.string().optional(),
-      tagUuids: TagUuidListSchema,
+      tagUuids: OptionalTagUuidListSchema,
     });
 
 export const FavoriteContentSchema = z.object({

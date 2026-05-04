@@ -273,6 +273,7 @@ export default function ContentManagement({
     () => contentListQuery.data ?? [],
   );
   const [searchQuery, setSearchQuery] = useState("");
+  // null means no server search is active; [] means a search is loading or empty.
   const [searchRows, setSearchRows] = useState<ContentRow[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [lockMessage, setLockMessage] = useState<string | null>(null);
@@ -376,6 +377,8 @@ export default function ContentManagement({
       }
 
       const params = new URLSearchParams({ q: trimmedQuery });
+      // Search ranking happens on the backend, so selected filters are sent with
+      // the query instead of being layered on top of ranked results locally.
       positionFilters.forEach((position) =>
         params.append("position", position),
       );

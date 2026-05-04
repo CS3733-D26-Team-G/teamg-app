@@ -472,6 +472,8 @@ export default function TutorialOverlay() {
       measureTarget();
       rafRef.current = requestAnimationFrame(tick);
     };
+    // Tutorial targets move during route transitions and accordion animations,
+    // so the spotlight tracks layout every frame while the tour is active.
     rafRef.current = requestAnimationFrame(tick);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);

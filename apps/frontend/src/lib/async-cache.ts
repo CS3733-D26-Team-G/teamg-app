@@ -77,6 +77,8 @@ function getNormalizedOptions<T>(
 }
 
 function getScopeIdentity(scope: QueryScope) {
+  // User-scoped cache keys include the authenticated employee so persisted rows
+  // cannot bleed between accounts in the same browser session.
   return scope === "user" ? currentIdentity : "global";
 }
 
@@ -411,6 +413,7 @@ export function fetchCachedQuery<T>(
   }
 
   if (hasCachedValue(entry)) {
+    // Serve usable cached data immediately and refresh it in the background.
     void startFetch(entry, loader);
     return Promise.resolve(entry.data as T);
   }
@@ -501,6 +504,8 @@ export function setCacheIdentity(identity: string | null) {
   const previousIdentity = currentIdentity;
   currentIdentity = nextIdentity;
 
+  // Drop in-memory user-scoped entries immediately; their subscribers will
+  // rehydrate under the new identity on the next read.
   Array.from(cacheEntries.entries()).forEach(([key, entry]) => {
     if (entry.options.scope === "user") {
       clearGc(entry);

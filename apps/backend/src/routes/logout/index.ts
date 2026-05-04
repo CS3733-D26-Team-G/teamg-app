@@ -16,7 +16,6 @@ router.post("/", async (req, res) => {
   logger.verbose("Processing logout request: clearing authentication cookie");
 
   try {
-    // Creates a row in database Activity table for the logout
     await prisma.activity.create({
       data: {
         employeeUuid: auth.employeeUuid,

@@ -38,6 +38,8 @@ function normalizeProfile(
     return profile;
   }
 
+  // Avatar uploads reuse a stable Supabase object path, so bust the browser
+  // cache whenever the profile object is accepted into React state.
   return {
     ...profile,
     avatar: appendAvatarCacheBust(profile.avatar, Date.now().toString()),
