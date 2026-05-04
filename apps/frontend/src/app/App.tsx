@@ -21,6 +21,8 @@ function AppShell() {
   const isLoginPage = location.pathname === "/login";
   const isAboutPage = location.pathname === "/aboutus";
   const isCreditsPage = location.pathname === "/credits";
+  const isAppContentPage =
+    !isHeroPage && !isLoginPage && !isAboutPage && !isCreditsPage;
 
   // Derive role from session — same logic as Sidebar
   const getRole = (): UserRole => {
@@ -32,16 +34,16 @@ function AppShell() {
 
   // Fire the welcome tour once when the user first logs in
   useEffect(() => {
-    if (
-      session &&
-      !isHeroPage &&
-      !isLoginPage &&
-      !isAboutPage &&
-      !isCreditsPage
-    ) {
+    if (session && isAppContentPage && !session.settings.tutorialDone) {
       triggerWelcomeTour(getRole());
     }
-  }, [session, location.pathname]);
+  }, [
+    isAppContentPage,
+    location.pathname,
+    session,
+    session?.settings.tutorialDone,
+    triggerWelcomeTour,
+  ]);
 
   return (
     <div
@@ -52,11 +54,7 @@ function AppShell() {
           "linear-gradient(180deg, #1A1E4B 0%, #222847 35%, #263056 70%, #2c3a6a 100%)",
       }}
     >
-      {!isHeroPage &&
-        !isLoginPage &&
-        !isAboutPage &&
-        !isCreditsPage &&
-        session && <Sidebar />}
+      {isAppContentPage && session && <Sidebar />}
 
       <div
         style={{

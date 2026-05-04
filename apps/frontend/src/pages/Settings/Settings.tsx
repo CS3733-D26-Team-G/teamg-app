@@ -25,7 +25,7 @@ function Settings() {
   const handleRestartTour = () => {
     resetTours();
     setTimeout(() => {
-      triggerPrompt();
+      triggerPrompt(true);
     }, 100);
   };
 

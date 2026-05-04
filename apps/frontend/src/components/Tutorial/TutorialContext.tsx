@@ -1,4 +1,13 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+import { API_ENDPOINTS } from "../../config.ts";
+import { useAuth } from "../../auth/AuthContext.tsx";
 
 export interface TutorialStep {
   id: string;
@@ -8,6 +17,8 @@ export interface TutorialStep {
   position?: "top" | "bottom" | "left" | "right" | "center";
   requiresNavigation?: boolean;
   navigationHint?: string;
+  requiresInteraction?: boolean;
+  interactionHint?: string;
 }
 
 export type UserRole = "admin" | "underwriter" | "other";
@@ -353,6 +364,9 @@ const UNDERWRITER_STEPS: TutorialStep[] = [
       "Each card shows the claim type, claimant, and incident date. Click a card to expand it and read the full details.",
     targetSelector: ".risk-review-list",
     position: "top",
+    requiresInteraction: true,
+    interactionHint:
+      "Click on any claim card to expand it, then Next will unlock →",
   },
   {
     id: "risk-notes",
@@ -633,7 +647,7 @@ interface TutorialContextType {
   nextStep: () => void;
   prevStep: () => void;
   endTutorial: () => void;
-  triggerPrompt: () => void;
+  triggerPrompt: (force?: boolean) => void;
   dismissPrompt: () => void;
   resetTours: () => void;
   // kept for compatibility
@@ -664,54 +678,159 @@ const TutorialContext = createContext<TutorialContextType>({
 export const useTutorial = () => useContext(TutorialContext);
 
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
+  const { session, refreshSession } = useAuth();
   const [showPrompt, setShowPrompt] = useState(false);
   const [pendingSteps, setPendingSteps] = useState<TutorialStep[]>([]);
+  const [promptMode, setPromptMode] = useState<"auto" | "manual" | null>(null);
 
   const [isActive, setIsActive] = useState(false);
   const [activeTour, setActiveTour] = useState<TutorialStep[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [completedThisSession, setCompletedThisSession] = useState(false);
+  const tutorialDoneRef = useRef(false);
+  const autoPromptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const triggerWelcomeTour = useCallback((role: UserRole) => {
-    if (hasSeenWelcomeTour()) return;
-    const steps = TOUR_STEPS_BY_ROLE[role];
-    setTimeout(() => {
-      setPendingSteps(steps);
-      setShowPrompt(true);
-    }, 600);
+  const tutorialDone =
+    (session?.settings.tutorialDone ?? false) || completedThisSession;
+
+  const clearAutoPromptTimer = useCallback(() => {
+    if (!autoPromptTimerRef.current) {
+      return;
+    }
+
+    clearTimeout(autoPromptTimerRef.current);
+    autoPromptTimerRef.current = null;
   }, []);
+
+  useEffect(() => {
+    tutorialDoneRef.current = tutorialDone;
+
+    if (tutorialDone) {
+      clearAutoPromptTimer();
+    }
+
+    if (tutorialDone && promptMode === "auto") {
+      setShowPrompt(false);
+      setPendingSteps([]);
+      setPromptMode(null);
+    }
+  }, [clearAutoPromptTimer, promptMode, tutorialDone]);
+
+  useEffect(() => {
+    return () => {
+      clearAutoPromptTimer();
+    };
+  }, [clearAutoPromptTimer]);
+
+  useEffect(() => {
+    if (!session) {
+      clearAutoPromptTimer();
+      setCompletedThisSession(false);
+      setShowPrompt(false);
+      setPendingSteps([]);
+      setPromptMode(null);
+      setIsActive(false);
+      setActiveTour([]);
+      setCurrentStep(0);
+    }
+  }, [clearAutoPromptTimer, session]);
+
+  const getSessionRole = useCallback((): UserRole => {
+    if (!session) return "other";
+    if (session.permissions?.can_manage_employees) return "admin";
+    if (session.position === "UNDERWRITER") return "underwriter";
+    return "other";
+  }, [session]);
+
+  const persistTutorialDone = useCallback(async () => {
+    if (!session || completedThisSession) {
+      return;
+    }
+
+    setCompletedThisSession(true);
+
+    try {
+      const res = await fetch(API_ENDPOINTS.ACCOUNT_SETTINGS, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tutorialDone: true }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to update tutorial preference: ${res.status}`);
+      }
+
+      await refreshSession();
+    } catch (error) {
+      console.error(error);
+      setCompletedThisSession(false);
+    }
+  }, [completedThisSession, refreshSession, session]);
+
+  const triggerWelcomeTour = useCallback(
+    (role: UserRole) => {
+      if (tutorialDone || showPrompt || isActive) return;
+      clearAutoPromptTimer();
+      const steps = TOUR_STEPS_BY_ROLE[role];
+      autoPromptTimerRef.current = setTimeout(() => {
+        autoPromptTimerRef.current = null;
+        if (tutorialDoneRef.current) return;
+        setPendingSteps(steps);
+        setPromptMode("auto");
+        setShowPrompt(true);
+      }, 600);
+    },
+    [clearAutoPromptTimer, isActive, showPrompt, tutorialDone],
+  );
 
   // No-op for per-page prompts — we only have one tour now
-  const checkAndPrompt = useCallback((_route: string, force = false) => {
-    if (!force) return;
-    // force = restart from settings, re-show the prompt
-    setShowPrompt(true);
-  }, []);
+  const checkAndPrompt = useCallback(
+    (_route: string, force = false) => {
+      if (!force || !session) return;
+      // force = restart from settings, re-show the prompt
+      clearAutoPromptTimer();
+      setPendingSteps(TOUR_STEPS_BY_ROLE[getSessionRole()]);
+      setPromptMode("manual");
+      setShowPrompt(true);
+    },
+    [clearAutoPromptTimer, getSessionRole, session],
+  );
 
   const startTutorial = useCallback(() => {
+    if (pendingSteps.length === 0) return;
+    clearAutoPromptTimer();
     setShowPrompt(false);
-    markWelcomeTourSeen();
+    setPromptMode(null);
     setActiveTour(pendingSteps);
     setCurrentStep(0);
     setIsActive(true);
-  }, [pendingSteps]);
+  }, [clearAutoPromptTimer, pendingSteps]);
 
   const skipTutorial = useCallback(() => {
-    markWelcomeTourSeen();
+    clearAutoPromptTimer();
     setShowPrompt(false);
     setPendingSteps([]);
-  }, []);
+    setPromptMode(null);
+    void persistTutorialDone();
+  }, [clearAutoPromptTimer, persistTutorialDone]);
 
   const nextStep = useCallback(() => {
+    const next = currentStep + 1;
+    if (next >= activeTour.length) {
+      setIsActive(false);
+      setActiveTour([]);
+      setCurrentStep(0);
+      void persistTutorialDone();
+      return;
+    }
+
     setCurrentStep((prev) => {
-      const next = prev + 1;
-      if (next >= activeTour.length) {
-        setIsActive(false);
-        setActiveTour([]);
-        return 0;
-      }
-      return next;
+      return prev + 1;
     });
-  }, [activeTour]);
+  }, [activeTour.length, currentStep, persistTutorialDone]);
 
   const prevStep = useCallback(() => {
     setCurrentStep((prev) => Math.max(0, prev - 1));
@@ -721,14 +840,30 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     setIsActive(false);
     setActiveTour([]);
     setCurrentStep(0);
-  }, []);
+    void persistTutorialDone();
+  }, [persistTutorialDone]);
 
   const resetTours = useCallback(() => {
     resetAllTours();
   }, []);
 
-  const triggerPrompt = useCallback(() => setShowPrompt(true), []);
-  const dismissPrompt = useCallback(() => setShowPrompt(false), []);
+  const triggerPrompt = useCallback(
+    (force = false) => {
+      if (!session) return;
+      if (!force && tutorialDone) return;
+      if (force) {
+        clearAutoPromptTimer();
+      }
+      setPendingSteps(TOUR_STEPS_BY_ROLE[getSessionRole()]);
+      setPromptMode(force ? "manual" : "auto");
+      setShowPrompt(true);
+    },
+    [clearAutoPromptTimer, getSessionRole, session, tutorialDone],
+  );
+  const dismissPrompt = useCallback(() => {
+    setShowPrompt(false);
+    setPromptMode(null);
+  }, []);
 
   return (
     <TutorialContext.Provider
