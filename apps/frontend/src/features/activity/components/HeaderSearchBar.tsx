@@ -18,7 +18,7 @@ const SearchBar = ({ setSearchQuery }: SearchBarProps) => (
         size="small"
         sx={{
           width: "100%",
-          backgroundColor: "white",
+          backgroundColor: "background.paper",
           borderRadius: "32px", // Matches default MUI radius
         }}
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
