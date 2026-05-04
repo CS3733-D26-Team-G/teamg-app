@@ -799,7 +799,7 @@ export default function Dashboard() {
           background: "transparent",
           overflow: "hidden",
           position: "relative",
-          p: 0,
+          py: 2,
         }}
       >
         <Box
@@ -807,9 +807,14 @@ export default function Dashboard() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            px: 1,
-            py: 5,
-            width: "100%",
+            height: 80,
+            my: 1,
+            borderRadius: 4,
+            backgroundColor: "rgba(255, 255, 255, 0.12)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255, 255, 255, 0.25)",
+            borderBottom: "2px solid rgba(255, 255, 255, 0.4)",
+            px: 3,
             zIndex: 1,
           }}
         >
