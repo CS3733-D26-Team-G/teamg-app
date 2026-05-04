@@ -5,13 +5,15 @@ import { z } from "zod";
 const SessionSettingsDbSchema =
   Schemas.AccountSettingsCreateManyInputObjectZodSchema.pick({
     darkMode: true,
+    tutorialDone: true,
   });
 
 export const SessionSettingsSchema = SessionSettingsDbSchema.transform(
-  ({ darkMode }) => ({
+  ({ darkMode, tutorialDone }) => ({
     darkMode: darkMode ?? false,
+    tutorialDone: tutorialDone ?? false,
   }),
-).default({ darkMode: false });
+).default({ darkMode: false, tutorialDone: false });
 
 export type SessionSettings = z.infer<typeof SessionSettingsSchema>;
 
