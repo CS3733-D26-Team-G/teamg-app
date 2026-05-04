@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar.tsx";
 import { AppThemeProvider } from "../ThemeContext.tsx";
 import { AuthProvider, useAuth } from "../auth/AuthContext.tsx";
@@ -10,10 +10,12 @@ import TutorialPrompt from "../components/Tutorial/TutorialPrompt.tsx";
 import { useTutorial } from "../components/Tutorial/TutorialContext.tsx";
 import type { UserRole } from "../components/Tutorial/TutorialContext.tsx";
 import { SidebarProvider } from "../components/SidebarContext.tsx";
+import VoiceControl from "../components/VoiceControl.tsx";
 import { NotificationFilterProvider } from "../features/notifications/components/NotificationsSettingsToggle.tsx";
 
 function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { session } = useAuth();
   const { triggerWelcomeTour } = useTutorial();
 
@@ -45,6 +47,32 @@ function AppShell() {
     triggerWelcomeTour,
   ]);
 
+  const handleVoiceCommand = (command: string) => {
+    const routes: Array<[string[], string]> = [
+      [["dashboard", "home"], "/dashboard"],
+      [["library", "content library"], "/library"],
+      [["preview", "preview content", "content preview"], "/library"],
+      [["check out", "checkout", "checked out"], "/library"],
+      [["forms", "my forms", "content form"], "/my-forms"],
+      [["activity"], "/activity"],
+      [["settings"], "/settings"],
+      [["profile"], "/profile"],
+      [["calendar"], "/calendar"],
+      [["claims"], "/claims"],
+      [["risk review"], "/risk-review"],
+      [["credits"], "/credits"],
+      [["about"], "/aboutus"],
+    ];
+    const route = routes.find(([phrases]) =>
+      phrases.some((phrase) => command.includes(phrase)),
+    );
+    if (route) {
+      navigate(route[1]);
+      return true;
+    }
+    return false;
+  };
+
   return (
     <div
       style={{
@@ -67,6 +95,9 @@ function AppShell() {
         <Outlet />
       </div>
 
+      {isAppContentPage && session && (
+        <VoiceControl onCommand={handleVoiceCommand} />
+      )}
       <TutorialPrompt />
       <TutorialOverlay />
     </div>
