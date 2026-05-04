@@ -9,8 +9,8 @@ import {
   buildAvatarPath,
   getAvatarBucketName,
 } from "../../lib/avatar-storage.ts";
-import { z } from "zod";
-import { hashPassword, verifyPassword } from "../login/utils.ts";
+import { hashPassword, verifyPassword } from "../../lib/password.ts";
+import { ChangePasswordSchema } from "./schema.ts";
 
 const router = express.Router();
 const upload = multer({
@@ -19,11 +19,6 @@ const upload = multer({
     fileSize: 1024 * 1024 * 1024,
     files: 1,
   },
-});
-
-export const ChangePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(1),
 });
 
 router.get("/", async (req, res) => {

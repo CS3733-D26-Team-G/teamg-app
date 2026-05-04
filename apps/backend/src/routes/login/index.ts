@@ -12,7 +12,7 @@ import {
   hashPassword,
   isLegacyPlaintextPassword,
   verifyPassword,
-} from "./utils.ts";
+} from "../../lib/password.ts";
 
 const router = express.Router();
 
