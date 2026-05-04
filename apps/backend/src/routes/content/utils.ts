@@ -348,10 +348,13 @@ export async function createOrRefreshLock(
     });
   }
 
+  if (existingLock.lockedByEmpUuid !== auth.employeeUuid) {
+    throw new Error("Cannot refresh lock owned by another employee");
+  }
+
   return prisma.contentEditLock.update({
     where: { contentUuid: uuid },
     data: {
-      lockedByEmpUuid: auth.employeeUuid,
       lockedAt: new Date(),
     },
     include: contentLockInclude,
