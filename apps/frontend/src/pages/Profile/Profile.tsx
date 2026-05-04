@@ -323,7 +323,7 @@ function Profile() {
                 >
                   <Box sx={{ textAlign: "center" }}>
                     <Typography
-                      color="black"
+                      color="textprimary"
                       sx={{ fontSize: 14 }}
                     >
                       Role
@@ -335,7 +335,7 @@ function Profile() {
 
                   <Box sx={{ textAlign: "center" }}>
                     <Typography
-                      color="black"
+                      color="textprimary"
                       sx={{ fontSize: 14 }}
                     >
                       Email
@@ -347,7 +347,7 @@ function Profile() {
 
                   <Box sx={{ textAlign: "center" }}>
                     <Typography
-                      color="black"
+                      color="textprimary"
                       sx={{ fontSize: 14 }}
                     >
                       Phone
@@ -359,7 +359,7 @@ function Profile() {
 
                   <Box sx={{ textAlign: "center" }}>
                     <Typography
-                      color="black"
+                      color="textprimary"
                       sx={{ fontSize: 14 }}
                     >
                       Date of Birth
@@ -573,7 +573,7 @@ function Profile() {
                         fontSize: 18,
                       }}
                     >
-                      Password last changed 4/2/2025
+                      Manage your account password
                     </Typography>
 
                     <Button

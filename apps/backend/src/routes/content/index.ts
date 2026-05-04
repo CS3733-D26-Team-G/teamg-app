@@ -66,10 +66,9 @@ router.get("/", async (req, res) => {
     return res.status(400).json({ message: parsedFilters.message });
   }
 
-  const whereClauses = [
-    getVisibleContentWhere(auth),
-    ...parsedFilters.filters,
-  ].filter((clause): clause is Prisma.ContentWhereInput => !!clause);
+  const whereClauses = [...parsedFilters.filters].filter(
+    (clause): clause is Prisma.ContentWhereInput => !!clause,
+  );
 
   try {
     const content = await prisma.content.findMany({
