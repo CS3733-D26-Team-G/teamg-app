@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  TextField,
 } from "@mui/material";
 import Switch from "@mui/material/Switch";
 import Button from "@mui/material/Button";
@@ -49,6 +50,13 @@ function Profile() {
   const [avatarPopUpOpen, setAvatarPopUpOpen] = React.useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [avatarError, setAvatarError] = React.useState<string | null>(null);
+  const [changePasswordOpen, setChangePasswordOpen] = React.useState(false);
+  const [passwordForm, setPasswordForm] = React.useState({
+    currentPassword: "",
+    newPassword: "",
+  });
+  const [passwordError, setPasswordError] = React.useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = React.useState(false);
 
   const { profile, isLoading, setProfile } = useProfile();
   const { isDarkMode, isSaving, toggleDarkMode } = useThemeMode();
@@ -117,6 +125,34 @@ function Profile() {
     }
   };
 
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    try {
+      const res = await fetch(API_ENDPOINTS.PROFILE.CHANGE_PASSWORD, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(passwordForm),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setPasswordError(data?.message ?? "Failed to upload change password");
+        return;
+      }
+
+      setPasswordSuccess(true);
+      setPasswordForm({ currentPassword: "", newPassword: "" });
+      setTimeout(() => setChangePasswordOpen(false), 1500);
+    } catch {
+      setPasswordError("Failed to change password");
+    }
+  };
+
   const recentLogins = useMemo(() => {
     return (activityQuery.data ?? []).slice(0, 3).map((row: any) => {
       const date = new Date(row.timestamp);
@@ -127,7 +163,7 @@ function Profile() {
           year: "numeric",
         }) +
         " at " +
-        date.toLocaleDateString([], { hour: "2-digit", minute: "2-digit" })
+        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       );
     });
   }, [activityQuery.data]);
@@ -535,7 +571,12 @@ function Profile() {
                       Password last changed 4/2/2025
                     </Typography>
 
-                    <Button variant="contained">Change Password</Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => setChangePasswordOpen(true)}
+                    >
+                      Change Password
+                    </Button>
                   </Box>
                   <Box
                     sx={{
@@ -560,7 +601,7 @@ function Profile() {
                         <Typography
                           key={index}
                           variant="body2"
-                          sx={{ pl: 2.5, pt: 0.4 }}
+                          sx={{ pl: 3, pt: 0.4 }}
                         >
                           Logged in {entry}
                         </Typography>
@@ -771,6 +812,87 @@ function Profile() {
               disabled={!file}
               onClick={() => {
                 void handleSaveAvatar();
+              }}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={changePasswordOpen}
+          onClose={() => {
+            setChangePasswordOpen(false);
+            setPasswordError(null);
+            setPasswordSuccess(false);
+            setPasswordForm({ currentPassword: "", newPassword: "" });
+          }}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Change Password</DialogTitle>
+          <DialogContent>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                pt: 2,
+              }}
+            >
+              <TextField
+                label="Current Password"
+                type="password"
+                fullWidth
+                value={passwordForm.currentPassword}
+                onChange={(e) =>
+                  setPasswordForm((pass) => ({
+                    ...pass,
+                    currentPassword: e.target.value,
+                  }))
+                }
+              />
+
+              <TextField
+                label="New Password"
+                type="password"
+                fullWidth
+                value={passwordForm.newPassword}
+                onChange={(e) =>
+                  setPasswordForm((pass) => ({
+                    ...pass,
+                    newPassword: e.target.value,
+                  }))
+                }
+              />
+
+              {passwordError && (
+                <Typography color="error">{passwordError}</Typography>
+              )}
+              {passwordSuccess && (
+                <Typography color="success.main">{passwordSuccess}</Typography>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setChangePasswordOpen(false);
+                setPasswordError(null);
+                setPasswordSuccess(false);
+                setPasswordForm({ currentPassword: "", newPassword: "" });
+              }}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant="contained"
+              disabled={
+                !passwordForm.currentPassword || !passwordForm.newPassword
+              }
+              onClick={() => {
+                void handleChangePassword();
               }}
             >
               Save
