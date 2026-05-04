@@ -95,7 +95,10 @@ import {
   prefetchActivity,
 } from "../../../lib/activity-loaders";
 import { ContentTabs } from "./viewing/ContentTabs.tsx";
-import { recordRecentlyViewed } from "./viewing/RecentlyViewed.tsx";
+import {
+  recordRecentlyViewed,
+  clearRecentlyViewed,
+} from "./viewing/RecentlyViewed.tsx";
 import { SPECIAL_TABS, type TabKey } from "./viewing/ContentTabsConfig.ts";
 
 // human-readable labels for each content status
@@ -678,6 +681,7 @@ export default function ContentManagement({
 
       if (session?.employeeUuid) {
         recordRecentlyViewed(session.employeeUuid, row.uuid);
+        refreshRecentEntries();
       }
 
       markRelatedActivityStale();
@@ -906,6 +910,8 @@ export default function ContentManagement({
     specialTabRows,
     activeRows,
     isSpecialTab,
+    refreshRecentEntries,
+    clearRecentEntries,
   } = ContentTabs({
     filteredRows,
     employeeUuid: session?.employeeUuid,
@@ -997,6 +1003,7 @@ export default function ContentManagement({
     // record locally immediately so the recent tab updates without waiting for the API
     if (session?.employeeUuid) {
       recordRecentlyViewed(session.employeeUuid, uuid);
+      refreshRecentEntries();
     }
     try {
       await fetch(API_ENDPOINTS.CONTENT.VIEW(uuid), {
@@ -1906,6 +1913,25 @@ export default function ContentManagement({
                             "& .MuiChip-label": { px: 0.75 },
                           }}
                         />
+                        {key === "recent" &&
+                          specialTabRows["recent"].length > 0 && (
+                            <Tooltip title="Clear recently viewed">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  clearRecentEntries();
+                                }}
+                                sx={{
+                                  "p": 0.25,
+                                  "color": "rgba(255,255,255,0.6)",
+                                  "&:hover": { color: "white" },
+                                }}
+                              >
+                                <CloseIcon sx={{ fontSize: 13 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                       </Stack>
                     }
                   />
