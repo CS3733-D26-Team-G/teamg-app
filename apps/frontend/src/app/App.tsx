@@ -10,6 +10,7 @@ import TutorialPrompt from "../components/Tutorial/TutorialPrompt.tsx";
 import { useTutorial } from "../components/Tutorial/TutorialContext.tsx";
 import type { UserRole } from "../components/Tutorial/TutorialContext.tsx";
 import { SidebarProvider } from "../components/SidebarContext.tsx";
+import { NotificationFilterProvider } from "../features/notifications/components/NotificationsSettingsToggle.tsx";
 
 function AppShell() {
   const location = useLocation();
@@ -81,7 +82,9 @@ export default function App() {
         <AppThemeProvider>
           <TutorialProvider>
             <SidebarProvider>
-              <AppShell />
+              <NotificationFilterProvider>
+                <AppShell />
+              </NotificationFilterProvider>
             </SidebarProvider>
           </TutorialProvider>
         </AppThemeProvider>

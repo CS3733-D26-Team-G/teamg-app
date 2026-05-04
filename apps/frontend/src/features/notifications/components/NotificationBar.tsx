@@ -8,6 +8,7 @@ import {
   getOwnershipChanges,
   getClaimActions,
 } from "./Notifications.ts";
+import { useNotificationFilterToggle } from "./NotificationsSettingsToggle.tsx";
 
 import {
   Box,
@@ -268,8 +269,13 @@ export default function NotificationBarComponent({
     dismissAllAlerts,
   } = useContentInfo();
 
-  // Use the filter hook
+  // Use the filter hooks
   const { currentFilter, setFilter, isFiltering } = useNotificationFilter();
+  const { hideEdits } = useNotificationFilterToggle();
+
+  // Apply the edit filter
+  const filteredEdits = hideEdits ? [] : visibleContentEdits;
+  const filteredOwnership = hideEdits ? [] : visibleOwnershipChanges;
 
   const allAlerts: AlertItem[] = [
     ...visibleCriticalContent.map((c) => ({
@@ -300,7 +306,7 @@ export default function NotificationBarComponent({
           c.expirationTime
         : c.expirationTime?.toString(),
     })),
-    ...visibleOwnershipChanges.map((o) => ({
+    ...filteredOwnership.map((o) => ({
       uuid: o.uuid,
       title: o.title,
       alertType: "ownership" as const,
@@ -308,7 +314,7 @@ export default function NotificationBarComponent({
       expirationTime: null,
       timestamp: o.timestamp,
     })),
-    ...visibleContentEdits.map((e) => ({
+    ...filteredEdits.map((e) => ({
       uuid: e.uuid,
       title: e.title,
       alertType: "edit" as const,
@@ -325,6 +331,12 @@ export default function NotificationBarComponent({
       timestamp: c.timestamp,
     })),
   ];
+
+  const updatedCounts = {
+    ...counts,
+    edits: hideEdits ? 0 : counts.edits,
+    ownership: hideEdits ? 0 : counts.ownership,
+  };
 
   // Filter alerts based on current filter
   const getFilteredAlerts = useCallback(() => {
@@ -348,7 +360,10 @@ export default function NotificationBarComponent({
   }, [allAlerts, currentFilter]);
 
   const displayedAlerts = getFilteredAlerts();
-  const totalAlerts = counts.total;
+  const totalAlerts =
+    counts.total -
+    (hideEdits ? counts.edits : 0) -
+    (hideEdits ? counts.ownership : 0);
 
   const handleDismiss = (uuid: string, title: string, alertType: string) => {
     dismissAlert(uuid, alertType);
@@ -479,7 +494,7 @@ export default function NotificationBarComponent({
               onClick={() => setFilter("edit")}
               color="secondary"
             >
-              Edits ({visibleContentEdits.length})
+              Edits ({updatedCounts.edits})
             </Button>
           </Box>
 
@@ -496,6 +511,7 @@ export default function NotificationBarComponent({
           )}
         </>
       )}
+
       {/* Content Area */}
       <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, px: 1 }}>
         {loading ?

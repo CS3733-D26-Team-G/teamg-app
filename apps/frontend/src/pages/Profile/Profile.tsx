@@ -22,6 +22,7 @@ import { getPositionLabel } from "../../utils/positionDisplay.ts";
 import { EmployeeRecordSchema, type Department } from "../../types/employee.ts";
 import { API_ENDPOINTS } from "../../config.ts";
 import { useProfile } from "../../profile/ProfileContext.tsx";
+import { useNotificationFilterToggle } from "../../features/notifications/components/NotificationsSettingsToggle.tsx";
 
 function Profile() {
   const today = new Date();
@@ -62,6 +63,8 @@ function Profile() {
     setAvatarError(null);
     setAvatarPopUpOpen(true);
   };
+
+  const { hideEdits, setHideEdits } = useNotificationFilterToggle();
 
   const handleSaveAvatar = async () => {
     if (!file) return;
@@ -371,11 +374,11 @@ function Profile() {
                         fontSize: 20,
                       }}
                     >
-                      Document Update Alerts
+                      Hide Document Edit Alerts
                     </Typography>
                     <Switch
-                      checked={toggle2}
-                      onChange={handleToggle2}
+                      checked={hideEdits}
+                      onChange={(e) => setHideEdits(e.target.checked)}
                       slotProps={{ input: { "aria-label": "controlled" } }}
                     />
                   </Box>
@@ -389,7 +392,7 @@ function Profile() {
                       mt: -0.75,
                     }}
                   >
-                    Notify me when a document I own is edited
+                    Hide edit notifications for documents I own
                   </Typography>
                 </Stack>
               </Box>
