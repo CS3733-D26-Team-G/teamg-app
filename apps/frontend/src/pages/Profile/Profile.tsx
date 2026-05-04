@@ -28,6 +28,7 @@ import { useNotificationFilterToggle } from "../../features/notifications/compon
 import { useNavigate } from "react-router-dom";
 import { useActivityQuery } from "../../lib/activity-loaders.ts";
 import { useMemo } from "react";
+import { useAuth } from "../../auth/AuthContext.tsx";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import SchoolIcon from "@mui/icons-material/School";
@@ -63,6 +64,7 @@ function Profile() {
   const { resetTours, triggerPrompt } = useTutorial();
   const navigate = useNavigate();
   const activityQuery = useActivityQuery("auth");
+  const { session } = useAuth();
 
   const handleToggle1 = (event: React.ChangeEvent<HTMLInputElement>) => {
     setToggle1(event.target.checked);
@@ -154,19 +156,22 @@ function Profile() {
   };
 
   const recentLogins = useMemo(() => {
-    return (activityQuery.data ?? []).slice(0, 3).map((row: any) => {
-      const date = new Date(row.timestamp);
-      return (
-        date.toLocaleDateString("en-US", {
-          month: "numeric",
-          day: "numeric",
-          year: "numeric",
-        }) +
-        " at " +
-        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      );
-    });
-  }, [activityQuery.data]);
+    return (activityQuery.data ?? [])
+      .filter((row: any) => row.employeeUuid === session?.employeeUuid)
+      .slice(0, 3)
+      .map((row: any) => {
+        const date = new Date(row.timestamp);
+        return (
+          date.toLocaleDateString("en-US", {
+            month: "numeric",
+            day: "numeric",
+            year: "numeric",
+          }) +
+          " at " +
+          date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        );
+      });
+  }, [activityQuery.data, session?.employeeUuid]);
 
   if (isLoading) {
     return <Typography>Loading profile...</Typography>;
@@ -318,7 +323,7 @@ function Profile() {
                 >
                   <Box sx={{ textAlign: "center" }}>
                     <Typography
-                      color="black"
+                      color="textprimary"
                       sx={{ fontSize: 14 }}
                     >
                       Role
@@ -330,7 +335,7 @@ function Profile() {
 
                   <Box sx={{ textAlign: "center" }}>
                     <Typography
-                      color="black"
+                      color="textprimary"
                       sx={{ fontSize: 14 }}
                     >
                       Email
@@ -342,7 +347,7 @@ function Profile() {
 
                   <Box sx={{ textAlign: "center" }}>
                     <Typography
-                      color="black"
+                      color="textprimary"
                       sx={{ fontSize: 14 }}
                     >
                       Phone
@@ -354,7 +359,7 @@ function Profile() {
 
                   <Box sx={{ textAlign: "center" }}>
                     <Typography
-                      color="black"
+                      color="textprimary"
                       sx={{ fontSize: 14 }}
                     >
                       Date of Birth
@@ -568,7 +573,7 @@ function Profile() {
                         fontSize: 18,
                       }}
                     >
-                      Password last changed 4/2/2025
+                      Manage your account password
                     </Typography>
 
                     <Button

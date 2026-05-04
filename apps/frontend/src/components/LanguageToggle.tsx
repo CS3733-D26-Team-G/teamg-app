@@ -22,6 +22,19 @@ export const LanguageToggle = () => {
       <Switch
         checked={isSpanish}
         onChange={toggleLanguage}
+        sx={{
+          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+            backgroundColor: "white",
+            opacity: 0.9,
+          },
+          "& .MuiSwitch-track": {
+            backgroundColor: "white",
+            opacity: 0.9,
+          },
+          "& .MuiSwitch-switchBase.Mui-checked .MuiSwitch-thumb": {
+            color: "white",
+          },
+        }}
       />
 
       <Typography sx={isSpanish ? active : inactive}>🇪🇸 ES</Typography>

@@ -92,6 +92,7 @@ export default function Sidebar() {
   const itemHoverSx = {
     "borderRadius": "8px",
     "mx": 0.5,
+    "justifyContent": isOpen ? "flex-start" : "center",
     "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" },
     "&.Mui-selected": { backgroundColor: "rgba(255,255,255,0.15)" },
   };
@@ -163,9 +164,11 @@ export default function Sidebar() {
         <ListItemButton
           component={Link}
           to="/dashboard"
-          sx={{ ...itemHoverSx, px: 2 }}
+          sx={{ ...itemHoverSx, px: isOpen ? 2 : 0 }}
         >
-          <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+          <ListItemIcon
+            sx={{ minWidth: 0, mr: isOpen ? 2 : 0, justifyContent: "center" }}
+          >
             <DashboardIcon sx={iconSx} />
           </ListItemIcon>
           {isOpen && (
@@ -182,9 +185,15 @@ export default function Sidebar() {
             <ListItemButton
               id="tutorial-management-menu"
               onClick={() => handleToggle(setAdminOpen, adminOpen)}
-              sx={{ ...itemHoverSx, px: 2 }}
+              sx={{ ...itemHoverSx, px: isOpen ? 2 : 0 }}
             >
-              <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: isOpen ? 2 : 0,
+                  justifyContent: "center",
+                }}
+              >
                 <AdminPanelSettingsIcon
                   sx={{ color: "rgba(255,255,255,0.75)" }}
                 />
@@ -215,7 +224,9 @@ export default function Sidebar() {
                   to="/employee-management"
                   sx={{ ...itemHoverSx, pl: 4 }}
                 >
-                  <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
+                  <ListItemIcon
+                    sx={{ minWidth: 0, mr: 2, justifyContent: "center" }}
+                  >
                     <PeopleIcon
                       fontSize="small"
                       sx={{ color: "rgba(255,255,255,0.65)" }}
@@ -234,7 +245,9 @@ export default function Sidebar() {
                   to="/content-management"
                   sx={{ ...itemHoverSx, pl: 4 }}
                 >
-                  <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
+                  <ListItemIcon
+                    sx={{ minWidth: 0, mr: 2, justifyContent: "center" }}
+                  >
                     <LibraryBooksIcon
                       fontSize="small"
                       sx={{ color: "rgba(255,255,255,0.65)" }}
@@ -254,7 +267,9 @@ export default function Sidebar() {
                   to="/approvals"
                   sx={{ ...itemHoverSx, pl: 4 }}
                 >
-                  <ListItemIcon sx={{ minWidth: 0, mr: 2 }}>
+                  <ListItemIcon
+                    sx={{ minWidth: 0, mr: 2, justifyContent: "center" }}
+                  >
                     <HowToRegIcon
                       fontSize="small"
                       sx={{ color: "rgba(255,255,255,0.65)" }}
@@ -273,9 +288,11 @@ export default function Sidebar() {
         : <ListItemButton
             component={Link}
             to="/library"
-            sx={{ ...itemHoverSx, px: 2 }}
+            sx={{ ...itemHoverSx, px: isOpen ? 2 : 0 }}
           >
-            <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+            <ListItemIcon
+              sx={{ minWidth: 0, mr: isOpen ? 2 : 0, justifyContent: "center" }}
+            >
               <LibraryBooksIcon sx={iconSx} />
             </ListItemIcon>
             {isOpen && (
@@ -292,9 +309,15 @@ export default function Sidebar() {
             <ListItemButton
               component={Link}
               to="/risk-review"
-              sx={{ ...itemHoverSx, px: 2 }}
+              sx={{ ...itemHoverSx, px: isOpen ? 2 : 0 }}
             >
-              <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: isOpen ? 2 : 0,
+                  justifyContent: "center",
+                }}
+              >
                 <WarningIcon sx={iconSx} />
               </ListItemIcon>
               {isOpen && (
@@ -312,9 +335,15 @@ export default function Sidebar() {
             <ListItemButton
               component={Link}
               to="/claims"
-              sx={{ ...itemHoverSx, px: 2 }}
+              sx={{ ...itemHoverSx, px: isOpen ? 2 : 0 }}
             >
-              <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: isOpen ? 2 : 0,
+                  justifyContent: "center",
+                }}
+              >
                 <WarningIcon sx={iconSx} />
               </ListItemIcon>
               {isOpen && (
@@ -331,9 +360,11 @@ export default function Sidebar() {
         <ListItemButton
           component={Link}
           to="/activity"
-          sx={{ ...itemHoverSx, px: 2 }}
+          sx={{ ...itemHoverSx, px: isOpen ? 2 : 0 }}
         >
-          <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+          <ListItemIcon
+            sx={{ minWidth: 0, mr: isOpen ? 2 : 0, justifyContent: "center" }}
+          >
             <SpeedIcon sx={iconSx} />
           </ListItemIcon>
           {isOpen && (
@@ -347,9 +378,11 @@ export default function Sidebar() {
         <ListItemButton
           component={Link}
           to="/calendar"
-          sx={{ ...itemHoverSx, pl: 2 }}
+          sx={{ ...itemHoverSx, px: isOpen ? 2 : 0 }}
         >
-          <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+          <ListItemIcon
+            sx={{ minWidth: 0, mr: isOpen ? 2 : 0, justifyContent: "center" }}
+          >
             <CalendarMonthIcon sx={iconSx} />
           </ListItemIcon>
           {isOpen && (
@@ -377,7 +410,9 @@ export default function Sidebar() {
           aria-haspopup="true"
           aria-expanded={open ? "true" : undefined}
         >
-          <ListItemIcon sx={{ minWidth: 0, mr: isOpen ? 2 : 0 }}>
+          <ListItemIcon
+            sx={{ minWidth: 0, mr: isOpen ? 2 : 0, justifyContent: "center" }}
+          >
             <Avatar
               src={profile.avatar ?? undefined}
               sx={{ width: 32, height: 32 }}
