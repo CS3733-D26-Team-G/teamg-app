@@ -43,6 +43,7 @@ import HelpPopup from "../../components/HelpPopup";
 import HitsLineChart from "../../features/dashboard/components/HitsLineChart.tsx";
 import AdminCards from "../../features/dashboard/components/AdminCards.tsx";
 import { useProfile } from "../../profile/ProfileContext.tsx";
+import { getPositionLabel } from "../../utils/positionDisplay";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
 
 // ── Layout Types & Constants ──────────────────────────────────────────────────
@@ -545,7 +546,7 @@ export default function Dashboard() {
     helpDesc,
     children,
   }: {
-    title: string;
+    title: React.ReactNode;
     helpDesc?: string;
     children: React.ReactNode;
   }) => (
@@ -680,8 +681,8 @@ export default function Dashboard() {
     {
       id: "employee-activity",
       size: "large",
-      adminOnly: true,
-      label: "Employee Activity",
+      adminOnly: false,
+      label: isAdmin ? "Employee Activity" : "My Content Changes",
       description: "Edits, checkouts & deletes by employee",
       node: (
         <Card
@@ -729,7 +730,11 @@ export default function Dashboard() {
       description: "Line chart of content edits over time by role",
       node: (
         <CardShell
-          title="Employee Edits By Day"
+          title={
+            isAdmin ?
+              "Employee Edits By Day"
+            : `${getPositionLabel(session!.position)} Edits By Day`
+          }
           helpDesc="Fluctuation in content edits by role over time."
         >
           <HitsLineChart />

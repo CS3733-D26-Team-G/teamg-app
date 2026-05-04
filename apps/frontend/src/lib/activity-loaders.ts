@@ -146,6 +146,7 @@ async function fetchDashboardBootstrap(params?: {
   position?: string;
   employeeUuid?: string;
   days?: number;
+  isAdmin?: boolean;
 }): Promise<DashboardBootstrapData> {
   const [
     activityAll,
@@ -168,9 +169,9 @@ async function fetchDashboardBootstrap(params?: {
     loadContentFileTypeCounts(),
     loadEmployeeCounts(),
     loadContentList(),
-    loadEmployees(),
+    params?.isAdmin ? loadEmployees() : Promise.resolve([]),
     loadActivityActionSummary(params),
-    loadEditHitsByRole(params?.days ?? 7),
+    loadEditHitsByRole(params?.days),
   ]);
 
   return {
@@ -285,6 +286,7 @@ export async function loadDashboardBootstrap(params?: {
   position?: string;
   employeeUuid?: string;
   days?: number;
+  isAdmin?: boolean;
 }): Promise<DashboardBootstrapData> {
   const cacheKey = [
     CACHE_KEYS.dashboardBootstrap,
@@ -304,6 +306,7 @@ export function useDashboardBootstrapQuery(params?: {
   position?: string;
   employeeUuid?: string;
   days?: number;
+  isAdmin?: boolean;
 }) {
   const cacheKey = [
     CACHE_KEYS.dashboardBootstrap,
