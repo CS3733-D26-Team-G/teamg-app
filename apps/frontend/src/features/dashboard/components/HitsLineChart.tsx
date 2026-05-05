@@ -64,7 +64,7 @@ export default function HitsLineChart() {
 
   const series = visibleRoles.map((role) => ({
     data: editHitsByRole.map((row) => row[role] ?? 0),
-    label: getPositionLabel(role),
+    label: getPositionLabel(role, t),
     color: ROLE_COLORS[role],
     shape: "circle" as const,
   }));

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import DashboardRecentActivity from "../../features/dashboard/components/DashboardRecentActivity.tsx";
 import {
   DashboardLayout,
@@ -36,6 +37,7 @@ import RecentlyViewed from "../../features/dashboard/components/RecentlyViewed";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
+import { LanguageToggle } from "../../components/LanguageToggle.tsx";
 
 // ── Layout Types ──────────────────────────────────────────────────────────────
 
@@ -202,6 +204,7 @@ function WidgetSelector({
   onToggleCard: (id: dashboardCardID) => void;
   onReset: () => void;
 }) {
+  const { t } = useTranslation();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
   const visibleCardIds = new Set(
@@ -213,6 +216,7 @@ function WidgetSelector({
 
   return (
     <>
+      <LanguageToggle />
       <Tooltip title="Customise widgets">
         <Button
           onClick={(e) => setAnchor(e.currentTarget)}
@@ -233,7 +237,7 @@ function WidgetSelector({
             "&:hover": { backgroundColor: "rgba(255,255,255,0.25)" },
           }}
         >
-          Widgets
+          {t("dashboard.widgetsButton")}
           {hiddenCount > 0 && (
             <Chip
               label={`${hiddenCount} hidden`}
@@ -286,12 +290,12 @@ function WidgetSelector({
             <Typography
               sx={{ color: "white", fontWeight: 700, fontSize: "0.9rem" }}
             >
-              Dashboard Widgets
+              {t("dashboard.widgetsTitle")}
             </Typography>
             <Typography
               sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.7rem" }}
             >
-              Toggle visibility · drag rows to reorder
+              {t("dashboard.widgetsSubtitle")}
             </Typography>
           </Box>
           <Button
@@ -312,7 +316,7 @@ function WidgetSelector({
               },
             }}
           >
-            Reset
+            {t("dashboard.widgetsReset")}
           </Button>
         </Box>
         <Box sx={{ px: 1.25, py: 1, maxHeight: 400, overflowY: "auto" }}>
@@ -382,7 +386,7 @@ function WidgetSelector({
               textAlign: "center",
             }}
           >
-            Use "Edit Layout" to reorder rows and cards
+            {t("dashboard.widgetsInfo")}
           </Typography>
         </Box>
       </Popover>
@@ -394,7 +398,7 @@ function WidgetSelector({
 
 export default function Dashboard() {
   const [rows, setRows] = useState<DashboardRow[]>(DEFAULT_ROWS);
-
+  const { t } = useTranslation();
   const { session } = useAuth();
   const { data, loading, error } = useDashboardBootstrap();
   const { profile } = useProfile();
@@ -438,70 +442,74 @@ export default function Dashboard() {
     {
       id: 0,
       value: empCounts.BUSINESS_ANALYST ?? 0,
-      label: "Business Analyst",
+      label: t("adminCards.businessAnalyst"),
       color: "#bea5aa",
     },
     {
       id: 1,
       value: empCounts.BUSINESS_OP_RATING ?? 0,
-      label: "Business Ops Rating",
+      label: t("adminCards.businessOpRating"),
       color: "#509edd",
     },
     {
       id: 2,
       value: empCounts.UNDERWRITER ?? 0,
-      label: "Underwriter",
+      label: t("adminCards.underwriter"),
       color: "#395176",
     },
     {
       id: 3,
       value: empCounts.ACTUARIAL_ANALYST ?? 0,
-      label: "Actuarial Analyst",
+      label: t("adminCards.actuarialAnalyst"),
       color: "#ba667b",
     },
-    { id: 4, value: empCounts.ADMIN ?? 0, label: "Admin", color: "#74414e" },
+    {
+      id: 4,
+      value: empCounts.ADMIN ?? 0,
+      label: t("adminCards.admin"),
+      color: "#74414e",
+    },
     {
       id: 5,
       value: empCounts.EXL_OPERATIONS ?? 0,
-      label: "EXL Operations",
+      label: t("adminCards.exlOperations"),
       color: "#721b31",
     },
   ];
 
   const helpText: Record<string, string> = {
-    ADMIN:
-      "Full organisational overview: employee demographics, recent activity, content counts by role.",
-    UNDERWRITER: "Track activity and access your content from the dashboard.",
-    BUSINESS_ANALYST: "Track your content and platform activity.",
-    ACTUARIAL_ANALYST: "Monitor content counts and recent platform activity.",
-    EXL_OPERATIONS: "Monitor content and activity.",
-    BUSINESS_OP_RATING: "View your content and platform activity.",
+    ADMIN: t("dashboard.adminHelp"),
+    UNDERWRITER: t("dashboard.underwriterHelp"),
+    BUSINESS_ANALYST: t("dashboard.businessAnalystHelp"),
+    ACTUARIAL_ANALYST: t("dashboard.actuarialAnalystHelp"),
+    EXL_OPERATIONS: t("dashboard.exlOperationsHelp"),
+    BUSINESS_OP_RATING: t("dashboard.businessOpRatingHelp"),
   };
 
   const roleConfig = [
     {
       id: "role-ba" as dashboardCardID,
-      label: "Business Analyst",
+      label: t("adminCards.businessAnalyst"),
       key: "BUSINESS_ANALYST",
     },
     {
       id: "role-uw" as dashboardCardID,
-      label: "Underwriter",
+      label: t("adminCards.underwriter"),
       key: "UNDERWRITER",
     },
     {
       id: "role-actuarial" as dashboardCardID,
-      label: "Actuarial Analyst",
+      label: t("adminCards.actuarialAnalyst"),
       key: "ACTUARIAL_ANALYST",
     },
     {
       id: "role-exl" as dashboardCardID,
-      label: "EXL Operations",
+      label: t("adminCards.exlOperations"),
       key: "EXL_OPERATIONS",
     },
     {
       id: "role-bus-ops" as dashboardCardID,
-      label: "Business Ops",
+      label: t("adminCards.businessOpRating"),
       key: "BUSINESS_OP_RATING",
     },
   ];
@@ -577,6 +585,7 @@ export default function Dashboard() {
       description: "Pie chart of staff by role",
       node: (
         <Card
+          className="employee-demographics-card"
           sx={{ ...cardSx, height: "100%" }}
           elevation={0}
         >
@@ -590,10 +599,10 @@ export default function Dashboard() {
             }}
           >
             <Typography sx={{ fontWeight: 700, fontSize: "1.3rem", py: 0.75 }}>
-              Employee Demographics
+              {t("employeeDemographics.title")}
             </Typography>
             <HelpPopup
-              description="Breakdown of employees by role. Hover a slice for exact numbers."
+              description={t("employeeDemographics.info")}
               infoOrHelp={false}
             />
           </Box>
@@ -611,7 +620,10 @@ export default function Dashboard() {
       label: "Recent Activity",
       description: "Live feed of the last 4 actions",
       node: (
-        <Box sx={{ height: "100%" }}>
+        <Box
+          className="recent-activity-card"
+          sx={{ height: "100%" }}
+        >
           <DashboardRecentActivity rawLogs={rawLogs} />
         </Box>
       ),
@@ -625,6 +637,7 @@ export default function Dashboard() {
         description: `Content count for ${label}s`,
         node: (
           <Card
+            className="role-count-cards"
             sx={cardSx}
             elevation={0}
           >
@@ -657,9 +670,9 @@ export default function Dashboard() {
                   mt: 0.5,
                 }}
               >
-                Total Items
+                {t("dashboard.totalItems")}
                 <HelpPopup
-                  description={`Total content accessible by ${label}s`}
+                  description={`${t("dashboard.accessibleBy")} ${label}s`}
                   infoOrHelp={false}
                 />
               </Typography>
@@ -676,6 +689,7 @@ export default function Dashboard() {
       description: "Edits, checkouts & deletes by employee",
       node: (
         <Card
+          className="dashboard-activity-charts"
           sx={{ ...cardSx, height: "100%" }}
           elevation={0}
         >
@@ -694,7 +708,7 @@ export default function Dashboard() {
       description:
         "Your most frequently used content and popular content for your role",
       node: (
-        <CardShell title="Popular Content">
+        <CardShell title={t("dashboard.popularContent")}>
           <PopularContent position={session?.position} />
         </CardShell>
       ),
@@ -706,7 +720,7 @@ export default function Dashboard() {
       label: "Recently Viewed",
       description: "Your recently viewed content",
       node: (
-        <CardShell title="Recently Viewed">
+        <CardShell title={t("dashboard.recentlyViewed")}>
           <RecentlyViewed />
         </CardShell>
       ),
@@ -718,7 +732,7 @@ export default function Dashboard() {
       label: "File Types",
       description: "Bar chart of file type distribution",
       node: (
-        <CardShell title="File Types">
+        <CardShell title={t("dashboard.fileTypes")}>
           <TypeBarChart data={fileTypeCounts} />
         </CardShell>
       ),
@@ -730,16 +744,20 @@ export default function Dashboard() {
       label: "Edits by Day",
       description: "Line chart of content edits over time by role",
       node: (
-        <CardShell
-          title={
-            isAdmin ?
-              t("dashboard.employeeEditsByDay")
-            : `${getPositionLabel(session!.position)} Edits By Day`
-          }
-          helpDesc={t("dashboard.employeeEditsinfo")}
-        >
-          <HitsLineChart />
-        </CardShell>
+        <Box className="dashboard-edits-chart">
+          <CardShell
+            title={
+              isAdmin ?
+                t("dashboard.employeeEditsByDay")
+              : t("dashboard.employeeEditsByDaySelf", {
+                  role: getPositionLabel(session!.position),
+                })
+            }
+            helpDesc={t("dashboard.employeeEditsinfo")}
+          >
+            <HitsLineChart />
+          </CardShell>
+        </Box>
       ),
     },
   ];
@@ -845,6 +863,7 @@ export default function Dashboard() {
       if (editsInRow && editsCardDef && (!editsCardDef.adminOnly || isAdmin)) {
         return (
           <Stack
+            className="dashboard-charts-section"
             spacing={2}
             sx={{ width: "100%" }}
           >
@@ -910,6 +929,7 @@ export default function Dashboard() {
             {/* Employee activity — 2/3 width */}
             <Box sx={{ flex: "0 0 calc(66.666% - 8px)" }}>
               <Card
+                className="dashboard-activity-charts"
                 sx={{ ...cardSx, height: "100%" }}
                 elevation={0}
               >
@@ -965,6 +985,45 @@ export default function Dashboard() {
       return def.node;
     }
 
+    if (id === "role-ba") {
+      const roleIds = [
+        "role-ba",
+        "role-uw",
+        "role-actuarial",
+        "role-exl",
+        "role-bus-ops",
+      ] as dashboardCardID[];
+      const roleCards = roleIds
+        .map((rid) => cardById.get(rid))
+        .filter((d): d is CardDef => !!d && (!d.adminOnly || isAdmin));
+
+      return (
+        <Box
+          className="role-count-cards"
+          sx={{ display: "flex", gap: 2, width: "100%" }}
+        >
+          {roleCards.map((d) => (
+            <Box
+              key={d.id}
+              sx={{ flex: 1 }}
+            >
+              {d.node}
+            </Box>
+          ))}
+        </Box>
+      );
+    }
+
+    // Other role cards are consumed by the role-ba anchor above
+    if (
+      id === "role-uw" ||
+      id === "role-actuarial" ||
+      id === "role-exl" ||
+      id === "role-bus-ops"
+    ) {
+      return null;
+    }
+
     return def.node;
   }
 
@@ -1009,7 +1068,7 @@ export default function Dashboard() {
             variant="h2"
             sx={{ fontWeight: 700, color: "white", fontSize: "2.2rem" }}
           >
-            Welcome Back, {profile?.firstName}!
+            {t("dashboard.welcomeBack")}, {profile?.firstName}!
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <HelpPopup

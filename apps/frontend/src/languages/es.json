@@ -64,8 +64,33 @@
     "recentlyViewed": "Visto recientemente",
     "popularContent": "Contenido popular",
     "myFrequentlyUsed": "Mis más usados",
-    "popularFor": "Popular para"
+    "popularFor": "Popular para",
+    "overviews": "Overview",
+    "activityAndConent": "Actividad y contenido",
+    "charts": "Gráficos",
+    "hiddens": "oculto",
+    "failedloading": "Error al cargar el panel",
+    "employeeDemographics": "Demografía de empleados",
+    "employeeDemographicsInfo": "Gráfico circular de empleados por rol",
+    "recentActivity": "Actividad reciente",
+    "recentActivityInfo": "Flujo en vivo de las últimas 4 acciones",
+    "roleCount": "Cantidad",
+    "roleCountInfo": "Cantidad de contenido para",
+    "employeeActivity": "Actividad de empleados",
+    "labelSelf": "Mis cambios de contenido",
+    "employeeActivitydescription": "Ediciones, checkouts y eliminaciones por empleado",
+    "editsByDay": "Ediciones por día",
+    "editsByDayInfo": "Gráfico de líneas de ediciones de contenido por rol a lo largo del tiempo",
+    "employeeEditsByDaySelf": "Ediciones por día",
+    "employeeEditsByDay": "Ediciones de empleados por día",
+    "employeeEditsinfo": "Fluctuación en las ediciones de contenido por rol a lo largo del tiempo.",
+    "popularContent": "Contenido popular",
+    "recentlyViewed": "Visto recientemente",
+    "defaultHelp": "Vista general del panel.",
+    "hiddenWidget": "Todos los componentes están ocultos",
+    "restoreDefaults": "Restablecer valores predeterminados"
   },
+
   "recentActivity": {
     "title": "Actividad reciente",
     "info": "El panel de actividad reciente muestra las cuatro acciones más recientes realizadas en la aplicación. Incluye el usuario, la hora, la fecha y la acción realizada. Ve a la página de Actividad desde la barra lateral para ver una línea de tiempo más completa.",
@@ -125,5 +150,14 @@
     "settings": "Configuración",
     "logout": "Cerrar sesión",
     "myAccount": "Mi cuenta"
+  },
+
+  "positions": {
+    "UNDERWRITER": "Suscriptor",
+    "BUSINESS_ANALYST": "Analista de Negocios",
+    "ACTUARIAL_ANALYST": "Analista Actuarial",
+    "EXL_OPERATIONS": "Operaciones EXL",
+    "BUSINESS_OP_RATING": "Calificación de Negocios",
+    "ADMIN": "Administrador"
   }
 }

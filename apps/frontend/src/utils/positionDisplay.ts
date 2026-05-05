@@ -23,8 +23,10 @@ function humanizeEnumValue(value: string): string {
     .join(" ");
 }
 
-export function getPositionLabel(position: Position): string {
-  return POSITION_LABEL_OVERRIDES[position] ?? humanizeEnumValue(position);
+export function getPositionLabel(position: Position, t?: Tfunction): string {
+  if (t) {
+    return t(`positions.${position}`);
+  }
 }
 
 export function getPositionChipColor(position: Position): ChipProps["color"] {
