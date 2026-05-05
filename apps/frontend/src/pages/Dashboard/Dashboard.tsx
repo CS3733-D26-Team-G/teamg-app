@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import DashboardRecentActivity from "../../features/dashboard/components/DashboardRecentActivity.tsx";
 import {
   DashboardLayout,
@@ -37,7 +36,6 @@ import RecentlyViewed from "../../features/dashboard/components/RecentlyViewed";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
-import { LanguageToggle } from "../../components/LanguageToggle.tsx";
 
 // ── Layout Types ──────────────────────────────────────────────────────────────
 
@@ -204,7 +202,6 @@ function WidgetSelector({
   onToggleCard: (id: dashboardCardID) => void;
   onReset: () => void;
 }) {
-  const { t } = useTranslation();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
   const visibleCardIds = new Set(
@@ -216,7 +213,6 @@ function WidgetSelector({
 
   return (
     <>
-      <LanguageToggle />
       <Tooltip title="Customise widgets">
         <Button
           onClick={(e) => setAnchor(e.currentTarget)}
@@ -237,7 +233,7 @@ function WidgetSelector({
             "&:hover": { backgroundColor: "rgba(255,255,255,0.25)" },
           }}
         >
-          {t("dashboard.widgetsButton")}
+          Widgets
           {hiddenCount > 0 && (
             <Chip
               label={`${hiddenCount} hidden`}
@@ -290,12 +286,12 @@ function WidgetSelector({
             <Typography
               sx={{ color: "white", fontWeight: 700, fontSize: "0.9rem" }}
             >
-              {t("dashboard.widgetsTitle")}
+              Dashboard Widgets
             </Typography>
             <Typography
               sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.7rem" }}
             >
-              {t("dashboard.widgetsSubtitle")}
+              Toggle visibility · drag rows to reorder
             </Typography>
           </Box>
           <Button
@@ -316,7 +312,7 @@ function WidgetSelector({
               },
             }}
           >
-            {t("dashboard.widgetsReset")}
+            Reset
           </Button>
         </Box>
         <Box sx={{ px: 1.25, py: 1, maxHeight: 400, overflowY: "auto" }}>
@@ -386,7 +382,7 @@ function WidgetSelector({
               textAlign: "center",
             }}
           >
-            {t("dashboard.widgetsInfo")}
+            Use "Edit Layout" to reorder rows and cards
           </Typography>
         </Box>
       </Popover>
@@ -398,7 +394,7 @@ function WidgetSelector({
 
 export default function Dashboard() {
   const [rows, setRows] = useState<DashboardRow[]>(DEFAULT_ROWS);
-  const { t } = useTranslation();
+
   const { session } = useAuth();
   const { data, loading, error } = useDashboardBootstrap();
   const { profile } = useProfile();
@@ -442,74 +438,70 @@ export default function Dashboard() {
     {
       id: 0,
       value: empCounts.BUSINESS_ANALYST ?? 0,
-      label: t("adminCards.businessAnalyst"),
+      label: "Business Analyst",
       color: "#bea5aa",
     },
     {
       id: 1,
       value: empCounts.BUSINESS_OP_RATING ?? 0,
-      label: t("adminCards.businessOpRating"),
+      label: "Business Ops Rating",
       color: "#509edd",
     },
     {
       id: 2,
       value: empCounts.UNDERWRITER ?? 0,
-      label: t("adminCards.underwriter"),
+      label: "Underwriter",
       color: "#395176",
     },
     {
       id: 3,
       value: empCounts.ACTUARIAL_ANALYST ?? 0,
-      label: t("adminCards.actuarialAnalyst"),
+      label: "Actuarial Analyst",
       color: "#ba667b",
     },
-    {
-      id: 4,
-      value: empCounts.ADMIN ?? 0,
-      label: t("adminCards.admin"),
-      color: "#74414e",
-    },
+    { id: 4, value: empCounts.ADMIN ?? 0, label: "Admin", color: "#74414e" },
     {
       id: 5,
       value: empCounts.EXL_OPERATIONS ?? 0,
-      label: t("adminCards.exlOperations"),
+      label: "EXL Operations",
       color: "#721b31",
     },
   ];
 
   const helpText: Record<string, string> = {
-    ADMIN: t("dashboard.adminHelp"),
-    UNDERWRITER: t("dashboard.underwriterHelp"),
-    BUSINESS_ANALYST: t("dashboard.businessAnalystHelp"),
-    ACTUARIAL_ANALYST: t("dashboard.actuarialAnalystHelp"),
-    EXL_OPERATIONS: t("dashboard.exlOperationsHelp"),
-    BUSINESS_OP_RATING: t("dashboard.businessOpRatingHelp"),
+    ADMIN:
+      "Full organisational overview: employee demographics, recent activity, content counts by role.",
+    UNDERWRITER: "Track activity and access your content from the dashboard.",
+    BUSINESS_ANALYST: "Track your content and platform activity.",
+    ACTUARIAL_ANALYST: "Monitor content counts and recent platform activity.",
+    EXL_OPERATIONS: "Monitor content and activity.",
+    BUSINESS_OP_RATING: "View your content and platform activity.",
   };
 
   const roleConfig = [
     {
       id: "role-ba" as dashboardCardID,
-      label: t("adminCards.businessAnalyst"),
+      label: "Business Analyst",
       key: "BUSINESS_ANALYST",
     },
     {
       id: "role-uw" as dashboardCardID,
-      label: t("adminCards.underwriter"),
+      label: "Underwriter",
       key: "UNDERWRITER",
     },
     {
       id: "role-actuarial" as dashboardCardID,
-      label: t("adminCards.actuarialAnalyst"),
+      label: "Actuarial Analyst",
       key: "ACTUARIAL_ANALYST",
     },
     {
       id: "role-exl" as dashboardCardID,
-      label: t("adminCards.exlOperations"),
+      label: "EXL Operations",
       key: "EXL_OPERATIONS",
     },
     {
       id: "role-bus-ops" as dashboardCardID,
-      label: t("adminCards.businessOpRating"),
+      label: "Business Ops",
       key: "BUSINESS_OP_RATING",
     },
   ];
@@ -598,10 +590,10 @@ export default function Dashboard() {
             }}
           >
             <Typography sx={{ fontWeight: 700, fontSize: "1.3rem", py: 0.75 }}>
-              {t("employeeDemographics.title")}
+              Employee Demographics
             </Typography>
             <HelpPopup
-              description={t("employeeDemographics.info")}
+              description="Breakdown of employees by role. Hover a slice for exact numbers."
               infoOrHelp={false}
             />
           </Box>
@@ -665,9 +657,9 @@ export default function Dashboard() {
                   mt: 0.5,
                 }}
               >
-                {t("dashboard.totalItems")}
+                Total Items
                 <HelpPopup
-                  description={`${t("dashboard.accessibleBy")} ${label}s`}
+                  description={`Total content accessible by ${label}s`}
                   infoOrHelp={false}
                 />
               </Typography>
@@ -702,7 +694,7 @@ export default function Dashboard() {
       description:
         "Your most frequently used content and popular content for your role",
       node: (
-        <CardShell title={t("dashboard.popularContent")}>
+        <CardShell title="Popular Content">
           <PopularContent position={session?.position} />
         </CardShell>
       ),
@@ -714,7 +706,7 @@ export default function Dashboard() {
       label: "Recently Viewed",
       description: "Your recently viewed content",
       node: (
-        <CardShell title={t("dashboard.recentlyViewed")}>
+        <CardShell title="Recently Viewed">
           <RecentlyViewed />
         </CardShell>
       ),
@@ -726,7 +718,7 @@ export default function Dashboard() {
       label: "File Types",
       description: "Bar chart of file type distribution",
       node: (
-        <CardShell title={t("dashboard.fileTypes")}>
+        <CardShell title="File Types">
           <TypeBarChart data={fileTypeCounts} />
         </CardShell>
       ),
@@ -1017,7 +1009,7 @@ export default function Dashboard() {
             variant="h2"
             sx={{ fontWeight: 700, color: "white", fontSize: "2.2rem" }}
           >
-            {t("dashboard.welcomeBack")}, {profile?.firstName}!
+            Welcome Back, {profile?.firstName}!
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <HelpPopup
