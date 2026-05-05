@@ -88,7 +88,11 @@ export default function PopularContent({ position }: Props) {
 
   return (
     <Stack spacing={2}>
-      <Box>
+      <Box
+        sx={{
+          overflowY: "auto",
+        }}
+      >
         <Typography
           variant="subtitle2"
           sx={{ fontWeight: "bold", mb: 1 }}
@@ -108,6 +112,7 @@ export default function PopularContent({ position }: Props) {
                   justifyContent: "space-between",
                   alignItems: "center",
                   cursor: "pointer",
+                  overflowY: "auto",
                 }}
                 onClick={() => viewContent(item)}
               >
@@ -140,7 +145,7 @@ export default function PopularContent({ position }: Props) {
         }
       </Box>
 
-      <Box>
+      <Box className="container">
         <Typography
           variant="subtitle2"
           sx={{ fontWeight: "bold", mb: 1 }}

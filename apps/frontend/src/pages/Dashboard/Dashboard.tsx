@@ -522,7 +522,16 @@ export default function Dashboard() {
     children: React.ReactNode;
   }) => (
     <Card
-      sx={{ ...cardSx, height: "100%" }}
+      sx={{
+        ...cardSx,
+        "height": "100%",
+        "overflowY": "auto",
+        "&::-webkit-scrollbar": {
+          display: "none",
+        },
+        "msOverflowStyle": "none",
+        "scrollbarWidth": "none",
+      }}
       elevation={0}
     >
       <Box
@@ -545,7 +554,9 @@ export default function Dashboard() {
         )}
       </Box>
       <Divider />
-      <CardContent sx={{ "p": 2, "&:last-child": { pb: 2 } }}>
+      <CardContent
+        sx={{ "p": 2, "&:last-child": { pb: 2 }, "overflowY": "auto" }}
+      >
         {children}
       </CardContent>
     </Card>
@@ -919,7 +930,7 @@ export default function Dashboard() {
               }}
             >
               {popularInRow && popularAllowed && (
-                <Box sx={{ flex: 1, maxHeight: "50%", overflow: "hidden" }}>
+                <Box sx={{ flex: 1, maxHeight: "50%", overflowY: "auto" }}>
                   <CardShell title="Popular Content">
                     <PopularContent position={session?.position} />
                   </CardShell>
