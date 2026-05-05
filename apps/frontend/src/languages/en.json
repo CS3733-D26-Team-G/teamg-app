@@ -60,15 +60,39 @@
     "widgetsReset": "Reset",
     "widgetsInfo": "Use Edit Layout to reorder rows and cards",
     "fileTypes": "File Types",
+    "fileTypesInfo": "Bar chart of file type distribution",
     "totalItems": "Total Items",
     "employeeEditsByDay": "Employee Edits By Day",
     "employeeEditsinfo": "Fluctuation in content edits by role over time.",
-    "accessibleBy":"Total content accessible by",
+    "accessibleBy": "Total content accessible by",
     "recentlyViewed": "Recently Viewed",
     "popularContent": "Popular Content",
-    "myFrequentlyUsed": "My Frequently Used",
-    "popularFor": "Popular for"
-
+    "myRecentlyViewed": "Your recently viewed content",
+    "popularFor": "Popular for",
+    "overviews": "Overview",
+    "activityAndConent": "Activity & Content",
+    "charts": "Charts",
+    "hiddens": "hidden",
+    "failedloading": "Failed to load dashboard",
+    "employeeDemographics": "Employee Demographics",
+    "employeeDemographicsInfo": "Pie chart of staff by role",
+    "recentActivity": "Recent Activity",
+    "recentActivityInfo": "Live feed of the last 4 actions",
+    "roleCount": "Count",
+    "roleCountInfo": "Content count for",
+    "employeeActivity": "Employee Activity",
+    "labelSelf": "My Content Changes",
+    "employeeActivitydescription": "Edits, checkouts & deletes by employee",
+    "editsByDay": "Edits By Day",
+    "editsByDayInfo": "Line chart of content edits over time by role",
+    "employeeEditsByDaySelf": "Edits By Day",
+    "employeeEditsByDay": "Employee Edits By Day",
+    "employeeEditsinfo": "Fluctuation in content edits by role over time.",
+    "popularContent": "Popular Content",
+    "recentlyViewed": "Recently Viewed",
+    "defaultHelp": "Dashboard overview.",
+    "hiddenWidget": "All widgets are hidden",
+    "restoreDefaults": "Restore defaults"
   },
 
   "recentActivity": {
@@ -130,6 +154,15 @@
     "settings": "Settings",
     "logout": "Logout",
     "myAccount": "My Account"
+  },
+
+  "positions": {
+    "UNDERWRITER": "Underwriter",
+    "BUSINESS_ANALYST": "Business Analyst",
+    "ACTUARIAL_ANALYST": "Actuarial Analyst",
+    "EXL_OPERATIONS": "EXL Operations",
+    "BUSINESS_OP_RATING": "Business Ops Rating",
+    "ADMIN": "Admin"
   }
 
 }
