@@ -30,6 +30,10 @@ import {
   Checkbox,
   Slide,
   Switch,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  Backdrop,
 } from "@mui/material";
 import type { TransitionProps } from "@mui/material/transitions";
 import { useTheme } from "@mui/material/styles";
@@ -90,8 +94,12 @@ import {
   patchDashboardBootstrap,
   prefetchActivity,
 } from "../../../lib/activity-loaders";
-import { ContentTabs, SPECIAL_TABS } from "./viewing/ContentTabs.tsx";
-import { recordRecentlyViewed } from "./viewing/RecentlyViewed.tsx";
+import { ContentTabs } from "./viewing/ContentTabs.tsx";
+import {
+  recordRecentlyViewed,
+  clearRecentlyViewed,
+} from "./viewing/RecentlyViewed.tsx";
+import { SPECIAL_TABS, type TabKey } from "./viewing/ContentTabsConfig.ts";
 
 // human-readable labels for each content status
 const statusLabels: Record<ContentStatus, string> = {
@@ -273,8 +281,10 @@ export default function ContentManagement({
     () => contentListQuery.data ?? [],
   );
   const [searchQuery, setSearchQuery] = useState("");
+  // null means no server search is active; [] means a search is loading or empty.
   const [searchRows, setSearchRows] = useState<ContentRow[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const latestSearchRequestRef = useRef(0);
   const [lockMessage, setLockMessage] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState<
     Record<string, boolean>
@@ -295,6 +305,8 @@ export default function ContentManagement({
 
   const [pendingDelete, setPendingDelete] = useState<ContentRow | null>(null); // row staged for the delete confirmation dialog
   const [pendingSave, setPendingSave] = useState<FormData | null>(null); // payload staged for the save confirmation dialog
+  const [uploading, setUploading] = useState(false); // true while the save request is in-flight
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); // message shown in the upload success snackbar
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set()); // UUIDs added this session, used for "new" row highlighting
   const [showAllCheckedOut, setShowAllCheckedOut] = useState(true); // controls admins viewing of their own checked-out file or all checked-out files
 
@@ -369,6 +381,9 @@ export default function ContentManagement({
   const fetchSearchResults = useCallback(
     async (query: string) => {
       const trimmedQuery = query.trim();
+      const requestId = latestSearchRequestRef.current + 1;
+      latestSearchRequestRef.current = requestId;
+
       if (!trimmedQuery) {
         setSearchRows(null);
         setSearchError(null);
@@ -376,6 +391,8 @@ export default function ContentManagement({
       }
 
       const params = new URLSearchParams({ q: trimmedQuery });
+      // Search ranking happens on the backend, so selected filters are sent with
+      // the query instead of being layered on top of ranked results locally.
       positionFilters.forEach((position) =>
         params.append("position", position),
       );
@@ -400,6 +417,8 @@ export default function ContentManagement({
           throw parsed.error;
         }
 
+        if (requestId !== latestSearchRequestRef.current) return;
+
         setSearchRows(
           parsed.data.map((row) => ({
             ...row,
@@ -407,6 +426,8 @@ export default function ContentManagement({
           })),
         );
       } catch (error) {
+        if (requestId !== latestSearchRequestRef.current) return;
+
         console.error(error);
         setSearchRows([]);
         setSearchError("Unable to search content");
@@ -415,18 +436,25 @@ export default function ContentManagement({
     [fileTypeFilters, positionFilters, tagFilters],
   );
 
-  const handleSearch = useCallback((query: string) => {
-    const trimmedQuery = query.trim();
-    setSearchQuery(trimmedQuery);
+  const handleSearch = useCallback(
+    (query: string) => {
+      const trimmedQuery = query.trim();
 
-    if (!trimmedQuery) {
-      setSearchRows(null);
-      setSearchError(null);
-      return;
-    }
+      if (trimmedQuery === searchQuery) return;
 
-    setSearchRows([]);
-  }, []);
+      latestSearchRequestRef.current += 1;
+      setSearchQuery(trimmedQuery);
+
+      if (!trimmedQuery) {
+        setSearchRows(null);
+        setSearchError(null);
+        return;
+      }
+
+      setSearchRows([]);
+    },
+    [searchQuery],
+  );
 
   useEffect(() => {
     const filterParam = searchParams.get("filter");
@@ -622,16 +650,22 @@ export default function ContentManagement({
         credentials: "include",
       });
 
+      // If another user holds the lock - update the local state to show that
       if (res.status === 409) {
-        // another user holds the lock — update local state to reflect that
+        const data = await res.json();
+
         patchContentRow(row.uuid, (currentRow) => ({
           ...currentRow,
           isLocked: true,
+          editLock: data.lock,
         }));
+
         patchBootstrapContentRow(row.uuid, (currentRow) => ({
           ...currentRow,
           isLocked: true,
+          editLock: data.lock,
         }));
+
         return;
       }
 
@@ -668,6 +702,7 @@ export default function ContentManagement({
 
       if (session?.employeeUuid) {
         recordRecentlyViewed(session.employeeUuid, row.uuid);
+        refreshRecentEntries();
       }
 
       markRelatedActivityStale();
@@ -712,6 +747,35 @@ export default function ContentManagement({
     }
   };
 
+  const handleForceCheckIn = async (uuid: string) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.CONTENT.LOCK(uuid), {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        setLockMessage("Unable to check in content");
+        return;
+      }
+
+      patchContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      patchBootstrapContentRow(uuid, (row) => ({
+        ...row,
+        isLocked: false,
+        editLock: null,
+      }));
+      markRelatedActivityStale();
+    } catch (error) {
+      console.error(error);
+      setLockMessage("Unable to check in content.");
+    }
+  };
+
   // stages the form payload and opens the save confirmation dialog
   const handleSave = (payload: FormData) => {
     setPendingSave(payload);
@@ -722,7 +786,6 @@ export default function ContentManagement({
     if (!pendingSave) return;
 
     const payloadToSave = pendingSave;
-    setPendingSave(null);
     const isExisting = viewState !== "new" && viewState !== null;
     const uuid = isExisting ? viewState.uuid : crypto.randomUUID();
     const url =
@@ -730,6 +793,7 @@ export default function ContentManagement({
         API_ENDPOINTS.CONTENT.EDIT(uuid)
       : API_ENDPOINTS.CONTENT.CREATE;
 
+    setUploading(true);
     try {
       const res = await fetch(url, {
         method: isExisting ? "PUT" : "POST",
@@ -738,15 +802,18 @@ export default function ContentManagement({
       });
 
       if (res.ok) {
+        setPendingSave(null);
         if (isExisting) {
           // keep the lock if the user is returning to the editor after editing metadata
           if (!returningToEditorRef.current) {
             await releaseLock(uuid);
           }
+          setSuccessMessage("Document updated successfully.");
         } else {
           // highlight the newly created row for the rest of this session
           const data = (await res.json()) as { uuid: string };
           setSessionNewIds((prev) => new Set([...prev, data.uuid]));
+          setSuccessMessage("Document submitted successfully.");
         }
         markContentListStale();
         markRelatedActivityStale(true);
@@ -755,6 +822,8 @@ export default function ContentManagement({
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -862,6 +931,8 @@ export default function ContentManagement({
     specialTabRows,
     activeRows,
     isSpecialTab,
+    refreshRecentEntries,
+    clearRecentEntries,
   } = ContentTabs({
     filteredRows,
     employeeUuid: session?.employeeUuid,
@@ -900,12 +971,26 @@ export default function ContentManagement({
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPendingSave(null)}>Cancel</Button>
+          <Button
+            onClick={() => setPendingSave(null)}
+            disabled={uploading}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={() => void confirmSave()}
+            disabled={uploading}
+            startIcon={
+              uploading ?
+                <CircularProgress
+                  size={20}
+                  color="inherit"
+                />
+              : null
+            }
             variant="contained"
           >
-            Submit
+            {uploading ? "Submitting..." : "Submit"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -939,6 +1024,7 @@ export default function ContentManagement({
     // record locally immediately so the recent tab updates without waiting for the API
     if (session?.employeeUuid) {
       recordRecentlyViewed(session.employeeUuid, uuid);
+      refreshRecentEntries();
     }
     try {
       await fetch(API_ENDPOINTS.CONTENT.VIEW(uuid), {
@@ -957,6 +1043,7 @@ export default function ContentManagement({
     onCheckOut: (row: ContentRow) => void,
     onOpenEditor: (row: ContentRow) => void,
     onCheckIn: (uuid: string) => void,
+    onForceCheckIn: (uuid: string) => void,
   ): GridColDef<ContentRow>[] => [
     {
       // hidden numeric field used only for default sort (favorites first)
@@ -1013,6 +1100,8 @@ export default function ContentManagement({
               : ""
             }
             editorAvatar={params.row.editLock?.lockedByEmp?.avatar}
+            createdAt={params.row.createdAt}
+            expirationTime={params.row.expirationTime}
           />
         </Box>
       ),
@@ -1238,7 +1327,11 @@ export default function ContentManagement({
             {/* shown when a different user holds the lock */}
             {isCheckedOutByOther && (
               <Tooltip
-                title={`Checked out by ${row.editLock?.lockedByEmp.firstName} ${row.editLock?.lockedByEmp.lastName}`}
+                title={
+                  row.editLock?.lockedByEmp ?
+                    `Checked out by ${row.editLock.lockedByEmp.firstName} ${row.editLock.lockedByEmp.lastName}`
+                  : "Checked out by another user"
+                }
               >
                 <span>
                   <Button
@@ -1249,6 +1342,18 @@ export default function ContentManagement({
                     LOCKED
                   </Button>
                 </span>
+              </Tooltip>
+            )}
+
+            {isSystemAdmin && row.isLocked && !isCheckedOutByMe && (
+              <Tooltip title={"Force check in"}>
+                <IconButton
+                  sx={{ color: "orange" }}
+                  size="small"
+                  onClick={() => void onForceCheckIn(row.uuid)}
+                >
+                  <LockOpenIcon fontSize="small" />
+                </IconButton>
               </Tooltip>
             )}
           </Box>
@@ -1301,7 +1406,10 @@ export default function ContentManagement({
                   Content Management
                 </Typography>
                 <Typography
-                  sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.95rem" }}
+                  sx={{
+                    color: "rgba(255,255,255,0.65)",
+                    fontSize: "0.95rem",
+                  }}
                 >
                   Create, edit, and organize your digital assets and site
                   content in one collaborative workspace.
@@ -1347,6 +1455,7 @@ export default function ContentManagement({
                 height: 120 + i * 80,
                 top: -40 - i * 30,
                 right: -40 - i * 30,
+                pointerEvents: "none",
               }}
             />
           ))}
@@ -1368,10 +1477,12 @@ export default function ContentManagement({
                 <HeaderSearchBar
                   searchQuery={searchQuery}
                   onSearch={handleSearch}
+                  debounceMs={300}
                 />
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Button
+                  className="content-filter-button"
                   onClick={handleFilterClick}
                   aria-controls={anchorElement ? "filter-menu" : undefined}
                   aria-haspopup="true"
@@ -1664,16 +1775,14 @@ export default function ContentManagement({
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Tooltip
                 title={
-                  viewMode === "accordion" ?
-                    "Switch to Tabs view"
-                  : "Switch to Accordion view"
+                  viewMode === "tabs" ?
+                    "Switch to Accordion view"
+                  : "Switch to Tabs view"
                 }
               >
                 <IconButton
                   onClick={() =>
-                    setViewMode((m) =>
-                      m === "accordion" ? "tabs" : "accordion",
-                    )
+                    setViewMode((m) => (m === "tabs" ? "accordion" : "tabs"))
                   }
                   size="small"
                   sx={{
@@ -1692,14 +1801,12 @@ export default function ContentManagement({
                   : <TableRowsIcon fontSize="small" />}
                 </IconButton>
               </Tooltip>
-              <HelpPopup
-                description="The Content page displays all documents and resources available for your role. You can search, filter, download, and open items directly."
-                infoOrHelp={true}
-              />
               {isSystemAdmin && (
                 <TagManagerPopup
                   availableTags={availableTags}
                   onTagsChanged={async () => {
+                    markContentListStale();
+                    await contentListQuery.refresh();
                     return (await contentTagsQuery.refresh()) ?? [];
                   }}
                 />
@@ -1720,7 +1827,9 @@ export default function ContentManagement({
           {(positionFilters.length > 0 ||
             fileTypeFilters.length > 0 ||
             tagFilters.length > 0) && (
-            <Box sx={{ display: "flex", flexWrap: "wrap", pt: 2, gap: 1 }}>
+            <Box
+              sx={{ display: "flex", flexWrap: "wrap", pb: 2, px: 4, gap: 1 }}
+            >
               {positionFilters.map((position) => (
                 <Chip
                   key={position}
@@ -1762,7 +1871,10 @@ export default function ContentManagement({
       </AppBar>
 
       {/* ── Content Data Grids (Accordion or Tabs) ────────────────────────────────── */}
-      <Box sx={{ width: "95%", mx: "auto" }}>
+      <Box
+        className="content-table"
+        sx={{ width: "95%", mx: "auto" }}
+      >
         {/* ── TABS VIEW ─────────────────────────────────────────────────────── */}
         {viewMode === "tabs" && (
           <Box
@@ -1770,7 +1882,8 @@ export default function ContentManagement({
               border: "1px solid",
               borderColor: "divider",
               borderRadius: "8px",
-              overflow: "hidden",
+              height: "calc(100vh - 200px)",
+              overflowY: "auto",
             }}
           >
             <Box
@@ -1828,6 +1941,25 @@ export default function ContentManagement({
                             "& .MuiChip-label": { px: 0.75 },
                           }}
                         />
+                        {key === "recent" &&
+                          specialTabRows["recent"].length > 0 && (
+                            <Tooltip title="Clear recently viewed">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  clearRecentEntries();
+                                }}
+                                sx={{
+                                  "p": 0.25,
+                                  "color": "rgba(255,255,255,0.6)",
+                                  "&:hover": { color: "white" },
+                                }}
+                              >
+                                <CloseIcon sx={{ fontSize: 13 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                       </Stack>
                     }
                   />
@@ -1962,6 +2094,7 @@ export default function ContentManagement({
                     handleCheckout,
                     handleOpenEditor,
                     releaseLock,
+                    handleForceCheckIn,
                   )}
                   getRowClassName={(params) => {
                     const hasPermission =
@@ -2165,6 +2298,7 @@ export default function ContentManagement({
                         handleCheckout,
                         handleOpenEditor,
                         releaseLock,
+                        handleForceCheckIn,
                       )}
                       getRowClassName={(params) => {
                         const hasPermission =
@@ -2308,6 +2442,30 @@ export default function ContentManagement({
               : undefined
             }
           />
+
+          {/* uploading overlay — shown while the save request is in-flight */}
+          <Backdrop
+            open={uploading}
+            sx={{
+              position: "absolute",
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+              backgroundColor: "rgba(0,0,0,0.35)",
+              borderRadius: "inherit",
+              display: "flex",
+              flexDirection: "column",
+              gap: 1.5,
+            }}
+          >
+            <CircularProgress
+              color="inherit"
+              sx={{ color: "white" }}
+            />
+            <Typography
+              sx={{ color: "white", fontWeight: 500, fontSize: "0.9rem" }}
+            >
+              Uploading…
+            </Typography>
+          </Backdrop>
         </DialogContent>
       </Dialog>
 
@@ -2386,6 +2544,7 @@ export default function ContentManagement({
               onSaved={() => {
                 markContentListStale();
                 markRelatedActivityStale(true);
+                setSuccessMessage("Document saved successfully.");
               }}
               readOnly={false}
               onDelete={() => editorRow && handleDelete(editorRow)}
@@ -2400,6 +2559,23 @@ export default function ContentManagement({
           );
         })()}
       {confirmationDialogs}
+
+      {/* upload / edit success confirmation */}
+      <Snackbar
+        open={successMessage !== null}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSuccessMessage(null)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

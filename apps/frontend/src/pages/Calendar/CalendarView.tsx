@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../auth/AuthContext";
+
 import { type ContentRow } from "../../types/content";
 import type { EventInput } from "@fullcalendar/core";
 import {
@@ -31,11 +32,21 @@ import NotificationsBell from "../../features/notifications/components/Notificat
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { loadContentList } from "../../lib/api-loaders";
 import { useTheme } from "@mui/material/styles";
+import NotificationBarComponent from "../../features/notifications/components/NotificationBar.tsx";
+
+const CREATED_COLOR = "#4f46e5";
+const CHECKED_OUT_COLOR = "#d97706";
+
+function getExpiresInSeconds(expirationTime: string | null): number {
+  if (!expirationTime) return -1;
+  return Math.floor((new Date(expirationTime).getTime() - Date.now()) / 1000);
+}
 import { API_ENDPOINTS } from "../../config";
 import DocPreviewer from "../../features/content/components/viewing/DocPreviewer.tsx";
 import VersionHistoryPanel from "../../features/content/components/viewing/VersionHistoryPanel.tsx";
 import { useSidebar } from "../../components/SidebarContext.tsx";
 import { Icon } from "lucide-react";
+import { NotificationFilterProvider } from "../../features/notifications/components/NotificationsSettingsToggle.tsx";
 
 export function getEventColor(expirationTime: string | null): string {
   if (!expirationTime) return "#06d606";
@@ -124,8 +135,9 @@ export default function CalendarPage() {
         row.contentOwner?.toLowerCase() === currentUserName.toLowerCase();
       const isCheckedOutByMe =
         row.editLock?.lockedByEmp?.uuid === session.employeeUuid;
+      const isAdmin = profile?.position === "ADMIN";
 
-      if (isOwner || isCheckedOutByMe) {
+      if (isOwner || isCheckedOutByMe || isAdmin) {
         const originalExpDate = new Date(row.expirationTime);
         if (isNaN(originalExpDate.getTime())) return acc;
 
@@ -194,6 +206,7 @@ export default function CalendarPage() {
               right: -40 - i * 30,
               pointerEvents: "none",
               overflow: "hidden",
+              zIndex: 100,
             }}
           />
         ))}
@@ -238,7 +251,7 @@ export default function CalendarPage() {
             p: 3,
             backgroundColor: "background.paper",
             minWidth: 0,
-            width: isOpen ? "calc(100vw - 280px)" : "calc(100vw - 64px)",
+            width: isOpen ? "calc(100vw - 280px)" : "calc(100vw - 109px)",
             overflowX: "auto",
             minHeight: "calc(100vh - 130px)",
             border: "none",
@@ -336,66 +349,86 @@ export default function CalendarPage() {
                   
               `}</style>
 
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                eventDisplay="block"
-                height="calc(100vh - 180px"
-                customButtons={{
-                  dayToday: {
-                    text: "Day",
-                    click: () => {
-                      const calendarApi = calendarRef.current?.getApi();
-                      if (calendarApi) {
-                        calendarApi.today();
-                        calendarApi.changeView("timeGridDay");
-                      }
-                    },
-                  },
-                  weekToday: {
-                    text: "Week",
-                    click: () => {
-                      const calendarApi = calendarRef.current?.getApi();
-                      if (calendarApi) {
-                        calendarApi.today();
-                        calendarApi.changeView("timeGridWeek");
-                      }
-                    },
-                  },
-                  Month: {
-                    text: "Month",
-                    click: () => {
-                      const calendarApi = calendarRef.current?.getApi();
-                      if (calendarApi) {
-                        calendarApi.today();
-                        calendarApi.changeView("dayGridMonth");
-                      }
-                    },
-                  },
+              <div
+                style={{
+                  display: "flex",
+                  gap: "20px",
+                  height: "calc(100vh - 180px)",
                 }}
-                headerToolbar={{
-                  left: "prev,next",
-                  center: "title",
-                  right: "Month,weekToday,dayToday",
-                }}
-                events={events}
-                forceEventDuration={true}
-                displayEventTime={false}
-                eventClick={(info) => {
-                  const row = info.event.extendedProps.row as ContentRow;
-                  setPreviewDoc({
-                    uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
-                    fileName: row.title,
-                    uuid: row.uuid,
-                    row,
-                  });
-                }}
-              />
+              >
+                <div style={{ width: "300px", flexShrink: 0 }}>
+                  <Card sx={{ height: "100%", overflow: "auto" }}>
+                    <NotificationBarComponent showFilters={true} />
+                  </Card>
+                </div>
+                <div style={{ flex: 1, minWidth: 0, overflow: "auto" }}>
+                  <Card sx={{ height: "100%" }}>
+                    <FullCalendar
+                      ref={calendarRef}
+                      plugins={[
+                        dayGridPlugin,
+                        timeGridPlugin,
+                        interactionPlugin,
+                      ]}
+                      initialView="dayGridMonth"
+                      eventDisplay="block"
+                      height="100%"
+                      customButtons={{
+                        dayToday: {
+                          text: "Day",
+                          click: () => {
+                            const calendarApi = calendarRef.current?.getApi();
+                            if (calendarApi) {
+                              calendarApi.today();
+                              calendarApi.changeView("timeGridDay");
+                            }
+                          },
+                        },
+                        weekToday: {
+                          text: "Week",
+                          click: () => {
+                            const calendarApi = calendarRef.current?.getApi();
+                            if (calendarApi) {
+                              calendarApi.today();
+                              calendarApi.changeView("timeGridWeek");
+                            }
+                          },
+                        },
+                        Month: {
+                          text: "Month",
+                          click: () => {
+                            const calendarApi = calendarRef.current?.getApi();
+                            if (calendarApi) {
+                              calendarApi.today();
+                              calendarApi.changeView("dayGridMonth");
+                            }
+                          },
+                        },
+                      }}
+                      headerToolbar={{
+                        left: "prev,next",
+                        center: "title",
+                        right: "Month,weekToday,dayToday",
+                      }}
+                      events={events}
+                      forceEventDuration={true}
+                      displayEventTime={false}
+                      eventClick={(info) => {
+                        const row = info.event.extendedProps.row as ContentRow;
+                        setPreviewDoc({
+                          uri: API_ENDPOINTS.CONTENT.FILE(row.uuid),
+                          fileName: row.title,
+                          uuid: row.uuid,
+                          row,
+                        });
+                      }}
+                    />
+                  </Card>
+                </div>
+              </div>
             </>
           }
         </Card>
-
         <Dialog
           open={previewDoc !== null}
           onClose={() => setPreviewDoc(null)}

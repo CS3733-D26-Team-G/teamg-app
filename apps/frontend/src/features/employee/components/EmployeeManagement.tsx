@@ -516,6 +516,7 @@ export default function EmployeeManagement() {
                 height: 120 + i * 80,
                 top: -40 - i * 30,
                 right: -40 - i * 30,
+                pointerEvents: "none",
               }}
             />
           ))}

@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Box, Button, Alert, Collapse, Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import HanoverLogoWhite from "../../../assets/HanoverLogoWhite.png";
 import LoginModal from "./LoginModal.tsx";
 import theme from "../../../theme.tsx";
-import { type Variants } from "framer-motion";
 import CarouselBackground from "./CarouselBackground";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../../auth/AuthContext.tsx";
+import VoiceControl from "../../../components/VoiceControl.tsx";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -37,6 +38,7 @@ const itemVariants: Variants = {
 
 export default function HeroSection() {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(true);
   const { t } = useTranslation();
@@ -47,6 +49,47 @@ export default function HeroSection() {
     { letter: "R", word: "espect", indent: "pl-37" },
     { letter: "E", word: "mpowerment", indent: "pl-43" },
   ];
+
+  const openLogin = () => setLoginOpen(true);
+
+  const handleVoiceCommand = (command: string) => {
+    const normalizedCommand = command.toLowerCase().replace(/[^\w\s]/g, "");
+    const compactCommand = normalizedCommand.replace(/\s+/g, "");
+    const routes: Array<[string[], string]> = [
+      [["dashboard", "home"], "/dashboard"],
+      [["library", "content library"], "/library"],
+      [["preview", "preview content", "content preview"], "/library"],
+      [["check out", "checkout", "checked out"], "/library"],
+      [["forms", "my forms", "content form"], "/my-forms"],
+      [["activity"], "/activity"],
+      [["settings"], "/settings"],
+      [["profile"], "/profile"],
+      [["calendar"], "/calendar"],
+      [["claims"], "/claims"],
+      [["risk review"], "/risk-review"],
+      [["credits"], "/credits"],
+      [["about"], "/aboutus"],
+    ];
+
+    if (
+      compactCommand.includes("login") ||
+      compactCommand.includes("signin") ||
+      normalizedCommand.includes("log me in") ||
+      normalizedCommand.includes("sign me in") ||
+      (normalizedCommand.includes("log") && normalizedCommand.includes("in"))
+    ) {
+      openLogin();
+      return true;
+    }
+    const route = routes.find(([phrases]) =>
+      phrases.some((phrase) => normalizedCommand.includes(phrase)),
+    );
+    if (route) {
+      navigate(route[1]);
+      return true;
+    }
+    return false;
+  };
 
   return (
     <CarouselBackground>
@@ -97,30 +140,65 @@ export default function HeroSection() {
           <img
             src={HanoverLogoWhite}
             alt="White Hanover Logo"
-            className="w-[80px] h-auto"
+            className="w-20 h-auto"
           />
         </Box>
 
-        <Button
-          onClick={() => setLoginOpen(true)}
+        <Box
           sx={{
-            "position": "absolute",
-            "right": 40,
-            "background": "white",
-            "color": "black",
-            "fontFamily": theme.typography.fontFamily,
-            "fontSize": 18,
-            "fontWeight": "bold",
-            "px": 5,
-            "py": 1.5,
-            "borderRadius": "70px",
-            "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
-            "textTransform": "none",
-            "&:hover": { background: "#d9d2c5" },
+            position: "absolute",
+            right: session ? 15 : 40,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
           }}
         >
-          {t("heroSection.login")}
-        </Button>
+          <VoiceControl
+            onCommand={handleVoiceCommand}
+            buttonSx={{
+              position: "static",
+              zIndex: 13,
+            }}
+          />
+          {session ?
+            <Button
+              onClick={() => navigate("/dashboard")}
+              sx={{
+                "background": "white",
+                "color": "black",
+                "fontFamily": theme.typography.fontFamily,
+                "fontSize": 18,
+                "fontWeight": "bold",
+                "px": 5,
+                "py": 1.5,
+                "borderRadius": "70px",
+                "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
+                "textTransform": "none",
+                "&:hover": { background: "#d9d2c5" },
+              }}
+            >
+              Go to Dashboard
+            </Button>
+          : <Button
+              onClick={openLogin}
+              sx={{
+                "background": "white",
+                "color": "black",
+                "fontFamily": theme.typography.fontFamily,
+                "fontSize": 18,
+                "fontWeight": "bold",
+                "px": 5,
+                "py": 1.5,
+                "borderRadius": "70px",
+                "boxShadow": "0px 8px 0px rgba(0,0,0,0.18)",
+                "textTransform": "none",
+                "&:hover": { background: "#d9d2c5" },
+              }}
+            >
+              {t("heroSection.login")}
+            </Button>
+          }
+        </Box>
       </Box>
 
       {/* Animated Main Content Area */}

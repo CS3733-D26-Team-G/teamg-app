@@ -48,8 +48,10 @@ model Content {
   contentType      ContentType              @map("content_type")
   status           ContentStatus
   forPosition      Position                 @map("for_position")
+  /// Private Supabase object path for uploaded files; external URL content leaves this null.
   supabasePath     String?                  @map("supabase_path")
   fileType         String?                  @map("file_type")
+  /// AI/extracted keywords used by the backend full-text search route.
   searchText       String?                  @map("search_text") @db.Text
   createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   claimAssignments ClaimContentAssignment[]
@@ -96,6 +98,7 @@ model FavoriteContent {
 }
 
 model ContentEditLock {
+  /// One row per content item means the database enforces a single active checkout.
   contentUuid     String   @id @map("content_uuid") @db.Uuid
   lockedByEmpUuid String   @map("locked_by_emp_uuid") @db.Uuid
   lockedAt        DateTime @default(now()) @map("locked_at") @db.Timestamptz(6)
@@ -133,6 +136,7 @@ model Account {
 model AccountSettings {
   accountUsername String  @id @map("account_username")
   darkMode        Boolean @default(false) @map("dark_mode")
+  tutorialDone    Boolean @default(false) @map("tutorial_done")
   account         Account @relation(fields: [accountUsername], references: [username], onDelete: Cascade)
 }
 
@@ -151,6 +155,7 @@ model ContentHit {
   uuid         String   @id @default(uuid()) @db.Uuid
   contentUuid  String   @map("content_uuid") @db.Uuid
   employeeUuid String   @map("employee_uuid") @db.Uuid
+  /// Distinguishes passive views from edit checkout/access events for dashboard stats.
   action       HitType
   timestamp    DateTime @default(now()) @db.Timestamptz(6)
   content      Content  @relation(fields: [contentUuid], references: [uuid], onDelete: Cascade)
@@ -206,9 +211,14 @@ enum ResourceType {
 }
 
 enum InsuranceClaimType {
-  HOME
   AUTO
-  BUSINESS
+  PROPERTY_DAMAGE
+  MEDICAL
+  LIABILITY
+  WORKERS_COMPENSATION
+  THEFT
+  NATURAL_DISASTER
+  OTHER
 }
 
 enum InsuranceClaimStatus {

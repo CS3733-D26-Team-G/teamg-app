@@ -1,26 +1,15 @@
 import { Box, Button, Typography, Stack } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTutorial, PAGE_TUTORIALS } from "./TutorialContext";
+import { useTutorial } from "./TutorialContext";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 
 export default function TutorialPrompt() {
-  const {
-    showPrompt,
-    promptPageId,
-    isWelcomeTour,
-    startTutorial,
-    skipTutorial,
-  } = useTutorial();
-
-  const pageTutorial =
-    promptPageId ?
-      Object.values(PAGE_TUTORIALS).find((t) => t.pageId === promptPageId)
-    : null;
+  const { showPrompt, startTutorial, skipTutorial } = useTutorial();
 
   return (
     <AnimatePresence>
-      {showPrompt && (isWelcomeTour || pageTutorial) && (
+      {showPrompt && (
         <>
           {/* Backdrop */}
           <Box
@@ -66,7 +55,6 @@ export default function TutorialPrompt() {
                 overflow: "hidden",
               }}
             >
-              {/* Decorative circles */}
               {[...Array(3)].map((_, i) => (
                 <Box
                   key={i}
@@ -104,7 +92,7 @@ export default function TutorialPrompt() {
                   fontFamily: "Rubik, sans-serif",
                 }}
               >
-                {isWelcomeTour ? "Welcome to iBank!" : pageTutorial!.pageTitle}
+                Welcome to iBank!
               </Typography>
               <Typography
                 sx={{
@@ -114,18 +102,13 @@ export default function TutorialPrompt() {
                   fontFamily: "Rubik, sans-serif",
                 }}
               >
-                {isWelcomeTour ?
-                  "Admin Portal"
-                : `Quick page tour \u2022 ${pageTutorial!.steps.length} steps`}
+                Admin Portal
               </Typography>
             </Box>
 
             {/* Body */}
             <Box
-              sx={{
-                backgroundColor: "background.paper",
-                p: "28px 36px 32px",
-              }}
+              sx={{ backgroundColor: "background.paper", p: "28px 36px 32px" }}
             >
               <Typography
                 sx={{
@@ -136,31 +119,16 @@ export default function TutorialPrompt() {
                   fontFamily: "Rubik, sans-serif",
                 }}
               >
-                {isWelcomeTour ?
-                  <>
-                    It looks like you're new here or maybe just need a
-                    refresher. Would you like a{" "}
-                    <Box
-                      component="span"
-                      sx={{ fontWeight: 700, color: "primary.main" }}
-                    >
-                      quick guided tour
-                    </Box>{" "}
-                    of the platform? We'll walk you through the dashboard,
-                    content management, employee tools, and your account in
-                    about 2 minutes.
-                  </>
-                : <>
-                    {pageTutorial!.pageDescription} Would you like a{" "}
-                    <Box
-                      component="span"
-                      sx={{ fontWeight: 700, color: "primary.main" }}
-                    >
-                      quick guided tour
-                    </Box>{" "}
-                    of this page?
-                  </>
-                }
+                It looks like you're new here — or maybe just need a refresher.
+                Would you like a{" "}
+                <Box
+                  component="span"
+                  sx={{ fontWeight: 700, color: "primary.main" }}
+                >
+                  quick guided tour
+                </Box>{" "}
+                of the platform? We'll walk you through every page in about 2
+                minutes.
               </Typography>
 
               <Stack spacing={1.5}>
@@ -185,7 +153,7 @@ export default function TutorialPrompt() {
                     },
                   }}
                 >
-                  {isWelcomeTour ? "Start the Tour" : "Show me around"}
+                  Start the Tour
                 </Button>
 
                 <Button

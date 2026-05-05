@@ -166,7 +166,7 @@ export default function ClaimPage() {
   }, [fetchClaims]);
 
   return (
-    <Box sx={{ minHeight: "100vh", backgroundColor: "white" }}>
+    <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <Box
         sx={{

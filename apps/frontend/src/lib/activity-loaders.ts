@@ -53,6 +53,7 @@ const CACHE_KEYS = {
     all: "activity:all",
     content: "activity:content",
     verbose: "activity:verbose",
+    claim: "activity:claim",
     auth: "activity:auth",
   },
   dashboardBootstrap: "dashboard:bootstrap",
@@ -145,11 +146,13 @@ async function fetchDashboardBootstrap(params?: {
   position?: string;
   employeeUuid?: string;
   days?: number;
+  isAdmin?: boolean;
 }): Promise<DashboardBootstrapData> {
   const [
     activityAll,
     activityContent,
     activityVerbose,
+    activityClaim,
     contentCounts,
     fileTypeCounts,
     employeeCounts,
@@ -161,19 +164,21 @@ async function fetchDashboardBootstrap(params?: {
     loadActivity("all"),
     loadActivity("content"),
     loadActivity("verbose"),
+    loadActivity("claim"),
     loadContentPositionCounts(),
     loadContentFileTypeCounts(),
     loadEmployeeCounts(),
     loadContentList(),
-    loadEmployees(),
+    params?.isAdmin ? loadEmployees() : Promise.resolve([]),
     loadActivityActionSummary(params),
-    loadEditHitsByRole(params?.days ?? 7),
+    loadEditHitsByRole(params?.days),
   ]);
 
   return {
     activityAll,
     activityContent,
     activityVerbose,
+    activityClaim,
     contentCounts,
     fileTypeCounts,
     employeeCounts,
@@ -281,6 +286,7 @@ export async function loadDashboardBootstrap(params?: {
   position?: string;
   employeeUuid?: string;
   days?: number;
+  isAdmin?: boolean;
 }): Promise<DashboardBootstrapData> {
   const cacheKey = [
     CACHE_KEYS.dashboardBootstrap,
@@ -300,6 +306,7 @@ export function useDashboardBootstrapQuery(params?: {
   position?: string;
   employeeUuid?: string;
   days?: number;
+  isAdmin?: boolean;
 }) {
   const cacheKey = [
     CACHE_KEYS.dashboardBootstrap,
@@ -336,6 +343,7 @@ export function invalidateActivity(category?: ActivityCategory) {
   invalidateCached(CACHE_KEYS.activity.all);
   invalidateCached(CACHE_KEYS.activity.content);
   invalidateCached(CACHE_KEYS.activity.verbose);
+  invalidateCached(CACHE_KEYS.activity.claim);
   invalidateCached(CACHE_KEYS.activity.auth);
 }
 
@@ -348,6 +356,7 @@ export function markActivityStale(category?: ActivityCategory) {
   markCachedStale(CACHE_KEYS.activity.all);
   markCachedStale(CACHE_KEYS.activity.content);
   markCachedStale(CACHE_KEYS.activity.verbose);
+  markCachedStale(CACHE_KEYS.activity.claim);
   markCachedStale(CACHE_KEYS.activity.auth);
 }
 
