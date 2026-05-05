@@ -73,7 +73,7 @@ export default function AdminCards() {
     ADMIN: t("adminCards.admin"),
     ACTUARIAL_ANALYST: t("adminCards.actuarialAnalyst"),
     EXL_OPERATIONS: t("adminCards.exlOperations"),
-    BUSINESS_OP_RATING: t("adminCards.businessOpsTeam"),
+    BUSINESS_OP_RATING: t("adminCards.businessOpRating"),
   };
 
   const ACTION_LABELS = [
@@ -142,7 +142,7 @@ export default function AdminCards() {
             variant="h6"
             sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
           >
-            {isAdmin ? "Employee Activity" : "My Content Changes"}
+            {t("adminCards.employeeActivity")}
           </Typography>
         }
       />
@@ -168,7 +168,7 @@ export default function AdminCards() {
               <Select
                 labelId="employee-type-filter-label"
                 value={employeeType}
-                label={t("adminCards.employeeType")}
+                label="Employee Type"
                 displayEmpty
                 renderValue={(selected) => {
                   if (!employeeTypeTouched) {
@@ -192,7 +192,7 @@ export default function AdminCards() {
                     key={position}
                     value={position}
                   >
-                    {getPositionLabel(position)}
+                    {positionLabels[position]}
                   </MenuItem>
                 ))}
               </Select>
