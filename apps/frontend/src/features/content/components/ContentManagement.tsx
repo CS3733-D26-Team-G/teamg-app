@@ -1811,7 +1811,9 @@ export default function ContentManagement({
           {(positionFilters.length > 0 ||
             fileTypeFilters.length > 0 ||
             tagFilters.length > 0) && (
-            <Box sx={{ display: "flex", flexWrap: "wrap", pt: 2, gap: 1 }}>
+            <Box
+              sx={{ display: "flex", flexWrap: "wrap", pb: 2, px: 4, gap: 1 }}
+            >
               {positionFilters.map((position) => (
                 <Chip
                   key={position}
