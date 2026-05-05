@@ -113,7 +113,7 @@ const ADMIN_STEPS: TutorialStep[] = [
     id: "emp-filter",
     title: "Filter Button",
     description:
-      "Narrow the list by position, department, or access level. Filters stack — combine as many as you need.",
+      "Narrow the list by position, department, or access level. Filters stack combine as many as you need.",
     targetSelector: ".employee-filter-button",
     position: "bottom",
   },
