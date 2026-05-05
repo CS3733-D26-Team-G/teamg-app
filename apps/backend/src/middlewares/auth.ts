@@ -38,6 +38,8 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
     }
     logger.verbose(`Verified JWT for employee ${decoded.uuid}`);
 
+    // Re-read the employee on every request so permission changes take effect
+    // without waiting for the signed JWT cookie to expire.
     logger.verbose(
       `Querying Employee table for record ${decoded.uuid} during authentication`,
     );

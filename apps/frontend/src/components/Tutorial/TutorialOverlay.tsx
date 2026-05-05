@@ -1,12 +1,16 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Box, Button, Typography, Stack, LinearProgress } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTutorial, TUTORIAL_STEPS } from "./TutorialContext";
+import { useTutorial } from "./TutorialContext";
+import type { TutorialStep } from "./TutorialContext";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { useLocation } from "react-router-dom";
+import NavigationIcon from "@mui/icons-material/Navigation";
+import TouchAppIcon from "@mui/icons-material/TouchApp";
+import LockIcon from "@mui/icons-material/Lock";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface HighlightRect {
   top: number;
@@ -29,6 +33,24 @@ function getHighlightRect(selector: string): HighlightRect | null {
   };
 }
 
+function isElementVisible(selector: string): boolean {
+  const el = document.querySelector(selector);
+  if (!el) return false;
+  const rect = el.getBoundingClientRect();
+  // Element must have a real size and be in the viewport
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.top < window.innerHeight &&
+    rect.bottom > 0
+  );
+}
+
+function extractPathFromSelector(selector: string): string | null {
+  const match = selector.match(/a\[href=['"]([^'"]+)['"]\]/);
+  return match ? match[1] : null;
+}
+
 function TooltipCard({
   step,
   stepIndex,
@@ -37,18 +59,24 @@ function TooltipCard({
   onNext,
   onPrev,
   onEnd,
+  isNavigationStep,
+  interactionUnlocked,
 }: {
-  step: (typeof TUTORIAL_STEPS)[0];
+  step: TutorialStep;
   stepIndex: number;
   totalSteps: number;
   highlightRect: HighlightRect | null;
   onNext: () => void;
   onPrev: () => void;
   onEnd: () => void;
+  isNavigationStep: boolean;
+  interactionUnlocked: boolean;
 }) {
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === totalSteps - 1;
   const isCentered = step.position === "center" || !highlightRect;
+  const isInteractionStep = !!step.requiresInteraction;
+  const nextDisabled = isInteractionStep && !interactionUnlocked;
 
   const tooltipStyle: React.CSSProperties = {};
 
@@ -59,7 +87,7 @@ function TooltipCard({
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const tooltipW = 340;
-    const tooltipH = 220;
+    const tooltipH = 260;
 
     if (step.position === "right") {
       tooltipStyle.left = Math.min(
@@ -115,19 +143,19 @@ function TooltipCard({
       initial={{
         opacity: 0,
         scale: 0.9,
-        x: isCentered ? "-40%" : 0,
+        x: isCentered ? "-50%" : 0,
         y: isCentered ? "-40%" : 12,
       }}
       animate={{
         opacity: 1,
         scale: 1,
-        x: isCentered ? "-2g0%" : 0,
+        x: isCentered ? "-50%" : 0,
         y: isCentered ? "-50%" : 0,
       }}
       exit={{
         opacity: 0,
         scale: 0.9,
-        x: isCentered ? "-40%" : 0,
+        x: isCentered ? "-50%" : 0,
         y: isCentered ? "-60%" : -8,
       }}
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
@@ -221,51 +249,100 @@ function TooltipCard({
 
       {/* Body */}
       <Box
-        sx={{
-          backgroundColor: "background.paper",
-          px: 2.5,
-          pt: 2,
-          pb: 2.5,
-        }}
+        sx={{ backgroundColor: "background.paper", px: 2.5, pt: 2, pb: 2.5 }}
       >
         <Typography
           sx={{
             fontSize: "0.9rem",
             color: "text.primary",
             lineHeight: 1.65,
-            mb: 2.5,
+            mb: isNavigationStep || isInteractionStep ? 1.5 : 2.5,
             fontFamily: "Rubik, sans-serif",
           }}
         >
           {step.description}
         </Typography>
 
-        {/* Navigation hint for steps requiring user navigation */}
-        {step.requiresNavigation && step.navigationHint && (
+        {/* Navigation hint banner */}
+        {isNavigationStep && step.navigationHint && (
           <Box
-            component={motion.div}
-            animate={{ x: [0, 4, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
             sx={{
-              backgroundColor: "primary.light",
-              borderRadius: "10px",
-              px: 1.5,
-              py: 1,
-              mb: 2,
               display: "flex",
               alignItems: "center",
               gap: 1,
+              px: 1.5,
+              py: 1,
+              mb: 2,
+              borderRadius: "10px",
+              backgroundColor: "rgba(74,122,171,0.12)",
+              border: "1px solid rgba(74,122,171,0.3)",
             }}
           >
+            <NavigationIcon
+              sx={{ fontSize: 15, color: "primary.main", flexShrink: 0 }}
+            />
             <Typography
               sx={{
-                fontSize: "0.8rem",
-                color: "primary.dark",
+                fontSize: "0.78rem",
+                color: "primary.main",
                 fontWeight: 600,
                 fontFamily: "Rubik, sans-serif",
+                lineHeight: 1.4,
               }}
             >
               {step.navigationHint}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Interaction hint banner */}
+        {isInteractionStep && (
+          <Box
+            component={motion.div}
+            animate={
+              !interactionUnlocked ? { opacity: [1, 0.6, 1] } : { opacity: 1 }
+            }
+            transition={
+              !interactionUnlocked ? { repeat: Infinity, duration: 1.8 } : {}
+            }
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 1.5,
+              py: 1,
+              mb: 2,
+              borderRadius: "10px",
+              backgroundColor:
+                interactionUnlocked ?
+                  "rgba(46,125,50,0.12)"
+                : "rgba(237,108,2,0.12)",
+              border: `1px solid ${interactionUnlocked ? "rgba(46,125,50,0.4)" : "rgba(237,108,2,0.4)"}`,
+              transition: "all 0.3s ease",
+            }}
+          >
+            {interactionUnlocked ?
+              <CheckCircleIcon
+                sx={{ fontSize: 15, color: "success.main", flexShrink: 0 }}
+              />
+            : <TouchAppIcon
+                sx={{ fontSize: 15, color: "warning.main", flexShrink: 0 }}
+              />
+            }
+            <Typography
+              sx={{
+                fontSize: "0.78rem",
+                color: interactionUnlocked ? "success.main" : "warning.main",
+                fontWeight: 600,
+                fontFamily: "Rubik, sans-serif",
+                lineHeight: 1.4,
+              }}
+            >
+              {interactionUnlocked ?
+                "Card expanded — you can continue!"
+              : (step.interactionHint ??
+                "Complete the action above to continue")
+              }
             </Typography>
           </Box>
         )}
@@ -303,7 +380,15 @@ function TooltipCard({
             variant="contained"
             size="small"
             fullWidth
-            endIcon={isLast ? <CheckCircleIcon /> : <ArrowForwardIcon />}
+            disabled={nextDisabled}
+            endIcon={
+              nextDisabled ? <LockIcon />
+              : isLast ?
+                <CheckCircleIcon />
+              : isNavigationStep ?
+                <NavigationIcon />
+              : <ArrowForwardIcon />
+            }
             sx={{
               "borderRadius": "10px",
               "textTransform": "none",
@@ -311,15 +396,29 @@ function TooltipCard({
               "fontWeight": 700,
               "fontSize": "0.9rem",
               "py": 0.9,
-              "background": "linear-gradient(135deg, #1A1E4B, #395176)",
-              "boxShadow": "0 4px 14px rgba(57,81,118,0.4)",
+              "background":
+                nextDisabled ? undefined : (
+                  "linear-gradient(135deg, #1A1E4B, #395176)"
+                ),
+              "boxShadow":
+                nextDisabled ? "none" : "0 4px 14px rgba(57,81,118,0.4)",
               "&:hover": {
-                background: "linear-gradient(135deg, #0f1230, #2d4060)",
-                boxShadow: "0 6px 18px rgba(57,81,118,0.55)",
+                background:
+                  nextDisabled ? undefined : (
+                    "linear-gradient(135deg, #0f1230, #2d4060)"
+                  ),
+                boxShadow:
+                  nextDisabled ? "none" : "0 6px 18px rgba(57,81,118,0.55)",
               },
             }}
           >
-            {isLast ? "Finish Tour" : "Next"}
+            {nextDisabled ?
+              "Waiting..."
+            : isLast ?
+              "Done"
+            : isNavigationStep ?
+              "Go there"
+            : "Next"}
           </Button>
         </Stack>
       </Box>
@@ -333,58 +432,100 @@ export default function TutorialOverlay() {
   const [highlightRect, setHighlightRect] = useState<HighlightRect | null>(
     null,
   );
+  const [interactionUnlocked, setInteractionUnlocked] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const rafRef = useRef<number | null>(null);
+  const autoAdvancedRef = useRef<Set<string>>(new Set());
 
-  const step = steps[currentStep];
+  const step = steps[currentStep] ?? null;
+
+  // Reset interaction lock whenever step changes
+  useEffect(() => {
+    setInteractionUnlocked(false);
+  }, [currentStep]);
 
   const measureTarget = useCallback(() => {
     if (!step?.targetSelector) {
       setHighlightRect(null);
       return;
     }
-    const rect = getHighlightRect(step.targetSelector);
-    setHighlightRect(rect);
+    setHighlightRect(getHighlightRect(step.targetSelector));
+
+    // If this step requires interaction, poll until the target becomes visible
+    if (step.requiresInteraction && step.targetSelector) {
+      if (isElementVisible(step.targetSelector)) {
+        setInteractionUnlocked(true);
+      }
+    }
   }, [step]);
 
-  // Re-measure whenever step or route changes
   useEffect(() => {
     if (!isActive) return;
-
-    // Allow DOM to settle after route change
-    const t = setTimeout(() => {
-      measureTarget();
-    }, 150);
-
+    const t = setTimeout(measureTarget, 150);
     return () => clearTimeout(t);
   }, [isActive, currentStep, location.pathname, measureTarget]);
 
-  // Keep highlight in sync with resize / scroll
   useEffect(() => {
     if (!isActive) return;
-
     const tick = () => {
       measureTarget();
       rafRef.current = requestAnimationFrame(tick);
     };
+    // Tutorial targets move during route transitions and accordion animations,
+    // so the spotlight tracks layout every frame while the tour is active.
     rafRef.current = requestAnimationFrame(tick);
-
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [isActive, measureTarget]);
 
+  // Auto-advance when user manually navigates to the expected page
+  useEffect(() => {
+    if (!isActive || !step) return;
+    if (!step.requiresNavigation || !step.targetSelector) return;
+
+    const expectedPath = extractPathFromSelector(step.targetSelector);
+    if (!expectedPath) return;
+
+    if (location.pathname === expectedPath) {
+      const key = `${currentStep}:${expectedPath}`;
+      if (!autoAdvancedRef.current.has(key)) {
+        autoAdvancedRef.current.add(key);
+        setTimeout(() => {
+          nextStep();
+        }, 400);
+      }
+    }
+  }, [location.pathname, isActive, step, currentStep, nextStep]);
+
+  useEffect(() => {
+    if (!isActive) {
+      autoAdvancedRef.current.clear();
+    }
+  }, [isActive]);
+
   if (!isActive || !step) return null;
 
+  const isNavigationStep = !!step.requiresNavigation;
+
+  const handleNext = () => {
+    if (isNavigationStep && step.targetSelector) {
+      const path = extractPathFromSelector(step.targetSelector);
+      if (path && location.pathname !== path) {
+        navigate(path);
+        return;
+      }
+    }
+    nextStep();
+  };
+
   const hasHighlight = !!highlightRect;
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1920;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 1080;
 
   return (
     <AnimatePresence>
       {isActive && (
         <>
-          {/* Dark overlay built from 4 rects that leave a hole — pure CSS, no SVG clip-path flicker */}
           {hasHighlight ?
             <>
               {/* Top */}
@@ -455,8 +596,7 @@ export default function TutorialOverlay() {
                   height: highlightRect.height,
                 }}
               />
-
-              {/* Highlight border ring */}
+              {/* Highlight ring */}
               <Box
                 component={motion.div}
                 initial={{ opacity: 0, scale: 1.06 }}
@@ -478,8 +618,7 @@ export default function TutorialOverlay() {
                 }}
               />
             </>
-          : /* Full-screen dim when no target */
-            <Box
+          : <Box
               component={motion.div}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -495,7 +634,6 @@ export default function TutorialOverlay() {
             />
           }
 
-          {/* Tooltip card */}
           <AnimatePresence mode="wait">
             <TooltipCard
               key={currentStep}
@@ -503,9 +641,11 @@ export default function TutorialOverlay() {
               stepIndex={currentStep}
               totalSteps={steps.length}
               highlightRect={highlightRect}
-              onNext={nextStep}
+              onNext={handleNext}
               onPrev={prevStep}
               onEnd={endTutorial}
+              isNavigationStep={isNavigationStep}
+              interactionUnlocked={interactionUnlocked}
             />
           </AnimatePresence>
         </>

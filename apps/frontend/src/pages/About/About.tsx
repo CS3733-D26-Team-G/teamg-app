@@ -5,6 +5,7 @@ import {
   CardContent,
   Stack,
   Button,
+  Tooltip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -14,39 +15,72 @@ const teamMembers = [
     name: "Myer Cheng",
     position: "Lead Software Engineer",
     photo: "/Myer.png",
+    quote: `"In the midst of chaos, there is also opportunity"\n - Sun Tzu, The Art of War`,
   },
-  { name: "Tj Elysee", position: "Product Owner", photo: "/Tj.jpg" },
+
+  {
+    name: "Tj Elysee",
+    position: "Product Owner",
+    photo: "/Tj.jpg",
+    quote: `"I can do all things through him who strengthens me"\n - Philippians 4:13`,
+  },
+
   {
     name: "Shriya Kulkarni",
     position: "Lead Back-End Developer",
     photo: "/Shriya.jpg",
+    quote: `"But I suppose a fox's duty is to be... well, a fox."\n - Mr. Fox, Fantastic Mr. Fox`,
   },
+
   {
     name: "Justin Gauthier",
     position: "Project Manager",
     photo: "/Justin.jpg",
+    quote:
+      '"Without pain, without sacrifice, we would have nothing"\n - Tyler Durden/ Chuck Palahniuk',
   },
+
   {
     name: "Colin Truong",
     position: "Lead Front-End Developer",
     photo: "/Colin.jpg",
+    quote: `"That's rough buddy"\n - Prince Zuko, Son of Ozai `,
   },
-  { name: "Isaac Gonzalez", position: "Documentation", photo: "/Isaac.png" },
+
+  {
+    name: "Isaac Gonzalez",
+    position: "Documentation",
+    photo: "/Isaac.png",
+    quote: `"Keep Moving Forward."\n- Cornelius Robinson`,
+  },
+
   {
     name: "Jillian Chee",
     position: "Full-Time Software Engineer",
     photo: "/Jillian.png",
+    quote: `"Just be a rock."\n- Joy Wang Everything Everywhere All At Once`,
   },
-  { name: "Thomas Gilbert", position: "Scrum Master", photo: "/Thomas.jpg" },
+
+  {
+    name: "Thomas Gilbert",
+    position: "Scrum Master",
+    photo: "/Thomas.jpg",
+    quote: `"I wish there was a way to know you're in the good old days before you've actually left them."\n- Andy Bernard`,
+  },
+
   {
     name: "Sam Rodrigues",
     position: "Full-Time Software Engineer",
     photo: "/Sam.png",
+    quote: `"If you don't like something, change it. If you can't change it, change your attitude."\n - Maya Angelou`,
   },
+
   {
     name: "Ronan Heatley",
     position: "Full-Time Software Engineer",
     photo: "/Ronan.png",
+    quote:
+      "“A man that fears suffering is already suffering from what he fears.”\n- Michel de Montaigne",
   },
 ];
 
@@ -55,10 +89,7 @@ export default function AboutUs() {
 
   return (
     <Box sx={{ p: 4, fontFamily: "'Rubik', sans-serif" }}>
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap');
-        * { font-family: 'Rubik', sans-serif !important; }`}
-      </style>
+      <style></style>
 
       <Box
         sx={{
@@ -75,16 +106,15 @@ export default function AboutUs() {
           size="small"
           sx={{
             color: "white",
+            mb: 3,
+            fontFamily: "'Rubik', sans-serif",
             border: "1px solid white",
-            position: "absolute",
-            left: 0,
-            top: 0,
           }}
         >
-          Return to Home
+          Return
         </Button>
 
-        <Box sx={{ width: "100%", textAlign: "center" }}>
+        <Box sx={{ width: "100%", textAlign: "center", color: "white" }}>
           <Typography
             variant="h5"
             fontWeight={600}
@@ -103,7 +133,6 @@ export default function AboutUs() {
           </Typography>
           <Typography
             variant="body1"
-            color="text.secondary"
             mb={0.25}
             sx={{ color: "white" }}
           >
@@ -111,7 +140,6 @@ export default function AboutUs() {
           </Typography>
           <Typography
             variant="body1"
-            color="text.secondary"
             sx={{ color: "white" }}
           >
             Team Coach: Katherine Tse
@@ -120,11 +148,7 @@ export default function AboutUs() {
       </Box>
 
       <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: 2,
-        }}
+        sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2 }}
       >
         {teamMembers.map((member, index) => (
           <Card
@@ -139,18 +163,42 @@ export default function AboutUs() {
                 alignItems="center"
               >
                 {member.photo ?
-                  <Box
-                    component="img"
-                    src={member.photo}
-                    alt={member.name}
-                    sx={{
-                      width: 90,
-                      height: 90,
-                      borderRadius: 2,
-                      objectFit: "cover",
-                      flexShrink: 0,
+                  <Tooltip
+                    title={member.quote}
+                    arrow
+                    placement="bottom"
+                    componentsProps={{
+                      tooltip: {
+                        sx: {
+                          fontSize: "1rem",
+                          maxWidth: 400,
+                          p: 1.5,
+                          whiteSpace: "pre-line",
+                          textAlign: "center",
+                        },
+                      },
                     }}
-                  />
+                  >
+                    <Box
+                      component="img"
+                      src={member.photo}
+                      alt={member.name}
+                      sx={{
+                        "width": 90,
+                        "height": 90,
+                        "borderRadius": 2,
+                        "objectFit": "cover",
+                        "flexShrink": 0,
+                        "cursor": "pointer",
+                        "transition":
+                          "transform 0.15s ease, box-shadow 0.15s ease",
+                        "&:hover": {
+                          transform: "scale(1.06)",
+                        },
+                        "&:active": { transform: "scale(0.97)" },
+                      }}
+                    />
+                  </Tooltip>
                 : <Box
                     sx={{
                       width: 90,
@@ -167,7 +215,7 @@ export default function AboutUs() {
                   >
                     <Typography
                       variant="caption"
-                      color="text.disabled"
+                      color="black"
                     >
                       Photo
                     </Typography>
@@ -206,14 +254,27 @@ export default function AboutUs() {
       >
         <Typography
           variant="body2"
-          color="black"
           align="center"
-          sx={{ color: "white" }}
+          sx={{
+            color: "white",
+            fontSize: 25,
+            fontFamily: '"Rubik", sans-serif',
+          }}
         >
-          Thank you to Hanover Insurance for the opportunity to develop real
-          world full-stack web development experience by allowing us to use your
-          platform. We would like to extend a specific thank you to Brandon
-          Roche and Meaghan Jenket for making this possible.
+          <Typography
+            variant="body1"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.2,
+              fontWeight: "bold",
+              whiteSpace: "pre-line",
+              fontSize: "1.1rem",
+            }}
+          >
+            {`Thank you to Hanover Insurance for the opportunity to develop real world full-stack web development experience by allowing us to use your platform.\n
+             We would like to extend a specific thank you to Brandon Roche and Meaghan Jenket for making this possible.`}
+          </Typography>
         </Typography>
       </Box>
     </Box>

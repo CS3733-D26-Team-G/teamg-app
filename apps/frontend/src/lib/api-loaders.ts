@@ -11,6 +11,7 @@ import {
   markCachedStale,
   patchCachedData,
   prefetchCachedQuery,
+  refreshCachedQuery,
   type CacheOptions,
   useCachedQuery,
 } from "./async-cache";
@@ -30,9 +31,9 @@ const CONTENT_TAGS_CACHE_OPTIONS: CacheOptions<ContentTagSummary[]> = {
 };
 
 const CLAIMS_LIST_CACHE_OPTIONS: CacheOptions<unknown[]> = {
-  staleTimeMs: 60_000,
-  cacheTimeMs: 10 * 60_000,
-  persist: true,
+  staleTimeMs: 0, // always treat as stale so pages get fresh data
+  cacheTimeMs: 5 * 60_000,
+  persist: false, // don't persist across sessions
   scope: "user",
 };
 
@@ -65,7 +66,7 @@ async function fetchContentList(): Promise<ContentRow[]> {
 }
 
 async function fetchContentTags(): Promise<ContentTagSummary[]> {
-  const res = await fetch(API_ENDPOINTS.CONTENT.TAG.GET_ALL, {
+  const res = await fetch(API_ENDPOINTS.CONTENT.TAG.ROOT, {
     credentials: "include",
   });
 
@@ -152,6 +153,18 @@ export async function loadClaimsList<T>(): Promise<T[]> {
   );
 }
 
+/**
+ * Reactive hook for claims — always refreshes on mount so Risk Review
+ * and Approval pages see the latest statuses from the server.
+ */
+export function useClaimsListQuery<T = unknown>() {
+  return useCachedQuery(
+    CACHE_KEYS.claimsList,
+    fetchClaimsList<T>,
+    CLAIMS_LIST_CACHE_OPTIONS as CacheOptions<T[]>,
+  );
+}
+
 export function invalidateContentList() {
   invalidateCached(CACHE_KEYS.contentList);
 }
@@ -185,4 +198,8 @@ export function invalidateContentTags() {
 
 export function invalidateClaimsList() {
   invalidateCached(CACHE_KEYS.claimsList);
+}
+
+export function markClaimsListStale() {
+  markCachedStale(CACHE_KEYS.claimsList);
 }

@@ -78,7 +78,7 @@ const dependencies = [
   {
     name: "Tailwind CSS",
     version: "4.2.2",
-    tag: "Styling",
+    tag: "UI Library",
     blurb:
       "Utility-first CSS framework for building custom designs without leaving your HTML.",
     logo: "/TailWindLogo.png",
@@ -87,16 +87,25 @@ const dependencies = [
   {
     name: "Lucide",
     version: "1.8.0",
-    tag: "Icons",
+    tag: "UI Library",
     blurb:
       "An open-source icon library with over 1,000 SVG icons, available as React components.",
     logo: "/LucideLogo.jpg",
     url: "https://lucide.dev/guide/",
   },
   {
+    name: "FullCalendar",
+    version: "6.1.20",
+    tag: "UI Library",
+    blurb:
+      "An open-source JavaScript library used to create flexible, interactive, and full-sized event calendars for web applications.",
+    logo: "/FullCalendar.png",
+    url: "https://fullcalendar.io/docs/react",
+  },
+  {
     name: "Framer Motion",
     version: "12.38.0",
-    tag: "Animation",
+    tag: "UI Animation",
     blurb:
       "Animation library for React, enabling gestures, layout animations, and complex motion sequences.",
     logo: "/FramerLogo.png",
@@ -123,7 +132,7 @@ const dependencies = [
   {
     name: "i18next",
     version: "26.0.6",
-    tag: "i18n",
+    tag: "Language",
     blurb:
       "Internationalization framework for JavaScript with extensive plugin support, enabling multi-language applications.",
     logo: "/i18nextLogo.png",
@@ -132,7 +141,7 @@ const dependencies = [
   {
     name: "react-i18next",
     version: "17.0.4",
-    tag: "i18n",
+    tag: "Language",
     blurb:
       "i18next binding for React, providing hooks and components for translation in React applications.",
     logo: "/i18nextLogo.png",
@@ -181,30 +190,35 @@ export default function Credits() {
         variant="h5"
         fontWeight={500}
         mb={0.5}
-        sx={{ color: "white", fontFamily: "'Rubik', sans-serif" }}
+        sx={{
+          color: "white",
+          fontFamily: "'Rubik', sans-serif",
+          alignItems: "center",
+        }}
       >
         Credits
       </Typography>
 
       <Typography
         variant="body2"
-        color="text.secondary"
+        color="white"
         mb={3}
         sx={{
           color: "white",
           lineHeight: 1.8,
           fontFamily: "'Rubik', sans-serif",
+          alignItems: "center",
         }}
       >
         This website was developed using the <strong>PERN stack</strong>, which
-        consists of <strong>PostgreSQL</strong>, a powerful open-source
-        relational database; <strong>Express</strong>, a lightweight Node.js
-        framework for building APIs; <strong>React</strong>, a JavaScript
-        library for building dynamic user interfaces; and{" "}
-        <strong>Node.js</strong>, a JavaScript runtime that powers the server.
-        Together, these tools aided the development of this application. The
-        additional libraries and packages listed below furthered this
-        development by easing the implementation of various features.
+        consists of <strong>PostgreSQL</strong>, an open-source relational
+        database; <strong>Express</strong>, a Node.js framework for building
+        APIs; <strong>React</strong>, a JavaScript library for building dynamic
+        user interfaces; and <strong>Node.js</strong>, a JavaScript runtime that
+        powers the server. Together, these tools aided the development of this
+        application. The additional libraries and packages listed below
+        furthered this development by easing the implementation of various
+        features.
       </Typography>
 
       <Button

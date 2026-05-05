@@ -20,6 +20,11 @@
  *
  * Dark mode:
  * - WebViewer theme is synced with the MUI theme on init and on every toggle.
+ *
+ * Word count & reading time:
+ * - Extracted via extractWordCountFromViewer() on the "documentLoaded" event.
+ * - Displayed as a ReadingTimeBadge in the modal's top bar, next to the filename.
+ * - An optional onWordCount callback exposes the count to the parent.
  */
 
 import { useRef, useEffect, useState } from "react";
@@ -30,17 +35,22 @@ import {
   Typography,
   IconButton,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import SaveIcon from "@mui/icons-material/Save";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import WebViewer, { type WebViewerInstance } from "@pdftron/webviewer";
-import { API_ENDPOINTS } from "../../../config.ts";
+import { API_ENDPOINTS } from "../../../../config.ts";
 import VersionHistoryPanel from "./VersionHistoryPanel.tsx";
-import type { ContentRow } from "../../../types/content.ts";
+import type { ContentRow } from "../../../../types/content.ts";
 import { useTheme } from "@mui/material/styles";
-import { markContentListStale } from "../../../lib/api-loaders.ts";
+import { markContentListStale } from "../../../../lib/api-loaders.ts";
+import {
+  extractWordCountFromViewer,
+  formatReadingTime,
+} from "./ReadingTime.tsx";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,14 +75,15 @@ interface Props {
   onDelete?: () => void;
   /** Called when the user clicks the Edit (open form) button. */
   onOpenForm?: () => void;
+  /**
+   * Optional callback invoked whenever the word count is resolved.
+   * Receives 0 when the document type does not support text extraction.
+   */
+  onWordCount?: (count: number) => void;
 }
 
 // ─── MIME lookup ──────────────────────────────────────────────────────────────
 
-/**
- * Maps MIME type → file extension.
- * Used when resolving the extension from a fetched blob's Content-Type header.
- */
 const mimeToExt: Record<string, string> = {
   "application/pdf": "pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
@@ -90,11 +101,6 @@ const mimeToExt: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-/**
- * Modal dialog containing an Apryse WebViewer editor and a VersionHistoryPanel.
- * WebViewer is initialized once on mount and kept alive via keepMounted,
- * so reopening the modal is fast and does not re-initialize the iframe.
- */
 export default function DocumentEditorModal({
   open,
   onClose,
@@ -106,20 +112,16 @@ export default function DocumentEditorModal({
   onSaved,
   onDelete,
   onOpenForm,
+  onWordCount,
 }: Props) {
   // ─── Refs ──────────────────────────────────────────────────────────────────
 
-  /** DOM node that WebViewer mounts its iframe into. */
   const viewerDivRef = useRef<HTMLDivElement | null>(null);
-
-  /** Holds the WebViewer instance once initialized. */
   const instanceRef = useRef<WebViewerInstance | null>(null);
-
-  /** Stores a load callback to run once WebViewer finishes initializing. */
   const pendingLoadRef = useRef<(() => void) | null>(null);
-
-  /** Guards against double-initialization in React Strict Mode. */
   const hasInitializedRef = useRef(false);
+  const currentExtRef = useRef<string>("");
+  const isSavingRef = useRef(false);
 
   /**
    * Tracks the URI of the last successfully loaded document.
@@ -131,16 +133,23 @@ export default function DocumentEditorModal({
   // ─── State ─────────────────────────────────────────────────────────────────
 
   const theme = useTheme();
-
-  /** True once WebViewer's .then() resolves; used to gate theme sync effects. */
   const [viewerReady, setViewerReady] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  /**
+   * Resolved word count for the current document.
+   *  null → still computing (badge hidden)
+   *  0    → file type not applicable (badge hidden)
+   *  N>0  → count resolved, badge shown in top bar
+   */
+  const [wordCount, setWordCount] = useState<number | null>(null);
 
   // ─── Effects ───────────────────────────────────────────────────────────────
 
   /**
    * Initializes the Apryse WebViewer instance once on mount.
-   * Uses requestAnimationFrame to ensure the DOM node is painted before
-   * WebViewer attempts to mount its iframe into it.
+   * Also registers a "documentLoaded" listener that triggers word extraction
+   * after every new document is loaded into WebViewer.
    */
   useEffect(() => {
     const frameId = requestAnimationFrame(() => {
@@ -152,27 +161,29 @@ export default function DocumentEditorModal({
           path: "/webviewer/lib",
           licenseKey:
             "demo:1776714799946:6325df920300000000de6805a4f71c4346d6e510d1c42048e35ab36d86",
-          // Only disable toolbar elements when in read-only mode
           disabledElements:
             readOnly ? ["toolsHeader", "ribbons", "toggleNotesButton"] : [],
         },
         viewerDivRef.current,
       ).then((instance) => {
         instanceRef.current = instance;
-        console.log(
-          "WebViewer initialized, pending load:",
-          !!pendingLoadRef.current,
-        );
         setViewerReady(true);
 
-        // Apply current MUI theme immediately on init
         instance.UI.setTheme(theme.palette.mode === "dark" ? "dark" : "light");
-
         if (readOnly) instance.UI.setToolMode("Pan");
         window.dispatchEvent(new Event("resize"));
 
-        // If a document was requested before WebViewer finished initializing,
-        // run the deferred load now
+        // Trigger word count extraction each time a new document loads
+        instance.Core.documentViewer.addEventListener("documentLoaded", () => {
+          setWordCount(null); // reset while counting
+          void extractWordCountFromViewer(instance, currentExtRef.current).then(
+            (count) => {
+              setWordCount(count);
+              onWordCount?.(count);
+            },
+          );
+        });
+
         if (pendingLoadRef.current) {
           pendingLoadRef.current();
           pendingLoadRef.current = null;
@@ -186,15 +197,14 @@ export default function DocumentEditorModal({
   /**
    * Fetches and loads the document into WebViewer whenever the modal opens
    * or the URI changes. Skips the fetch if the same URI is already loaded.
-   * Uses AbortController to cancel in-flight requests on cleanup.
    */
   useEffect(() => {
     if (!open || !uri) return;
     if (!uri.includes("/content/file/")) return;
-
-    // Skip re-fetch if this URI is already loaded in the viewer
     if (uri === currentUriRef.current && instanceRef.current) return;
     currentUriRef.current = uri;
+
+    setWordCount(null); // reset badge on new document
 
     const abortController = new AbortController();
 
@@ -208,12 +218,11 @@ export default function DocumentEditorModal({
           throw new Error(`Failed to fetch document: ${response.status}`);
 
         const blob = await response.blob();
-
-        // Resolve extension: prefer fileName extension, fall back to MIME lookup
         const extFromMime = mimeToExt[blob.type] ?? undefined;
         const extFromName =
           fileName.includes(".") ? fileName.split(".").pop() : undefined;
         const ext = extFromName ?? extFromMime;
+        currentExtRef.current = ext ?? "";
         if (abortController.signal.aborted) return;
 
         const objectUrl = URL.createObjectURL(blob);
@@ -225,14 +234,14 @@ export default function DocumentEditorModal({
             filename: fileName,
             extension: ext,
           });
-          // Revoke the blob URL after WebViewer has had time to read it
           setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
         };
 
+        // The modal can receive a document before Apryse finishes booting.
+        // Store one pending load instead of racing the viewer initialization.
         if (instanceRef.current) {
           doLoad();
         } else {
-          // WebViewer not ready yet — defer until initialization completes
           pendingLoadRef.current = doLoad;
         }
       } catch (err) {
@@ -242,13 +251,11 @@ export default function DocumentEditorModal({
     };
 
     void doFetchAndLoad();
-
     return () => abortController.abort();
   }, [open, uri, fileName]);
 
   /**
    * Syncs the Apryse WebViewer theme with the MUI theme mode.
-   * Runs whenever the user toggles dark/light mode after WebViewer is ready.
    */
   useEffect(() => {
     if (!viewerReady || !instanceRef.current) return;
@@ -260,44 +267,61 @@ export default function DocumentEditorModal({
   // ─── Save handler ─────────────────────────────────────────────────────────
 
   const handleSave = async () => {
+    if (isSavingRef.current) return;
     const instance = instanceRef.current;
     if (!instance) return;
-    const doc = instance.Core.documentViewer.getDocument();
 
-    const extFromName =
-      fileName.includes(".") ?
-        (fileName.split(".").pop()?.toLowerCase() ?? "pdf")
-      : "pdf";
+    isSavingRef.current = true;
+    setSaving(true);
+    try {
+      const { annotationManager, documentViewer } = instance.Core;
+      const doc = documentViewer.getDocument();
 
-    const extToMime: Record<string, string> = {
-      pdf: "application/pdf",
-      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      ppt: "application/vnd.ms-powerpoint",
-      png: "image/png",
-      jpg: "image/jpeg",
-      jpeg: "image/jpeg",
-    };
+      const extFromName =
+        fileName.includes(".") ?
+          (fileName.split(".").pop()?.toLowerCase() ?? "pdf")
+        : "pdf";
 
-    const mimeType = extToMime[extFromName] ?? "application/pdf";
+      const extToMime: Record<string, string> = {
+        pdf: "application/pdf",
+        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ppt: "application/vnd.ms-powerpoint",
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+      };
 
-    const data = await doc.getFileData({});
-    const blob = new Blob([data], { type: mimeType });
-    const formData = new FormData();
-    formData.append("file", blob, fileName);
+      const mimeType = extToMime[extFromName] ?? "application/pdf";
+      const xfdfString = await annotationManager.exportAnnotations();
+      const data = await doc.getFileData({ xfdfString });
+      const blob = new Blob([data], { type: mimeType });
+      const formData = new FormData();
+      formData.append("file", blob, fileName);
 
-    await fetch(API_ENDPOINTS.CONTENT.EDIT(uuid), {
-      method: "PUT",
-      credentials: "include",
-      body: formData,
-    });
-    markContentListStale();
+      const res = await fetch(API_ENDPOINTS.CONTENT.EDIT(uuid), {
+        method: "PUT",
+        credentials: "include",
+        body: formData,
+      });
 
-    // Reset URI cache so the next open re-fetches the updated file
-    currentUriRef.current = "";
-    onSaved?.();
-    onClose();
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        console.error("Document save failed:", error ?? res.statusText);
+        return;
+      }
+
+      markContentListStale();
+      currentUriRef.current = "";
+      onSaved?.();
+      onClose();
+    } catch (error) {
+      console.error("Document save failed:", error);
+    } finally {
+      isSavingRef.current = false;
+      setSaving(false);
+    }
   };
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -306,36 +330,51 @@ export default function DocumentEditorModal({
     <Dialog
       open={open}
       onClose={() => {
-        // Reset URI cache so the next open always re-fetches fresh content
         currentUriRef.current = "";
         onClose();
       }}
       maxWidth="xl"
       fullWidth
-      keepMounted // Keep WebViewer alive between opens to avoid re-initialization
+      keepMounted
     >
       <Box sx={{ height: "85vh", display: "flex", flexDirection: "column" }}>
-        {/* ── Top bar: file name + actions ── */}
+        {/* ── Top bar: file name + reading time badge + actions ── */}
         <Stack
           direction="row"
           justifyContent="space-between"
           alignItems="center"
           sx={{ px: 2, py: 1, gap: 1, flexShrink: 0 }}
         >
-          <Typography
-            variant="subtitle2"
-            sx={{ pl: 1, color: "text.secondary" }}
-            noWrap
+          <Stack
+            direction="row"
+            alignItems="center"
+            gap={1.5}
+            sx={{ minWidth: 0 }}
           >
-            {fileName}
-          </Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{ pl: 1, color: "text.secondary" }}
+              noWrap
+            >
+              {fileName}
+            </Typography>
+            {wordCount !== null && wordCount > 0 && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                noWrap
+              >
+                Word Count: {wordCount.toLocaleString()} &nbsp;·&nbsp; Estimated
+                Reading Length: {formatReadingTime(wordCount)}
+              </Typography>
+            )}
+          </Stack>
 
           <Stack
             direction="row"
             gap={0.5}
             alignItems="center"
           >
-            {/* Open content form */}
             {onOpenForm && (
               <Tooltip title="Edit metadata">
                 <IconButton
@@ -347,7 +386,6 @@ export default function DocumentEditorModal({
               </Tooltip>
             )}
 
-            {/* Delete file */}
             {onDelete && (
               <Tooltip title="Delete">
                 <IconButton
@@ -360,20 +398,26 @@ export default function DocumentEditorModal({
               </Tooltip>
             )}
 
-            {/* Save */}
             {!readOnly && (
-              <Tooltip title="Save">
-                <IconButton
-                  onClick={() => void handleSave()}
-                  size="small"
-                  color="primary"
-                >
-                  <SaveIcon />
-                </IconButton>
+              <Tooltip title={saving ? "Saving..." : "Save"}>
+                <span>
+                  <IconButton
+                    onClick={() => void handleSave()}
+                    size="small"
+                    color="primary"
+                    disabled={saving}
+                  >
+                    {saving ?
+                      <CircularProgress
+                        size={20}
+                        color="primary"
+                      />
+                    : <SaveIcon />}
+                  </IconButton>
+                </span>
               </Tooltip>
             )}
 
-            {/* Close */}
             <Tooltip title="Close">
               <IconButton
                 onClick={onClose}
@@ -387,7 +431,6 @@ export default function DocumentEditorModal({
 
         {/* ── Body: WebViewer + Version History side by side ── */}
         <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
-          {/* WebViewer editor — fills all remaining horizontal space */}
           <Box sx={{ flex: 1, minHeight: 0, position: "relative" }}>
             <Box
               ref={viewerDivRef}
@@ -402,7 +445,6 @@ export default function DocumentEditorModal({
             />
           </Box>
 
-          {/* Version history sidebar — fixed 220px width, scrollable */}
           <VersionHistoryPanel
             contentUuid={uuid}
             contentRow={contentRow}

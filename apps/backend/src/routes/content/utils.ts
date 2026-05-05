@@ -18,6 +18,8 @@ import {
   TagContentParamsSchema,
   TagParamsSchema,
   UploadResult,
+  ContentListItem,
+  TagAction,
 } from "./schemas.ts";
 
 export function getExpiresInSeconds(expirationTime: Date): number {
@@ -124,16 +126,19 @@ type ActiveContentLock = NonNullable<
 >;
 
 export function serializeLock(lock: ActiveContentLock) {
+  const lockedByEmp = {
+    uuid: lock.lockedByEmp.uuid,
+    firstName: lock.lockedByEmp.firstName,
+    lastName: lock.lockedByEmp.lastName,
+    corporateEmail: lock.lockedByEmp.corporateEmail,
+  };
+
   return {
     contentUuid: lock.contentUuid,
     lockedByEmpUuid: lock.lockedByEmpUuid,
     lockedAt: lock.lockedAt,
-    locked_by: {
-      uuid: lock.lockedByEmp.uuid,
-      firstName: lock.lockedByEmp.firstName,
-      lastName: lock.lockedByEmp.lastName,
-      corporateEmail: lock.lockedByEmp.corporateEmail,
-    },
+    lockedByEmp,
+    locked_by: lockedByEmp,
   };
 }
 
@@ -346,10 +351,13 @@ export async function createOrRefreshLock(
     });
   }
 
+  if (existingLock.lockedByEmpUuid !== auth.employeeUuid) {
+    throw new Error("Cannot refresh lock owned by another employee");
+  }
+
   return prisma.contentEditLock.update({
     where: { contentUuid: uuid },
     data: {
-      lockedByEmpUuid: auth.employeeUuid,
       lockedAt: new Date(),
     },
     include: contentLockInclude,
@@ -379,6 +387,8 @@ export async function resolveContentUrl({
     }
 
     if (fallbackSupabasePath) {
+      // Existing uploads store a private object path; edits and link
+      // regeneration mint a fresh signed URL instead of re-uploading bytes.
       const expiresIn = getExpiresInSeconds(expirationTime);
       if (expiresIn < 0) {
         return {
@@ -431,6 +441,11 @@ export async function resolveContentUrl({
     };
   }
 
+  logger.verbose(
+    `Uploading ${uuid}.${mime.extension(file.mimetype)} to ${STORAGE_BUCKET}`,
+  );
+  // Keep object names stable per content UUID so edited uploads replace the
+  // previous file when callers pass upsert=true.
   const uploadResult = await supabase.storage
     .from(STORAGE_BUCKET)
     .upload(`content/${uuid}.${mime.extension(file.mimetype)}`, file.buffer, {
@@ -469,6 +484,101 @@ export async function resolveContentUrl({
     url: signedUrlResult.data.signedUrl,
     supabasePath: uploadResult.data.path,
   };
+}
+
+export function getContentListInclude(employeeUuid: string) {
+  return {
+    favoritedBy: {
+      where: { employeeUuid },
+      select: { employeeUuid: true },
+    },
+    tagAssignments: {
+      select: {
+        tag: {
+          select: {
+            uuid: true,
+            name: true,
+          },
+        },
+      },
+    },
+    _count: {
+      select: { favoritedBy: true },
+    },
+    editLock: {
+      include: {
+        lockedByEmp: {
+          select: {
+            uuid: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+          },
+        },
+      },
+    },
+  } satisfies Prisma.ContentInclude;
+}
+
+export function serializeContentList(content: ContentListItem[]) {
+  return content.map(({ favoritedBy, tagAssignments, _count, ...item }) => ({
+    ...item,
+    tags: tagAssignments.map(({ tag }) => tag),
+    is_favorite: favoritedBy.length > 0,
+    favorite_count: _count.favoritedBy,
+  }));
+}
+
+export function normalizeQueryList(value: unknown): string[] {
+  if (typeof value === "undefined") {
+    return [];
+  }
+
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter((item): item is string => typeof item === "string");
+}
+
+export function getSearchFilterClauses(query: express.Request["query"]) {
+  const positionFilters = normalizeQueryList(query.position);
+  const fileTypeFilters = normalizeQueryList(query.fileType);
+  const tagUuidFilters = normalizeQueryList(query.tagUuid);
+  const clauses: Prisma.ContentWhereInput[] = [];
+
+  if (positionFilters.length > 0) {
+    clauses.push({ forPosition: { in: positionFilters as Position[] } });
+  }
+
+  if (fileTypeFilters.length > 0) {
+    clauses.push({ fileType: { in: fileTypeFilters } });
+  }
+
+  if (tagUuidFilters.length > 0) {
+    clauses.push({
+      tagAssignments: {
+        some: {
+          tagUuid: {
+            in: tagUuidFilters,
+          },
+        },
+      },
+    });
+  }
+
+  return clauses;
+}
+
+export function getTagActionFromMethod(method: string) {
+  switch (method) {
+    case "POST": {
+      return TagAction.CREATE;
+    }
+    case "DELETE": {
+      return TagAction.DELETE;
+    }
+    default: {
+      return TagAction.INVALID;
+    }
+  }
 }
 
 export { getVisibleContentWhere };

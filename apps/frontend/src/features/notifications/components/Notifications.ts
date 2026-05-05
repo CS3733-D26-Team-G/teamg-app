@@ -1,5 +1,10 @@
 import type { ActivityRow } from "../../../types/activity.ts";
 import type { ContentRow } from "../../../types/content.ts";
+import type { InsuranceClaimType } from "@repo/db";
+import type {
+  InsuranceClaimCreatePayload,
+  InsuranceClaimRecord,
+} from "../../../types/claim.ts";
 
 export interface NotificationActivity {
   uuid: string;
@@ -10,6 +15,10 @@ export interface NotificationActivity {
   employee?: ActivityRow["employee"];
   title: string;
   notificationMessage: string;
+}
+
+export async function getAllContent(): Promise<ContentRow[]> {
+  throw new Error("Not implemented");
 }
 
 export function getExpiresInSeconds(
@@ -31,7 +40,9 @@ export function getExpiringContent(content: ContentRow[]) {
       expiresInSeconds: getExpiresInSeconds(item.expirationTime),
       expiresAt: new Date(item.expirationTime),
       isExpired: false,
-      status: getExpirationStatus(getExpiresInSeconds(item.expirationTime)),
+      expirationStatus: getExpirationStatus(
+        getExpiresInSeconds(item.expirationTime),
+      ), // Changed to expirationStatus
     }))
     .sort((a, b) => a.expiresInSeconds - b.expiresInSeconds);
 }
@@ -102,5 +113,56 @@ export function getContentEdits(
           ` by ${item.employee.firstName} ${item.employee.lastName}`
         : ""
       }`,
+    }));
+}
+
+export function getClaimCreate(
+  activities: ActivityRow[],
+): NotificationActivity[] {
+  return activities
+    .filter((item) => item.action === "CREATE_CLAIM")
+    .map((item) => ({
+      uuid: item.uuid,
+      action: item.action,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "Claim",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: item.resourceName ?? "Claim Created",
+      notificationMessage: `Claim created${item.employee ? ` by ${item.employee.firstName} ${item.employee.lastName}` : ""}`,
+    }));
+}
+
+export function getClaimEdit(
+  activities: ActivityRow[],
+): NotificationActivity[] {
+  return activities
+    .filter((item) => item.action === "EDIT_CLAIM")
+    .map((item) => ({
+      uuid: item.uuid,
+      action: item.action,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "Claim",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: item.resourceName ?? "Claim Edited",
+      notificationMessage: `Claim edited${item.employee ? ` by ${item.employee.firstName} ${item.employee.lastName}` : ""}`,
+    }));
+}
+
+export function getClaimDelete(
+  activities: ActivityRow[],
+): NotificationActivity[] {
+  return activities
+    .filter((item) => item.action === "DELETE_CLAIM")
+    .map((item) => ({
+      uuid: item.uuid,
+      action: item.action,
+      resourceUuid: item.resourceUuid ?? "",
+      resourceName: item.resourceName ?? "Claim",
+      timestamp: item.timestamp,
+      employee: item.employee,
+      title: item.resourceName ?? "Claim Deleted",
+      notificationMessage: `Claim deleted${item.employee ? ` by ${item.employee.firstName} ${item.employee.lastName}` : ""}`,
     }));
 }

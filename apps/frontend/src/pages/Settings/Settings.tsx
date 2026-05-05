@@ -13,21 +13,19 @@ import SchoolIcon from "@mui/icons-material/School";
 import { useThemeMode } from "../../ThemeContext.tsx";
 import { useTutorial } from "../../components/Tutorial/TutorialContext.tsx";
 import { useAuth } from "../../auth/AuthContext.tsx";
-import { useNavigate } from "react-router-dom";
 
 function Settings() {
   const { isDarkMode, isSaving, toggleDarkMode } = useThemeMode();
-  const { triggerPrompt } = useTutorial();
+  const { resetTours, triggerPrompt } = useTutorial();
   const { session } = useAuth();
-  const navigate = useNavigate();
 
   const isAdmin = session?.permissions?.can_manage_employees ?? false;
+  const isUnderwriter = session?.position === "UNDERWRITER";
 
-  const handleStartGuidedTour = () => {
-    navigate("/dashboard");
-
+  const handleRestartTour = () => {
+    resetTours();
     setTimeout(() => {
-      triggerPrompt();
+      triggerPrompt(true);
     }, 100);
   };
 
@@ -45,7 +43,6 @@ function Settings() {
         elevation={2}
         sx={{ mt: 3, borderRadius: 2, overflow: "hidden" }}
       >
-        {/* Section: Appearance */}
         <Box sx={{ px: 3, py: 2 }}>
           <Typography
             variant="overline"
@@ -58,6 +55,7 @@ function Settings() {
 
         <Box sx={{ px: 3, py: 2.5 }}>
           <Stack
+            className="dark-mode-toggle"
             direction="row"
             alignItems="center"
             justifyContent="space-between"
@@ -101,8 +99,7 @@ function Settings() {
         </Box>
       </Paper>
 
-      {/* Tutorial section — admin only */}
-      {isAdmin && (
+      {(isAdmin || isUnderwriter) && (
         <Paper
           elevation={2}
           sx={{ mt: 3, borderRadius: 2, overflow: "hidden" }}
@@ -140,16 +137,17 @@ function Settings() {
                     variant="body2"
                     color="text.secondary"
                   >
-                    Take a guided tour of the admin portal
+                    Take a guided tour of the platform
                   </Typography>
                 </Box>
               </Stack>
 
               <Button
+                className="reset-tutorials-button"
                 variant="outlined"
                 size="small"
                 startIcon={<SchoolIcon />}
-                onClick={handleStartGuidedTour}
+                onClick={handleRestartTour}
                 sx={{
                   borderRadius: "10px",
                   textTransform: "none",

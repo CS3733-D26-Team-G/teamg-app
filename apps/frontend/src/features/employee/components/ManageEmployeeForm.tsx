@@ -117,7 +117,7 @@ export default function ManageEmployeeForm({
         py: 3,
         display: "flex",
         flexDirection: "column",
-        gap: 0,
+        gap: 3,
       }}
     >
       {/* Personal Information */}
@@ -139,7 +139,6 @@ export default function ManageEmployeeForm({
           required
           value={formData.firstName}
           onChange={(e) => handleChange("firstName", e.target.value)}
-          margin="normal"
         />
         <TextField
           label="Last Name"
@@ -147,7 +146,6 @@ export default function ManageEmployeeForm({
           required
           value={formData.lastName}
           onChange={(e) => handleChange("lastName", e.target.value)}
-          margin="normal"
         />
       </Stack>
 
@@ -175,7 +173,6 @@ export default function ManageEmployeeForm({
         <FormControl
           fullWidth
           required
-          margin="normal"
         >
           <InputLabel id="position-label">Position</InputLabel>
           <Select
@@ -200,7 +197,6 @@ export default function ManageEmployeeForm({
         <FormControl
           fullWidth
           required
-          margin="normal"
         >
           <InputLabel id="department-label">Department</InputLabel>
           <Select
@@ -235,7 +231,6 @@ export default function ManageEmployeeForm({
         required
         value={formData.supervisor}
         onChange={(e) => handleChange("supervisor", e.target.value)}
-        margin="normal"
       />
 
       <TextField
@@ -244,7 +239,6 @@ export default function ManageEmployeeForm({
         required
         value={formData.phoneNumber}
         onChange={(e) => handleChange("phoneNumber", e.target.value)}
-        margin="normal"
       />
 
       <Divider sx={{ my: 2 }} />
@@ -269,7 +263,6 @@ export default function ManageEmployeeForm({
           required
           value={formData.personalEmail}
           onChange={(e) => handleChange("personalEmail", e.target.value)}
-          margin="normal"
         />
         <TextField
           label="Corporate Email"
@@ -278,7 +271,6 @@ export default function ManageEmployeeForm({
           required
           value={formData.corporateEmail}
           onChange={(e) => handleChange("corporateEmail", e.target.value)}
-          margin="normal"
         />
       </Stack>
 
