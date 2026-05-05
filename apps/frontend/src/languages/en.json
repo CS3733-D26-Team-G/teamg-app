@@ -2,8 +2,9 @@
   "footer": {
     "browser": "Browser",
     "home": "Home",
-    "aboutUs": "About Us",
     "guideTour": "Guide Tour",
+    "credits": "Credits",
+    "aboutUs": "About Us",
     "employeeAccess": "Employee Access",
     "employeePortal": "Employee Portal",
     "hrSelfService": "HR-Self Service",
@@ -19,10 +20,19 @@
     "contactUs": "Contact Us",
     "copyright": " © 2026 The Hanover Insurance Group, Team G Prototype Inc. All rights reserved."
   },
+
   "heroSection": {
     "disclaimer": "This site is created for a course at Worcester Polytechnic Institute. It is not affiliated with or operated by the Hanover Insurance Group.This is a student project created solely for academic purposes.",
     "login": "Log In",
-    "welcome": "Welcome to iBank, Hanover Insurance's \n content management application."
+    "welcome": "Welcome to iBank, Hanover Insurance's \n content management application.",
+    "cLetter": "C",
+    "aLetter": "A",
+    "rLetter": "R",
+    "eLetter": "E",
+    "c": "ollaboration",
+    "a": "ccountability",
+    "r": "espect",
+    "e": "mpowerment"
   },
 
   "login": {
@@ -34,8 +44,25 @@
     "invalidCredentials": "Invalid credentials",
     "serverError": "Server error. Please try again.",
     "networkError": "Network error. Check your connection."
+  },
+
+  "dashboard": {
+    "welcomeBack": "Welcome Back",
+    "adminHelp": "Full organisational overview: employee demographics, recent activity, content counts by role.",
+    "underWriterHelp": "Track activity and access your content from the dashboard.",
+    "businessAnalystHelp": "Track your content and platform activity.",
+    "actuarialAnalystHelp": "Monitor content counts and recent platform activity.",
+    "exlOperationsHelp": "Monitor content and activity.",
+    "businessOpRatingHelp": "View your content and platform activity.",
+    "widgetsButton": "Dashboard Widgets",
+    "widgetsTitle": "Dashboard Widgets",
+    "widgetsSubtitle": "Toggle visibility · drag to reorder",
+    "widgetsReset": "Reset",
+    "widgetsInfo": "Drag any card to reorder within its row"
+  },
+
+  "recentActivity": {
+    "title": "Recent Activity",
+
   }
 }
-
-
-

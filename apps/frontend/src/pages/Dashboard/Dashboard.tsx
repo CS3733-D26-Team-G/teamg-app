@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import DashboardRecentActivity from "../../features/dashboard/components/DashboardRecentActivity.tsx";
 import {
   DashboardLayout,
@@ -202,6 +203,7 @@ function WidgetSelector({
   onToggleCard: (id: dashboardCardID) => void;
   onReset: () => void;
 }) {
+  const { t } = useTranslation();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
   const visibleCardIds = new Set(
@@ -233,7 +235,7 @@ function WidgetSelector({
             "&:hover": { backgroundColor: "rgba(255,255,255,0.25)" },
           }}
         >
-          Widgets
+          {t("dashboard.widgetsButton")}
           {hiddenCount > 0 && (
             <Chip
               label={`${hiddenCount} hidden`}
@@ -286,12 +288,13 @@ function WidgetSelector({
             <Typography
               sx={{ color: "white", fontWeight: 700, fontSize: "0.9rem" }}
             >
-              Dashboard Widgets
+              {t("dashboard.widgetsTitle")}
             </Typography>
             <Typography
               sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.7rem" }}
             >
               Toggle visibility · drag rows to reorder
+              {t("dashboard.widgetsSubtitle")}
             </Typography>
           </Box>
           <Button
@@ -312,7 +315,7 @@ function WidgetSelector({
               },
             }}
           >
-            Reset
+            {t("dashboard.widgetsReset")}
           </Button>
         </Box>
         <Box sx={{ px: 1.25, py: 1, maxHeight: 400, overflowY: "auto" }}>
@@ -383,6 +386,7 @@ function WidgetSelector({
             }}
           >
             Use "Edit Layout" to reorder rows and cards
+            {t("dashboard.widgetsInfo")}
           </Typography>
         </Box>
       </Popover>
@@ -394,7 +398,7 @@ function WidgetSelector({
 
 export default function Dashboard() {
   const [rows, setRows] = useState<DashboardRow[]>(DEFAULT_ROWS);
-
+  const { t } = useTranslation();
   const { session } = useAuth();
   const { data, loading, error } = useDashboardBootstrap();
   const { profile } = useProfile();
@@ -469,13 +473,12 @@ export default function Dashboard() {
   ];
 
   const helpText: Record<string, string> = {
-    ADMIN:
-      "Full organisational overview: employee demographics, recent activity, content counts by role.",
-    UNDERWRITER: "Track activity and access your content from the dashboard.",
-    BUSINESS_ANALYST: "Track your content and platform activity.",
-    ACTUARIAL_ANALYST: "Monitor content counts and recent platform activity.",
-    EXL_OPERATIONS: "Monitor content and activity.",
-    BUSINESS_OP_RATING: "View your content and platform activity.",
+    ADMIN: t("dashboard.adminHelp"),
+    UNDERWRITER: t("dashboard.underwriterHelp"),
+    BUSINESS_ANALYST: t("dashboard.businessAnalystHelp"),
+    ACTUARIAL_ANALYST: t("dashboard.actuarialAnalystHelp"),
+    EXL_OPERATIONS: t("dashboard.exlOperationsHelp"),
+    BUSINESS_OP_RATING: t("dashboard.businessOpRatingHelp"),
   };
 
   const roleConfig = [
@@ -1009,7 +1012,7 @@ export default function Dashboard() {
             variant="h2"
             sx={{ fontWeight: 700, color: "white", fontSize: "2.2rem" }}
           >
-            Welcome Back, {profile?.firstName}!
+            {t("dashboard.welcomeBack")}, {profile?.firstName}!
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <HelpPopup
