@@ -200,6 +200,23 @@ const SlideUpTransition = React.forwardRef(function SlideUpTransition(
   );
 });
 
+function getNewIds(rows: ContentRow[], userUuid: string): Set<string> {
+  const KEY = `last_visited_${userUuid}`;
+  const lastVisited = localStorage.getItem(KEY);
+
+  // stamp now so next visit uses today as the baseline
+  localStorage.setItem(KEY, new Date().toISOString());
+
+  if (!lastVisited) return new Set(); // first ever visit — nothing is "new"
+
+  const cutoff = new Date(lastVisited);
+  return new Set(
+    rows
+      .filter((r) => r.createdAt && new Date(r.createdAt) > cutoff)
+      .map((r) => r.uuid),
+  );
+}
+
 /* Highlights new content based on what is different from start of session */
 function getSessionNewIds(rows: ContentRow[], userUuid: string): Set<string> {
   const KEY = `new_content_ids_${userUuid}`;
@@ -579,6 +596,13 @@ export default function ContentManagement({
     }
   }, [filteredRows]);
 
+  // auto-clear highlights after 5 mins
+  useEffect(() => {
+    if (sessionNewIds.size === 0) return;
+    const timer = setTimeout(() => setSessionNewIds(new Set()), 5 * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, [sessionNewIds]);
+
   // stages a row for deletion and opens the confirmation dialog
   const handleDelete = (row: ContentRow) => {
     setPendingDelete(row);
@@ -823,7 +847,6 @@ export default function ContentManagement({
         } else {
           // highlight the newly created row for the rest of this session
           const data = (await res.json()) as { uuid: string };
-          setSessionNewIds((prev) => new Set([...prev, data.uuid]));
           setSuccessMessage("Document submitted successfully.");
         }
         markContentListStale();
