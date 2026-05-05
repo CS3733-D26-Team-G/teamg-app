@@ -1,4 +1,10 @@
-import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
+import {
+  type ChangeEvent,
+  type FormEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { TextField } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -8,21 +14,48 @@ interface SearchBarProps {
   searchQuery?: string;
   onSearch?: (query: string) => void;
   setSearchQuery?: (query: string) => void;
+  debounceMs?: number;
 }
 
 const SearchBar = ({
   searchQuery = "",
   onSearch,
   setSearchQuery,
+  debounceMs,
 }: SearchBarProps) => {
   const [draftQuery, setDraftQuery] = useState(searchQuery);
+  const debounceTimeoutRef = useRef<number | null>(null);
+  const onSearchRef = useRef(onSearch);
+  const isDebouncedSearch = onSearch !== undefined && debounceMs !== undefined;
 
   useEffect(() => {
     setDraftQuery(searchQuery);
   }, [searchQuery]);
 
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  useEffect(() => {
+    if (!isDebouncedSearch) return;
+
+    debounceTimeoutRef.current = window.setTimeout(() => {
+      onSearchRef.current?.(draftQuery);
+    }, debounceMs);
+
+    return () => {
+      if (debounceTimeoutRef.current !== null) {
+        window.clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [debounceMs, draftQuery, isDebouncedSearch]);
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (debounceTimeoutRef.current !== null) {
+      window.clearTimeout(debounceTimeoutRef.current);
+      debounceTimeoutRef.current = null;
+    }
     (onSearch ?? setSearchQuery)?.(draftQuery);
   };
 

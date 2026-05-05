@@ -284,6 +284,7 @@ export default function ContentManagement({
   // null means no server search is active; [] means a search is loading or empty.
   const [searchRows, setSearchRows] = useState<ContentRow[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const latestSearchRequestRef = useRef(0);
   const [lockMessage, setLockMessage] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState<
     Record<string, boolean>
@@ -380,6 +381,9 @@ export default function ContentManagement({
   const fetchSearchResults = useCallback(
     async (query: string) => {
       const trimmedQuery = query.trim();
+      const requestId = latestSearchRequestRef.current + 1;
+      latestSearchRequestRef.current = requestId;
+
       if (!trimmedQuery) {
         setSearchRows(null);
         setSearchError(null);
@@ -413,6 +417,8 @@ export default function ContentManagement({
           throw parsed.error;
         }
 
+        if (requestId !== latestSearchRequestRef.current) return;
+
         setSearchRows(
           parsed.data.map((row) => ({
             ...row,
@@ -420,6 +426,8 @@ export default function ContentManagement({
           })),
         );
       } catch (error) {
+        if (requestId !== latestSearchRequestRef.current) return;
+
         console.error(error);
         setSearchRows([]);
         setSearchError("Unable to search content");
@@ -428,18 +436,25 @@ export default function ContentManagement({
     [fileTypeFilters, positionFilters, tagFilters],
   );
 
-  const handleSearch = useCallback((query: string) => {
-    const trimmedQuery = query.trim();
-    setSearchQuery(trimmedQuery);
+  const handleSearch = useCallback(
+    (query: string) => {
+      const trimmedQuery = query.trim();
 
-    if (!trimmedQuery) {
-      setSearchRows(null);
-      setSearchError(null);
-      return;
-    }
+      if (trimmedQuery === searchQuery) return;
 
-    setSearchRows([]);
-  }, []);
+      latestSearchRequestRef.current += 1;
+      setSearchQuery(trimmedQuery);
+
+      if (!trimmedQuery) {
+        setSearchRows(null);
+        setSearchError(null);
+        return;
+      }
+
+      setSearchRows([]);
+    },
+    [searchQuery],
+  );
 
   useEffect(() => {
     const filterParam = searchParams.get("filter");
@@ -1462,6 +1477,7 @@ export default function ContentManagement({
                 <HeaderSearchBar
                   searchQuery={searchQuery}
                   onSearch={handleSearch}
+                  debounceMs={300}
                 />
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
