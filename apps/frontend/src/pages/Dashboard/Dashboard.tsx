@@ -577,6 +577,7 @@ export default function Dashboard() {
       description: "Pie chart of staff by role",
       node: (
         <Card
+          className="employee-demographics-card"
           sx={{ ...cardSx, height: "100%" }}
           elevation={0}
         >
@@ -611,7 +612,10 @@ export default function Dashboard() {
       label: "Recent Activity",
       description: "Live feed of the last 4 actions",
       node: (
-        <Box sx={{ height: "100%" }}>
+        <Box
+          className="recent-activity-card"
+          sx={{ height: "100%" }}
+        >
           <DashboardRecentActivity rawLogs={rawLogs} />
         </Box>
       ),
@@ -625,6 +629,7 @@ export default function Dashboard() {
         description: `Content count for ${label}s`,
         node: (
           <Card
+            className="role-count-cards"
             sx={cardSx}
             elevation={0}
           >
@@ -676,6 +681,7 @@ export default function Dashboard() {
       description: "Edits, checkouts & deletes by employee",
       node: (
         <Card
+          className="dashboard-activity-charts"
           sx={{ ...cardSx, height: "100%" }}
           elevation={0}
         >
@@ -730,16 +736,18 @@ export default function Dashboard() {
       label: "Edits by Day",
       description: "Line chart of content edits over time by role",
       node: (
-        <CardShell
-          title={
-            isAdmin ?
-              "Employee Edits By Day"
-            : `${getPositionLabel(session!.position)} Edits By Day`
-          }
-          helpDesc="Fluctuation in content edits by role over time."
-        >
-          <HitsLineChart />
-        </CardShell>
+        <Box className="dashboard-edits-chart">
+          <CardShell
+            title={
+              isAdmin ?
+                "Employee Edits By Day"
+              : `${getPositionLabel(session!.position)} Edits By Day`
+            }
+            helpDesc="Fluctuation in content edits by role over time."
+          >
+            <HitsLineChart />
+          </CardShell>
+        </Box>
       ),
     },
   ];
@@ -845,6 +853,7 @@ export default function Dashboard() {
       if (editsInRow && editsCardDef && (!editsCardDef.adminOnly || isAdmin)) {
         return (
           <Stack
+            className="dashboard-charts-section"
             spacing={2}
             sx={{ width: "100%" }}
           >
@@ -910,6 +919,7 @@ export default function Dashboard() {
             {/* Employee activity — 2/3 width */}
             <Box sx={{ flex: "0 0 calc(66.666% - 8px)" }}>
               <Card
+                className="dashboard-activity-charts"
                 sx={{ ...cardSx, height: "100%" }}
                 elevation={0}
               >
@@ -963,6 +973,45 @@ export default function Dashboard() {
 
       if (activityIsAnchor && activityAllowed) return null;
       return def.node;
+    }
+
+    if (id === "role-ba") {
+      const roleIds = [
+        "role-ba",
+        "role-uw",
+        "role-actuarial",
+        "role-exl",
+        "role-bus-ops",
+      ] as dashboardCardID[];
+      const roleCards = roleIds
+        .map((rid) => cardById.get(rid))
+        .filter((d): d is CardDef => !!d && (!d.adminOnly || isAdmin));
+
+      return (
+        <Box
+          className="role-count-cards"
+          sx={{ display: "flex", gap: 2, width: "100%" }}
+        >
+          {roleCards.map((d) => (
+            <Box
+              key={d.id}
+              sx={{ flex: 1 }}
+            >
+              {d.node}
+            </Box>
+          ))}
+        </Box>
+      );
+    }
+
+    // Other role cards are consumed by the role-ba anchor above
+    if (
+      id === "role-uw" ||
+      id === "role-actuarial" ||
+      id === "role-exl" ||
+      id === "role-bus-ops"
+    ) {
+      return null;
     }
 
     return def.node;
