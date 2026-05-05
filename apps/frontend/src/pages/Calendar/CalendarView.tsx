@@ -251,7 +251,7 @@ export default function CalendarPage() {
             p: 3,
             backgroundColor: "background.paper",
             minWidth: 0,
-            width: isOpen ? "calc(100vw - 266px)" : "calc(100vw - 95px)",
+            width: isOpen ? "calc(100vw - 280px)" : "calc(100vw - 109px)",
             overflowX: "auto",
             minHeight: "calc(100vh - 130px)",
             border: "none",
