@@ -55,7 +55,16 @@
     "widgetsTitle": "Componentes del panel",
     "widgetsSubtitle": "Mostrar/ocultar · arrastrar para ordenar",
     "widgetsReset": "Restablecer",
-    "widgetsInfo": "Arrastra cualquier tarjeta para reordenarla dentro de su fila"
+    "widgetsInfo": "Arrastra cualquier tarjeta para reordenarla dentro de su fila",
+    "fileTypes": "Tipos de archivo",
+    "totalItems": "Total de elementos",
+    "employeeEditsByDay": "Ediciones de empleados por día",
+    "employeeEditsinfo": "Fluctuación en las ediciones de contenido por rol a lo largo del tiempo.",
+    "accessibleBy":"Contenido total accesible por",
+    "recentlyViewed": "Visto recientemente",
+    "popularContent": "Contenido popular",
+    "myFrequentlyUsed": "Mis más usados",
+    "popularFor": "Popular para"
   },
   "recentActivity": {
     "title": "Actividad reciente",
@@ -81,5 +90,40 @@
     "employee": "Empleado",
     "allEmployees": "Todos los empleados",
     "actions": "Acciones"
+  },
+
+  "hitsLineChart": {
+    "timeRange": "Rango de tiempo",
+    "last7Days": "Últimos 7 días",
+    "last14Days": "Últimos 14 días",
+    "last30Days": "Últimos 30 días",
+    "allTime": "Todo el tiempo"
+
+  },
+
+  "employeeDemographics": {
+    "title": "Demografía de empleados",
+    "info": "Distribución de empleados por rol. Pasa el cursor sobre una sección para ver los números exactos."
+  },
+
+  "navBar": {
+    "dashboard": "Panel",
+    "content": "Contenido",
+    "employeeForm": "Formulario de empleado",
+    "underwriterPortal": "Portal de suscriptor",
+    "businessAnalystPortal": "Portal de analista de negocios"
+  },
+
+  "sideBar": {
+    "dashboard": "Panel",
+    "management": "Gestión",
+    "employees": "Empleados",
+    "content": "Contenido",
+    "approvals": "Aprobaciones",
+    "activity": "Actividad",
+    "calendar": "Calendario",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión",
+    "myAccount": "Mi cuenta"
   }
 }

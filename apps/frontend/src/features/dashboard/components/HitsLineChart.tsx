@@ -93,10 +93,10 @@ export default function HitsLineChart() {
             setDays(value === "all" ? undefined : Number(value));
           }}
         >
-          <MenuItem value="7">{t("last7Days")}</MenuItem>
-          <MenuItem value="14">{t("last14Days")}</MenuItem>
-          <MenuItem value="30">{t("last30Days")}</MenuItem>
-          <MenuItem value="all">{t("allTime")}</MenuItem>
+          <MenuItem value="7">{t("hitsLineChart.last7Days")}</MenuItem>
+          <MenuItem value="14">{t("hitsLineChart.last14Days")}</MenuItem>
+          <MenuItem value="30">{t("hitsLineChart.last30Days")}</MenuItem>
+          <MenuItem value="all">{t("hitsLineChart.allTime")}</MenuItem>
         </Select>
       </FormControl>
 
