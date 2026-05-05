@@ -63,6 +63,22 @@
 
   "recentActivity": {
     "title": "Recent Activity",
+    "info": "The Recent Activity feed shows information about the four most recent actions taken across the application. This includes the user, the time, the date, and what they did. Go to the Activity page using the side bar for a longer time line of activity!",
+    "loggedIn": "Logged In",
+    "edited": "edited",
+    "deleted": "deleted",
+    "created": "created",
+    "checkedIn": "checked in",
+    "checkedOut": "checked out",
+    "loggedOut": "Logged Out"
+  },
 
+  "adminCards": {
+    "underwriter": "UNDERWRITER",
+    "businessAnalyst": "BUSINESS_ANALYST",
+    "admin":  "ADMIN",
+    "actuarialAnalyst":  "ACTUARIAL_ANALYST",
+    "exlOperations":   "EXL_OPERATIONS",
+    "businessOpRating": "BUSINESS_OP_RATING"
   }
 }

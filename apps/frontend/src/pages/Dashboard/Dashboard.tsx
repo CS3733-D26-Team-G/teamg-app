@@ -37,6 +37,7 @@ import RecentlyViewed from "../../features/dashboard/components/RecentlyViewed";
 import { useProfile } from "../../profile/ProfileContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
+import { LanguageToggle } from "../../components/LanguageToggle.tsx";
 
 // ── Layout Types ──────────────────────────────────────────────────────────────
 
@@ -215,6 +216,7 @@ function WidgetSelector({
 
   return (
     <>
+      <LanguageToggle />
       <Tooltip title="Customise widgets">
         <Button
           onClick={(e) => setAnchor(e.currentTarget)}
