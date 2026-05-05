@@ -295,7 +295,6 @@ function WidgetSelector({
             <Typography
               sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.7rem" }}
             >
-              Toggle visibility · drag rows to reorder
               {t("dashboard.widgetsSubtitle")}
             </Typography>
           </Box>
@@ -387,7 +386,6 @@ function WidgetSelector({
               textAlign: "center",
             }}
           >
-            Use "Edit Layout" to reorder rows and cards
             {t("dashboard.widgetsInfo")}
           </Typography>
         </Box>
