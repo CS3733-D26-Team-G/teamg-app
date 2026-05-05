@@ -1,21 +1,10 @@
 import { useState } from "react";
 import DashboardRecentActivity from "../../features/dashboard/components/DashboardRecentActivity.tsx";
-import EditableDashboardCard, {
+import {
+  DashboardLayout,
+  type DashboardRow,
   type dashboardCardID,
 } from "../../features/dashboard/components/EditableDashboard.tsx";
-import {
-  DndContext,
-  PointerSensor,
-  closestCenter,
-  useSensors,
-  useSensor,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-} from "@dnd-kit/sortable";
 import PieChart from "../../features/dashboard/components/PieChart.tsx";
 import TypeBarChart from "../../features/dashboard/components/BarChart.tsx";
 import NotificationBell from "../../features/notifications/components/NotificationBell.tsx";
@@ -48,23 +37,9 @@ import { useProfile } from "../../profile/ProfileContext.tsx";
 import { getPositionLabel } from "../../utils/positionDisplay";
 import { useDashboardBootstrap } from "../../features/dashboard/useDashboardBootstrap.ts";
 
-// ── Layout Types & Constants ──────────────────────────────────────────────────
+// ── Layout Types ──────────────────────────────────────────────────────────────
 
 type FlexSize = "full" | "large" | "medium" | "small";
-
-const FLEX: Record<FlexSize, string> = {
-  full: "1 1 100%",
-  large: "1 1 58%",
-  medium: "1 1 36%",
-  small: "1 1 0",
-};
-
-const MIN_W: Record<FlexSize, number> = {
-  full: 0,
-  large: 360,
-  medium: 260,
-  small: 110,
-};
 
 interface CardDef {
   id: dashboardCardID;
@@ -75,28 +50,42 @@ interface CardDef {
   node: React.ReactNode;
 }
 
-interface RenderedRow {
-  cards: CardDef[];
-  alignItems: "stretch" | "flex-start";
-  useStack: boolean;
-}
+// ── Default Row Layout ────────────────────────────────────────────────────────
 
-const DEFAULT_ORDER: dashboardCardID[] = [
-  "employee-demographics",
-  "recent-activity",
-  "role-ba",
-  "role-uw",
-  "role-actuarial",
-  "role-exl",
-  "role-bus-ops",
-  "employee-activity",
-  "popular-content-search",
-  "recently-viewed",
-  "file-types",
-  "employee-edits-by-day",
+const DEFAULT_ROWS: DashboardRow[] = [
+  {
+    id: "row-top",
+    label: "Overview",
+    visible: true,
+    cardIds: ["employee-demographics", "recent-activity"],
+  },
+  {
+    id: "row-role-counts",
+    label: "Content by Role",
+    visible: true,
+    cardIds: [
+      "role-ba",
+      "role-uw",
+      "role-actuarial",
+      "role-exl",
+      "role-bus-ops",
+    ],
+  },
+  {
+    id: "row-activity",
+    label: "Activity & Content",
+    visible: true,
+    cardIds: ["employee-activity", "popular-content-search", "recently-viewed"],
+  },
+  {
+    id: "row-charts",
+    label: "Charts",
+    visible: true,
+    cardIds: ["file-types", "employee-edits-by-day"],
+  },
 ];
 
-// ── Styled Components ────────────────────────────────────────────────────────
+// ── Styled Components ─────────────────────────────────────────────────────────
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   flexDirection: "column",
@@ -106,7 +95,7 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: 80,
 }));
 
-// ── Sub-Components ──────────────────────────────────────────────────────────
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function DashboardSkeleton() {
   return (
@@ -198,24 +187,29 @@ function DashboardSkeleton() {
   );
 }
 
+// ── Widget Selector ───────────────────────────────────────────────────────────
+
 function WidgetSelector({
   cards,
   isAdmin,
-  hiddenWidgets,
-  onToggle,
+  rows,
+  onToggleCard,
   onReset,
 }: {
   cards: CardDef[];
   isAdmin: boolean;
-  hiddenWidgets: dashboardCardID[];
-  onToggle: (id: dashboardCardID) => void;
+  rows: DashboardRow[];
+  onToggleCard: (id: dashboardCardID) => void;
   onReset: () => void;
 }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+
+  const visibleCardIds = new Set(
+    rows.flatMap((r) => (r.visible ? r.cardIds : [])),
+  );
+  // Only show cards the current user has permission to access
   const available = cards.filter((c) => isAdmin || !c.adminOnly);
-  const hiddenCount = hiddenWidgets.filter((id) =>
-    available.some((c) => c.id === id),
-  ).length;
+  const hiddenCount = available.filter((c) => !visibleCardIds.has(c.id)).length;
 
   return (
     <>
@@ -297,7 +291,7 @@ function WidgetSelector({
             <Typography
               sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.7rem" }}
             >
-              Toggle visibility · drag to reorder
+              Toggle visibility · drag rows to reorder
             </Typography>
           </Box>
           <Button
@@ -328,8 +322,8 @@ function WidgetSelector({
                 key={card.id}
                 control={
                   <Checkbox
-                    checked={!hiddenWidgets.includes(card.id)}
-                    onChange={() => onToggle(card.id)}
+                    checked={visibleCardIds.has(card.id)}
+                    onChange={() => onToggleCard(card.id)}
                     size="small"
                     sx={{
                       "color": "text.disabled",
@@ -388,7 +382,7 @@ function WidgetSelector({
               textAlign: "center",
             }}
           >
-            Drag any card to reorder within its row
+            Use "Edit Layout" to reorder rows and cards
           </Typography>
         </Box>
       </Popover>
@@ -399,33 +393,7 @@ function WidgetSelector({
 // ── Dashboard Component ───────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [cardOrder, setCardOrder] = useState<dashboardCardID[]>(DEFAULT_ORDER);
-  const [hiddenWidgets, setHiddenWidgets] = useState<dashboardCardID[]>([]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setCardOrder((prev) => {
-      const oldIdx = prev.indexOf(active.id as dashboardCardID);
-      const newIdx = prev.indexOf(over.id as dashboardCardID);
-      if (oldIdx === -1 || newIdx === -1) return prev;
-      return arrayMove(prev, oldIdx, newIdx);
-    });
-  };
-
-  const toggleWidget = (id: dashboardCardID) =>
-    setHiddenWidgets((prev) =>
-      prev.includes(id) ? prev.filter((w) => w !== id) : [...prev, id],
-    );
-
-  const resetWidgets = () => {
-    setHiddenWidgets([]);
-    setCardOrder(DEFAULT_ORDER);
-  };
+  const [rows, setRows] = useState<DashboardRow[]>(DEFAULT_ROWS);
 
   const { session } = useAuth();
   const { data, loading, error } = useDashboardBootstrap();
@@ -554,7 +522,7 @@ export default function Dashboard() {
     children: React.ReactNode;
   }) => (
     <Card
-      sx={cardSx}
+      sx={{ ...cardSx, height: "100%" }}
       elevation={0}
     >
       <Box
@@ -582,6 +550,12 @@ export default function Dashboard() {
       </CardContent>
     </Card>
   );
+
+  // ── Card Definitions ──────────────────────────────────────────────────────
+  //
+  // "row-charts" uses a custom stacked layout (see renderCard below).
+  // "row-activity" uses a custom 2/3 + stacked-1/3 layout (see renderCard below).
+  // All other rows use the default flex: 1 side-by-side layout.
 
   const allCardDefs: CardDef[] = [
     {
@@ -634,7 +608,7 @@ export default function Dashboard() {
     ...roleConfig.map(
       ({ id, label, key }): CardDef => ({
         id,
-        size: "small" as FlexSize,
+        size: "small",
         adminOnly: true,
         label: `${label} Count`,
         description: `Content count for ${label}s`,
@@ -662,7 +636,7 @@ export default function Dashboard() {
                   mt: 1,
                 }}
               >
-                {analytics[key as string] ?? 0}
+                {analytics[key] ?? 0}
               </Typography>
               <Typography
                 sx={{
@@ -691,7 +665,7 @@ export default function Dashboard() {
       description: "Edits, checkouts & deletes by employee",
       node: (
         <Card
-          sx={cardSx}
+          sx={{ ...cardSx, height: "100%" }}
           elevation={0}
         >
           <Divider />
@@ -728,7 +702,7 @@ export default function Dashboard() {
     },
     {
       id: "file-types",
-      size: "medium",
+      size: "full",
       adminOnly: false,
       label: "File Types",
       description: "Bar chart of file type distribution",
@@ -759,54 +733,235 @@ export default function Dashboard() {
     },
   ];
 
-  // ── Logic to Build Dynamic Rows ─────────────────────────────────────────────
-
-  const visibleIds = new Set(
-    allCardDefs
-      .filter((c) => !hiddenWidgets.includes(c.id) && (isAdmin || !c.adminOnly))
-      .map((c) => c.id),
-  );
-
   const cardById = new Map(allCardDefs.map((c) => [c.id, c]));
 
-  const orderedVisible = cardOrder
-    .filter((id) => visibleIds.has(id))
-    .map((id) => cardById.get(id)!)
-    .filter(Boolean);
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
-  const rows: RenderedRow[] = [];
+  const handleReset = () => setRows(DEFAULT_ROWS);
 
-  if (orderedVisible.length > 0) {
-    // Row 0: First 2 items (Stretch)
-    const row0Items = orderedVisible.slice(0, 2);
-    rows.push({ cards: row0Items, alignItems: "stretch", useStack: false });
-
-    // Row 1: Next 5 items (Role counts)
-    const row1Items = orderedVisible.slice(2, 7);
-    if (row1Items.length > 0) {
-      rows.push({
-        cards: row1Items,
-        alignItems: "flex-start",
-        useStack: false,
+  const handleToggleCard = (id: dashboardCardID) => {
+    const inARow = rows.some((r) => r.cardIds.includes(id));
+    if (inARow) {
+      setRows((prev) =>
+        prev.map((row) => ({
+          ...row,
+          cardIds: row.cardIds.filter((cid) => cid !== id),
+        })),
+      );
+    } else {
+      setRows((prev) => {
+        const targetIdx = Math.max(
+          prev.findIndex((r) => r.visible),
+          0,
+        );
+        return prev.map((row, i) =>
+          i === targetIdx ? { ...row, cardIds: [...row.cardIds, id] } : row,
+        );
       });
     }
+  };
 
-    // Row 2: Next 3 items (Stackable row)
-    const row2Items = orderedVisible.slice(7, 10);
-    if (row2Items.length > 0) {
-      rows.push({ cards: row2Items, alignItems: "flex-start", useStack: true });
-    }
+  // ── renderCard ─────────────────────────────────────────────────────────────
+  //
+  // Special rows get custom wrapper layouts injected here so the DashboardLayout
+  // still manages DnD for those cards while we control their visual arrangement.
+  //
+  // row-charts    → stacked vertically, each card full width
+  // row-activity  → employee-activity at 2/3, popular + recently stacked at 1/3
 
-    // Row 3: Remaining items
-    const row3Items = orderedVisible.slice(10);
-    if (row3Items.length > 0) {
-      rows.push({
-        cards: row3Items,
-        alignItems: "flex-start",
-        useStack: false,
-      });
-    }
+  function renderCard(id: dashboardCardID): React.ReactNode {
+    const def = cardById.get(id);
+    if (!def) return null;
+    if (def.adminOnly && !isAdmin) return null;
+
+    // ── Charts row: stack vertically, full width ──────────────────────────
+    // The card's node is already full width by default; we just ensure the
+    // EditableDashboardCard wrapper doesn't force flex: 1 side-by-side.
+    // We handle this by overriding the row container in renderCard via a
+    // special sentinel that DashboardLayout detects — but since DashboardLayout
+    // uses flex row by default, the cleanest solution is to put both chart
+    // cards inside ONE wrapper and return it from a single logical card.
+    //
+    // Instead, we use CSS: when both charts land in row-charts, we render
+    // each as width:100% block. We signal this through the cardSx on their
+    // EditableDashboardCard via the style prop passed by DashboardLayout.
+    // DashboardLayout passes no style — the card's flex:1 in the row container
+    // does the work. To make them stack we override the row's flexDirection
+    // to "column" for row-charts in Dashboard.tsx by wrapping in renderRowContent.
+    //
+    // The cleanest approach without changing DashboardLayout's contract:
+    // return a "column stack controller" wrapper. See renderRowContent below.
+
+    return def.node;
   }
+
+  // ── renderRowContent ───────────────────────────────────────────────────────
+  // Called by DashboardLayout via the renderCard prop for each card.
+  // For rows that need a custom internal layout we return null from renderCard
+  // for the individual cards and instead render the whole row via a custom
+  // render prop. But that would require changing DashboardLayout's API.
+  //
+  // Better: we keep the existing API and instead post-process the row container
+  // by overriding flexDirection through a custom renderCard that injects a
+  // "stack" wrapper around each card when it belongs to a stacking row.
+  //
+  // Implementation:
+  // - Charts row: each card gets flex: "0 0 100%" so they stack vertically
+  //   inside the row's flex container (which we make flex-wrap + flex-direction row).
+  //   Since EditableDashboardCard has flex:1 this won't work without changing the
+  //   container. Instead we use a simpler approach: move both chart cards into
+  //   a SINGLE logical wrapper and return that from one renderCard call, making
+  //   the other card ID return null so DashboardLayout skips the slot.
+  //
+  // That's the cleanest solution. We designate "file-types" as the "anchor" card
+  // for row-charts and "employee-activity" as the anchor for row-activity.
+  // The anchor renders the full custom layout; the other card IDs in those rows
+  // return null so DashboardLayout allocates exactly one flex slot.
+
+  function renderCardWithLayout(id: dashboardCardID): React.ReactNode {
+    const def = cardById.get(id);
+    if (!def) return null;
+    if (def.adminOnly && !isAdmin) return null;
+
+    // ── Charts row: "file-types" renders both charts stacked ──────────────
+    if (id === "file-types") {
+      const editsInRow = rows.some(
+        (r) =>
+          r.id === "row-charts" && r.cardIds.includes("employee-edits-by-day"),
+      );
+      // If both charts are in row-charts, stack them
+      const editsCardDef = cardById.get("employee-edits-by-day");
+      if (editsInRow && editsCardDef && (!editsCardDef.adminOnly || isAdmin)) {
+        return (
+          <Stack
+            spacing={2}
+            sx={{ width: "100%" }}
+          >
+            <CardShell title="File Types">
+              <TypeBarChart data={fileTypeCounts} />
+            </CardShell>
+            <CardShell
+              title={
+                isAdmin ?
+                  "Employee Edits By Day"
+                : `${getPositionLabel(session!.position)} Edits By Day`
+              }
+              helpDesc="Fluctuation in content edits by role over time."
+            >
+              <HitsLineChart />
+            </CardShell>
+          </Stack>
+        );
+      }
+      // Fallback if edits is not in this row — render just file types normally
+      return def.node;
+    }
+
+    // "employee-edits-by-day" is consumed by the file-types anchor above when
+    // both are in row-charts — return null so no blank slot appears
+    if (id === "employee-edits-by-day") {
+      const fileTypesIsAnchor = rows.some(
+        (r) =>
+          r.id === "row-charts" &&
+          r.cardIds.includes("file-types") &&
+          r.cardIds.includes("employee-edits-by-day"),
+      );
+      if (fileTypesIsAnchor) return null;
+      return def.node;
+    }
+
+    // ── Activity row: "employee-activity" renders 2/3 + stacked 1/3 ───────
+    if (id === "employee-activity") {
+      const activityRow = rows.find((r) => r.id === "row-activity");
+      const popularInRow =
+        activityRow?.cardIds.includes("popular-content-search") ?? false;
+      const recentInRow =
+        activityRow?.cardIds.includes("recently-viewed") ?? false;
+
+      const popularAllowed =
+        !cardById.get("popular-content-search")?.adminOnly || isAdmin;
+      const recentAllowed =
+        !cardById.get("recently-viewed")?.adminOnly || isAdmin;
+
+      const hasStackedCards =
+        (popularInRow && popularAllowed) || (recentInRow && recentAllowed);
+
+      if (hasStackedCards) {
+        return (
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "stretch",
+              width: "100%",
+            }}
+          >
+            {/* Employee activity — 2/3 width */}
+            <Box sx={{ flex: "0 0 calc(66.666% - 8px)" }}>
+              <Card
+                sx={{ ...cardSx, height: "100%" }}
+                elevation={0}
+              >
+                <Divider />
+                <CardContent sx={{ "p": 2, "&:last-child": { pb: 2 } }}>
+                  <AdminCards />
+                </CardContent>
+              </Card>
+            </Box>
+
+            {/* Popular + Recently stacked — 1/3 width */}
+            <Box
+              sx={{
+                flex: "0 0 calc(33.333% - 8px)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              {popularInRow && popularAllowed && (
+                <Box sx={{ flex: 1, maxHeight: "50%", overflow: "hidden" }}>
+                  <CardShell title="Popular Content">
+                    <PopularContent position={session?.position} />
+                  </CardShell>
+                </Box>
+              )}
+              {recentInRow && recentAllowed && (
+                <Box sx={{ flex: 1, maxHeight: "50%", overflow: "hidden" }}>
+                  <CardShell title="Recently Viewed">
+                    <RecentlyViewed />
+                  </CardShell>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        );
+      }
+
+      // Fallback: no stacked cards, render normally
+      return def.node;
+    }
+
+    // "popular-content-search" and "recently-viewed" are consumed by the
+    // employee-activity anchor when all three are in row-activity
+    if (id === "popular-content-search" || id === "recently-viewed") {
+      const activityRow = rows.find((r) => r.id === "row-activity");
+      const activityIsAnchor =
+        activityRow?.cardIds.includes("employee-activity") ?? false;
+      const activityAllowed =
+        !cardById.get("employee-activity")?.adminOnly || isAdmin;
+
+      if (activityIsAnchor && activityAllowed) return null;
+      return def.node;
+    }
+
+    return def.node;
+  }
+
+  const allCardIds = rows.flatMap((r) => r.cardIds);
+  const hasVisibleCards = allCardIds.some((id) => {
+    const def = cardById.get(id);
+    return def && (!def.adminOnly || isAdmin);
+  });
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -856,9 +1011,9 @@ export default function Dashboard() {
             <WidgetSelector
               cards={allCardDefs}
               isAdmin={isAdmin}
-              hiddenWidgets={hiddenWidgets}
-              onToggle={toggleWidget}
-              onReset={resetWidgets}
+              rows={rows}
+              onToggleCard={handleToggleCard}
+              onReset={handleReset}
             />
           </Box>
         </Box>
@@ -884,11 +1039,9 @@ export default function Dashboard() {
           "mx": "32px",
           "height": "calc(100vh - 150px)",
           "overflowY": "auto",
-          "scrollbarWidth": "none", // Hides scrollbar for Firefox
-          "&::-webkit-scrollbar": {
-            display: "none", // Hides scrollbar for Chrome, Safari, and Edge
-          },
-          "-ms-overflow-style": "none", // Hides scrollbar for IE/Edge
+          "scrollbarWidth": "none",
+          "&::-webkit-scrollbar": { display: "none" },
+          "-ms-overflow-style": "none",
         }}
       >
         <CardContent
@@ -898,107 +1051,13 @@ export default function Dashboard() {
             backgroundColor: "background.default",
           }}
         >
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={orderedVisible.map((c) => c.id)}
-              strategy={rectSortingStrategy}
-            >
-              <Stack spacing={2}>
-                {rows.map((row, rowIdx) => {
-                  if (row.useStack) {
-                    const actCard = row.cards.find(
-                      (c) => c.id === "employee-activity",
-                    );
-                    const stackCards = row.cards.filter(
-                      (c) => c.id !== "employee-activity",
-                    );
-                    if (!actCard && !stackCards.length) return null;
-
-                    return (
-                      <Box
-                        key={rowIdx}
-                        sx={{ display: "flex", gap: 2, alignItems: "stretch" }}
-                      >
-                        {actCard && (
-                          <EditableDashboardCard
-                            id={actCard.id}
-                            style={{
-                              flex: FLEX[actCard.size],
-                              minWidth: MIN_W[actCard.size],
-                              boxSizing: "border-box",
-                            }}
-                          >
-                            {actCard.node}
-                          </EditableDashboardCard>
-                        )}
-                        {stackCards.length > 0 && (
-                          <Box
-                            sx={{
-                              flex: FLEX["medium"],
-                              minWidth: MIN_W["medium"],
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 2,
-                            }}
-                          >
-                            {stackCards.map((card) => (
-                              <EditableDashboardCard
-                                key={card.id}
-                                id={card.id}
-                                style={{ boxSizing: "border-box" }}
-                              >
-                                {card.node}
-                              </EditableDashboardCard>
-                            ))}
-                          </Box>
-                        )}
-                      </Box>
-                    );
-                  }
-
-                  const resolvedCards = row.cards.map((card) => {
-                    if (rowIdx === 0 && row.cards.length === 1) {
-                      return { ...card, size: "full" as FlexSize };
-                    }
-                    return card;
-                  });
-
-                  return (
-                    <Box
-                      key={rowIdx}
-                      sx={{
-                        display: "flex",
-                        gap: 2,
-                        alignItems: row.alignItems,
-                        width: "100%",
-                      }}
-                    >
-                      {resolvedCards.map((card) => (
-                        <EditableDashboardCard
-                          key={card.id}
-                          id={card.id}
-                          style={{
-                            flex: FLEX[card.size],
-                            minWidth: MIN_W[card.size],
-                            boxSizing: "border-box",
-                          }}
-                        >
-                          {card.node}
-                        </EditableDashboardCard>
-                      ))}
-                    </Box>
-                  );
-                })}
-              </Stack>
-            </SortableContext>
-          </DndContext>
-
-          {orderedVisible.length === 0 && (
-            <Box
+          {hasVisibleCards ?
+            <DashboardLayout
+              rows={rows}
+              onRowsChange={setRows}
+              renderCard={renderCardWithLayout}
+            />
+          : <Box
               sx={{
                 display: "flex",
                 flexDirection: "column",
@@ -1021,13 +1080,13 @@ export default function Dashboard() {
               </Typography>
               <Button
                 variant="outlined"
-                onClick={resetWidgets}
+                onClick={handleReset}
                 sx={{ mt: 1, borderRadius: "8px", textTransform: "none" }}
               >
                 Restore defaults
               </Button>
             </Box>
-          )}
+          }
         </CardContent>
       </Card>
     </Box>
