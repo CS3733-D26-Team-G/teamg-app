@@ -444,32 +444,37 @@ export default function Dashboard() {
     {
       id: 0,
       value: empCounts.BUSINESS_ANALYST ?? 0,
-      label: "Business Analyst",
+      label: t("adminCards.underwriter"),
       color: "#bea5aa",
     },
     {
       id: 1,
       value: empCounts.BUSINESS_OP_RATING ?? 0,
-      label: "Business Ops Rating",
+      label: t("adminCards.businessOpRating"),
       color: "#509edd",
     },
     {
       id: 2,
       value: empCounts.UNDERWRITER ?? 0,
-      label: "Underwriter",
+      label: t("adminCards.underwriter"),
       color: "#395176",
     },
     {
       id: 3,
       value: empCounts.ACTUARIAL_ANALYST ?? 0,
-      label: "Actuarial Analyst",
+      label: t("adminCards.actuarialAnalyst"),
       color: "#ba667b",
     },
-    { id: 4, value: empCounts.ADMIN ?? 0, label: "Admin", color: "#74414e" },
+    {
+      id: 4,
+      value: empCounts.ADMIN ?? 0,
+      label: t("adminCards.admin"),
+      color: "#74414e",
+    },
     {
       id: 5,
       value: empCounts.EXL_OPERATIONS ?? 0,
-      label: "EXL Operations",
+      label: t("adminCards.exlOperations"),
       color: "#721b31",
     },
   ];

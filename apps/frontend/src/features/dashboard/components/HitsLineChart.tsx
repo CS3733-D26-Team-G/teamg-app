@@ -10,6 +10,7 @@ import {
 import { useAuth } from "../../../auth/AuthContext";
 import { getPositionLabel } from "../../../utils/positionDisplay";
 import { useDashboardBootstrapQuery } from "../../../lib/activity-loaders";
+import { useTranslation } from "react-i18next";
 
 interface EditHitsRow {
   date: string;
@@ -30,6 +31,7 @@ function formatDateLabel(date: string) {
 }
 
 export default function HitsLineChart() {
+  const { t } = useTranslation();
   const [days, setDays] = useState<number | undefined>(7);
   const { session } = useAuth();
   const isAdmin = session?.position === "ADMIN";
