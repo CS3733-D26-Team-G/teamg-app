@@ -79,6 +79,13 @@
     "admin":  "ADMIN",
     "actuarialAnalyst":  "ACTUARIAL_ANALYST",
     "exlOperations":   "EXL_OPERATIONS",
-    "businessOpRating": "BUSINESS_OP_RATING"
-  }
+    "businessOpRating": "BUSINESS_OP_RATING",
+    "employeeType": "Employee Type",
+    "employeeActivity": "Employee Activity",
+    "allEmployeeTypes": "All Employee Types",
+    "employee": "Employee",
+    "allEmployees": "All Employees",
+    "actions": "Actions"
+}
+
 }

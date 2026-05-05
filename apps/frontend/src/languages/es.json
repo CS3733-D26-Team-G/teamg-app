@@ -74,6 +74,12 @@
     "admin": "Administrador",
     "actuarialAnalyst": "Analista actuarial",
     "exlOperations": "Operaciones EXL",
-    "businessOpRating": "Calificación de operaciones comerciales"
+    "businessOpRating": "Calificación de operaciones comerciales",
+    "employeeActivity": "Actividad del empleado",
+    "employeeType": "Tipo de empleado",
+    "allEmployeeTypes": "Todo tipo de empleados",
+    "employee": "Empleado",
+    "allEmployees": "Todos los empleados",
+    "actions": "Acciones"
   }
 }
