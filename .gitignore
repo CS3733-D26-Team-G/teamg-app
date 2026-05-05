@@ -7,3 +7,4 @@ packages/db/generated
 dist/
 package-lock.json
 packages/zod
+.nvmrc
