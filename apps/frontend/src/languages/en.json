@@ -78,7 +78,7 @@
     "businessAnalyst": "BUSINESS_ANALYST",
     "admin":  "ADMIN",
     "actuarialAnalyst":  "ACTUARIAL_ANALYST",
-    "exlOperations":   "EXL_OPERATIONS",
+    "exlOperations": "EXL_OPERATIONS",
     "businessOpRating": "BUSINESS_OP_RATING",
     "employeeType": "Employee Type",
     "employeeActivity": "Employee Activity",
