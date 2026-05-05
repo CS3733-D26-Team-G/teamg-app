@@ -159,5 +159,17 @@
     "EXL_OPERATIONS": "Operaciones EXL",
     "BUSINESS_OP_RATING": "Calificación de Negocios",
     "ADMIN": "Administrador"
+  },
+
+  "editableDashboard": {
+    "visible": "Visible",
+    "hidden": "Oculto",
+    "hideRow": "Ocultar fila",
+    "showRow": "Mostrar fila",
+    "rowHidden": "Fila oculta — activar para restaurar",
+    "done": "Listo",
+    "editLayout": "Editar diseño",
+    "rowsHidden": "{{count}} fila oculta",
+    "rowsHidden_other": "{{count}} filas ocultas"
   }
 }

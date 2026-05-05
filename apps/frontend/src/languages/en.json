@@ -163,6 +163,18 @@
     "EXL_OPERATIONS": "EXL Operations",
     "BUSINESS_OP_RATING": "Business Ops Rating",
     "ADMIN": "Admin"
+  },
+
+  "editableDashboard": {
+    "visible": "Visible",
+    "hidden": "Hidden",
+    "hideRow": "Hide this row",
+    "showRow": "Show this row",
+    "rowHidden": "Row hidden — toggle to restore",
+    "done": "Done",
+    "editLayout": "Edit Layout",
+    "rowsHidden": "{{count}} row hidden",
+    "rowsHidden_other": "{{count}} rows hidden"
   }
 
 }
