@@ -81,7 +81,9 @@ export default function HitsLineChart() {
           "& .MuiMenuItem-root": { fontFamily: "inherit" },
         }}
       >
-        <InputLabel id="edit-hits-range-label">Time Range</InputLabel>
+        <InputLabel id="edit-hits-range-label">
+          {t("hitsLineChart.timeRange")}
+        </InputLabel>
         <Select
           labelId="edit-hits-range-label"
           value={days === undefined ? "all" : String(days)}
@@ -91,10 +93,10 @@ export default function HitsLineChart() {
             setDays(value === "all" ? undefined : Number(value));
           }}
         >
-          <MenuItem value="7">Last 7 days</MenuItem>
-          <MenuItem value="14">Last 14 days</MenuItem>
-          <MenuItem value="30">Last 30 days</MenuItem>
-          <MenuItem value="all">All time</MenuItem>
+          <MenuItem value="7">{t("last7Days")}</MenuItem>
+          <MenuItem value="14">{t("last14Days")}</MenuItem>
+          <MenuItem value="30">{t("last30Days")}</MenuItem>
+          <MenuItem value="all">{t("allTime")}</MenuItem>
         </Select>
       </FormControl>
 
