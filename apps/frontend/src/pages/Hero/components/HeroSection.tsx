@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Box, Button, Alert, Collapse, Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
@@ -38,7 +38,7 @@ const itemVariants: Variants = {
 
 export default function HeroSection() {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, isLoading } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(true);
   const { t } = useTranslation();
@@ -90,6 +90,12 @@ export default function HeroSection() {
     }
     return false;
   };
+
+  useEffect(() => {
+    if (!isLoading && session) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [session, isLoading]);
 
   return (
     <CarouselBackground>

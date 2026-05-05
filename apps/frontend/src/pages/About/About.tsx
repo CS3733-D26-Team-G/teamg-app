@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useAuth } from "../../auth/AuthContext.tsx";
 
 const teamMembers = [
   {
@@ -86,6 +87,11 @@ const teamMembers = [
 
 export default function AboutUs() {
   const navigate = useNavigate();
+  const { session } = useAuth();
+
+  const handleReturn = () => {
+    navigate(session ? "/dashboard" : "/"); // ← go to dashboard if logged in
+  };
 
   return (
     <Box sx={{ p: 4, fontFamily: "'Rubik', sans-serif" }}>
@@ -101,7 +107,7 @@ export default function AboutUs() {
       >
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/")}
+          onClick={handleReturn}
           variant="outlined"
           size="small"
           sx={{
