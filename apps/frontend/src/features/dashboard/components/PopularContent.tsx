@@ -5,6 +5,7 @@ import { getPositionLabel } from "../../../utils/positionDisplay";
 import { API_ENDPOINTS } from "../../../config";
 import { useAuth } from "../../../auth/AuthContext";
 import { recordRecentlyViewed } from "../../content/components/viewing/RecentlyViewed";
+import { useTranslation } from "react-i18next";
 
 type PopularItem = {
   contentUuid: string;
@@ -21,6 +22,7 @@ let cachedUserData: PopularItem[] | null = null;
 let cachedRoleData: PopularItem[] | null = null;
 
 export default function PopularContent({ position }: Props) {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const navigate = useNavigate();
 
@@ -97,7 +99,7 @@ export default function PopularContent({ position }: Props) {
           variant="subtitle2"
           sx={{ fontWeight: "bold", mb: 1 }}
         >
-          My Frequently Used
+          {t("dashboard.myFrequentlyUsed")}
         </Typography>
 
         {userData.length > 0 ?
@@ -150,7 +152,8 @@ export default function PopularContent({ position }: Props) {
           variant="subtitle2"
           sx={{ fontWeight: "bold", mb: 1 }}
         >
-          Popular for {position ? getPositionLabel(position as any) : ""}
+          {t("dashboard.popularFor")}{" "}
+          {position ? getPositionLabel(position as any) : ""}
         </Typography>
 
         {roleData.length > 0 ?

@@ -58,7 +58,17 @@
     "widgetsTitle": "Dashboard Widgets",
     "widgetsSubtitle": "Toggle visibility · drag to reorder",
     "widgetsReset": "Reset",
-    "widgetsInfo": "Drag any card to reorder within its row"
+    "widgetsInfo": "Drag any card to reorder within its row",
+    "fileTypes": "File Types",
+    "totalItems": "Total Items",
+    "employeeEditsByDay": "Employee Edits By Day",
+    "employeeEditsinfo": "Fluctuation in content edits by role over time.",
+    "accessibleBy":"Total content accessible by",
+    "recentlyViewed": "Recently Viewed",
+    "popularContent": "Popular Content",
+    "myFrequentlyUsed": "My Frequently Used",
+    "popularFor": "Popular for"
+
   },
 
   "recentActivity": {
@@ -76,7 +86,7 @@
   "adminCards": {
     "underwriter": "UNDERWRITER",
     "businessAnalyst": "BUSINESS_ANALYST",
-    "admin":  "ADMIN",
+    "admin": "ADMIN",
     "actuarialAnalyst":  "ACTUARIAL_ANALYST",
     "exlOperations": "EXL_OPERATIONS",
     "businessOpRating": "BUSINESS_OP_RATING",
@@ -94,6 +104,32 @@
     "last30Days": "Last 30 days",
     "allTime": "All time"
 
+  },
+  "employeeDemographics":{
+    "title": "Employee Demographics",
+    "info": "Breakdown of employees by role. Hover a slice for exact numbers."
+  },
+
+  "navBar": {
+    "dashboard": "Dashboard",
+    "content": "Content",
+    "employeeForm": "Employee Form",
+    "underwriterPortal": "Underwriter Portal",
+    "businessAnalystPortal": "Business Analyst Portal"
+
+  },
+
+  "sideBar": {
+    "dashboard": "Dashboard",
+    "management": "Management",
+    "employees": "Employees",
+    "content": "Content",
+    "approvals": "Approvals",
+    "activity": "Activity",
+    "calendar": "Calendar",
+    "settings": "Settings",
+    "logout": "Logout",
+    "myAccount": "My Account"
   }
 
 }

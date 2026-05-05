@@ -444,7 +444,7 @@ export default function Dashboard() {
     {
       id: 0,
       value: empCounts.BUSINESS_ANALYST ?? 0,
-      label: t("adminCards.underwriter"),
+      label: t("adminCards.businessAnalyst"),
       color: "#bea5aa",
     },
     {
@@ -491,27 +491,27 @@ export default function Dashboard() {
   const roleConfig = [
     {
       id: "role-ba" as dashboardCardID,
-      label: "Business Analyst",
+      label: t("adminCards.businessAnalyst"),
       key: "BUSINESS_ANALYST",
     },
     {
       id: "role-uw" as dashboardCardID,
-      label: "Underwriter",
+      label: t("adminCards.underwriter"),
       key: "UNDERWRITER",
     },
     {
       id: "role-actuarial" as dashboardCardID,
-      label: "Actuarial Analyst",
+      label: t("adminCards.actuarialAnalyst"),
       key: "ACTUARIAL_ANALYST",
     },
     {
       id: "role-exl" as dashboardCardID,
-      label: "EXL Operations",
+      label: t("adminCards.exlOperations"),
       key: "EXL_OPERATIONS",
     },
     {
       id: "role-bus-ops" as dashboardCardID,
-      label: "Business Ops",
+      label: t("adminCards.businessOpRating"),
       key: "BUSINESS_OP_RATING",
     },
   ];
@@ -600,10 +600,10 @@ export default function Dashboard() {
             }}
           >
             <Typography sx={{ fontWeight: 700, fontSize: "1.3rem", py: 0.75 }}>
-              Employee Demographics
+              {t("employeeDemographics.title")}
             </Typography>
             <HelpPopup
-              description="Breakdown of employees by role. Hover a slice for exact numbers."
+              description={t("employeeDemographics.info")}
               infoOrHelp={false}
             />
           </Box>
@@ -667,9 +667,9 @@ export default function Dashboard() {
                   mt: 0.5,
                 }}
               >
-                Total Items
+                {t("dashboard.totalItems")}
                 <HelpPopup
-                  description={`Total content accessible by ${label}s`}
+                  description={`${t("dashboard.accessibleBy")} ${label}s`}
                   infoOrHelp={false}
                 />
               </Typography>
@@ -704,7 +704,7 @@ export default function Dashboard() {
       description:
         "Your most frequently used content and popular content for your role",
       node: (
-        <CardShell title="Popular Content">
+        <CardShell title={t("dashboard.popularContent")}>
           <PopularContent position={session?.position} />
         </CardShell>
       ),
@@ -716,7 +716,7 @@ export default function Dashboard() {
       label: "Recently Viewed",
       description: "Your recently viewed content",
       node: (
-        <CardShell title="Recently Viewed">
+        <CardShell title={t("dashboard.recentlyViewed")}>
           <RecentlyViewed />
         </CardShell>
       ),
@@ -728,7 +728,7 @@ export default function Dashboard() {
       label: "File Types",
       description: "Bar chart of file type distribution",
       node: (
-        <CardShell title="File Types">
+        <CardShell title={t("dashboard.fileTypes")}>
           <TypeBarChart data={fileTypeCounts} />
         </CardShell>
       ),
@@ -743,10 +743,10 @@ export default function Dashboard() {
         <CardShell
           title={
             isAdmin ?
-              "Employee Edits By Day"
+              t("dashboard.employeeEditsByDay")
             : `${getPositionLabel(session!.position)} Edits By Day`
           }
-          helpDesc="Fluctuation in content edits by role over time."
+          helpDesc={t("dashboard.employeeEditsinfo")}
         >
           <HitsLineChart />
         </CardShell>
