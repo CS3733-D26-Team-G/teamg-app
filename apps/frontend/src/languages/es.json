@@ -2,13 +2,14 @@
   "footer": {
     "browser": "Navegador",
     "home": "Inicio",
-    "aboutUs": "Acerca de nosotros",
     "guideTour": "Visita guiada",
+    "credits": "Créditos",
+    "aboutUs": "Acerca de nosotros",
     "employeeAccess": "Acceso a empleados",
     "employeePortal": "Portal del empleado",
-    "hrSelfService": "Servicio al empleado",
+    "hrSelfService": "Autoservicio de empleados",
     "newsUpdates": "Noticias y actualizaciones",
-    "support": "Apoyo",
+    "support": "Soporte",
     "faq": "Preguntas frecuentes",
     "itSupport": "Soporte de TI",
     "legalSecurity": "Legal y Seguridad",
@@ -16,14 +17,22 @@
     "termsOfUse": "Condiciones de uso",
     "cookiePolicy": "Política de cookies",
     "accessibility": "Accesibilidad",
-    "contactUs": "Contáctanos",
+    "contactUs": "Contacto",
     "copyright": "© 2026 The Hanover Insurance Group, Team G Prototype Inc. Todos los derechos reservados."
   },
 
-  "heroSection":{
+  "heroSection": {
     "disclaimer": "Este sitio web se creó para un curso en el Instituto Politécnico de Worcester. No está afiliado ni gestionado por el Grupo de Seguros Hanover. Este es un proyecto estudiantil creado exclusivamente con fines académicos.",
     "login": "Iniciar sesión",
-    "welcome": "Bienvenido a iBank, la aplicación de gestión de contenidos de Hanover Insurance."
+    "welcome": "Bienvenido a iBank, la aplicación de gestión de contenidos de Hanover Insurance.",
+    "cLetter": "C",
+    "aLetter": "R",
+    "rLetter": "R",
+    "eLetter": "E",
+    "c": "olaboración",
+    "a": "esponsabilidad",
+    "r": "espeto",
+    "e": "mpoderamiento"
   },
 
   "login": {
@@ -35,5 +44,58 @@
     "invalidCredentials": "Credenciales incorrectas",
     "serverError": "Error del servidor. Por favor, inténtelo de nuevo.",
     "networkError": "Error de red. Comprueba tu conexión."
+  },
+
+  "dashboard": {
+    "employeeDemographics": "Demografía de empleados",
+    "demogrphicsInfo": "El gráfico de datos demográficos de los empleados muestra un desglose de cuántos empleados pertenecen a cada puesto. ¡Pase el cursor sobre una sección del gráfico para ver las cifras exactas!",
+    "recentActivity": "Actividad reciente",
+    "businessAnalyst": "Analista de Negocios",
+    "underwriter": "Suscriptor",
+    "actuarialAnalyst": "Analista actuarial",
+    "exlOperations": "Operaciones EXL",
+    "businessOpsTeam": "Equipo de operaciones",
+    "employeeActivity": "Actividad del empleado",
+    "fileTypes": "Tipos de archivos",
+    "admin": "Administrador",
+    "popularContentSearch": "Búsqueda de contenido popular",
+    "employeeEditsByDay": "Ediciones de empleados por día",
+    "underwriterHelp": "Usted es un suscriptor, por favor, permítanos brindarle ayuda..",
+    "businessAnalystHelp": "Eres analista de negocio, estamos trabajando para ayudarte.",
+    "actuarialAnalystHelp": "Eres analista actuarial, estamos trabajando para ayudarte.",
+    "exlOperationsHelp": "Ustedes son de EXL Operations, por favor dennos tiempo para poder ayudarlos.",
+    "businessOpTeamHelp": "Ustedes forman parte del equipo de Operaciones Comerciales; por favor, permítannos brindarles ayuda.",
+    "adminHelp": "El panel de control ofrece una visión general completa de la organización, incluyendo datos demográficos de los empleados, actividad reciente y recuento de contenido por función.",
+    "dashboardInfo": "El panel de control le ofrece una visión general de su organización.",
+    "popularContentSearch": "Búsqueda de contenido popular",
+    "noPopularContent": "No hay contenido popular disponible.",
+    "loadingDashboard": "Cargando panel de control...",
+    "welcomeBack": "Bienvenido de nuevo",
+    "totalItems": "Total de contenidos",
+    "totalItemsInfo": "Esta es la cantidad total de contenido accesible por",
+    "editsByDay": "Ediciones por día",
+    "editsInfo": "Este gráfico muestra la fluctuación en las visitas al contenido según el rol."
+  },
+  "dashboardRecentActivity": {
+    "recentActivity": "Actividad reciente",
+    "recentActivityInfo": "El feed de Actividad reciente muestra información sobre las cuatro acciones más recientes realizadas en la aplicación. Esto incluye el usuario, la hora, la fecha y la acción realizada. ¡Accede a la página de Actividad mediante la barra lateral para ver un historial de actividad más extenso!",
+    "edited": "editada",
+    "deleted": "eliminada",
+    "created": "creada",
+    "loggedIn": "Iniciado sesión",
+    "loggedOut": "Cerrado sesión",
+    "checkedIn": "registrado",
+    "checkedOut": "revisado",
+    "noActivity": "Ninguna actividad reciente.",
+    "recent": "Reciente"
+  },
+
+  "adminCards": {
+    "employeeActivity": "Actividad del empleado",
+    "employeeType": "Tipo de empleado",
+    "allEmployeeTypes": "Todo tipo de empleados",
+    "employee": "Empleado",
+    "allEmployees": "Todos los empleados",
+    "actions": "Acciones"
   }
 }

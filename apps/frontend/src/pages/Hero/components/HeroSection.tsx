@@ -44,10 +44,26 @@ export default function HeroSection() {
   const { t } = useTranslation();
 
   const careLines = [
-    { letter: "C", word: "ollaboration", indent: "pl-25" },
-    { letter: "A", word: "ccountability", indent: "pl-31" },
-    { letter: "R", word: "espect", indent: "pl-37" },
-    { letter: "E", word: "mpowerment", indent: "pl-43" },
+    {
+      letter: t("heroSection.cLetter"),
+      word: t("heroSection.c"),
+      indent: "pl-25",
+    },
+    {
+      letter: t("heroSection.aLetter"),
+      word: t("heroSection.a"),
+      indent: "pl-31",
+    },
+    {
+      letter: t("heroSection.rLetter"),
+      word: t("heroSection.r"),
+      indent: "pl-37",
+    },
+    {
+      letter: t("heroSection.eLetter"),
+      word: t("heroSection.e"),
+      indent: "pl-43",
+    },
   ];
 
   const openLogin = () => setLoginOpen(true);

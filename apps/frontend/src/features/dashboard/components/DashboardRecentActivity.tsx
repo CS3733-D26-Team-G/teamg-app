@@ -63,7 +63,7 @@ export default function DashboardRecentActivity({
               variant="h6"
               sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
             >
-              Recent Activity
+              t("recentActivity.title")
               <HelpPopup
                 description="The Recent Activity feed shows information about the four most recent actions taken across the application. This includes the user, the time, the date, and what they did. Go to the Activity page using the side bar for a longer time line of activity!"
                 infoOrHelp={false}

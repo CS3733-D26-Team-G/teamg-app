@@ -62,7 +62,7 @@ export default function Footer() {
               href="/credits"
               color="inherit"
             >
-              {t("Credits")}
+              {t("footer.credits")}
             </MuiLink>
           </Typography>
           <Typography variant="body2">
@@ -70,7 +70,7 @@ export default function Footer() {
               href="/aboutus"
               color="inherit"
             >
-              {t("About Us")}
+              {t("footer.aboutUs")}
             </MuiLink>
           </Typography>
         </Stack>
