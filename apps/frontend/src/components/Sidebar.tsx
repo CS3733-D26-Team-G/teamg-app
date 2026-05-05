@@ -14,6 +14,7 @@ import { Link } from "react-router";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import WarningIcon from "@mui/icons-material/Warning";
+import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import ExpandLess from "@mui/icons-material/ExpandLess";
@@ -344,7 +345,7 @@ export default function Sidebar() {
                   justifyContent: "center",
                 }}
               >
-                <WarningIcon sx={iconSx} />
+                <ContentPasteGoIcon sx={iconSx} />
               </ListItemIcon>
               {isOpen && (
                 <ListItemText

@@ -249,13 +249,6 @@ function Profile() {
             >
               {formattedDate}
             </Typography>
-            <IconButton
-              sx={{
-                color: "primary.contrastText",
-              }}
-            >
-              <NotificationsIcon />
-            </IconButton>
           </Box>
         </Box>
 
