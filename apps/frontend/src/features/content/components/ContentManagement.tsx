@@ -309,6 +309,7 @@ export default function ContentManagement({
   const [successMessage, setSuccessMessage] = useState<string | null>(null); // message shown in the upload success snackbar
   const [sessionNewIds, setSessionNewIds] = useState<Set<string>>(new Set()); // UUIDs added this session, used for "new" row highlighting
   const [showAllCheckedOut, setShowAllCheckedOut] = useState(true); // controls admins viewing of their own checked-out file or all checked-out files
+  const [filterLoading, setFilterLoading] = useState(false); // true briefly when a filter is toggled
 
   const availableTags = contentTagsQuery.data ?? [];
 
@@ -543,6 +544,7 @@ export default function ContentManagement({
 
   // adds or removes a position from the active filters
   const togglePosition = (position: string) => {
+    setFilterLoading(true);
     setPositionFilters((cur) =>
       cur.includes(position) ?
         cur.filter((pos) => pos !== position)
@@ -552,6 +554,7 @@ export default function ContentManagement({
 
   // adds or removes a file type from the active filters
   const toggleFileType = (fileType: string) => {
+    setFilterLoading(true);
     setFileTypeFilters((cur) =>
       cur.includes(fileType) ?
         cur.filter((type) => type !== fileType)
@@ -561,12 +564,20 @@ export default function ContentManagement({
 
   // adds or removes a tag from the active filters
   const toggleTag = (tag: ContentTagSummary) => {
+    setFilterLoading(true);
     setTagFilters((cur) =>
       cur.some((t) => t.uuid === tag.uuid) ?
         cur.filter((t) => t.uuid !== tag.uuid)
       : cur.concat(tag),
     );
   };
+
+  // clear the filter loading indicator once filteredRows re-computes
+  useEffect(() => {
+    if (filterLoading) {
+      setFilterLoading(false);
+    }
+  }, [filteredRows]);
 
   // stages a row for deletion and opens the confirmation dialog
   const handleDelete = (row: ContentRow) => {
@@ -1875,6 +1886,31 @@ export default function ContentManagement({
         className="content-table"
         sx={{ width: "95%", mx: "auto" }}
       >
+        {/* filter loading overlay — shown briefly while filteredRows recomputes */}
+        <Backdrop
+          open={filterLoading}
+          sx={{
+            position: "absolute",
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+            backgroundColor:
+              isDark ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.6)",
+            borderRadius: "8px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 1.5,
+          }}
+        >
+          <CircularProgress size={36} />
+          <Typography
+            sx={{
+              fontWeight: 500,
+              fontSize: "0.875rem",
+              color: isDark ? "white" : "text.primary",
+            }}
+          >
+            Applying filters…
+          </Typography>
+        </Backdrop>
         {/* ── TABS VIEW ─────────────────────────────────────────────────────── */}
         {viewMode === "tabs" && (
           <Box
