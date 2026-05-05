@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Fab, Paper, Tooltip, Typography } from "@mui/material";
+import { Fab, Paper, Tooltip, Typography, Box } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
+import Draggable from "react-draggable";
 
 type VoiceControlProps = {
   onCommand: (command: string) => boolean;
@@ -58,6 +59,8 @@ export default function VoiceControl({
   onCommand,
   buttonSx,
 }: VoiceControlProps) {
+  const nodeRef = useRef<HTMLDivElement>(null);
+
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const shouldListenRef = useRef(false);
   const finalTranscriptRef = useRef("");
@@ -94,9 +97,7 @@ export default function VoiceControl({
 
   const cleanupRecognition = () => {
     const recognition = recognitionRef.current;
-    if (!recognition) {
-      return;
-    }
+    if (!recognition) return;
 
     recognition.onstart = null;
     recognition.onaudiostart = null;
@@ -129,9 +130,7 @@ export default function VoiceControl({
   };
 
   const startListening = () => {
-    if (!SpeechRecognition) {
-      return;
-    }
+    if (!SpeechRecognition) return;
 
     shouldListenRef.current = false;
     clearRestartTimer();
@@ -143,21 +142,11 @@ export default function VoiceControl({
     recognition.lang = "en-US";
     recognition.maxAlternatives = 1;
 
-    recognition.onstart = () => {
-      setStatus("Listening. Speak now.");
-    };
-
-    recognition.onaudiostart = () => {
-      setStatus("Microphone connected.");
-    };
-
-    recognition.onspeechstart = () => {
-      setStatus("Speech detected.");
-    };
-
-    recognition.onnomatch = () => {
-      setStatus("Speech was heard, but no transcript was recognized.");
-    };
+    recognition.onstart = () => setStatus("Listening. Speak now.");
+    recognition.onaudiostart = () => setStatus("Microphone connected.");
+    recognition.onspeechstart = () => setStatus("Speech detected.");
+    recognition.onnomatch = () =>
+      setStatus("Speech heard, but not recognized.");
 
     recognition.onresult = (event) => {
       let finalTranscript = "";
@@ -178,14 +167,17 @@ export default function VoiceControl({
 
       const spokenText = interimTranscript.trim();
       const command = finalTranscript.trim().toLowerCase();
+
       if (command) {
         const compactCommand = command.replace(/\s+/g, "");
-        if (
-          compactCommand.includes("stopvoice") ||
-          compactCommand.includes("turnoffvoice") ||
-          compactCommand.includes("stoplistening") ||
-          compactCommand.includes("microphoneoff")
-        ) {
+        const stopKeywords = [
+          "stopvoice",
+          "turnoffvoice",
+          "stoplistening",
+          "microphoneoff",
+        ];
+
+        if (stopKeywords.some((kw) => compactCommand.includes(kw))) {
           stopListening();
           return;
         }
@@ -196,9 +188,7 @@ export default function VoiceControl({
             `${finalTranscriptRef.current} ${command}`.trim();
           setTranscript(finalTranscriptRef.current);
           setStatus("Command accepted.");
-          if (shouldListenRef.current) {
-            setIsListening(true);
-          }
+          if (shouldListenRef.current) setIsListening(true);
         } else if (spokenText) {
           setStatus("Listening for a supported command.");
         }
@@ -214,16 +204,10 @@ export default function VoiceControl({
       ) {
         shouldListenRef.current = false;
         setIsListening(false);
-        setStatus(
-          "Microphone permission is blocked. Allow it in your browser.",
-        );
+        setStatus("Microphone permission blocked.");
         return;
       }
-
-      if (shouldListenRef.current) {
-        setStatus(`Still listening. Last issue: ${event.error ?? "unknown"}.`);
-        return;
-      }
+      if (shouldListenRef.current) return;
       setIsListening(false);
     };
 
@@ -231,15 +215,14 @@ export default function VoiceControl({
       if (shouldListenRef.current) {
         clearRestartTimer();
         restartTimerRef.current = window.setTimeout(() => {
-          if (shouldListenRef.current) {
-            startRecognition(recognition);
-          }
+          if (shouldListenRef.current) startRecognition(recognition);
           restartTimerRef.current = null;
         }, 250);
         return;
       }
       setIsListening(false);
     };
+
     recognitionRef.current = recognition;
     shouldListenRef.current = true;
     sessionStorage.setItem(VOICE_LISTENING_KEY, "true");
@@ -257,80 +240,103 @@ export default function VoiceControl({
       startListening();
     }
   }, [isSupported, isListening]);
+
   const handleClick = () => {
     if (isListening) {
       stopListening();
-      return;
+    } else {
+      startListening();
     }
-    startListening();
   };
 
   return (
-    <>
-      <Tooltip
-        title={
-          isSupported ? "Voice commands" : (
-            "Voice control is not supported in this browser"
-          )
-        }
+    // react-draggable applies transform: translate(x, y) relative to the
+    // element's natural CSS position. We position the element with
+    // bottom/right so it starts in the correct corner, then dragging
+    // shifts it via transform from there. bounds="body" keeps it on screen.
+    <Draggable
+      nodeRef={nodeRef}
+      bounds="body"
+      handle=".drag-handle"
+    >
+      <Box
+        ref={nodeRef}
+        sx={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          zIndex: 1400,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          // Explicit width prevents the transcript panel from causing reflow
+          // and shifting the drag anchor mid-drag
+          width: "fit-content",
+        }}
       >
-        <span>
-          <Fab
-            color={isListening ? "secondary" : "primary"}
-            size="small"
-            onClick={handleClick}
-            disabled={!isSupported}
-            sx={[
-              {
-                position: "fixed",
-                right: 24,
-                bottom: 24,
-                zIndex: 1400,
-              },
-              ...(Array.isArray(buttonSx) ? buttonSx : [buttonSx]),
-            ]}
+        {isListening && (
+          <Paper
+            elevation={6}
+            sx={{
+              width: 320,
+              maxWidth: "calc(100vw - 48px)",
+              p: 2,
+              mb: 2,
+              borderRadius: 2,
+              cursor: "default",
+              userSelect: "none",
+            }}
           >
-            {isListening ?
-              <MicOffIcon />
-            : <MicIcon />}
-          </Fab>
-        </span>
-      </Tooltip>
-      {isListening && (
-        <Paper
-          elevation={6}
-          sx={{
-            position: "fixed",
-            right: 24,
-            bottom: 88,
-            zIndex: 1400,
-            width: 320,
-            maxWidth: "calc(100vw - 48px)",
-            p: 2,
-            borderRadius: 2,
-          }}
-        >
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mb: 0.5, fontWeight: 700 }}
-          >
-            Transcript
-          </Typography>
-          {status && (
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ display: "block", mb: 1 }}
+              sx={{ display: "block", mb: 0.5, fontWeight: 700 }}
             >
-              {status}
+              Transcript
             </Typography>
-          )}
-          <Typography variant="body2">
-            {transcript || "Start speaking after the microphone turns on."}
-          </Typography>
-        </Paper>
-      )}
-    </>
+            {status && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mb: 1 }}
+              >
+                {status}
+              </Typography>
+            )}
+            <Typography
+              variant="body2"
+              sx={{ userSelect: "text" }}
+            >
+              {transcript || "Start speaking after the microphone turns on."}
+            </Typography>
+          </Paper>
+        )}
+
+        <Tooltip
+          title={
+            isSupported ?
+              "Voice commands (drag to move)"
+            : "Voice control not supported"
+          }
+        >
+          <Box
+            className="drag-handle"
+            sx={{ "cursor": "grab", "&:active": { cursor: "grabbing" } }}
+          >
+            <Fab
+              color={isListening ? "secondary" : "primary"}
+              size="small"
+              onClick={handleClick}
+              disabled={!isSupported}
+              sx={[...(Array.isArray(buttonSx) ? buttonSx : [buttonSx])]}
+            >
+              {isListening ?
+                <MicOffIcon />
+              : <MicIcon />}
+            </Fab>
+          </Box>
+        </Tooltip>
+      </Box>
+    </Draggable>
   );
 }
