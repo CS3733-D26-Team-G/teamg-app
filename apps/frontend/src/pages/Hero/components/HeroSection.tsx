@@ -45,23 +45,23 @@ export default function HeroSection() {
 
   const careLines = [
     {
-      letter: t("heroSection.cLetter"),
-      word: t("heroSection.c"),
+      letter: "C",
+      word: "ollaboration",
       indent: "pl-25",
     },
     {
-      letter: t("heroSection.aLetter"),
-      word: t("heroSection.a"),
+      letter: "A",
+      word: "ccountability",
       indent: "pl-31",
     },
     {
-      letter: t("heroSection.rLetter"),
-      word: t("heroSection.r"),
+      letter: "R",
+      word: "espect",
       indent: "pl-37",
     },
     {
-      letter: t("heroSection.eLetter"),
-      word: t("heroSection.e"),
+      letter: "E",
+      word: "mpowerment",
       indent: "pl-43",
     },
   ];
