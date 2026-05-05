@@ -156,7 +156,7 @@ export default function CalendarPage() {
 
         acc.push({
           id: `${isOwner ? "owner" : "checkout"}-${row.uuid}`,
-          title: `${isOwner ? "✏️" : "👁️"} ${formatShortTime(originalExpDate)} ${row.title}`,
+          title: `${formatShortTime(originalExpDate)} ${row.title}`,
           start: startTime,
           end: endTime,
           allDay: false,
