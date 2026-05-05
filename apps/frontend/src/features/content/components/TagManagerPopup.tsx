@@ -12,6 +12,7 @@ import {
   Divider,
   TextField,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 import Button from "@mui/material/Button";
 import EditIcon from "@mui/icons-material/Edit";
@@ -38,6 +39,8 @@ export default function TagManagerPopup({
   onTagsChanged,
 }: TagManagerPopupProps) {
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [newTag, setNewTag] = useState("");
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -68,6 +71,8 @@ export default function TagManagerPopup({
     }
 
     try {
+      setLoadingMessage("Creating tag…");
+      setLoading(true);
       const res = await fetch(API_ENDPOINTS.CONTENT.TAG.CREATE, {
         method: "POST",
         credentials: "include",
@@ -86,12 +91,14 @@ export default function TagManagerPopup({
       const createdTag = ContentTagSummariesSchema.element.parse(
         await res.json(),
       );
-      setLocalTags((prev) => [...prev, createdTag]);
+      void createdTag;
       setNewTag("");
       invalidateContentTags();
       setLocalTags(await onTagsChanged());
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,6 +108,8 @@ export default function TagManagerPopup({
     }
 
     try {
+      setLoadingMessage("Saving tag…");
+      setLoading(true);
       const res = await fetch(API_ENDPOINTS.CONTENT.TAG.EDIT(uuid), {
         method: "POST",
         credentials: "include",
@@ -112,22 +121,20 @@ export default function TagManagerPopup({
         throw new Error("Failed to edit tag");
       }
 
-      setLocalTags((prev) =>
-        prev.map((tag) =>
-          tag.uuid === uuid ? { ...tag, name: editValue.trim() } : tag,
-        ),
-      );
-
       setEditingTag(null);
       invalidateContentTags();
       setLocalTags(await onTagsChanged());
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDeleteTag = async (uuid: string) => {
     try {
+      setLoadingMessage("Deleting tag…");
+      setLoading(true);
       const res = await fetch(API_ENDPOINTS.CONTENT.TAG.DELETE(uuid), {
         method: "POST",
         credentials: "include",
@@ -137,12 +144,13 @@ export default function TagManagerPopup({
         throw new Error("Failed to delete tag");
       }
 
-      setLocalTags((prev) => prev.filter((tag) => tag.uuid !== uuid));
       setPendingDeleteTag(null);
       invalidateContentTags();
       setLocalTags(await onTagsChanged());
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -163,7 +171,32 @@ export default function TagManagerPopup({
         onClose={handleClose}
         maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { position: "relative", overflow: "visible" } }}
       >
+        {/* loading overlay — shown while create/rename/delete requests are in-flight */}
+        {loading && (
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 1,
+              backgroundColor: "rgba(0,0,0,0.45)",
+              borderRadius: "inherit",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1.5,
+            }}
+          >
+            <CircularProgress sx={{ color: "white" }} />
+            <Typography
+              sx={{ color: "white", fontWeight: 500, fontSize: "0.9rem" }}
+            >
+              {loadingMessage}
+            </Typography>
+          </Box>
+        )}
         <DialogTitle>
           <Box
             sx={{
