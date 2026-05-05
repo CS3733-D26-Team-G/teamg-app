@@ -1425,7 +1425,7 @@ export default function ContentManagement({
                 }}
               >
                 <HelpPopup
-                  description="The employee management page allows admins to add, manage, and delete any employee within iBank's database."
+                  description="The content management page allows all users to add, view, edit, and delete files they have access to within iBank's database."
                   infoOrHelp={true}
                 />
               </Box>
@@ -1889,7 +1889,7 @@ export default function ContentManagement({
             <Box
               sx={{
                 background: "linear-gradient(135deg, #1A1E4B 0%, #395176 100%)",
-                px: 1,
+                px: 0,
                 pt: 1,
               }}
             >
@@ -1907,6 +1907,17 @@ export default function ContentManagement({
                 }}
                 sx={{
                   "minHeight": 44,
+                  "ml": 0,
+                  "& .MuiTabs-scroller": {
+                    ml: 0,
+                  },
+                  "& .MuiTabScrollButton-root": {
+                    color: "white",
+                    opacity: 1,
+                  },
+                  "& .MuiTabScrollButton-root.Mui-disabled": {
+                    opacity: 0.3,
+                  },
                   "& .MuiTab-root": {
                     "color": "rgba(255,255,255,0.6)",
                     "fontWeight": 600,

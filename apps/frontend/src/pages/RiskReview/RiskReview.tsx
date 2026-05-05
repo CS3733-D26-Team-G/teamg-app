@@ -546,13 +546,6 @@ function RiskCardComponent({
                 {claim.contents.length !== 1 ? "s" : ""}
               </Typography>
             )}
-            {/* DEBUG: show raw DB status on the card */}
-            <Typography
-              variant="caption"
-              sx={{ color: "orange", fontWeight: 700 }}
-            >
-              · DB: "{claim.status}"
-            </Typography>
           </Stack>
         </Box>
         <Stack

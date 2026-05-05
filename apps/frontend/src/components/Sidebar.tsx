@@ -124,7 +124,7 @@ export default function Sidebar() {
         <Box
           component={Link}
           to="/"
-          sx={{ display: isOpen ? "block" : "none" }}
+          sx={{ display: isOpen ? "block" : "none", mx: "auto" }}
         >
           <Box
             component="img"
@@ -134,6 +134,7 @@ export default function Sidebar() {
               width: "140px",
               mx: "auto",
               my: 1,
+              justifySelf: "center",
               display: isOpen ? "block" : "none",
               imageRendering: "crisp-edges",
               filter: "brightness(0) invert(1)",

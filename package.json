@@ -27,5 +27,6 @@
     "turbo": "^2.9.8"
   },
   "dependencies": {
+    "react-draggable": "^4.5.0"
   }
 }
