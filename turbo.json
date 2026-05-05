@@ -8,6 +8,7 @@
     "SUPABASE_SECRET_KEY",
     "PORT",
     "VITE_APP_ENV",
+    "VITE_APRYSE_LICENSE_KEY",
     "GROQ_API_KEY"
   ],
   "tasks": {
