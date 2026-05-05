@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { BarChart } from "@mui/x-charts/BarChart";
 import {
   Box,
@@ -64,6 +65,25 @@ export default function AdminCards() {
   const [employeeUuid, setEmployeeUuid] = useState("");
   const [employeeTypeTouched, setEmployeeTypeTouched] = useState(false);
   const [employeeTouched, setEmployeeTouched] = useState(false);
+  const { t } = useTranslation();
+
+  const positionLabels: Record<string, string> = {
+    UNDERWRITER: t("adminCards.underwriter"),
+    BUSINESS_ANALYST: t("adminCards.businessAnalyst"),
+    ADMIN: t("adminCards.admin"),
+    ACTUARIAL_ANALYST: t("adminCards.actuarialAnalyst"),
+    EXL_OPERATIONS: t("adminCards.exlOperations"),
+    BUSINESS_OP_RATING: t("adminCards.businessOpsTeam"),
+  };
+
+  const ACTION_LABELS = [
+    { key: "edited" as const, label: t("recentActivity.edited") },
+    {
+      key: "checkedOut" as const,
+      label: t("recentActivity.checkedOut"),
+    },
+    { key: "deleted" as const, label: t("recentActivity.deleted") },
+  ];
 
   const { session } = useAuth();
   const isAdmin = session?.position === "ADMIN";
@@ -143,12 +163,12 @@ export default function AdminCards() {
                 id="employee-type-filter-label"
                 shrink={employeeTypeTouched}
               >
-                Employee Type
+                {t("adminCards.employeeType")}
               </InputLabel>
               <Select
                 labelId="employee-type-filter-label"
                 value={employeeType}
-                label="Employee Type"
+                label={t("adminCards.employeeType")}
                 displayEmpty
                 renderValue={(selected) => {
                   if (!employeeTypeTouched) {
@@ -166,7 +186,7 @@ export default function AdminCards() {
                   setEmployeeTouched(false);
                 }}
               >
-                <MenuItem value="">All Employee Types</MenuItem>
+                <MenuItem value="">{t("adminCards.allEmployeeTypes")}</MenuItem>
                 {POSITION_OPTIONS.map((position) => (
                   <MenuItem
                     key={position}
@@ -191,7 +211,7 @@ export default function AdminCards() {
                 id="employee-filter-label"
                 shrink={employeeTouched}
               >
-                Employee
+                {t("adminCards.employee")}
               </InputLabel>
               <Select
                 labelId="employee-filter-label"
