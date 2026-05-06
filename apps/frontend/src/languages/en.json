@@ -2,8 +2,9 @@
   "footer": {
     "browser": "Browser",
     "home": "Home",
-    "aboutUs": "About Us",
     "guideTour": "Guide Tour",
+    "credits": "Credits",
+    "aboutUs": "About Us",
     "employeeAccess": "Employee Access",
     "employeePortal": "Employee Portal",
     "hrSelfService": "HR-Self Service",
@@ -19,10 +20,19 @@
     "contactUs": "Contact Us",
     "copyright": " © 2026 The Hanover Insurance Group, Team G Prototype Inc. All rights reserved."
   },
+
   "heroSection": {
     "disclaimer": "This site is created for a course at Worcester Polytechnic Institute. It is not affiliated with or operated by the Hanover Insurance Group.This is a student project created solely for academic purposes.",
     "login": "Log In",
-    "welcome": "Welcome to iBank, Hanover Insurance's \n content management application."
+    "welcome": "Welcome to iBank, Hanover Insurance's \n content management application.",
+    "cLetter": "C",
+    "aLetter": "A",
+    "rLetter": "R",
+    "eLetter": "E",
+    "c": "ollaboration",
+    "a": "ccountability",
+    "r": "espect",
+    "e": "mpowerment"
   },
 
   "login": {
@@ -34,8 +44,137 @@
     "invalidCredentials": "Invalid credentials",
     "serverError": "Server error. Please try again.",
     "networkError": "Network error. Check your connection."
+  },
+
+  "dashboard": {
+    "welcomeBack": "Welcome Back",
+    "adminHelp": "Full organisational overview: employee demographics, recent activity, content counts by role.",
+    "underWriterHelp": "Track activity and access your content from the dashboard.",
+    "businessAnalystHelp": "Track your content and platform activity.",
+    "actuarialAnalystHelp": "Monitor content counts and recent platform activity.",
+    "exlOperationsHelp": "Monitor content and activity.",
+    "businessOpRatingHelp": "View your content and platform activity.",
+    "widgetsButton": "Dashboard Widgets",
+    "widgetsTitle": "Dashboard Widgets",
+    "widgetsSubtitle": "Toggle visibility drag rows to reorder",
+    "widgetsReset": "Reset",
+    "widgetsInfo": "Use Edit Layout to reorder rows and cards",
+    "fileTypes": "File Types",
+    "fileTypesInfo": "Bar chart of file type distribution",
+    "totalItems": "Total Items",
+    "employeeEditsByDay": "Employee Edits By Day",
+    "employeeEditsinfo": "Fluctuation in content edits by role over time.",
+    "accessibleBy": "Total content accessible by",
+    "recentlyViewed": "Recently Viewed",
+    "popularContent": "Popular Content",
+    "myRecentlyViewed": "Your recently viewed content",
+    "popularFor": "Popular for",
+    "overviews": "Overview",
+    "activityAndConent": "Activity & Content",
+    "charts": "Charts",
+    "hiddens": "hidden",
+    "failedloading": "Failed to load dashboard",
+    "employeeDemographics": "Employee Demographics",
+    "employeeDemographicsInfo": "Pie chart of staff by role",
+    "recentActivity": "Recent Activity",
+    "recentActivityInfo": "Live feed of the last 4 actions",
+    "roleCount": "Count",
+    "roleCountInfo": "Content count for",
+    "employeeActivity": "Employee Activity",
+    "labelSelf": "My Content Changes",
+    "employeeActivitydescription": "Edits, checkouts & deletes by employee",
+    "editsByDay": "Edits By Day",
+    "editsByDayInfo": "Line chart of content edits over time by role",
+    "employeeEditsByDaySelf": "Edits By Day",
+    "employeeEditsByDay": "Employee Edits By Day",
+    "employeeEditsinfo": "Fluctuation in content edits by role over time.",
+    "popularContent": "Popular Content",
+    "recentlyViewed": "Recently Viewed",
+    "defaultHelp": "Dashboard overview.",
+    "hiddenWidget": "All widgets are hidden",
+    "restoreDefaults": "Restore defaults"
+  },
+
+  "recentActivity": {
+    "title": "Recent Activity",
+    "info": "The Recent Activity feed shows information about the four most recent actions taken across the application. This includes the user, the time, the date, and what they did. Go to the Activity page using the side bar for a longer time line of activity!",
+    "loggedIn": "Logged In",
+    "edited": "edited",
+    "deleted": "deleted",
+    "created": "created",
+    "checkedIn": "checked in",
+    "checkedOut": "checked out",
+    "loggedOut": "Logged Out"
+  },
+
+  "adminCards": {
+    "underwriter": "UNDERWRITER",
+    "businessAnalyst": "BUSINESS_ANALYST",
+    "admin": "ADMIN",
+    "actuarialAnalyst":  "ACTUARIAL_ANALYST",
+    "exlOperations": "EXL_OPERATIONS",
+    "businessOpRating": "BUSINESS_OP_RATING",
+    "employeeType": "Employee Type",
+    "employeeActivity": "Employee Activity",
+    "allEmployeeTypes": "All Employee Types",
+    "employee": "Employee",
+    "allEmployees": "All Employees",
+    "actions": "Actions"
+},
+  "hitsLineChart": {
+    "timeRange": "Time Range",
+    "last7Days": "Last 7 days",
+    "last14Days": "Last 14 days",
+    "last30Days": "Last 30 days",
+    "allTime": "All time"
+
+  },
+  "employeeDemographics":{
+    "title": "Employee Demographics",
+    "info": "Breakdown of employees by role. Hover a slice for exact numbers."
+  },
+
+  "navBar": {
+    "dashboard": "Dashboard",
+    "content": "Content",
+    "employeeForm": "Employee Form",
+    "underwriterPortal": "Underwriter Portal",
+    "businessAnalystPortal": "Business Analyst Portal"
+
+  },
+
+  "sideBar": {
+    "dashboard": "Dashboard",
+    "management": "Management",
+    "employees": "Employees",
+    "content": "Content",
+    "approvals": "Approvals",
+    "activity": "Activity",
+    "calendar": "Calendar",
+    "settings": "Settings",
+    "logout": "Logout",
+    "myAccount": "My Account"
+  },
+
+  "positions": {
+    "UNDERWRITER": "Underwriter",
+    "BUSINESS_ANALYST": "Business Analyst",
+    "ACTUARIAL_ANALYST": "Actuarial Analyst",
+    "EXL_OPERATIONS": "EXL Operations",
+    "BUSINESS_OP_RATING": "Business Ops Rating",
+    "ADMIN": "Admin"
+  },
+
+  "editableDashboard": {
+    "visible": "Visible",
+    "hidden": "Hidden",
+    "hideRow": "Hide this row",
+    "showRow": "Show this row",
+    "rowHidden": "Row hidden — toggle to restore",
+    "done": "Done",
+    "editLayout": "Edit Layout",
+    "rowsHidden": "{{count}} row hidden",
+    "rowsHidden_other": "{{count}} rows hidden"
   }
+
 }
-
-
-

@@ -39,6 +39,7 @@ import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -166,6 +167,7 @@ function SortableRow({
     transition,
     isDragging,
   } = useSortable({ id: row.id, disabled: !isEditing });
+  const { t } = useTranslation();
 
   // Only permitted cards participate in DnD — no blank ghost slots
   const draggableIds = row.cardIds.filter((id) => permittedCardIds.has(id));
@@ -227,9 +229,17 @@ function SortableRow({
               variant="caption"
               color="text.disabled"
             >
-              {row.visible ? "Visible" : "Hidden"}
+              {row.visible ?
+                t("editableDashboard.visible")
+              : t("editableDashboard.hidden")}
             </Typography>
-            <Tooltip title={row.visible ? "Hide this row" : "Show this row"}>
+            <Tooltip
+              title={
+                row.visible ?
+                  t("editableDashboard.hideRow")
+                : t("editableDashboard.showRow")
+              }
+            >
               <Switch
                 size="small"
                 checked={row.visible}
@@ -279,7 +289,7 @@ function SortableRow({
         >
           <VisibilityOffIcon sx={{ fontSize: 16 }} />
           <Typography variant="caption">
-            Row hidden — toggle to restore
+            {t("editableDashboard.rowHidden")}
           </Typography>
         </Box>
       )}
@@ -298,6 +308,7 @@ function EditToggle({
   onToggle: () => void;
   hiddenCount: number;
 }) {
+  const { t } = useTranslation();
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
       <IconButton
@@ -326,13 +337,15 @@ function EditToggle({
           variant="caption"
           sx={{ fontWeight: 600, lineHeight: 1 }}
         >
-          {isEditing ? "Done" : "Edit Layout"}
+          {isEditing ?
+            t("editableDashboard.done")
+          : t("editableDashboard.editLayout")}
         </Typography>
       </IconButton>
 
       {!isEditing && hiddenCount > 0 && (
         <Chip
-          label={`${hiddenCount} row${hiddenCount !== 1 ? "s" : ""} hidden`}
+          label={t("editableDashboard.rowsHidden", { count: hiddenCount })}
           size="small"
           variant="outlined"
           icon={<VisibilityOffIcon sx={{ fontSize: "14px !important" }} />}

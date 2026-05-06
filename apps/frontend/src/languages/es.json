@@ -2,13 +2,14 @@
   "footer": {
     "browser": "Navegador",
     "home": "Inicio",
-    "aboutUs": "Acerca de nosotros",
     "guideTour": "Visita guiada",
+    "credits": "Créditos",
+    "aboutUs": "Acerca de nosotros",
     "employeeAccess": "Acceso a empleados",
     "employeePortal": "Portal del empleado",
-    "hrSelfService": "Servicio al empleado",
+    "hrSelfService": "Autoservicio de empleados",
     "newsUpdates": "Noticias y actualizaciones",
-    "support": "Apoyo",
+    "support": "Soporte",
     "faq": "Preguntas frecuentes",
     "itSupport": "Soporte de TI",
     "legalSecurity": "Legal y Seguridad",
@@ -16,16 +17,22 @@
     "termsOfUse": "Condiciones de uso",
     "cookiePolicy": "Política de cookies",
     "accessibility": "Accesibilidad",
-    "contactUs": "Contáctanos",
+    "contactUs": "Contacto",
     "copyright": "© 2026 The Hanover Insurance Group, Team G Prototype Inc. Todos los derechos reservados."
   },
-
-  "heroSection":{
+  "heroSection": {
     "disclaimer": "Este sitio web se creó para un curso en el Instituto Politécnico de Worcester. No está afiliado ni gestionado por el Grupo de Seguros Hanover. Este es un proyecto estudiantil creado exclusivamente con fines académicos.",
     "login": "Iniciar sesión",
-    "welcome": "Bienvenido a iBank, la aplicación de gestión de contenidos de Hanover Insurance."
+    "welcome": "Bienvenido a iBank, la aplicación de gestión de contenidos de Hanover Insurance.",
+    "cLetter": "C",
+    "aLetter": "R",
+    "rLetter": "R",
+    "eLetter": "E",
+    "c": "olaboración",
+    "a": "esponsabilidad",
+    "r": "espeto",
+    "e": "mpoderamiento"
   },
-
   "login": {
     "username": "Nombre de usuario",
     "password": "Contraseña",
@@ -35,5 +42,134 @@
     "invalidCredentials": "Credenciales incorrectas",
     "serverError": "Error del servidor. Por favor, inténtelo de nuevo.",
     "networkError": "Error de red. Comprueba tu conexión."
+  },
+  "dashboard": {
+    "welcomeBack": "Bienvenido",
+    "adminHelp": "Vista completa de la organización: demografía de empleados, actividad reciente y contenido por rol.",
+    "underWriterHelp": "Sigue la actividad y accede a tu contenido desde el panel.",
+    "businessAnalystHelp": "Sigue tu contenido y la actividad de la plataforma.",
+    "actuarialAnalystHelp": "Supervisa el contenido y la actividad reciente de la plataforma.",
+    "exlOperationsHelp": "Supervisa el contenido y la actividad.",
+    "businessOpRatingHelp": "Consulta tu contenido y la actividad de la plataforma.",
+    "widgetsButton": "Componentes del panel",
+    "widgetsTitle": "Componentes del panel",
+    "widgetsSubtitle": "Mostrar/ocultar · arrastrar filas para reordenar",
+    "widgetsReset": "Restablecer",
+    "widgetsInfo": "Usa Editar diseño para reordenar filas y tarjetas",
+    "fileTypes": "Tipos de archivo",
+    "totalItems": "Total de elementos",
+    "employeeEditsByDay": "Ediciones de empleados por día",
+    "employeeEditsinfo": "Fluctuación en las ediciones de contenido por rol a lo largo del tiempo.",
+    "accessibleBy":"Contenido total accesible por",
+    "recentlyViewed": "Visto recientemente",
+    "popularContent": "Contenido popular",
+    "myFrequentlyUsed": "Mis más usados",
+    "popularFor": "Popular para",
+    "overviews": "Overview",
+    "activityAndConent": "Actividad y contenido",
+    "charts": "Gráficos",
+    "hiddens": "oculto",
+    "failedloading": "Error al cargar el panel",
+    "employeeDemographics": "Demografía de empleados",
+    "employeeDemographicsInfo": "Gráfico circular de empleados por rol",
+    "recentActivity": "Actividad reciente",
+    "recentActivityInfo": "Flujo en vivo de las últimas 4 acciones",
+    "roleCount": "Cantidad",
+    "roleCountInfo": "Cantidad de contenido para",
+    "employeeActivity": "Actividad de empleados",
+    "labelSelf": "Mis cambios de contenido",
+    "employeeActivitydescription": "Ediciones, checkouts y eliminaciones por empleado",
+    "editsByDay": "Ediciones por día",
+    "editsByDayInfo": "Gráfico de líneas de ediciones de contenido por rol a lo largo del tiempo",
+    "employeeEditsByDaySelf": "Ediciones por día",
+    "employeeEditsByDay": "Ediciones de empleados por día",
+    "employeeEditsinfo": "Fluctuación en las ediciones de contenido por rol a lo largo del tiempo.",
+    "popularContent": "Contenido popular",
+    "recentlyViewed": "Visto recientemente",
+    "defaultHelp": "Vista general del panel.",
+    "hiddenWidget": "Todos los componentes están ocultos",
+    "restoreDefaults": "Restablecer valores predeterminados"
+  },
+
+  "recentActivity": {
+    "title": "Actividad reciente",
+    "info": "El panel de actividad reciente muestra las cuatro acciones más recientes realizadas en la aplicación. Incluye el usuario, la hora, la fecha y la acción realizada. Ve a la página de Actividad desde la barra lateral para ver una línea de tiempo más completa.",
+    "loggedIn": "Inicio de sesión",
+    "edited": "editó",
+    "deleted": "eliminó",
+    "created": "creó",
+    "checkedIn": "registró entrada",
+    "checkedOut": "registró salida",
+    "loggedOut": "Cierre de sesión"
+  },
+  "adminCards": {
+    "underwriter": "Suscriptor",
+    "businessAnalyst": "Analista de negocios",
+    "admin": "Administrador",
+    "actuarialAnalyst": "Analista actuarial",
+    "exlOperations": "Operaciones EXL",
+    "businessOpRating": "Calificación ops",
+    "employeeActivity": "Actividad del empleado",
+    "employeeType": "Tipo de empleado",
+    "allEmployeeTypes": "Todo tipo de empleados",
+    "employee": "Empleado",
+    "allEmployees": "Todos los empleados",
+    "actions": "Acciones"
+  },
+
+  "hitsLineChart": {
+    "timeRange": "Rango de tiempo",
+    "last7Days": "Últimos 7 días",
+    "last14Days": "Últimos 14 días",
+    "last30Days": "Últimos 30 días",
+    "allTime": "Todo el tiempo"
+
+  },
+
+  "employeeDemographics": {
+    "title": "Demografía de empleados",
+    "info": "Distribución de empleados por rol. Pasa el cursor sobre una sección para ver los números exactos."
+  },
+
+  "navBar": {
+    "dashboard": "Panel",
+    "content": "Contenido",
+    "employeeForm": "Formulario de empleado",
+    "underwriterPortal": "Portal de suscriptor",
+    "businessAnalystPortal": "Portal de analista de negocios"
+  },
+
+  "sideBar": {
+    "dashboard": "Panel",
+    "management": "Gestión",
+    "employees": "Empleados",
+    "content": "Contenido",
+    "approvals": "Aprobaciones",
+    "activity": "Actividad",
+    "calendar": "Calendario",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión",
+    "myAccount": "Mi cuenta"
+  },
+
+  "positions": {
+    "UNDERWRITER": "Suscriptor",
+    "BUSINESS_ANALYST": "Analista de Negocios",
+    "ACTUARIAL_ANALYST": "Analista Actuarial",
+    "EXL_OPERATIONS": "Operaciones EXL",
+    "BUSINESS_OP_RATING": "Calificación de Negocios",
+    "ADMIN": "Administrador"
+  },
+
+  "editableDashboard": {
+    "visible": "Visible",
+    "hidden": "Oculto",
+    "hideRow": "Ocultar fila",
+    "showRow": "Mostrar fila",
+    "rowHidden": "Fila oculta — activar para restaurar",
+    "done": "Listo",
+    "editLayout": "Editar diseño",
+    "rowsHidden": "{{count}} fila oculta",
+    "rowsHidden_other": "{{count}} filas ocultas"
   }
 }

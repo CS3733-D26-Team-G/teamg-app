@@ -10,6 +10,7 @@ import {
 import { useAuth } from "../../../auth/AuthContext";
 import { getPositionLabel } from "../../../utils/positionDisplay";
 import { useDashboardBootstrapQuery } from "../../../lib/activity-loaders";
+import { useTranslation } from "react-i18next";
 
 interface EditHitsRow {
   date: string;
@@ -30,6 +31,7 @@ function formatDateLabel(date: string) {
 }
 
 export default function HitsLineChart() {
+  const { t } = useTranslation();
   const [days, setDays] = useState<number | undefined>(7);
   const { session } = useAuth();
   const isAdmin = session?.position === "ADMIN";
@@ -62,7 +64,7 @@ export default function HitsLineChart() {
 
   const series = visibleRoles.map((role) => ({
     data: editHitsByRole.map((row) => row[role] ?? 0),
-    label: getPositionLabel(role),
+    label: getPositionLabel(role, t),
     color: ROLE_COLORS[role],
     shape: "circle" as const,
   }));
@@ -79,7 +81,9 @@ export default function HitsLineChart() {
           "& .MuiMenuItem-root": { fontFamily: "inherit" },
         }}
       >
-        <InputLabel id="edit-hits-range-label">Time Range</InputLabel>
+        <InputLabel id="edit-hits-range-label">
+          {t("hitsLineChart.timeRange")}
+        </InputLabel>
         <Select
           labelId="edit-hits-range-label"
           value={days === undefined ? "all" : String(days)}
@@ -89,10 +93,10 @@ export default function HitsLineChart() {
             setDays(value === "all" ? undefined : Number(value));
           }}
         >
-          <MenuItem value="7">Last 7 days</MenuItem>
-          <MenuItem value="14">Last 14 days</MenuItem>
-          <MenuItem value="30">Last 30 days</MenuItem>
-          <MenuItem value="all">All time</MenuItem>
+          <MenuItem value="7">{t("hitsLineChart.last7Days")}</MenuItem>
+          <MenuItem value="14">{t("hitsLineChart.last14Days")}</MenuItem>
+          <MenuItem value="30">{t("hitsLineChart.last30Days")}</MenuItem>
+          <MenuItem value="all">{t("hitsLineChart.allTime")}</MenuItem>
         </Select>
       </FormControl>
 

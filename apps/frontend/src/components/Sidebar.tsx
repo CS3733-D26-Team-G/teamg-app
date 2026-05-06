@@ -33,8 +33,10 @@ import { useAuth } from "../auth/AuthContext.tsx";
 import { useProfile } from "../profile/ProfileContext.tsx";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import { useSidebar } from "./SidebarContext.tsx";
+import { useTranslation } from "react-i18next";
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const { isOpen, setIsOpen } = useSidebar();
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorElement);
@@ -175,7 +177,7 @@ export default function Sidebar() {
           </ListItemIcon>
           {isOpen && (
             <ListItemText
-              primary="Dashboard"
+              primary={t("sideBar.dashboard")}
               slotProps={{ primary: { sx: textSx } }}
             />
           )}
@@ -202,7 +204,7 @@ export default function Sidebar() {
               </ListItemIcon>
               {isOpen && (
                 <ListItemText
-                  primary="Management"
+                  primary={t("sideBar.management")}
                   slotProps={{ primary: { sx: textSx } }}
                 />
               )}
@@ -235,7 +237,7 @@ export default function Sidebar() {
                     />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Employees"
+                    primary={t("sideBar.employees")}
                     slotProps={{
                       primary: { sx: { ...textSx, fontSize: "0.9rem" } },
                     }}
@@ -256,7 +258,7 @@ export default function Sidebar() {
                     />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Content"
+                    primary={t("sideBar.content")}
                     slotProps={{
                       primary: { sx: { ...textSx, fontSize: "0.9rem" } },
                     }}
@@ -278,7 +280,7 @@ export default function Sidebar() {
                     />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Approvals"
+                    primary={t("sideBar.approvals")}
                     slotProps={{
                       primary: { sx: { ...textSx, fontSize: "0.9rem" } },
                     }}
@@ -371,7 +373,7 @@ export default function Sidebar() {
           </ListItemIcon>
           {isOpen && (
             <ListItemText
-              primary="Activity"
+              primary={t("sideBar.activity")}
               slotProps={{ primary: { sx: textSx } }}
             />
           )}
@@ -389,7 +391,7 @@ export default function Sidebar() {
           </ListItemIcon>
           {isOpen && (
             <ListItemText
-              primary="Calendar"
+              primary={t("sideBar.calendar")}
               slotProps={{ primary: { sx: textSx } }}
             />
           )}
@@ -452,7 +454,7 @@ export default function Sidebar() {
           to="/profile"
           onClick={handleClose}
         >
-          My Account
+          {t("sideBar.myAccount")}
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -460,7 +462,7 @@ export default function Sidebar() {
             void handleLogout();
           }}
         >
-          Log Out
+          {t("sideBar.logout")}
         </MenuItem>
       </Menu>
     </Box>

@@ -1,5 +1,6 @@
 import type { ChipProps } from "@mui/material";
 import type { Position } from "@repo/db";
+import type { TFunction } from "i18next";
 
 const POSITION_LABEL_OVERRIDES: Partial<Record<Position, string>> = {
   EXL_OPERATIONS: "EXL Operations",
@@ -23,7 +24,10 @@ function humanizeEnumValue(value: string): string {
     .join(" ");
 }
 
-export function getPositionLabel(position: Position): string {
+export function getPositionLabel(position: Position, t?: TFunction): string {
+  if (t) {
+    return t(`positions.${position}`);
+  }
   return POSITION_LABEL_OVERRIDES[position] ?? humanizeEnumValue(position);
 }
 

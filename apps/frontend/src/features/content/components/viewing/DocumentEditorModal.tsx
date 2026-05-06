@@ -51,6 +51,7 @@ import {
   extractWordCountFromViewer,
   formatReadingTime,
 } from "./ReadingTime.tsx";
+import { WEBVIEWER_LICENSE_KEY, WEBVIEWER_PATH } from "./webviewerConfig.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -158,9 +159,10 @@ export default function DocumentEditorModal({
 
       WebViewer(
         {
-          path: "/webviewer/lib",
-          licenseKey:
-            "demo:1776714799946:6325df920300000000de6805a4f71c4346d6e510d1c42048e35ab36d86",
+          path: WEBVIEWER_PATH,
+          ...(WEBVIEWER_LICENSE_KEY ?
+            { licenseKey: WEBVIEWER_LICENSE_KEY }
+          : {}),
           disabledElements:
             readOnly ? ["toolsHeader", "ribbons", "toggleNotesButton"] : [],
         },

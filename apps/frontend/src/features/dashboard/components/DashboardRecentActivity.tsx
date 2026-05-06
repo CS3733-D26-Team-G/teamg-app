@@ -10,18 +10,20 @@ import {
 import { transformBackendData } from "./activityData.ts";
 import HelpPopup from "../../../components/HelpPopup.tsx";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface DashboardRecentActivityProps {
   rawLogs: any[];
 }
 
 function actionDictator(action: string) {
+  const { t } = useTranslation();
   const map: Record<string, string> = {
-    EDIT_CONTENT: "edited",
-    DELETE_CONTENT: "deleted",
-    CREATE_CONTENT: "created",
-    LOG_IN: "Logged In",
-    LOG_OUT: "Logged Out",
+    EDIT_CONTENT: t("recentActivity.edit"),
+    DELETE_CONTENT: t("recentActivity.delete"),
+    CREATE_CONTENT: t("recentActivity.create"),
+    LOG_IN: t("recentActivity.loggedIn"),
+    LOG_OUT: t("recentActivity.loggedOut"),
     CHECK_IN_CONTENT: "checked in",
     CHECK_OUT_CONTENT: "checked out",
   };
@@ -31,6 +33,7 @@ function actionDictator(action: string) {
 export default function DashboardRecentActivity({
   rawLogs,
 }: DashboardRecentActivityProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const recentActions = useMemo(() => {
     const groupedData = transformBackendData(rawLogs);
@@ -63,9 +66,9 @@ export default function DashboardRecentActivity({
               variant="h6"
               sx={{ fontWeight: "bold", fontSize: "1.3rem" }}
             >
-              Recent Activity
+              {t("recentActivity.title")}
               <HelpPopup
-                description="The Recent Activity feed shows information about the four most recent actions taken across the application. This includes the user, the time, the date, and what they did. Go to the Activity page using the side bar for a longer time line of activity!"
+                description={t("recentActivity.info")}
                 infoOrHelp={false}
               />
             </Typography>
