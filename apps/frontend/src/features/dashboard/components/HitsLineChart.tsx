@@ -35,7 +35,6 @@ export default function HitsLineChart() {
   const [days, setDays] = useState<number | undefined>(7);
   const { session } = useAuth();
   const isAdmin = session?.position === "ADMIN";
-  const { t } = useTranslation();
 
   const { data } = useDashboardBootstrapQuery({
     days,
